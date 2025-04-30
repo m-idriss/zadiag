@@ -45,6 +45,7 @@ ios/Flutter/*.xcframework
 ios/ServiceDefinitions.json
 ios/Runner.xcworkspace/
 ios/Runner.xcodeproj/project.xcworkspace/
+ios/Runner/GoogleService-Info.plist
 ios/Flutter/.last_build_id
 macos/Flutter/GeneratedPluginRegistrant.swift
 macos/Flutter/ephemeral/
