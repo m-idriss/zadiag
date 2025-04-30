@@ -1,62 +1,117 @@
-cat > .gitignore << 'EOF'
-# Miscellaneous
+# ─────────────────────────────────────────────
+# 📦 DÉPENDANCES & BUILD AUTOMATIQUES
+# ─────────────────────────────────────────────
+.dart_tool/
+.packages
+.pub/
+.pub-cache/
+.flutter-plugins
+.flutter-plugins-dependencies
+.package-config.json
+build/
+.melos_tool/
+
+# ─────────────────────────────────────────────
+# 🧪 GÉNÉRATION DE DOCS/API
+# ─────────────────────────────────────────────
+**/doc/api/
+
+# ─────────────────────────────────────────────
+# 🛠️ PLATEFORME ANDROID
+# ─────────────────────────────────────────────
+android/.gradle/
+android/captures/
+android/app/debug/
+android/app/profile/
+android/app/release/
+android/local.properties
+android/gradle.properties
+android/key.properties
+*.keystore
+*.jks
+
+# Google Services (Firebase Android config — secret 🔐)
+android/app/google-services.json
+
+# ─────────────────────────────────────────────
+# 🍏 PLATEFORME iOS / macOS
+# ─────────────────────────────────────────────
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/App.framework
+ios/Flutter/Generated.xcconfig
+ios/Flutter/*.xcframework
+ios/ServiceDefinitions.json
+ios/Runner.xcworkspace/
+ios/Runner.xcodeproj/project.xcworkspace/
+ios/Flutter/.last_build_id
+macos/Flutter/GeneratedPluginRegistrant.swift
+macos/Flutter/ephemeral/
+xcuserdata/
+DerivedData/
+
+# Google Services (Firebase iOS config — secret 🔐)
+ios/Runner/GoogleService-Info.plist
+
+# ─────────────────────────────────────────────
+# 🧪 FIREBASE / BACKEND AS A SERVICE
+# ─────────────────────────────────────────────
+firebase-debug.log
+firebase-debug.*.log
+.firebase/
+firestore.indexes.json
+
+# Règles : peuvent être versionnées si anonymisées ou stables
+# firestore.rules
+# storage.rules
+# firebase.json
+
+# ─────────────────────────────────────────────
+# 💻 ÉDITEURS (VS Code, IntelliJ, Xcode, etc.)
+# ─────────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# ─────────────────────────────────────────────
+# 🧹 SYSTÈME & TEMPORAIRES
+# ─────────────────────────────────────────────
 *.class
 *.log
 *.pyc
 *.swp
-.DS_Store
-.atom/
-.history
-.svn/
-migrate_working_dir/
+*.tmp
+*.bak
+*.old
+*.orig
+*.rej
+*.swo
+*.swn
+*.tmp
 
 # macOS
+.DS_Store
 .AppleDouble
 .LSOverride
 Icon?
+._*
+
+# Windows
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# IntelliJ / Android Studio
-*.iml
-*.ipr
-*.iws
-.idea/
-.android/
+# Linux
+*~
 
-# VS Code
-.vscode/  # tu peux commenter cette ligne si tu veux garder les configs
+# Git
+*.orig
 
-# Flutter / Dart / Pub related
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.package-config.json
-.packages
-.pub-cache/
-.pub/
-build/
-**/doc/api/
-**/ios/Flutter/.last_build_id
-
-# Android builds
-/android/app/debug
-/android/app/profile
-/android/app/release
-
-# iOS builds
-ios/Flutter/App.framework
-ios/Flutter/Flutter.framework
-ios/Flutter/Generated.xcconfig
-ios/ServiceDefinitions.json
-ios/Pods/
-ios/Runner.xcworkspace/
-ios/Runner.xcodeproj/project.xcworkspace/
-
-# Symbolication / Obfuscation
+# ─────────────────────────────────────────────
+# 🗺️ DÉBOGAGE / SYMBOLIC / OBFUSCATION
+# ─────────────────────────────────────────────
 app.*.symbols
 app.*.map.json
-
-# Xcode
-xcuserdata/
-DerivedData/
-EOF
