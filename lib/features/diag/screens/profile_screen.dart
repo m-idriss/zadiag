@@ -296,7 +296,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     if (confirmed != true) return;
-    print(user);
     try {
       await FirebaseFirestore.instance
           .collection('users')
@@ -312,7 +311,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       }
     } on FirebaseAuthException catch (e) {
-      print(e.message);
       if (!mounted) return;
       showSnackBar(context, e.message ?? trad(context)!.error_occurred);
     }
