@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/features/auth/screens/splash_page.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:zadiag/firebase_options.dart';
+import 'package:zadiag/l10n/app_localizations.dart';
 
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.system);
 final ValueNotifier<Locale?> localeNotifier = ValueNotifier(null);
