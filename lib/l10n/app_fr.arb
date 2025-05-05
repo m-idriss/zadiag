@@ -42,5 +42,10 @@
   "create_account": "Créer un compte",
   "register_subtitle": "Veuillez remplir les champs ci-dessous pour créer un nouveau compte.",
   "already_have_account": "Vous avez déjà un compte ? Connexion",
-  "error_saving_data": "error_saving_data"
+  "error_saving_data": "error_saving_data",
+  "delete_account": "Supprimer mon compte",
+  "confirm_delete_account": "Es-tu sûr de vouloir supprimer ton compte ? Cette action est irréversible.",
+  "confirm": "Confirmation",
+  "delete": "Supprimer",
+  "error_occurred": "Une erreur est survenue"
 }

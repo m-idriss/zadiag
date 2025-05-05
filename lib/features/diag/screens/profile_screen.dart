@@ -4,6 +4,7 @@ import 'package:zadiag/core/utils/language_manager.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:intl/intl.dart';
 import 'package:zadiag/core/utils/translate.dart';
+import 'package:zadiag/features/auth/screens/login_page.dart';
 import 'package:zadiag/main.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -83,6 +84,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _languageSelector(context),
               const SizedBox(height: 24),
               _actionButtons(context),
+              const SizedBox(height: 24),
+              _deleteAccountButton(context),
             ],
           ),
         ),
@@ -253,5 +256,65 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _cancelChanges() {
     showSnackBar(context, trad(context)!.changes_canceled);
+  }
+
+  ListTile _deleteAccountButton(BuildContext context) {
+    return ListTile(
+      leading: const Icon(Icons.delete_forever, color: Colors.red),
+      title: const Text(
+        "Supprimer mon compte",
+        style: TextStyle(color: Colors.red),
+      ),
+      onTap: _deleteAccount,
+    );
+  }
+
+  Future<void> _deleteAccount() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text(trad(context)!.confirm),
+            content: Text(trad(context)!.confirm_delete_account),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(trad(context)!.cancel),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(
+                  trad(context)!.delete,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
+          ),
+    );
+
+    if (confirmed != true) return;
+    print(user);
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .delete();
+
+      await user.delete();
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      print(e.message);
+      if (!mounted) return;
+      showSnackBar(context, e.message ?? trad(context)!.error_occurred);
+    }
   }
 }

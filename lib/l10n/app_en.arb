@@ -42,5 +42,11 @@
   "create_account": "Create your account",
   "register_subtitle": "Please fill in the details below to create a new account.",
   "already_have_account": "Already have an account? Sign in",
-  "error_saving_data": "error_saving_data"
+  "error_saving_data": "error_saving_data",
+  "delete_account": "Delete my account",
+  "confirm_delete_account": "Are you sure you want to delete your account? This action cannot be undone.",
+  "confirm": "Confirmation",
+  "delete": "Delete",
+  "error_occurred": "An error occurred"
+
 }

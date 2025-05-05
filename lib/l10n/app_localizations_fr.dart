@@ -139,4 +139,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get error_saving_data => 'error_saving_data';
+
+  @override
+  String get delete_account => 'Supprimer mon compte';
+
+  @override
+  String get confirm_delete_account => 'Es-tu sûr de vouloir supprimer ton compte ? Cette action est irréversible.';
+
+  @override
+  String get confirm => 'Confirmation';
+
+  @override
+  String get delete => 'Supprimer';
+
+  @override
+  String get error_occurred => 'Une erreur est survenue';
 }
