@@ -47,5 +47,11 @@
   "confirm_delete_account": "Es-tu sûr de vouloir supprimer ton compte ? Cette action est irréversible.",
   "confirm": "Confirmation",
   "delete": "Supprimer",
-  "error_occurred": "Une erreur est survenue"
+  "error_occurred": "Une erreur est survenue",
+  "app_tagline": "Votre compagnon santé",
+  "enabled": "Activé",
+  "disabled": "Désactivé",
+  "upcoming_reminders": "Rappels à venir",
+  "less": "Moins",
+  "more": "Plus"
 }
