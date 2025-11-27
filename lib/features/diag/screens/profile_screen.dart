@@ -195,7 +195,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         'assets/icons/Home.svg',
       ),
       dropdownColor: Theme.of(context).colorScheme.secondary,
-      value: _selectedLanguage,
+      initialValue: _selectedLanguage,
       items:
           LanguageManager.supportedLanguageNameLocalesMap.values
               .map((lang) => DropdownMenuItem(value: lang, child: Text(lang)))

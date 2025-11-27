@@ -12,7 +12,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get activity_tracking => 'Suivi des activités';
 
   @override
-  String get activity_tracking_subtitle => 'Suivez vos activités quotidiennes et votre progression au fil du temps.';
+  String get activity_tracking_subtitle =>
+      'Suivez vos activités quotidiennes et votre progression au fil du temps.';
 
   @override
   String get birthdate_hint => 'Date de naissance';
@@ -42,7 +43,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get cancel => 'Annuler';
 
   @override
-  String get capture_subtitle => 'Prends une photo ou une courte vidéo pour permettre de faire la vérification.';
+  String get capture_subtitle =>
+      'Prends une photo ou une courte vidéo pour permettre de faire la vérification.';
 
   @override
   String get capture_title => 'Vérification';
@@ -72,7 +74,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get logout => 'Déconnexion';
 
   @override
-  String get manage_profil => 'Gérez votre profil et vos informations personnelles.';
+  String get manage_profil =>
+      'Gérez votre profil et vos informations personnelles.';
 
   @override
   String get name_hint => 'Jean Dupont';
@@ -96,7 +99,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get planning => 'Planification';
 
   @override
-  String get planning_subtitle => 'Gérez vos notifications et la planification de vos rappels.';
+  String get planning_subtitle =>
+      'Gérez vos notifications et la planification de vos rappels.';
 
   @override
   String get preferred_language => 'Langue préférée';
@@ -111,7 +115,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settings => 'Paramètres';
 
   @override
-  String get settings_subtitle => 'Modifiez vos paramètres et personnalisez votre expérience.';
+  String get settings_subtitle =>
+      'Modifiez vos paramètres et personnalisez votre expérience.';
 
   @override
   String get sign_up => 'S\'inscrire';
@@ -132,7 +137,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get create_account => 'Créer un compte';
 
   @override
-  String get register_subtitle => 'Veuillez remplir les champs ci-dessous pour créer un nouveau compte.';
+  String get register_subtitle =>
+      'Veuillez remplir les champs ci-dessous pour créer un nouveau compte.';
 
   @override
   String get already_have_account => 'Vous avez déjà un compte ? Connexion';
@@ -144,7 +150,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get delete_account => 'Supprimer mon compte';
 
   @override
-  String get confirm_delete_account => 'Es-tu sûr de vouloir supprimer ton compte ? Cette action est irréversible.';
+  String get confirm_delete_account =>
+      'Es-tu sûr de vouloir supprimer ton compte ? Cette action est irréversible.';
 
   @override
   String get confirm => 'Confirmation';
