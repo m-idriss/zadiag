@@ -23,18 +23,161 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       body: Container(
-        padding: const EdgeInsets.all(22),
         decoration: _background(defaultColorScheme),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              _header(context),
-              const SizedBox(height: 12.0),
-              _darkModeButton(context, isDarkMode),
-              const SizedBox(height: 120.0),
-              _deconnexionButton(context),
-            ],
+        child: SafeArea(
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: EdgeInsets.all(AppTheme.spacingLg),
+              physics: const BouncingScrollPhysics(),
+              children: [
+                _header(context),
+                const SizedBox(height: AppTheme.spacingXl),
+                _settingsCard(context, isDarkMode),
+                const SizedBox(height: AppTheme.spacingLg),
+                _logoutCard(context),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _settingsCard(BuildContext context, bool isDarkMode) {
+    return Container(
+      padding: EdgeInsets.all(AppTheme.spacingMd),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: Column(
+        children: [
+          _settingsItem(
+            context,
+            icon: Icons.dark_mode_rounded,
+            title: trad(context)!.dark_mode,
+            trailing: CupertinoSwitch(
+              activeTrackColor: Theme.of(context).colorScheme.primary,
+              value: isDarkMode,
+              onChanged: (value) {
+                setState(() {
+                  themeNotifier.value = value ? ThemeMode.dark : ThemeMode.light;
+                });
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _settingsItem(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required Widget trailing,
+  }) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: AppTheme.spacingSm),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            ),
+            child: Icon(
+              icon,
+              color: Theme.of(context).colorScheme.primary,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: AppTheme.spacingMd),
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontFamily: AppTheme.defaultFontFamilyName,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ),
+          trailing,
+        ],
+      ),
+    );
+  }
+
+  Widget _logoutCard(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.pushReplacement(
+              context,
+              PageRouteBuilder(
+                pageBuilder: (context, animation, secondaryAnimation) =>
+                    const LoginPage(),
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: child,
+                  );
+                },
+                transitionDuration: const Duration(milliseconds: 300),
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+          child: Padding(
+            padding: EdgeInsets.all(AppTheme.spacingMd),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  ),
+                  child: Icon(
+                    Icons.logout_rounded,
+                    color: Theme.of(context).colorScheme.error,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: AppTheme.spacingMd),
+                Expanded(
+                  child: Text(
+                    trad(context)!.logout,
+                    style: TextStyle(
+                      fontFamily: AppTheme.defaultFontFamilyName,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: Theme.of(context).colorScheme.error,
+                  size: 18,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -50,47 +193,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context,
       trad(context)!.settings,
       trad(context)!.settings_subtitle,
-    );
-  }
-
-  Row _darkModeButton(BuildContext context, bool isDarkMode) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
-        Text(
-          trad(context)!.dark_mode,
-          style: TextStyle(
-            fontFamily: AppTheme.defaultFontFamilyName,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-        ),
-        CupertinoSwitch(
-          //activeTrackColor: Theme.of(context).colorScheme.primary,
-          //thumbColor: Theme.of(context).colorScheme.tertiary,
-          value: isDarkMode,
-          onChanged: (value) {
-            setState(() {
-              themeNotifier.value = value ? ThemeMode.dark : ThemeMode.light;
-            });
-          },
-        ),
-      ],
-    );
-  }
-
-  ListTile _deconnexionButton(BuildContext context) {
-    return ListTile(
-      leading: Icon(Icons.logout, color: Theme.of(context).colorScheme.primary),
-      title: Text(
-        trad(context)!.logout,
-        style: TextStyle(color: Theme.of(context).colorScheme.primary),
-      ),
-      onTap: () {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginPage()),
-        );
-      },
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/core/utils/translate.dart';
 import 'package:zadiag/features/auth/screens/login_page.dart';
 import 'package:zadiag/features/auth/screens/components/auth_elements.dart';
+import 'package:zadiag/core/constants/app_theme.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -18,34 +19,115 @@ final _registerConfirmPasswordController = TextEditingController();
 bool _obscurePassword = true;
 bool _obscureConfirmPassword = true;
 
-class _RegisterPageState extends State<RegisterPage> {
+class _RegisterPageState extends State<RegisterPage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeOut,
+      ),
+    );
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       extendBody: true,
       body: Container(
-        padding: const EdgeInsets.all(22),
         decoration: buildBackground(colorScheme),
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          physics: const BouncingScrollPhysics(),
-          children: [
-            const SizedBox(height: 100),
-            _registerTitle(context),
-            _registerSubtitle(context),
-            _emailTextField(context),
-            const SizedBox(height: 12),
-            _passwordTextField(context),
-            const SizedBox(height: 12),
-            _confirmPasswordTextField(context),
-            _signUpButton(context),
-            _orConnectWithText(context),
-            _socialButtons(context),
-          ],
+        child: SafeArea(
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: ListView(
+              padding: EdgeInsets.symmetric(horizontal: AppTheme.spacingLg),
+              physics: const BouncingScrollPhysics(),
+              children: [
+                const SizedBox(height: AppTheme.spacingXl),
+                _brandingSection(context),
+                const SizedBox(height: AppTheme.spacingLg),
+                _registerTitle(context),
+                _registerSubtitle(context),
+                _formCard(context),
+                _orConnectWithText(context),
+                _socialButtons(context),
+              ],
+            ),
+          ),
         ),
       ),
       bottomNavigationBar: _bottom(context),
+    );
+  }
+
+  Widget _brandingSection(BuildContext context) {
+    return Container(
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).colorScheme.secondary,
+            Theme.of(context).colorScheme.primary,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Icon(
+          Icons.person_add_rounded,
+          size: 36,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  Widget _formCard(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(AppTheme.spacingLg),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: Column(
+        children: [
+          _emailTextField(context),
+          const SizedBox(height: AppTheme.spacingMd),
+          _passwordTextField(context),
+          const SizedBox(height: AppTheme.spacingMd),
+          _confirmPasswordTextField(context),
+          const SizedBox(height: AppTheme.spacingLg),
+          _signUpButton(context),
+        ],
+      ),
     );
   }
 
@@ -109,29 +191,6 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  Widget signButtonRegister(
-    BuildContext context,
-    IconData icon,
-    String text,
-    Widget page,
-    VoidCallback? onPressed,
-  ) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 16),
-      width: double.infinity,
-      child: buildConnectButton(context, text, icon, () {
-        if (onPressed != null) {
-          onPressed();
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => page),
-          );
-        }
-      }),
-    );
-  }
-
   void _register(BuildContext context) async {
     final email = _registerEmailController.text.trim();
     final password = _registerPasswordController.text;
@@ -151,7 +210,17 @@ class _RegisterPageState extends State<RegisterPage> {
       if (!context.mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => LoginPage()),
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) => LoginPage(),
+          transitionsBuilder:
+              (context, animation, secondaryAnimation, child) {
+            return FadeTransition(
+              opacity: animation,
+              child: child,
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 300),
+        ),
       );
     } on FirebaseAuthException catch (e) {
       String message;

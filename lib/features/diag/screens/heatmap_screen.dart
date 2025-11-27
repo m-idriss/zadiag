@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_heatmap_calendar/flutter_heatmap_calendar.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/core/utils/translate.dart';
+import 'package:zadiag/core/constants/app_theme.dart';
 
 class HeatMapScreen extends StatefulWidget {
   const HeatMapScreen({super.key});
@@ -34,14 +35,19 @@ class _HeatMapScreenState extends State<HeatMapScreen> {
 
     return Scaffold(
       body: Container(
-        padding: const EdgeInsets.all(22),
         decoration: _background(defaultColorScheme),
-        child: ListView(
-          children: [
-            _header(context),
-            const SizedBox(height: 12),
-            _heatMap(context),
-          ],
+        child: SafeArea(
+          child: ListView(
+            padding: EdgeInsets.all(AppTheme.spacingLg),
+            physics: const BouncingScrollPhysics(),
+            children: [
+              _header(context),
+              const SizedBox(height: AppTheme.spacingLg),
+              _heatMapCard(context),
+              const SizedBox(height: AppTheme.spacingMd),
+              _legendCard(context),
+            ],
+          ),
         ),
       ),
     );
@@ -59,40 +65,89 @@ class _HeatMapScreenState extends State<HeatMapScreen> {
     );
   }
 
-  Container _heatMap(BuildContext context) {
+  Widget _heatMapCard(BuildContext context) {
     return Container(
-      height: 250,
+      padding: EdgeInsets.all(AppTheme.spacingMd),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withAlpha(20),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withAlpha(50),
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        child: HeatMap(
+          scrollable: true,
+          colorMode: ColorMode.opacity,
+          defaultColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+          textColor: Theme.of(context).colorScheme.onSurface,
+          datasets: heatMapDatasets,
+          size: 20,
+          colorTipCount: 5,
+          colorTipSize: 12,
+          showColorTip: false,
+          colorsets: {
+            1: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+            2: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+            3: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+            4: Theme.of(context).colorScheme.primary,
+          },
+          onClick: (value) {
+            DateTime date = DateTime.parse(value.toString());
+            String formattedDate = '${date.day}/${date.month}/${date.year}';
+            String dayOfWeek = buildDayOfWeek(context, date.weekday - 1);
+            formattedDate = '$dayOfWeek $formattedDate';
+            showSnackBar(context, formattedDate);
+          },
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(1),
-        child: Card(
-          color: Theme.of(context).colorScheme.tertiary,
-          child: HeatMap(
-            scrollable: true,
-            colorMode: ColorMode.opacity,
-            defaultColor: Theme.of(context).colorScheme.tertiary,
-            textColor: Theme.of(context).colorScheme.primary,
-            datasets: heatMapDatasets,
-            size: 24,
-            colorTipCount: 5,
-            colorTipSize: 14,
-            showColorTip: false,
-            colorsets: {1: Theme.of(context).colorScheme.onTertiary},
-            onClick: (value) {
-              DateTime date = DateTime.parse(value.toString());
-              String formattedDate = '${date.day}/${date.month}/${date.year}';
-              String dayOfWeek = buildDayOfWeek(context, date.weekday - 1);
-              formattedDate = '$dayOfWeek $formattedDate';
-              showSnackBar(context, formattedDate);
-            },
+    );
+  }
+
+  Widget _legendCard(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(AppTheme.spacingMd),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Less',
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              fontFamily: AppTheme.defaultFontFamilyName,
+            ),
           ),
-        ),
+          const SizedBox(width: AppTheme.spacingSm),
+          ...List.generate(5, (index) {
+            return Container(
+              width: 16,
+              height: 16,
+              margin: EdgeInsets.symmetric(horizontal: 2),
+              decoration: BoxDecoration(
+                color: index == 0
+                    ? Theme.of(context).colorScheme.surfaceContainerHigh
+                    : Theme.of(context).colorScheme.primary.withValues(
+                          alpha: 0.25 + (index * 0.2),
+                        ),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            );
+          }),
+          const SizedBox(width: AppTheme.spacingSm),
+          Text(
+            'More',
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              fontFamily: AppTheme.defaultFontFamilyName,
+            ),
+          ),
+        ],
       ),
     );
   }

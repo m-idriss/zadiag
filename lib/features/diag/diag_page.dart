@@ -8,6 +8,7 @@ import 'package:zadiag/features/diag/screens/settings_screen.dart';
 import 'package:zadiag/shared/models/menu.dart';
 import 'package:zadiag/shared/models/rive_utils.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
+import 'package:zadiag/core/constants/app_theme.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -30,10 +31,12 @@ class _HomePageState extends State<HomePage>
   ];
 
   Menu selectedBottonNav = bottomNavItems[2];
+  int _previousIndex = 2;
 
   void updateSelectedBtmNav(Menu menu) {
     if (selectedBottonNav != menu) {
       setState(() {
+        _previousIndex = bottomNavItems.indexOf(selectedBottonNav);
         selectedBottonNav = menu;
       });
     }
@@ -60,24 +63,54 @@ class _HomePageState extends State<HomePage>
 
   @override
   Widget build(BuildContext context) {
+    final currentIndex = bottomNavItems.indexOf(selectedBottonNav);
+    
     return Scaffold(
       extendBody: true,
-      body: _pages[bottomNavItems.indexOf(selectedBottonNav)],
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          final slideDirection = currentIndex > _previousIndex ? 1.0 : -1.0;
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: Offset(slideDirection * 0.1, 0),
+              end: Offset.zero,
+            ).animate(CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+            )),
+            child: FadeTransition(
+              opacity: animation,
+              child: child,
+            ),
+          );
+        },
+        child: KeyedSubtree(
+          key: ValueKey<int>(currentIndex),
+          child: _pages[currentIndex],
+        ),
+      ),
       bottomNavigationBar: bottomNavBar(context),
     );
   }
 
-  Transform bottomNavBar(BuildContext context) {
-    return Transform.translate(
-      offset: Offset(0, -50),
+  Widget bottomNavBar(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(
+        left: AppTheme.spacingLg,
+        right: AppTheme.spacingLg,
+        bottom: AppTheme.spacingLg,
+      ),
       child: SafeArea(
-        bottom: false,
+        top: false,
         child: Container(
-          padding: const EdgeInsets.all(12),
-          margin: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.spacingMd,
+            vertical: AppTheme.spacingSm,
+          ),
           decoration: bottomMenu(context),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               ...List.generate(bottomNavItems.length, (index) {
                 Menu navBar = bottomNavItems[index];
