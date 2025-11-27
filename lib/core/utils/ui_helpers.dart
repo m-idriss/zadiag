@@ -96,7 +96,7 @@ String buildDayOfWeek(context, int index) {
   }
 }
 
-buildSettingsButton(
+dynamic buildSettingsButton(
   BuildContext context,
   String action,
   IconData icon,
@@ -105,7 +105,7 @@ buildSettingsButton(
   return _buildButton(context, action, icon, onPressed, 18);
 }
 
-buildConnectButton(
+dynamic buildConnectButton(
   BuildContext context,
   String action,
   IconData icon,
@@ -114,7 +114,7 @@ buildConnectButton(
   return _buildButton(context, action, icon, onPressed, 24);
 }
 
-_buildButton(
+ElevatedButton _buildButton(
   BuildContext context,
   String action,
   IconData icon,

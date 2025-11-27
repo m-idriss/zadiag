@@ -61,7 +61,7 @@ class _LoginPageState extends State<LoginPage> {
     return subtitle(context, trad(context)!.login_subtitle);
   }
 
-  _signInButton() {
+  Widget _signInButton() {
     return signButton(
       context,
       Icons.login,

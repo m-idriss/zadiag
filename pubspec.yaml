@@ -42,8 +42,8 @@ dependencies:
   rive_animated_icon: ^2.0.5
   intl: any
   shared_preferences: ^2.2.2
-  firebase_core: ^3.13.0
-  firebase_auth: ^5.5.3
+  firebase_core: ^4.2.1
+  firebase_auth: ^6.1.2
   firebase_database: any
   cloud_firestore: any
   flutter_gen: ^5.10.0
@@ -57,7 +57,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

@@ -16,7 +16,7 @@ List<Menu> bottomNavItems = [
   riveMenuButton(RiveIcon.settings),
 ];
 
-riveMenuButton(RiveIcon icon) {
+Menu riveMenuButton(RiveIcon icon) {
   return Menu(
     title: icon.name,
     rive: RiveModel(

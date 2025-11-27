@@ -12,7 +12,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activity_tracking => 'Activity Tracking';
 
   @override
-  String get activity_tracking_subtitle => 'Track your daily activities and your progress over time.';
+  String get activity_tracking_subtitle =>
+      'Track your daily activities and your progress over time.';
 
   @override
   String get birthdate_hint => 'Birthdate';
@@ -42,7 +43,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cancel => 'Cancel';
 
   @override
-  String get capture_subtitle => 'Take a photo or a short video to allow verification.';
+  String get capture_subtitle =>
+      'Take a photo or a short video to allow verification.';
 
   @override
   String get capture_title => 'Verification';
@@ -96,7 +98,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get planning => 'Planning';
 
   @override
-  String get planning_subtitle => 'Manage your notifications and reminder scheduling.';
+  String get planning_subtitle =>
+      'Manage your notifications and reminder scheduling.';
 
   @override
   String get preferred_language => 'Preferred language';
@@ -111,7 +114,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settings => 'Settings';
 
   @override
-  String get settings_subtitle => 'Modify your settings and personalize your experience.';
+  String get settings_subtitle =>
+      'Modify your settings and personalize your experience.';
 
   @override
   String get sign_up => 'Sign up';
@@ -132,7 +136,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get create_account => 'Create your account';
 
   @override
-  String get register_subtitle => 'Please fill in the details below to create a new account.';
+  String get register_subtitle =>
+      'Please fill in the details below to create a new account.';
 
   @override
   String get already_have_account => 'Already have an account? Sign in';
@@ -144,7 +149,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get delete_account => 'Delete my account';
 
   @override
-  String get confirm_delete_account => 'Are you sure you want to delete your account? This action cannot be undone.';
+  String get confirm_delete_account =>
+      'Are you sure you want to delete your account? This action cannot be undone.';
 
   @override
   String get confirm => 'Confirmation';
