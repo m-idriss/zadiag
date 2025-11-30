@@ -44,7 +44,7 @@ class CaptureScreen extends StatelessWidget {
 
   Widget _cameraView(BuildContext context, ColorScheme colorScheme) {
     return Container(
-      height: 320,
+      height: 240,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
