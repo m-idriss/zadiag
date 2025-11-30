@@ -5,7 +5,7 @@ import 'package:zadiag/core/utils/ui_helpers.dart';
 
 Container title(BuildContext context, String title) {
   return Container(
-    margin: EdgeInsets.only(top: AppTheme.spacingXxl, bottom: AppTheme.spacingMd),
+    margin: EdgeInsets.only(top: AppTheme.spacingMd, bottom: AppTheme.spacingMd),
     child: Text(
       title,
       textAlign: TextAlign.center,
@@ -22,7 +22,7 @@ Container title(BuildContext context, String title) {
 
 Container subtitle(BuildContext context, String subtitle) {
   return Container(
-    margin: EdgeInsets.only(bottom: AppTheme.spacingXl),
+    margin: EdgeInsets.only(bottom: AppTheme.spacingMd),
     child: Text(
       subtitle,
       textAlign: TextAlign.center,
