@@ -23,10 +23,10 @@ class _HomePageState extends State<HomePage>
   late Animation<double> animation;
 
   final List<Widget> _pages = [
-    ProfileScreen(),
+    NotifyScreen(),
     HeatMapScreen(),
     CaptureScreen(),
-    NotifyScreen(),
+    ProfileScreen(),
     SettingsScreen(),
   ];
 
