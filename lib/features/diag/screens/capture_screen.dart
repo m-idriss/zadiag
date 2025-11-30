@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/core/utils/translate.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
-import 'dart:ui';
 
 
 const Color primaryAccent = Color(0xFF7B61FF);
@@ -174,8 +171,11 @@ class CaptureScreen extends StatelessWidget {
       height: 56,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
-        gradient: const LinearGradient(
-          colors: [primaryAccent, primaryAccent],
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).colorScheme.primary,
+            Theme.of(context).colorScheme.secondary,
+          ],
         ),
         boxShadow: [
           BoxShadow(
@@ -212,13 +212,4 @@ class CaptureScreen extends StatelessWidget {
     );
   }
 
-  void _showSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: primaryAccent,
-        duration: const Duration(seconds: 1),
-      ),
-    );
-  }
 }

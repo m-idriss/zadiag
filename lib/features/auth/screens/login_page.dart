@@ -183,13 +183,13 @@ class _LoginPageState extends State<LoginPage>
           transitionDuration: const Duration(milliseconds: 300),
         ),
       );
-      // in english
+
     } on FirebaseAuthException catch (e) {
-      String message = 'Unknown error';
+      String message = 'Erreur inconnue';
       if (e.code == 'user-not-found') {
-        message = 'User not found';
+        message = 'Utilisateur non trouvé';
       } else if (e.code == 'wrong-password') {
-        message = 'Incorrect password';
+        message = 'Mot de passe incorrect';
       }
 
       ScaffoldMessenger.of(
