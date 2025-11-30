@@ -92,7 +92,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get password_hint => '********';
 
   @override
-  String get photo_taken => 'Take a photo';
+  String get photo_taken => 'Photo taken';
 
   @override
   String get planning => 'Planning';

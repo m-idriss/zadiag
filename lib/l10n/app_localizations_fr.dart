@@ -93,7 +93,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get password_hint => '********';
 
   @override
-  String get photo_taken => 'Prendre une photo';
+  String get photo_taken => 'Photo enregistrée';
 
   @override
   String get planning => 'Planification';

@@ -263,7 +263,7 @@ abstract class AppLocalizations {
   /// No description provided for @photo_taken.
   ///
   /// In en, this message translates to:
-  /// **'Take a photo'**
+  /// **'Photo taken'**
   String get photo_taken;
 
   /// No description provided for @planning.
