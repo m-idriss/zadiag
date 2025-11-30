@@ -2,6 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/core/utils/translate.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'dart:ui';
+
+
+const Color primaryAccent = Color(0xFF7B61FF);
+const Color neutralGlass = Color(0xFFFFFFFF);
+
+double get spacingSm => 8.0;
+double get spacingMd => 16.0;
+double get spacingLg => 24.0;
+double get spacingXl => 32.0;
+double get radiusXl => 24.0;
+double get radiusSm => 8.0;
+
+
+
 
 class CaptureScreen extends StatelessWidget {
   const CaptureScreen({super.key});
@@ -135,22 +152,73 @@ class CaptureScreen extends StatelessWidget {
     );
   }
 
-  Widget _actionButtons(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Expanded(child: _takePhotoButton(context))
-      ],
+    Widget _actionButtons(BuildContext context) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Expanded(
+            child: _buildGradientButton(
+              context,
+              trad(context)!.take_photo,
+              Icons.camera_alt_rounded,
+                  () => showSnackBar(context, trad(context)!.photo_taken),
+            ),
+          )
+        ],
+      );
+    }
+
+  Widget _buildGradientButton(
+      BuildContext context, String label, IconData icon, VoidCallback onTap) {
+    return Container(
+      height: 56,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(30),
+        gradient: const LinearGradient(
+          colors: [primaryAccent, primaryAccent],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: primaryAccent.withOpacity(0.4),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          )
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(30),
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: Colors.white, size: 22),
+                SizedBox(width: spacingSm),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
-  Widget _takePhotoButton(BuildContext context) {
-    return buildSettingsButton(
-      context,
-      trad(context)!.take_photo,
-      Icons.photo_camera_rounded,
-      () => showSnackBar(context, trad(context)!.photo_taken),
+  void _showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: primaryAccent,
+        duration: const Duration(seconds: 1),
+      ),
     );
   }
-
 }
