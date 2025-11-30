@@ -99,7 +99,7 @@ class _BrandingScreenState extends State<BrandingScreen> {
             fit: BoxFit.cover,
             semanticsLabel: 'Converter illustration',
             placeholderBuilder: (context) => Container(
-              color: Theme.of(context).colorScheme.surfaceVariant,
+              color: Theme.of(context).colorScheme.surface,
               child: const Center(child: CircularProgressIndicator()),
             ),
           ),
@@ -178,7 +178,7 @@ class _BrandingScreenState extends State<BrandingScreen> {
           Text(
             text1,
             style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.85),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.85),
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
@@ -190,7 +190,7 @@ class _BrandingScreenState extends State<BrandingScreen> {
             Text(
               text2!,
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.85),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha:0.85),
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
               ),
@@ -220,44 +220,4 @@ class _BrandingScreenState extends State<BrandingScreen> {
     );
   }
 
-  Widget _actionButton(BuildContext context) {
-    return Container(
-      height: 56,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
-        gradient: LinearGradient(
-          colors: [
-            Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.secondary,
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          )
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-          },
-          borderRadius: BorderRadius.circular(30),
-          child: Center(
-            child: Text(
-              trad(context)!.get_started,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }

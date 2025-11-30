@@ -99,7 +99,7 @@ Column buildHeader(BuildContext context, String title, String subtitle) {
   );
 }
 
-String buildDayOfWeek(context, int index) {
+String buildDayOfWeek(BuildContext context, int index) {
   switch (index) {
     case 0:
       return trad(context)!.cal_sunday;

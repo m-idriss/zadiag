@@ -179,7 +179,7 @@ class CaptureScreen extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: primaryAccent.withOpacity(0.4),
+            color: primaryAccent.withValues(alpha: 0.4),
             blurRadius: 15,
             offset: const Offset(0, 8),
           )
