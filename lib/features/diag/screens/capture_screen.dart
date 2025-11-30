@@ -139,9 +139,7 @@ class CaptureScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Expanded(child: _takePhotoButton(context)),
-        const SizedBox(width: AppTheme.spacingMd),
-        Expanded(child: _takeVideButton(context)),
+        Expanded(child: _takePhotoButton(context))
       ],
     );
   }
@@ -155,12 +153,4 @@ class CaptureScreen extends StatelessWidget {
     );
   }
 
-  Widget _takeVideButton(BuildContext context) {
-    return buildSettingsButton(
-      context,
-      trad(context)!.take_video,
-      Icons.videocam_rounded,
-      () => showSnackBar(context, trad(context)!.video_taken),
-    );
-  }
 }

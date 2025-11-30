@@ -315,7 +315,7 @@ Widget buildTextField({
 
 BoxDecoration bottomMenu(BuildContext context) {
   return BoxDecoration(
-    color: Theme.of(context).colorScheme.surface,
+    color: Theme.of(context).colorScheme.surfaceDim,
     borderRadius: BorderRadius.circular(AppTheme.radiusXl),
     border: Border.all(
       color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),

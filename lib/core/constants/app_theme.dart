@@ -16,6 +16,7 @@ class AppTheme {
   static const Color lightOutlineVariant = Color(0xFF3B82F6);
   static const Color lightSurfaceContainerHigh = Color(0xFFF1F5F9);
   static const Color lightSurfaceContainer = Color(0xFFF8FAFC);
+  static const Color lightMenuSurface = Color(0xFF0F172A);
 
   // Dark Theme Colors - Rich, immersive palette
   static const Color darkPrimary = Color(0xFF3B82F6); // Bright blue
@@ -32,6 +33,7 @@ class AppTheme {
   static const Color darkOutlineVariant = Color(0xFF60A5FA);
   static const Color darkSurfaceContainerHigh = Color(0xFF1E293B);
   static const Color darkSurfaceContainer = Color(0xFF334155);
+  static const Color darkMenuSurface = Color(0xFF0F172A);
 
   // Font Family
   static const String defaultFontFamilyName = 'poppins';
@@ -88,6 +90,9 @@ const lightColorScheme = ColorScheme(
   onPrimaryContainer: AppTheme.lightPrimary,
   shadow: AppTheme.lightPrimary,
   tertiaryContainer: AppTheme.lightPrimary,
+  surfaceDim: AppTheme.lightMenuSurface,
+
+
 );
 
 const darkColorScheme = ColorScheme(
@@ -109,4 +114,5 @@ const darkColorScheme = ColorScheme(
   onPrimaryContainer: AppTheme.darkPrimary,
   shadow: AppTheme.darkPrimary,
   tertiaryContainer: AppTheme.darkPrimary,
+  surfaceDim: AppTheme.darkMenuSurface,
 );

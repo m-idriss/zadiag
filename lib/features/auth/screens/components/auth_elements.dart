@@ -101,9 +101,9 @@ Container socialButtons(BuildContext context) {
     child: Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _socialIcon(context, 'Apple'),
+       // _socialIcon(context, 'Apple'),
         _socialIcon(context, 'Google'),
-        _socialIcon(context, 'Facebook'),
+       // _socialIcon(context, 'Facebook'),
       ],
     ),
   );
