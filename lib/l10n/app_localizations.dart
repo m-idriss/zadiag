@@ -427,6 +427,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'More'**
   String get more;
+
+  /// No description provided for @powering_productivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Powering Productivity'**
+  String get powering_productivity;
+
+  /// No description provided for @events_generated.
+  ///
+  /// In en, this message translates to:
+  /// **'Events Generated'**
+  String get events_generated;
+
+  /// No description provided for @images.
+  ///
+  /// In en, this message translates to:
+  /// **'Images'**
+  String get images;
+
+  /// No description provided for @hours_saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Hours Saved'**
+  String get hours_saved;
+
+  /// No description provided for @workdays_saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Workdays Saved'**
+  String get workdays_saved;
+
+  /// No description provided for @get_started.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Started'**
+  String get get_started;
 }
 
 class _AppLocalizationsDelegate

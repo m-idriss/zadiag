@@ -178,4 +178,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get more => 'More';
+
+  @override
+  String get powering_productivity => 'Powering Productivity';
+
+  @override
+  String get events_generated => 'Events Generated';
+
+  @override
+  String get images => 'Images';
+
+  @override
+  String get hours_saved => 'Hours Saved';
+
+  @override
+  String get workdays_saved => 'Workdays Saved';
+
+  @override
+  String get get_started => 'Get Started';
 }

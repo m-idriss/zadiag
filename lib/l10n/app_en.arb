@@ -53,5 +53,12 @@
   "disabled": "Disabled",
   "upcoming_reminders": "Upcoming Reminders",
   "less": "Less",
-  "more": "More"
+  "more": "More",
+  "powering_productivity": "Powering Productivity",
+  "events_generated": "Events Generated",
+  "images": "Images",
+  "hours_saved": "Hours Saved",
+  "workdays_saved": "Workdays Saved",
+  "get_started": "Get Started"
+
 }

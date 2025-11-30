@@ -53,5 +53,11 @@
   "disabled": "Désactivé",
   "upcoming_reminders": "Rappels à venir",
   "less": "Moins",
-  "more": "Plus"
+  "more": "Plus",
+  "powering_productivity": "Stimuler la productivité",
+  "events_generated": "Événements générés",
+  "images": "Images",
+  "hours_saved": "Heures économisées",
+  "workdays_saved": "Jours ouvrables économisés",
+  "get_started": "Commencer"
 }
