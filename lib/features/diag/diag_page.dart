@@ -3,7 +3,7 @@ import 'package:zadiag/shared/components/btm_nav_item.dart';
 import 'package:zadiag/features/diag/screens/capture_screen.dart';
 import 'package:zadiag/features/diag/screens/profile_screen.dart';
 import 'package:zadiag/features/diag/screens/heatmap_screen.dart';
-import 'package:zadiag/features/diag/screens/notify_screen.dart';
+import 'package:zadiag/features/diag/screens/branding_screen.dart';
 import 'package:zadiag/features/diag/screens/settings_screen.dart';
 import 'package:zadiag/shared/models/menu.dart';
 import 'package:zadiag/shared/models/rive_utils.dart';
@@ -23,7 +23,7 @@ class _HomePageState extends State<HomePage>
   late Animation<double> animation;
 
   final List<Widget> _pages = [
-    NotifyScreen(),
+    BrandingScreen(),
     HeatMapScreen(),
     CaptureScreen(),
     ProfileScreen(),

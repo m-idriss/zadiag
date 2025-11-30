@@ -92,14 +92,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get password_hint => '********';
 
   @override
-  String get photo_taken => 'Photo taken';
+  String get photo_taken => 'Photo saved';
 
   @override
-  String get planning => 'Planning';
+  String get branding => 'Calendar Converter';
 
   @override
-  String get planning_subtitle =>
-      'Manage your notifications and reminder scheduling.';
+  String get branding_subtitle =>
+      'Upload images of your appointments, and AI turns them into calendar-ready events.\nNo registration – simple Google login, 100% free.';
 
   @override
   String get preferred_language => 'Preferred language';

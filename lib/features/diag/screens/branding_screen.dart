@@ -4,16 +4,16 @@ import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/core/utils/translate.dart';
 
-class NotifyScreen extends StatefulWidget {
-  const NotifyScreen({super.key});
+class BrandingScreen extends StatefulWidget {
+  const BrandingScreen({super.key});
 
   @override
-  State<NotifyScreen> createState() => _NotifyScreenState();
+  State<BrandingScreen> createState() => _BrandingScreenState();
 }
 
 bool notificationsEnabled = true;
 
-class _NotifyScreenState extends State<NotifyScreen> {
+class _BrandingScreenState extends State<BrandingScreen> {
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -50,8 +50,8 @@ class _NotifyScreenState extends State<NotifyScreen> {
   Column _header(BuildContext context) {
     return buildHeader(
       context,
-      trad(context)!.planning,
-      trad(context)!.planning_subtitle,
+      trad(context)!.branding,
+      trad(context)!.branding_subtitle,
     );
   }
 

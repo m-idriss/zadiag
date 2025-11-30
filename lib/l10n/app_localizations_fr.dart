@@ -96,11 +96,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get photo_taken => 'Photo enregistrée';
 
   @override
-  String get planning => 'Planification';
+  String get branding => 'Convertisseur de calendrier';
 
   @override
-  String get planning_subtitle =>
-      'Gérez vos notifications et la planification de vos rappels.';
+  String get branding_subtitle =>
+      'Téléchargez des images de vos rendez-vous, et l\'IA les transforme en événements prêts pour le calendrier.\nPas d\'inscription – connexion Google simple, 100% gratuit.';
 
   @override
   String get preferred_language => 'Langue préférée';

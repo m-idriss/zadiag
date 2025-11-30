@@ -263,20 +263,20 @@ abstract class AppLocalizations {
   /// No description provided for @photo_taken.
   ///
   /// In en, this message translates to:
-  /// **'Photo taken'**
+  /// **'Photo saved'**
   String get photo_taken;
 
-  /// No description provided for @planning.
+  /// No description provided for @branding.
   ///
   /// In en, this message translates to:
-  /// **'Planning'**
-  String get planning;
+  /// **'Calendar Converter'**
+  String get branding;
 
-  /// No description provided for @planning_subtitle.
+  /// No description provided for @branding_subtitle.
   ///
   /// In en, this message translates to:
-  /// **'Manage your notifications and reminder scheduling.'**
-  String get planning_subtitle;
+  /// **'Upload images of your appointments, and AI turns them into calendar-ready events.\nNo registration – simple Google login, 100% free.'**
+  String get branding_subtitle;
 
   /// No description provided for @preferred_language.
   ///
