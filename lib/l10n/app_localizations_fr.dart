@@ -161,4 +161,22 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get error_occurred => 'Une erreur est survenue';
+
+  @override
+  String get app_tagline => 'Votre compagnon santé';
+
+  @override
+  String get enabled => 'Activé';
+
+  @override
+  String get disabled => 'Désactivé';
+
+  @override
+  String get upcoming_reminders => 'Rappels à venir';
+
+  @override
+  String get less => 'Moins';
+
+  @override
+  String get more => 'Plus';
 }

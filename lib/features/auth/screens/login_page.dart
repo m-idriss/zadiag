@@ -61,9 +61,9 @@ class _LoginPageState extends State<LoginPage>
               padding: EdgeInsets.symmetric(horizontal: AppTheme.spacingLg),
               physics: const BouncingScrollPhysics(),
               children: [
-                const SizedBox(height: AppTheme.spacingXxl),
-                _brandingSection(context),
                 const SizedBox(height: AppTheme.spacingXl),
+                _brandingSection(context),
+                //const SizedBox(height: AppTheme.spacingXs),
                 _loginWelcomeText(context),
                 _loginSubtitle(context),
                 _formCard(context),
@@ -102,7 +102,7 @@ class _LoginPageState extends State<LoginPage>
       ),
       child: Center(
         child: Text(
-          'Z',
+          'Zadiag',
           style: TextStyle(
             fontSize: 40,
             fontWeight: FontWeight.bold,
@@ -128,7 +128,7 @@ class _LoginPageState extends State<LoginPage>
           const SizedBox(height: AppTheme.spacingMd),
           _passwordTextField(context),
           _forgoPasswordText(context),
-          const SizedBox(height: AppTheme.spacingSm),
+          const SizedBox(height: AppTheme.spacingXs),
           _signInButton(),
         ],
       ),
@@ -226,7 +226,7 @@ class _LoginPageState extends State<LoginPage>
   Widget _forgoPasswordText(BuildContext context) {
     return Container(
       alignment: Alignment.centerRight,
-      margin: EdgeInsets.only(top: AppTheme.spacingSm),
+      margin: EdgeInsets.only(top: AppTheme.spacingXs),
       child: TextButton(
         onPressed: () {},
         style: TextButton.styleFrom(
