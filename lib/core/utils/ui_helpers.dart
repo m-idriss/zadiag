@@ -182,14 +182,19 @@ Widget _buildButton(
                 size: isLarge ? 22 : 18,
               ),
               SizedBox(width: isLarge ? 12 : 8),
-              Text(
-                action,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: isLarge ? 16 : 14,
-                  fontFamily: AppTheme.defaultFontFamilyName,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
+              Flexible(
+                child: Text(
+                  action,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: isLarge ? 16 : 14,
+                    fontFamily: AppTheme.defaultFontFamilyName,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
             ],
