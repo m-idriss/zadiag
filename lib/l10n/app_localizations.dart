@@ -269,7 +269,7 @@ abstract class AppLocalizations {
   /// No description provided for @branding.
   ///
   /// In en, this message translates to:
-  /// **'Calendar Converter'**
+  /// **'AI Calendar Converter'**
   String get branding;
 
   /// No description provided for @branding_subtitle.

@@ -30,7 +30,7 @@ class _HomePageState extends State<HomePage>
     SettingsScreen(),
   ];
 
-  Menu selectedBottonNav = bottomNavItems[2];
+  Menu selectedBottonNav = bottomNavItems[0];
   int _previousIndex = 2;
 
   void updateSelectedBtmNav(Menu menu) {

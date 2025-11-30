@@ -95,7 +95,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get photo_taken => 'Photo saved';
 
   @override
-  String get branding => 'Calendar Converter';
+  String get branding => 'AI Calendar Converter';
 
   @override
   String get branding_subtitle =>
