@@ -41,10 +41,6 @@ class _BrandingScreenState extends State<BrandingScreen> {
   Widget build(BuildContext context) {
     final defaultColorScheme = Theme.of(context).colorScheme;
 
-    final double spacingLg = AppTheme.spacingLg;
-    final double spacingXl = AppTheme.spacingXl;
-    final double radiusLg = AppTheme.radiusLg;
-
     return Scaffold(
       body: Container(
         decoration: _background(defaultColorScheme),
@@ -52,17 +48,17 @@ class _BrandingScreenState extends State<BrandingScreen> {
           child: Form(
             key: _formKey,
             child: ListView(
-              padding: EdgeInsets.all(spacingLg),
+              padding: EdgeInsets.all(AppTheme.spacingLg),
               physics: const BouncingScrollPhysics(),
               children: [
                 _header(context),
-                SizedBox(height: spacingXl),
-                _brandingCard(context, radiusLg),
-                SizedBox(height: spacingXl),
+                SizedBox(height: AppTheme.spacingLg),
+                _brandingCard(context, AppTheme.radiusSm),
+                SizedBox(height: AppTheme.spacingLg),
                 _buildStatsSection(context),
-                SizedBox(height: spacingXl * 1.5),
-               // _actionButton(context),
-               // SizedBox(height: spacingLg),
+                SizedBox(height: AppTheme.spacingLg),
+                _actionButton(context),
+                SizedBox(height: AppTheme.spacingLg),
               ],
             ),
           ),
@@ -130,6 +126,7 @@ class _BrandingScreenState extends State<BrandingScreen> {
 
         _buildStatLine(
           context,
+          trad(context)!.pre_events_generated,
           _eventsGenerated,
           trad(context)!.events_generated,
           _imagesProcessed,
@@ -140,28 +137,21 @@ class _BrandingScreenState extends State<BrandingScreen> {
 
         _buildStatLine(
           context,
+          trad(context)!.pre_hours_saved,
           _hoursSaved,
           trad(context)!.hours_saved,
-          null,
-          null,
+          _workdaysSaved,
+          trad(context)!.workdays_saved,
           Theme.of(context).colorScheme.secondary,
         ),
         SizedBox(height: AppTheme.spacingSm),
-
-        _buildStatLine(
-          context,
-          _workdaysSaved,
-          trad(context)!.workdays_saved,
-          null,
-          null,
-          Theme.of(context).colorScheme.secondary,
-        ),
       ],
     );
   }
 
   Widget _buildStatLine(
       BuildContext context,
+      String pretext,
       int value1,
       String text1,
       int? value2,
@@ -173,6 +163,14 @@ class _BrandingScreenState extends State<BrandingScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
+          Text(
+            "$pretext ",
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.85),
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           _buildAnimatedCounter(value1, accentColor),
           SizedBox(width: AppTheme.spacingSm / 2),
           Text(
@@ -217,6 +215,47 @@ class _BrandingScreenState extends State<BrandingScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _actionButton(BuildContext context) {
+    return Container(
+      height: 56,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(30),
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).colorScheme.primary,
+            Theme.of(context).colorScheme.secondary,
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          )
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+          },
+          borderRadius: BorderRadius.circular(30),
+          child: Center(
+            child: Text(
+              trad(context)!.get_started,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 

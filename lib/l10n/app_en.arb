@@ -55,8 +55,10 @@
   "less": "Less",
   "more": "More",
   "powering_productivity": "Powering Productivity",
-  "events_generated": "Events Generated",
-  "images": "Images",
+  "pre_events_generated": "over ",
+  "events_generated": "Events Generated from ",
+  "images": "images",
+  "pre_hours_saved": "That's ",
   "hours_saved": "Hours Saved",
   "workdays_saved": "Workdays Saved",
   "get_started": "Get Started"

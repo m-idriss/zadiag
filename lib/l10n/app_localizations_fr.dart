@@ -184,10 +184,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get powering_productivity => 'Stimuler la productivité';
 
   @override
-  String get events_generated => 'Événements générés';
+  String get pre_events_generated => 'Plus de ';
 
   @override
-  String get images => 'Images';
+  String get events_generated => 'Événements générés à partir de ';
+
+  @override
+  String get images => 'images';
+
+  @override
+  String get pre_hours_saved => 'Environ ';
 
   @override
   String get hours_saved => 'Heures économisées';

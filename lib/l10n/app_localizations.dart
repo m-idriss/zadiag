@@ -434,17 +434,29 @@ abstract class AppLocalizations {
   /// **'Powering Productivity'**
   String get powering_productivity;
 
+  /// No description provided for @pre_events_generated.
+  ///
+  /// In en, this message translates to:
+  /// **'over '**
+  String get pre_events_generated;
+
   /// No description provided for @events_generated.
   ///
   /// In en, this message translates to:
-  /// **'Events Generated'**
+  /// **'Events Generated from '**
   String get events_generated;
 
   /// No description provided for @images.
   ///
   /// In en, this message translates to:
-  /// **'Images'**
+  /// **'images'**
   String get images;
+
+  /// No description provided for @pre_hours_saved.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s '**
+  String get pre_hours_saved;
 
   /// No description provided for @hours_saved.
   ///
