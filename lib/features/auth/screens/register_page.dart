@@ -62,7 +62,7 @@ class _RegisterPageState extends State<RegisterPage>
               children: [
                 const SizedBox(height: AppTheme.spacingXl),
                 _brandingSection(context),
-                const SizedBox(height: AppTheme.spacingLg),
+                //const SizedBox(height: AppTheme.spacingLg),
                 _registerTitle(context),
                 _registerSubtitle(context),
                 _formCard(context),
