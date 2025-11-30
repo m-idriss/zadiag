@@ -1,40 +1,72 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Light Theme Colors
-  static const Color lightPrimary = Color(0xFF06014A);
+  // Light Theme Colors - Modern, vibrant palette
+  static const Color lightPrimary = Color(0xFF2563EB); // Vibrant blue
   static const Color lightOnPrimary = Color(0xFFFFFFFF);
-  static const Color lightSecondary = Color(0xFF5C6BC0);
+  static const Color lightSecondary = Color(0xFF7C3AED); // Purple accent
   static const Color lightOnSecondary = Color(0xFFFFFFFF);
-  static const Color lightTertiary = Color(0xFFFFFFFF);
-  static const Color lightOnTertiary = Color(0xFF07D826);
-  static const Color lightError = Color(0xFFB00020);
+  static const Color lightTertiary = Color(0xFFF8FAFC); // Light background
+  static const Color lightOnTertiary = Color(0xFF10B981); // Green accent
+  static const Color lightError = Color(0xFFDC2626);
   static const Color lightOnError = Color(0xFFFFFFFF);
   static const Color lightSurface = Color(0xFFFFFFFF);
-  static const Color lightOnSurface = Color(0xFF1A1C2D);
-  static const Color lightOutline = Color(0xFFDEE7FF);
-  static const Color lightOutlineVariant = Color(0xFF3D5AFE);
-  static const Color lightSurfaceContainerHigh = Color(0xFFEAEAF2);
-  static const Color lightSurfaceContainer = Color(0xFFEAEAF2);
+  static const Color lightOnSurface = Color(0xFF1E293B);
+  static const Color lightOutline = Color(0xFFE2E8F0);
+  static const Color lightOutlineVariant = Color(0xFF3B82F6);
+  static const Color lightSurfaceContainerHigh = Color(0xFFF1F5F9);
+  static const Color lightSurfaceContainer = Color(0xFFF8FAFC);
 
-  // Dark Theme Colors
-  static const Color darkPrimary = Color(0xFF06014A);
-  static const Color darkOnPrimary = Color(0xFF025390);
-  static const Color darkSecondary = Color(0xFF1153D7);
+  // Dark Theme Colors - Rich, immersive palette
+  static const Color darkPrimary = Color(0xFF3B82F6); // Bright blue
+  static const Color darkOnPrimary = Color(0xFFFFFFFF);
+  static const Color darkSecondary = Color(0xFF8B5CF6); // Vibrant purple
   static const Color darkOnSecondary = Color(0xFFFFFFFF);
-  static const Color darkTertiary = Color(0xFF025390);
-  static const Color darkOnTertiary = Color(0xFF0C0036);
-  static const Color darkError = Color(0xFFBA1B1B);
+  static const Color darkTertiary = Color(0xFF1E293B); // Dark surface
+  static const Color darkOnTertiary = Color(0xFF34D399); // Bright green
+  static const Color darkError = Color(0xFFEF4444);
   static const Color darkOnError = Color(0xFFFFFFFF);
-  static const Color darkSurface = Color(0xFF1A1C2D);
-  static const Color darkOnSurface = Color(0xFFFCFCFF);
-  static const Color darkOutline = Color(0xFF1565C0);
-  static const Color darkOutlineVariant = Color.fromARGB(255, 4, 88, 243);
-  static const Color darkSurfaceContainerHigh = Color(0xFF041A5B);
-  static const Color darkSurfaceContainer = Color(0xFF42A5F5);
+  static const Color darkSurface = Color(0xFF0F172A); // Deep dark
+  static const Color darkOnSurface = Color(0xFFF8FAFC);
+  static const Color darkOutline = Color(0xFF334155);
+  static const Color darkOutlineVariant = Color(0xFF60A5FA);
+  static const Color darkSurfaceContainerHigh = Color(0xFF1E293B);
+  static const Color darkSurfaceContainer = Color(0xFF334155);
 
   // Font Family
   static const String defaultFontFamilyName = 'poppins';
+
+  // Spacing constants for consistent layout
+  static const double spacingXs = 4.0;
+  static const double spacingSm = 8.0;
+  static const double spacingMd = 16.0;
+  static const double spacingLg = 24.0;
+  static const double spacingXl = 32.0;
+  static const double spacingXxl = 48.0;
+
+  // Border radius constants
+  static const double radiusSm = 8.0;
+  static const double radiusMd = 12.0;
+  static const double radiusLg = 16.0;
+  static const double radiusXl = 24.0;
+  static const double radiusFull = 9999.0;
+
+  // Shadow definitions
+  static List<BoxShadow> get cardShadow => [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.05),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        ),
+      ];
+
+  static List<BoxShadow> get elevatedShadow => [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.1),
+          blurRadius: 20,
+          offset: const Offset(0, 8),
+        ),
+      ];
 }
 
 const lightColorScheme = ColorScheme(

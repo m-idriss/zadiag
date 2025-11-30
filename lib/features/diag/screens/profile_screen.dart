@@ -65,30 +65,109 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final defaultColorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       body: Container(
-        padding: const EdgeInsets.all(22),
         decoration: _background(defaultColorScheme),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              _header(context),
-              const SizedBox(height: 20),
-              _usernameTextField(context),
-              const SizedBox(height: 12),
-              _emailTextField(context),
-              const SizedBox(height: 12),
-              _passwordTextField(context),
-              const SizedBox(height: 12),
-              _birthdaySelector(context),
-              const SizedBox(height: 12),
-              _languageSelector(context),
-              const SizedBox(height: 24),
-              _actionButtons(context),
-              const SizedBox(height: 24),
-              _deleteAccountButton(context),
-            ],
+        child: SafeArea(
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: EdgeInsets.all(AppTheme.spacingLg),
+              physics: const BouncingScrollPhysics(),
+              children: [
+                _header(context),
+                const SizedBox(height: AppTheme.spacingLg),
+                _avatarSection(context),
+                const SizedBox(height: AppTheme.spacingLg),
+                _formCard(context),
+                const SizedBox(height: AppTheme.spacingLg),
+                _actionButtons(context),
+                const SizedBox(height: AppTheme.spacingMd),
+                _deleteAccountCard(context),
+                const SizedBox(height: AppTheme.spacingXxl),
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _avatarSection(BuildContext context) {
+    return Center(
+      child: Stack(
+        children: [
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Theme.of(context).colorScheme.primary,
+                  Theme.of(context).colorScheme.secondary,
+                ],
+              ),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Icon(
+                Icons.person_rounded,
+                size: 48,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 0,
+            right: 0,
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline,
+                  width: 2,
+                ),
+              ),
+              child: Icon(
+                Icons.camera_alt_rounded,
+                size: 16,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _formCard(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(AppTheme.spacingLg),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: Column(
+        children: [
+          _usernameTextField(context),
+          const SizedBox(height: AppTheme.spacingMd),
+          _emailTextField(context),
+          const SizedBox(height: AppTheme.spacingMd),
+          _passwordTextField(context),
+          const SizedBox(height: AppTheme.spacingMd),
+          _birthdaySelector(context),
+          const SizedBox(height: AppTheme.spacingMd),
+          _languageSelector(context),
+        ],
       ),
     );
   }
@@ -145,6 +224,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       onTap: () => _selectBirthDate(context),
       child: AbsorbPointer(
         child: TextFormField(
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontSize: 14,
+            fontFamily: AppTheme.defaultFontFamilyName,
+          ),
           decoration: inputDecoration(
             context,
             _birthDate != null
@@ -170,6 +254,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
       locale: const Locale('fr', 'FR'),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme,
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null && picked != _birthDate) {
       setState(() {
@@ -181,12 +273,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   DropdownButtonFormField<String> _languageSelector(BuildContext context) {
     return DropdownButtonFormField<String>(
       style: TextStyle(
-        color: Theme.of(context).colorScheme.primary,
-        fontSize: 16,
+        color: Theme.of(context).colorScheme.onSurface,
+        fontSize: 14,
         fontFamily: AppTheme.defaultFontFamilyName,
       ),
       icon: Icon(
-        Icons.arrow_drop_down,
+        Icons.arrow_drop_down_rounded,
         color: Theme.of(context).colorScheme.primary,
       ),
       decoration: dropdownDecoration(
@@ -194,7 +286,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         trad(context)!.preferred_language,
         'assets/icons/Home.svg',
       ),
-      dropdownColor: Theme.of(context).colorScheme.secondary,
+      dropdownColor: Theme.of(context).colorScheme.surface,
       initialValue: _selectedLanguage,
       items:
           LanguageManager.supportedLanguageNameLocalesMap.values
@@ -218,21 +310,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
     MyApp.changeLanguage(context, newLocale);
   }
 
-  Row _actionButtons(BuildContext context) {
+  Widget _actionButtons(BuildContext context) {
     return Row(
       children: [
-        buildSettingsButton(
-          context,
-          trad(context)!.cancel,
-          Icons.cancel,
-          _cancelChanges,
+        Expanded(
+          child: buildSettingsButton(
+            context,
+            trad(context)!.cancel,
+            Icons.close_rounded,
+            _cancelChanges,
+          ),
         ),
-        const SizedBox(width: 36),
-        buildSettingsButton(
-          context,
-          trad(context)!.save,
-          Icons.save,
-          _saveSettings,
+        const SizedBox(width: AppTheme.spacingMd),
+        Expanded(
+          child: buildSettingsButton(
+            context,
+            trad(context)!.save,
+            Icons.check_rounded,
+            _saveSettings,
+          ),
         ),
       ],
     );
@@ -258,14 +354,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showSnackBar(context, trad(context)!.changes_canceled);
   }
 
-  ListTile _deleteAccountButton(BuildContext context) {
-    return ListTile(
-      leading: const Icon(Icons.delete_forever, color: Colors.red),
-      title: const Text(
-        "Supprimer mon compte",
-        style: TextStyle(color: Colors.red),
+  Widget _deleteAccountCard(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        boxShadow: AppTheme.cardShadow,
       ),
-      onTap: _deleteAccount,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _deleteAccount,
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+          child: Padding(
+            padding: EdgeInsets.all(AppTheme.spacingMd),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  ),
+                  child: Icon(
+                    Icons.delete_forever_rounded,
+                    color: Colors.red,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: AppTheme.spacingMd),
+                Expanded(
+                  child: Text(
+                    trad(context)!.delete_account,
+                    style: TextStyle(
+                      fontFamily: AppTheme.defaultFontFamilyName,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: Colors.red,
+                  size: 18,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -277,18 +416,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: Text(trad(context)!.confirm),
-            content: Text(trad(context)!.confirm_delete_account),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+            ),
+            title: Text(
+              trad(context)!.confirm,
+              style: TextStyle(
+                fontFamily: AppTheme.defaultFontFamilyName,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            content: Text(
+              trad(context)!.confirm_delete_account,
+              style: TextStyle(
+                fontFamily: AppTheme.defaultFontFamilyName,
+              ),
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: Text(trad(context)!.cancel),
+                child: Text(
+                  trad(context)!.cancel,
+                  style: TextStyle(
+                    fontFamily: AppTheme.defaultFontFamilyName,
+                  ),
+                ),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
                 child: Text(
                   trad(context)!.delete,
-                  style: const TextStyle(color: Colors.red),
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontFamily: AppTheme.defaultFontFamilyName,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -307,7 +469,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const LoginPage()),
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const LoginPage(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 300),
+          ),
         );
       }
     } on FirebaseAuthException catch (e) {

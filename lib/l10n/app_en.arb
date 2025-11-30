@@ -47,6 +47,11 @@
   "confirm_delete_account": "Are you sure you want to delete your account? This action cannot be undone.",
   "confirm": "Confirmation",
   "delete": "Delete",
-  "error_occurred": "An error occurred"
-
+  "error_occurred": "An error occurred",
+  "app_tagline": "Your Health Companion",
+  "enabled": "Enabled",
+  "disabled": "Disabled",
+  "upcoming_reminders": "Upcoming Reminders",
+  "less": "Less",
+  "more": "More"
 }

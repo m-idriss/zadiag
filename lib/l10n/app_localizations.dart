@@ -391,6 +391,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'An error occurred'**
   String get error_occurred;
+
+  /// No description provided for @app_tagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Health Companion'**
+  String get app_tagline;
+
+  /// No description provided for @enabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get enabled;
+
+  /// No description provided for @disabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get disabled;
+
+  /// No description provided for @upcoming_reminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming Reminders'**
+  String get upcoming_reminders;
+
+  /// No description provided for @less.
+  ///
+  /// In en, this message translates to:
+  /// **'Less'**
+  String get less;
+
+  /// No description provided for @more.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get more;
 }
 
 class _AppLocalizationsDelegate

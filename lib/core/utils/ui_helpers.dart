@@ -7,9 +7,12 @@ import 'package:zadiag/core/constants/app_theme.dart';
 BoxDecoration buildBackground(ColorScheme colorScheme) {
   return BoxDecoration(
     gradient: LinearGradient(
-      colors: [colorScheme.surfaceContainer, colorScheme.surfaceContainerHigh],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
+      colors: [
+        colorScheme.surface,
+        colorScheme.surfaceContainerHigh,
+      ],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
     ),
   );
 }
@@ -18,21 +21,37 @@ void showSnackBar(BuildContext context, String message) {
   ScaffoldMessenger.of(context).clearSnackBars();
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      showCloseIcon: true,
-      content: Text(
-        message,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 16,
-          fontFamily: AppTheme.defaultFontFamilyName,
-          color: Theme.of(context).colorScheme.onTertiary,
-        ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       ),
-      backgroundColor: Theme.of(context).colorScheme.tertiary,
+      showCloseIcon: true,
+      closeIconColor: Colors.white,
+      content: Row(
+        children: [
+          Icon(
+            Icons.check_circle_outline,
+            color: Colors.white,
+            size: 20,
+          ),
+          const SizedBox(width: AppTheme.spacingSm),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                fontSize: 14,
+                fontFamily: AppTheme.defaultFontFamilyName,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+      backgroundColor: Theme.of(context).colorScheme.primary,
       behavior: SnackBarBehavior.floating,
-      margin: const EdgeInsets.only(top: 20, left: 16, right: 16, bottom: 662),
-      duration: const Duration(seconds: 1),
+      margin: const EdgeInsets.all(AppTheme.spacingMd),
+      duration: const Duration(seconds: 2),
+      elevation: 8,
     ),
   );
 }
@@ -51,23 +70,26 @@ Map<DateTime, int> generateRandomHeatMapData() {
 Column buildHeader(BuildContext context, String title, String subtitle) {
   return Column(
     children: [
+      const SizedBox(height: AppTheme.spacingMd),
       Text(
         title,
         style: TextStyle(
-          fontSize: 22,
-          fontWeight: FontWeight.w600,
+          fontSize: 28,
+          fontWeight: FontWeight.w700,
           fontFamily: AppTheme.defaultFontFamilyName,
-          color: Theme.of(context).colorScheme.onPrimaryContainer,
+          color: Theme.of(context).colorScheme.onSurface,
+          letterSpacing: -0.5,
         ),
         textAlign: TextAlign.center,
       ),
-      const SizedBox(height: 12),
+      const SizedBox(height: AppTheme.spacingSm),
       Text(
         subtitle,
         style: TextStyle(
-          fontSize: 16,
-          color: Theme.of(context).colorScheme.onPrimaryContainer,
+          fontSize: 14,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
           fontFamily: AppTheme.defaultFontFamilyName,
+          height: 1.5,
         ),
         textAlign: TextAlign.center,
       ),
@@ -102,7 +124,7 @@ dynamic buildSettingsButton(
   IconData icon,
   Function() onPressed,
 ) {
-  return _buildButton(context, action, icon, onPressed, 18);
+  return _buildButton(context, action, icon, onPressed, 16, false);
 }
 
 dynamic buildConnectButton(
@@ -111,31 +133,68 @@ dynamic buildConnectButton(
   IconData icon,
   Function() onPressed,
 ) {
-  return _buildButton(context, action, icon, onPressed, 24);
+  return _buildButton(context, action, icon, onPressed, 20, true);
 }
 
-ElevatedButton _buildButton(
+Widget _buildButton(
   BuildContext context,
   String action,
   IconData icon,
   Function() onPressed,
-  double width,
+  double padding,
+  bool isLarge,
 ) {
-  return ElevatedButton.icon(
-    onPressed: onPressed,
-    style: ElevatedButton.styleFrom(
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      padding: EdgeInsets.symmetric(horizontal: width, vertical: width / 2),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  return Container(
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+      gradient: LinearGradient(
+        colors: [
+          Theme.of(context).colorScheme.primary,
+          Theme.of(context).colorScheme.secondary,
+        ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+          blurRadius: 12,
+          offset: const Offset(0, 6),
+        ),
+      ],
     ),
-    icon: Icon(icon, color: Theme.of(context).colorScheme.onPrimary),
-    label: Text(
-      action,
-      style: TextStyle(
-        color: Theme.of(context).colorScheme.onPrimary,
-        fontSize: 18,
-        fontFamily: AppTheme.defaultFontFamilyName,
-        fontWeight: FontWeight.w600,
+    child: Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: padding + 8,
+            vertical: padding / 2 + 4,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                color: Colors.white,
+                size: isLarge ? 22 : 18,
+              ),
+              SizedBox(width: isLarge ? 12 : 8),
+              Text(
+                action,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: isLarge ? 16 : 14,
+                  fontFamily: AppTheme.defaultFontFamilyName,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     ),
   );
@@ -150,14 +209,16 @@ InputDecoration inputDecoration(
   return InputDecoration(
     hintText: hintText,
     hintStyle: TextStyle(
-      color: Theme.of(context).colorScheme.primary,
-      fontSize: 16,
+      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+      fontSize: 14,
       fontFamily: AppTheme.defaultFontFamilyName,
     ),
     prefixIcon: Padding(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       child: SvgPicture.asset(
         iconPath,
+        width: 20,
+        height: 20,
         colorFilter: ColorFilter.mode(
           Theme.of(context).colorScheme.primary,
           BlendMode.srcIn,
@@ -165,17 +226,37 @@ InputDecoration inputDecoration(
       ),
     ),
     suffixIcon: suffixIcon,
-    contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+    contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
     enabledBorder: OutlineInputBorder(
-      borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
-      borderRadius: BorderRadius.circular(16),
+      borderSide: BorderSide(
+        color: Theme.of(context).colorScheme.outline,
+        width: 1.5,
+      ),
+      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
     ),
     focusedBorder: OutlineInputBorder(
-      borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
-      borderRadius: BorderRadius.circular(16),
+      borderSide: BorderSide(
+        color: Theme.of(context).colorScheme.primary,
+        width: 2,
+      ),
+      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+    ),
+    errorBorder: OutlineInputBorder(
+      borderSide: BorderSide(
+        color: Theme.of(context).colorScheme.error,
+        width: 1.5,
+      ),
+      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+    ),
+    focusedErrorBorder: OutlineInputBorder(
+      borderSide: BorderSide(
+        color: Theme.of(context).colorScheme.error,
+        width: 2,
+      ),
+      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
     ),
     filled: true,
-    fillColor: Theme.of(context).colorScheme.outline,
+    fillColor: Theme.of(context).colorScheme.surface,
   );
 }
 
@@ -200,12 +281,13 @@ Widget buildTextField({
   return TextFormField(
     controller: controller,
     style: TextStyle(
-      color: Theme.of(context).colorScheme.primary,
-      fontSize: 16,
+      color: Theme.of(context).colorScheme.onSurface,
+      fontSize: 14,
       fontFamily: AppTheme.defaultFontFamilyName,
     ),
     obscureText: obscureText,
     keyboardType: keyboardType,
+    cursorColor: Theme.of(context).colorScheme.primary,
     decoration: inputDecoration(
       context,
       hintText,
@@ -214,11 +296,13 @@ Widget buildTextField({
           ? GestureDetector(
             onTap: onSuffixTap,
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
               child: SvgPicture.asset(
                 suffixIconPath,
+                width: 20,
+                height: 20,
                 colorFilter: ColorFilter.mode(
-                  Theme.of(context).colorScheme.primary,
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
                   BlendMode.srcIn,
                 ),
               ),
@@ -231,14 +315,16 @@ Widget buildTextField({
 
 BoxDecoration bottomMenu(BuildContext context) {
   return BoxDecoration(
-    color: Theme.of(
-      context,
-    ).colorScheme.tertiaryContainer.withValues(alpha: 0.9),
-    borderRadius: const BorderRadius.all(Radius.circular(16)),
+    color: Theme.of(context).colorScheme.surface,
+    borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+    border: Border.all(
+      color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
+      width: 1,
+    ),
     boxShadow: [
       BoxShadow(
-        color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.4),
-        offset: const Offset(0, 20),
+        color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.15),
+        offset: const Offset(0, -4),
         blurRadius: 20,
       ),
     ],

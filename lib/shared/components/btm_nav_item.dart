@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rive/rive.dart';
+import 'package:zadiag/core/constants/app_theme.dart';
 
 import '../models/menu.dart';
 import 'animated_bar.dart';
@@ -20,25 +21,44 @@ class BtmNavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isSelected = selectedNav == navBar;
+    
     return GestureDetector(
       onTap: press,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AnimatedBar(isActive: selectedNav == navBar),
-          SizedBox(
-            height: 36,
-            width: 36,
-            child: Opacity(
-              opacity: selectedNav == navBar ? 1 : 0.5,
-              child: RiveAnimation.asset(
-                navBar.rive.src,
-                artboard: navBar.rive.artboard,
-                onInit: riveOnInit,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+        padding: EdgeInsets.symmetric(
+          horizontal: isSelected ? 8 : 4,
+          vertical: 4,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedBar(isActive: isSelected),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
+              height: isSelected ? 40 : 36,
+              width: isSelected ? 40 : 36,
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+              ),
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: isSelected ? 1 : 0.5,
+                child: RiveAnimation.asset(
+                  navBar.rive.src,
+                  artboard: navBar.rive.artboard,
+                  onInit: riveOnInit,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

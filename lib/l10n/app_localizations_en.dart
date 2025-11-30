@@ -160,4 +160,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get error_occurred => 'An error occurred';
+
+  @override
+  String get app_tagline => 'Your Health Companion';
+
+  @override
+  String get enabled => 'Enabled';
+
+  @override
+  String get disabled => 'Disabled';
+
+  @override
+  String get upcoming_reminders => 'Upcoming Reminders';
+
+  @override
+  String get less => 'Less';
+
+  @override
+  String get more => 'More';
 }
