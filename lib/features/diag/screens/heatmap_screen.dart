@@ -86,10 +86,10 @@ class _HeatMapScreenState extends State<HeatMapScreen> {
           colorTipSize: 12,
           showColorTip: false,
           colorsets: {
-            1: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-            2: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
-            3: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
-            4: Theme.of(context).colorScheme.primary,
+            1: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
+            2: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.5),
+            3: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.7),
+            4: Theme.of(context).colorScheme.secondary,
           },
           onClick: (value) {
             DateTime date = DateTime.parse(value.toString());
@@ -131,7 +131,7 @@ class _HeatMapScreenState extends State<HeatMapScreen> {
               decoration: BoxDecoration(
                 color: index == 0
                     ? Theme.of(context).colorScheme.surfaceContainerHigh
-                    : Theme.of(context).colorScheme.primary.withValues(
+                    : Theme.of(context).colorScheme.secondary.withValues(
                           alpha: 0.25 + (index * 0.2),
                         ),
                 borderRadius: BorderRadius.circular(4),

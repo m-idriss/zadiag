@@ -114,12 +114,12 @@ class _BrandingScreenState extends State<BrandingScreen> {
       children: [
         Row(
           children: [
-            Icon(Icons.bar_chart_rounded, color: Theme.of(context).colorScheme.secondary, size: 28),
+            Icon(Icons.bar_chart_rounded, color: Theme.of(context).colorScheme.primary, size: 28),
             SizedBox(width: AppTheme.spacingSm),
             Text(
               trad(context)!.powering_productivity,
               style: TextStyle(
-                color: Theme.of(context).colorScheme.primary,
+                color: Theme.of(context).colorScheme.secondary,
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
               ),
@@ -134,7 +134,7 @@ class _BrandingScreenState extends State<BrandingScreen> {
           trad(context)!.events_generated,
           _imagesProcessed,
           trad(context)!.images,
-          Theme.of(context).colorScheme.primary,
+          Theme.of(context).colorScheme.secondary,
         ),
         SizedBox(height: AppTheme.spacingSm),
 
@@ -144,7 +144,7 @@ class _BrandingScreenState extends State<BrandingScreen> {
           trad(context)!.hours_saved,
           null,
           null,
-          Theme.of(context).colorScheme.primary,
+          Theme.of(context).colorScheme.secondary,
         ),
         SizedBox(height: AppTheme.spacingSm),
 
@@ -154,7 +154,7 @@ class _BrandingScreenState extends State<BrandingScreen> {
           trad(context)!.workdays_saved,
           null,
           null,
-          Theme.of(context).colorScheme.primary,
+          Theme.of(context).colorScheme.secondary,
         ),
       ],
     );
