@@ -231,7 +231,7 @@ class _BrandingScreenState extends State<BrandingScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
             blurRadius: 15,
             offset: const Offset(0, 8),
           )
