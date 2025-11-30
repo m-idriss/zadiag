@@ -351,7 +351,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _cancelChanges() {
-    showSnackBar(context, trad(context)!.changes_canceled);
+    showSnackBar(context, trad(context)!.changes_canceled, true);
   }
 
   Widget _deleteAccountCard(BuildContext context) {

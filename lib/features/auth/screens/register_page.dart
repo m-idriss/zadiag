@@ -206,7 +206,7 @@ class _RegisterPageState extends State<RegisterPage>
         email: email,
         password: password,
       );
-      showSnackbar("Compte créé avec succès !");
+      showSnackbar("Compte créé avec succès !",isError: true);
       if (!context.mounted) return;
       Navigator.pushReplacement(
         context,
@@ -244,10 +244,10 @@ class _RegisterPageState extends State<RegisterPage>
     }
   }
 
-  void showSnackbar(String message) {
+  void showSnackbar(String message, {bool isError = true}) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: isError ? Colors.red : Colors.green));
   }
 
   Widget _orConnectWithText(BuildContext context) {

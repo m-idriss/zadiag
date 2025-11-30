@@ -17,7 +17,7 @@ BoxDecoration buildBackground(ColorScheme colorScheme) {
   );
 }
 
-void showSnackBar(BuildContext context, String message) {
+void showSnackBar(BuildContext context, String message, [bool isError = false]) {
   ScaffoldMessenger.of(context).clearSnackBars();
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
@@ -47,7 +47,9 @@ void showSnackBar(BuildContext context, String message) {
           ),
         ],
       ),
-      backgroundColor: Theme.of(context).colorScheme.primary,
+      backgroundColor: isError
+          ? Colors.redAccent
+          : Colors.greenAccent.shade700,
       behavior: SnackBarBehavior.floating,
       margin: const EdgeInsets.all(AppTheme.spacingMd),
       duration: const Duration(seconds: 2),
