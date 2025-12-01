@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:zadiag/features/diag/diag_page.dart';
@@ -14,28 +15,38 @@ class LoginPage extends StatefulWidget {
   State<StatefulWidget> createState() => _LoginPageState();
 }
 
-final _loginEmailController = TextEditingController(
-  text: 'jean.dupont@email.com',
-);
-final _loginPasswordController = TextEditingController();
-bool _obscurePassword = true;
-
 class _LoginPageState extends State<LoginPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  final _loginEmailController = TextEditingController(
+    text: 'jean.dupont@email.com',
+  );
+  final _loginPasswordController = TextEditingController();
+  bool _obscurePassword = true;
 
   @override
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _animationController,
-        curve: Curves.easeOut,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
       ),
     );
     _animationController.forward();
@@ -44,6 +55,8 @@ class _LoginPageState extends State<LoginPage>
   @override
   void dispose() {
     _animationController.dispose();
+    _loginEmailController.dispose();
+    _loginPasswordController.dispose();
     super.dispose();
   }
 
@@ -53,25 +66,71 @@ class _LoginPageState extends State<LoginPage>
     return Scaffold(
       extendBody: true,
       body: Container(
-        decoration: _background(defaultColorScheme),
-        child: SafeArea(
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: ListView(
-              padding: EdgeInsets.symmetric(horizontal: AppTheme.spacingLg),
-              physics: const BouncingScrollPhysics(),
-              children: [
-                const SizedBox(height: AppTheme.spacingXl),
-                _brandingSection(context),
-                //const SizedBox(height: AppTheme.spacingXs),
-                _loginWelcomeText(context),
-                _loginSubtitle(context),
-                _formCard(context),
-                _orConnectWithText(context),
-                socialButtons(context),
-              ],
-            ),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              defaultColorScheme.primary,
+              defaultColorScheme.tertiary,
+              defaultColorScheme.secondary,
+            ],
+            stops: const [0.0, 0.5, 1.0],
           ),
+        ),
+        child: Stack(
+          children: [
+            // Decorative background circles
+            Positioned(
+              top: -100,
+              right: -100,
+              child: Container(
+                width: 300,
+                height: 300,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.05),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -50,
+              left: -50,
+              child: Container(
+                width: 200,
+                height: 200,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.05),
+                ),
+              ),
+            ),
+            SafeArea(
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: SlideTransition(
+                  position: _slideAnimation,
+                  child: ListView(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppTheme.spacingLg,
+                    ),
+                    physics: const BouncingScrollPhysics(),
+                    children: [
+                      const SizedBox(height: AppTheme.spacingXl),
+                      Center(child: _brandingSection(context)),
+                      const SizedBox(height: AppTheme.spacingXs),
+                      _loginWelcomeText(context),
+                      _loginSubtitle(context),
+                      _formCard(context),
+                      _orConnectWithText(context),
+                      socialButtons(context),
+                      const SizedBox(height: 80), // Space for bottom bar
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: _bottom(context),
@@ -80,34 +139,47 @@ class _LoginPageState extends State<LoginPage>
 
   Widget _brandingSection(BuildContext context) {
     return Container(
-      width: 80,
-      height: 80,
+      width: 100,
+      height: 100,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.secondary,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.2),
+          width: 1.5,
         ),
-        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 20,
-            offset: const Offset(0, 8),
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      child: Center(
-        child: Text(
-          'Zadiag',
-          style: TextStyle(
-            fontSize: 40,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            fontFamily: AppTheme.defaultFontFamilyName,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(30),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Center(
+            child: Container(
+              width: 60,
+              height: 60,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  'Z',
+                  style: TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.w900,
+                    color: Theme.of(context).colorScheme.primary,
+                    fontFamily: AppTheme.defaultFontFamilyName,
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -118,9 +190,15 @@ class _LoginPageState extends State<LoginPage>
     return Container(
       padding: EdgeInsets.all(AppTheme.spacingLg),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: Colors.white.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        boxShadow: AppTheme.cardShadow,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -128,23 +206,49 @@ class _LoginPageState extends State<LoginPage>
           const SizedBox(height: AppTheme.spacingMd),
           _passwordTextField(context),
           _forgoPasswordText(context),
-          const SizedBox(height: AppTheme.spacingXs),
           _signInButton(),
         ],
       ),
     );
   }
 
-  BoxDecoration _background(ColorScheme colorScheme) {
-    return buildBackground(colorScheme);
-  }
-
   Container _loginWelcomeText(BuildContext context) {
-    return title(context, trad(context)!.welcome);
+    return Container(
+      margin: EdgeInsets.only(bottom: AppTheme.spacingSm),
+      child: Text(
+        trad(context)!.welcome,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontFamily: AppTheme.defaultFontFamilyName,
+          fontSize: 32,
+          shadows: [
+            Shadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              offset: const Offset(0, 2),
+              blurRadius: 4,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Container _loginSubtitle(BuildContext context) {
-    return subtitle(context, trad(context)!.login_subtitle);
+    return Container(
+      margin: EdgeInsets.only(bottom: AppTheme.spacingMd),
+      child: Text(
+        trad(context)!.login_subtitle,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: Colors.white.withValues(alpha: 0.9),
+          fontSize: 16,
+          height: 1.5,
+          fontFamily: AppTheme.defaultFontFamilyName,
+        ),
+      ),
+    );
   }
 
   Widget _signInButton() {
@@ -171,19 +275,14 @@ class _LoginPageState extends State<LoginPage>
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              const HomePage(),
-          transitionsBuilder:
-              (context, animation, secondaryAnimation, child) {
-            return FadeTransition(
-              opacity: animation,
-              child: child,
-            );
+          pageBuilder:
+              (context, animation, secondaryAnimation) => const HomePage(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
           },
           transitionDuration: const Duration(milliseconds: 300),
         ),
       );
-
     } on FirebaseAuthException catch (e) {
       String message = 'Erreur inconnue';
       if (e.code == 'user-not-found') {
@@ -251,10 +350,93 @@ class _LoginPageState extends State<LoginPage>
   }
 
   Widget _orConnectWithText(BuildContext context) {
-    return orConnectWithText(context, trad(context)!.or_connect_with);
+    return Container(
+      margin: EdgeInsets.only(
+        top: AppTheme.spacingMd,
+        bottom: AppTheme.spacingMd,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Divider(
+              color: Colors.white.withValues(alpha: 0.3),
+              thickness: 1,
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
+            child: Text(
+              trad(context)!.or_connect_with,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.8),
+                fontSize: 12,
+                fontFamily: AppTheme.defaultFontFamilyName,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Divider(
+              color: Colors.white.withValues(alpha: 0.3),
+              thickness: 1,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _bottom(BuildContext context) {
-    return bottom(context, RegisterPage(), trad(context)!.no_account_yet);
+    return Container(
+      height: 60,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.9),
+        border: Border(
+          top: BorderSide(
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
+      ),
+      child: TextButton(
+        onPressed: () {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.pushReplacement(
+              context,
+              PageRouteBuilder(
+                pageBuilder:
+                    (context, animation, secondaryAnimation) =>
+                        const RegisterPage(),
+                transitionsBuilder: (
+                  context,
+                  animation,
+                  secondaryAnimation,
+                  child,
+                ) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
+                transitionDuration: const Duration(milliseconds: 300),
+              ),
+            );
+          });
+        },
+        style: TextButton.styleFrom(
+          padding: EdgeInsets.symmetric(
+            horizontal: AppTheme.spacingMd,
+            vertical: AppTheme.spacingSm,
+          ),
+        ),
+        child: Text(
+          trad(context)!.no_account_yet,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.primary,
+            fontFamily: AppTheme.defaultFontFamilyName,
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
   }
 }

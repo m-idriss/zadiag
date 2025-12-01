@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/features/auth/screens/login_page.dart';
 import 'package:zadiag/main.dart';
@@ -13,10 +14,32 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-bool notificationsEnabled = true;
-
 class _SettingsScreenState extends State<SettingsScreen> {
   final _formKey = GlobalKey<FormState>();
+  bool _notificationsEnabled = true;
+
+  static const String _notificationsKey = 'notificationsEnabled';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationsSetting();
+  }
+
+  Future<void> _loadNotificationsSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _notificationsEnabled = prefs.getBool(_notificationsKey) ?? true;
+    });
+  }
+
+  Future<void> _saveNotificationsSetting(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_notificationsKey, value);
+    setState(() {
+      _notificationsEnabled = value;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +65,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _upcomingRemindersCard(context),
                 const SizedBox(height: AppTheme.spacingMd),
                 _logoutCard(context),
+                const SizedBox(height: 2 * AppTheme.spacingXxl),
               ],
             ),
           ),
@@ -246,7 +270,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  notificationsEnabled ? 'Enabled' : 'Disabled',
+                  _notificationsEnabled ? trad(context)!.enabled : trad(context)!.disabled,
                   style: TextStyle(
                     fontFamily: AppTheme.defaultFontFamilyName,
                     fontSize: 12,
@@ -258,12 +282,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           CupertinoSwitch(
             activeTrackColor: Theme.of(context).colorScheme.primary,
-            value: notificationsEnabled,
-            onChanged: (value) {
-              setState(() {
-                notificationsEnabled = value;
-              });
-            },
+            value: _notificationsEnabled,
+            onChanged: _saveNotificationsSetting,
           ),
         ],
       ),
@@ -290,7 +310,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(width: AppTheme.spacingSm),
               Text(
-                'Upcoming Reminders',
+                trad(context)!.upcoming_reminders,
                 style: TextStyle(
                   fontFamily: AppTheme.defaultFontFamilyName,
                   fontSize: 14,

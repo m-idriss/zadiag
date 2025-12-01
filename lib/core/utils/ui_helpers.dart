@@ -28,7 +28,7 @@ void showSnackBar(BuildContext context, String message, [bool isError = false]) 
       closeIconColor: Colors.white,
       content: Row(
         children: [
-          Icon(
+          const Icon(
             Icons.check_circle_outline,
             color: Colors.white,
             size: 20,
@@ -37,7 +37,7 @@ void showSnackBar(BuildContext context, String message, [bool isError = false]) 
           Expanded(
             child: Text(
               message,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
                 fontFamily: AppTheme.defaultFontFamilyName,
                 fontWeight: FontWeight.w500,

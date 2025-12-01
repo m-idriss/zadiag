@@ -23,11 +23,11 @@ class _HomePageState extends State<HomePage>
   late Animation<double> animation;
 
   final List<Widget> _pages = [
-    BrandingScreen(),
-    HeatMapScreen(),
-    CaptureScreen(),
-    ProfileScreen(),
-    SettingsScreen(),
+    const BrandingScreen(),
+    const HeatMapScreen(),
+    const CaptureScreen(),
+    const ProfileScreen(),
+    const SettingsScreen(),
   ];
 
   Menu selectedBottonNav = bottomNavItems[0];
@@ -64,31 +64,34 @@ class _HomePageState extends State<HomePage>
   @override
   Widget build(BuildContext context) {
     final currentIndex = bottomNavItems.indexOf(selectedBottonNav);
-    
+
     return Scaffold(
       extendBody: true,
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        transitionBuilder: (Widget child, Animation<double> animation) {
-          final slideDirection = currentIndex > _previousIndex ? 1.0 : -1.0;
-          return SlideTransition(
-            position: Tween<Offset>(
-              begin: Offset(slideDirection * 0.1, 0),
-              end: Offset.zero,
-            ).animate(CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeOutCubic,
-            )),
-            child: FadeTransition(
-              opacity: animation,
-              child: child,
+      body: Stack(
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              final slideDirection = currentIndex > _previousIndex ? 1.0 : -1.0;
+              return SlideTransition(
+                position: Tween<Offset>(
+                  begin: Offset(slideDirection * 0.1, 0),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  ),
+                ),
+                child: FadeTransition(opacity: animation, child: child),
+              );
+            },
+            child: KeyedSubtree(
+              key: ValueKey<int>(currentIndex),
+              child: _pages[currentIndex],
             ),
-          );
-        },
-        child: KeyedSubtree(
-          key: ValueKey<int>(currentIndex),
-          child: _pages[currentIndex],
-        ),
+          ),
+        ],
       ),
       bottomNavigationBar: bottomNavBar(context),
     );
@@ -117,7 +120,7 @@ class _HomePageState extends State<HomePage>
                 return BtmNavItem(
                   navBar: navBar,
                   press: () {
-                    RiveUtils.chnageSMIBoolState(navBar.rive.status!);
+                    RiveUtils.changeSMIBoolState(navBar.rive.status!);
                     updateSelectedBtmNav(navBar);
                   },
                   riveOnInit: (artboard) {
