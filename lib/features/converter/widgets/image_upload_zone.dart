@@ -1,5 +1,7 @@
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/core/utils/translate.dart';
 
@@ -40,12 +42,14 @@ class ImageUploadZone extends StatefulWidget {
   });
 
   @override
-  State<ImageUploadZone> createState() => _ImageUploadZoneState();
+  State<ImageUploadZone> createState() => ImageUploadZoneState();
 }
 
-class _ImageUploadZoneState extends State<ImageUploadZone> {
+class ImageUploadZoneState extends State<ImageUploadZone> {
   final List<UploadedImage> _uploadedImages = [];
+  final ImagePicker _imagePicker = ImagePicker();
   bool _isDragging = false;
+  bool _isPickerActive = false;
 
   void _removeImage(int index) {
     setState(() {
@@ -94,7 +98,7 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: widget.isLoading ? null : _pickImages,
+              onTap: widget.isLoading || _isPickerActive ? null : _pickImages,
               borderRadius: BorderRadius.circular(AppTheme.radiusXl),
               child: Container(
                 width: double.infinity,
@@ -273,24 +277,105 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
     );
   }
 
+  /// Picks images from the device gallery.
   Future<void> _pickImages() async {
-    // For now, this is a placeholder that demonstrates the UI
-    // In production, this would use image_picker package
-    // The actual implementation will be added when the package is available
+    if (_isPickerActive) return;
+    
+    setState(() {
+      _isPickerActive = true;
+    });
 
-    // Mock image upload for demonstration
-    // In production, use:
-    // final picker = ImagePicker();
-    // final images = await picker.pickMultiImage();
+    try {
+      final remaining = widget.maxImages - _uploadedImages.length;
+      if (remaining <= 0) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Maximum ${widget.maxImages} images allowed'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+        return;
+      }
 
-    // For now, show a snackbar indicating the feature needs image_picker
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Image picker integration ready for production'),
-          duration: Duration(seconds: 2),
-        ),
+      // Pick multiple images from gallery
+      final List<XFile> pickedFiles = await _imagePicker.pickMultiImage(
+        imageQuality: 85, // Compress images for optimal upload size
+        maxWidth: 1920,   // Limit max dimensions for reasonable file size
+        maxHeight: 1920,
       );
+
+      if (pickedFiles.isEmpty) {
+        return; // User cancelled
+      }
+
+      // Take only up to remaining allowed images
+      final filesToProcess = pickedFiles.take(remaining).toList();
+      
+      final newImages = <UploadedImage>[];
+      for (final file in filesToProcess) {
+        try {
+          final bytes = await file.readAsBytes();
+          final mimeType = _getMimeType(file.name);
+          
+          newImages.add(UploadedImage(
+            bytes: bytes,
+            name: file.name,
+            mimeType: mimeType,
+          ));
+        } catch (e) {
+          if (kDebugMode) {
+            print('Error processing image ${file.name}: $e');
+          }
+        }
+      }
+
+      if (newImages.isNotEmpty && mounted) {
+        setState(() {
+          _uploadedImages.addAll(newImages);
+        });
+        widget.onImagesUploaded(_uploadedImages);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error picking images: $e');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error selecting images: $e'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPickerActive = false;
+        });
+      }
+    }
+  }
+
+  /// Gets the MIME type based on file extension.
+  String _getMimeType(String fileName) {
+    final extension = fileName.toLowerCase().split('.').last;
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'webp':
+        return 'image/webp';
+      case 'gif':
+        return 'image/gif';
+      case 'heic':
+      case 'heif':
+        return 'image/heic';
+      default:
+        return 'image/jpeg'; // Default to JPEG
     }
   }
 
@@ -302,6 +387,75 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
         _uploadedImages.addAll(images.take(remaining));
       });
       widget.onImagesUploaded(_uploadedImages);
+    }
+  }
+
+  /// Picks a single image from camera (useful for mobile devices)
+  Future<void> pickFromCamera() async {
+    if (_isPickerActive) return;
+    
+    setState(() {
+      _isPickerActive = true;
+    });
+
+    try {
+      final remaining = widget.maxImages - _uploadedImages.length;
+      if (remaining <= 0) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Maximum ${widget.maxImages} images allowed'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+        return;
+      }
+
+      final XFile? pickedFile = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+        maxWidth: 1920,
+        maxHeight: 1920,
+      );
+
+      if (pickedFile == null) {
+        return; // User cancelled
+      }
+
+      final bytes = await pickedFile.readAsBytes();
+      final mimeType = _getMimeType(pickedFile.name);
+      
+      final newImage = UploadedImage(
+        bytes: bytes,
+        name: pickedFile.name,
+        mimeType: mimeType,
+      );
+
+      if (mounted) {
+        setState(() {
+          _uploadedImages.add(newImage);
+        });
+        widget.onImagesUploaded(_uploadedImages);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error capturing image: $e');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error capturing image: $e'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPickerActive = false;
+        });
+      }
     }
   }
 }
