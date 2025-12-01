@@ -61,6 +61,18 @@
   "pre_hours_saved": "That's ",
   "hours_saved": "Hours Saved",
   "workdays_saved": "Workdays Saved",
-  "get_started": "Get Started"
-
+  "get_started": "Get Started",
+  "converter_title": "Convert Images",
+  "converter_subtitle": "Upload photos of appointments and schedules to extract calendar events.",
+  "convert_button": "Convert to Calendar Events",
+  "extracted_events": "Extracted Events",
+  "download_ics": "Download ICS File",
+  "no_events_found": "No events found in images",
+  "processing_images": "Processing images...",
+  "upload_images": "Tap to upload images",
+  "upload_hint": "Upload photos of appointments or schedules",
+  "supported_formats": "Supports: JPG, PNG, WEBP",
+  "images_selected": "images selected",
+  "clear_all": "Clear all",
+  "ics_generated": "ICS file generated! Ready to download."
 }
