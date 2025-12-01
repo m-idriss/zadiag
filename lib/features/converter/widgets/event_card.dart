@@ -31,7 +31,8 @@ class EventCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final monthFormat = DateFormat('MMM');
     final dayFormat = DateFormat('d');
-    final timeFormat = DateFormat('H:mm');
+    // Use locale-aware time format (respects user's 12h/24h preference)
+    final timeFormat = DateFormat.Hm();
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppTheme.spacingSm),
@@ -147,7 +148,7 @@ class EventCard extends StatelessWidget {
               Icon(
                 Icons.location_on,
                 size: 14,
-                color: colorScheme.error.withValues(alpha: 0.8),
+                color: colorScheme.error,
               ),
               const SizedBox(width: 2),
               Expanded(
@@ -198,18 +199,18 @@ class EventCard extends StatelessWidget {
             ),
           ),
         ],
-        // Delete button
+        // Delete button with accessibility support
         if (onDelete != null)
-          GestureDetector(
-            onTap: onDelete,
-            child: Padding(
-              padding: const EdgeInsets.only(top: AppTheme.spacingXs),
-              child: Icon(
-                Icons.close_rounded,
-                size: 18,
-                color: colorScheme.error.withValues(alpha: 0.7),
-              ),
+          IconButton(
+            onPressed: onDelete,
+            icon: Icon(
+              Icons.close_rounded,
+              size: 18,
+              color: colorScheme.error,
             ),
+            padding: const EdgeInsets.only(top: AppTheme.spacingXs),
+            constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+            tooltip: 'Remove event',
           ),
       ],
     );
