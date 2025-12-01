@@ -7,6 +7,7 @@ Zadiag is a Flutter application designed to provide comprehensive diagnostic and
 -   **Interactive Dashboard**: A dynamic home screen with smooth transitions and animations.
 -   **Activity Heatmap**: Visualize your activity or data over time with an intuitive heatmap.
 -   **Capture Tool**: Integrated camera or screen capture functionality.
+-   **AI Calendar Converter**: Convert images of appointments into ICS calendar events (see [Roadmap](docs/ROADMAP_IMAGE_TO_ICS.md)).
 -   **Branding Customization**: Tools to manage and preview branding elements.
 -   **Profile Management**: User profile settings and preferences.
 -   **Rive Animations**: High-quality, interactive animations for a premium user experience.
@@ -54,6 +55,7 @@ This project is a starting point for a Flutter application.
 -   `lib/core`: Core utilities, constants, and theme definitions.
 -   `lib/shared`: Shared components and models used across the app.
 -   `assets`: Images, icons, and Rive animation files.
+-   `docs`: Project documentation and roadmaps.
 
 ## Resources
 
