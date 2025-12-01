@@ -242,4 +242,85 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ics_generated => 'ICS file generated! Ready to download.';
+
+  @override
+  String get save_ics_file => 'Save ICS File';
+
+  @override
+  String get save_to_downloads => 'Save to downloads folder';
+
+  @override
+  String get copy_to_clipboard => 'Copy to Clipboard';
+
+  @override
+  String get copy_ics_hint => 'Copy ICS content to paste elsewhere';
+
+  @override
+  String get preview_ics => 'Preview ICS';
+
+  @override
+  String get preview_ics_hint => 'View the generated ICS content';
+
+  @override
+  String get file_saved => 'File Saved';
+
+  @override
+  String get file_saved_message => 'ICS file saved. Would you like to open it?';
+
+  @override
+  String get no => 'No';
+
+  @override
+  String get open => 'Open';
+
+  @override
+  String get download_started => 'Download started!';
+
+  @override
+  String get error_saving_file => 'Error saving file';
+
+  @override
+  String get ics_copied => 'ICS content copied to clipboard!';
+
+  @override
+  String get generated_ics_file => 'Generated ICS File';
+
+  @override
+  String get copy => 'Copy';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get please_upload_image => 'Please upload at least one image';
+
+  @override
+  String found_events(int count) {
+    return 'Found $count events!';
+  }
+
+  @override
+  String get no_events_to_export => 'No events to export';
+
+  @override
+  String get error_processing_images => 'Error processing images';
+
+  @override
+  String get error_exporting_ics => 'Error exporting ICS';
+
+  @override
+  String max_images_allowed(int count) {
+    return 'Maximum $count images allowed';
+  }
+
+  @override
+  String get error_selecting_images => 'Error selecting images';
+
+  @override
+  String get error_capturing_image => 'Error capturing image';
+
+  @override
+  String ics_saved_to(String path) {
+    return 'ICS saved to: $path';
+  }
 }

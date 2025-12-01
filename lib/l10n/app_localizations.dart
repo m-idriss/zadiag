@@ -553,6 +553,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'ICS file generated! Ready to download.'**
   String get ics_generated;
+
+  /// No description provided for @save_ics_file.
+  ///
+  /// In en, this message translates to:
+  /// **'Save ICS File'**
+  String get save_ics_file;
+
+  /// No description provided for @save_to_downloads.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to downloads folder'**
+  String get save_to_downloads;
+
+  /// No description provided for @copy_to_clipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy to Clipboard'**
+  String get copy_to_clipboard;
+
+  /// No description provided for @copy_ics_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy ICS content to paste elsewhere'**
+  String get copy_ics_hint;
+
+  /// No description provided for @preview_ics.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview ICS'**
+  String get preview_ics;
+
+  /// No description provided for @preview_ics_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'View the generated ICS content'**
+  String get preview_ics_hint;
+
+  /// No description provided for @file_saved.
+  ///
+  /// In en, this message translates to:
+  /// **'File Saved'**
+  String get file_saved;
+
+  /// No description provided for @file_saved_message.
+  ///
+  /// In en, this message translates to:
+  /// **'ICS file saved. Would you like to open it?'**
+  String get file_saved_message;
+
+  /// No description provided for @no.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get no;
+
+  /// No description provided for @open.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get open;
+
+  /// No description provided for @download_started.
+  ///
+  /// In en, this message translates to:
+  /// **'Download started!'**
+  String get download_started;
+
+  /// No description provided for @error_saving_file.
+  ///
+  /// In en, this message translates to:
+  /// **'Error saving file'**
+  String get error_saving_file;
+
+  /// No description provided for @ics_copied.
+  ///
+  /// In en, this message translates to:
+  /// **'ICS content copied to clipboard!'**
+  String get ics_copied;
+
+  /// No description provided for @generated_ics_file.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated ICS File'**
+  String get generated_ics_file;
+
+  /// No description provided for @copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copy;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @please_upload_image.
+  ///
+  /// In en, this message translates to:
+  /// **'Please upload at least one image'**
+  String get please_upload_image;
+
+  /// No description provided for @found_events.
+  ///
+  /// In en, this message translates to:
+  /// **'Found {count} events!'**
+  String found_events(int count);
+
+  /// No description provided for @no_events_to_export.
+  ///
+  /// In en, this message translates to:
+  /// **'No events to export'**
+  String get no_events_to_export;
+
+  /// No description provided for @error_processing_images.
+  ///
+  /// In en, this message translates to:
+  /// **'Error processing images'**
+  String get error_processing_images;
+
+  /// No description provided for @error_exporting_ics.
+  ///
+  /// In en, this message translates to:
+  /// **'Error exporting ICS'**
+  String get error_exporting_ics;
+
+  /// No description provided for @max_images_allowed.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum {count} images allowed'**
+  String max_images_allowed(int count);
+
+  /// No description provided for @error_selecting_images.
+  ///
+  /// In en, this message translates to:
+  /// **'Error selecting images'**
+  String get error_selecting_images;
+
+  /// No description provided for @error_capturing_image.
+  ///
+  /// In en, this message translates to:
+  /// **'Error capturing image'**
+  String get error_capturing_image;
+
+  /// No description provided for @ics_saved_to.
+  ///
+  /// In en, this message translates to:
+  /// **'ICS saved to: {path}'**
+  String ics_saved_to(String path);
 }
 
 class _AppLocalizationsDelegate
