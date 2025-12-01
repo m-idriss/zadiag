@@ -293,7 +293,7 @@ class _RegisterPageState extends State<RegisterPage>
       context,
       Icons.person_add,
       trad(context)!.sign_up,
-      LoginPage(),
+      const LoginPage(),
       () => _register(context),
     );
   }

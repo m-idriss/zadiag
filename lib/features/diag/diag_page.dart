@@ -91,14 +91,9 @@ class _HomePageState extends State<HomePage>
               child: _pages[currentIndex],
             ),
           ),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: bottomNavBar(context),
-          ),
         ],
       ),
+      bottomNavigationBar: bottomNavBar(context),
     );
   }
 
