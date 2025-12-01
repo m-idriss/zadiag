@@ -3,20 +3,6 @@ import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/core/utils/translate.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 
-
-const Color primaryAccent = Color(0xFF7B61FF);
-const Color neutralGlass = Color(0xFFFFFFFF);
-
-double get spacingSm => 8.0;
-double get spacingMd => 16.0;
-double get spacingLg => 24.0;
-double get spacingXl => 32.0;
-double get radiusXl => 24.0;
-double get radiusSm => 8.0;
-
-
-
-
 class CaptureScreen extends StatelessWidget {
   const CaptureScreen({super.key});
 
@@ -179,7 +165,7 @@ class CaptureScreen extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: primaryAccent.withValues(alpha: 0.4),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
             blurRadius: 15,
             offset: const Offset(0, 8),
           )
@@ -195,7 +181,7 @@ class CaptureScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(icon, color: Colors.white, size: 22),
-                SizedBox(width: spacingSm),
+                SizedBox(width: AppTheme.spacingSm),
                 Text(
                   label,
                   style: const TextStyle(
@@ -211,5 +197,4 @@ class CaptureScreen extends StatelessWidget {
       ),
     );
   }
-
 }

@@ -13,16 +13,16 @@ class RegisterPage extends StatefulWidget {
   State<RegisterPage> createState() => _RegisterPageState();
 }
 
-final _registerEmailController = TextEditingController();
-final _registerPasswordController = TextEditingController();
-final _registerConfirmPasswordController = TextEditingController();
-bool _obscurePassword = true;
-bool _obscureConfirmPassword = true;
-
 class _RegisterPageState extends State<RegisterPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  
+  final _registerEmailController = TextEditingController();
+  final _registerPasswordController = TextEditingController();
+  final _registerConfirmPasswordController = TextEditingController();
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void initState() {
@@ -43,6 +43,9 @@ class _RegisterPageState extends State<RegisterPage>
   @override
   void dispose() {
     _animationController.dispose();
+    _registerEmailController.dispose();
+    _registerPasswordController.dispose();
+    _registerConfirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -99,7 +102,7 @@ class _RegisterPageState extends State<RegisterPage>
           ),
         ],
       ),
-      child: Center(
+      child: const Center(
         child: Icon(
           Icons.person_add_rounded,
           size: 36,

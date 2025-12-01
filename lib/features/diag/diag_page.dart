@@ -23,11 +23,11 @@ class _HomePageState extends State<HomePage>
   late Animation<double> animation;
 
   final List<Widget> _pages = [
-    BrandingScreen(),
-    HeatMapScreen(),
-    CaptureScreen(),
-    ProfileScreen(),
-    SettingsScreen(),
+    const BrandingScreen(),
+    const HeatMapScreen(),
+    const CaptureScreen(),
+    const ProfileScreen(),
+    const SettingsScreen(),
   ];
 
   Menu selectedBottonNav = bottomNavItems[0];
@@ -117,7 +117,7 @@ class _HomePageState extends State<HomePage>
                 return BtmNavItem(
                   navBar: navBar,
                   press: () {
-                    RiveUtils.chnageSMIBoolState(navBar.rive.status!);
+                    RiveUtils.changeSMIBoolState(navBar.rive.status!);
                     updateSelectedBtmNav(navBar);
                   },
                   riveOnInit: (artboard) {

@@ -12,8 +12,6 @@ class BrandingScreen extends StatefulWidget {
   State<BrandingScreen> createState() => _BrandingScreenState();
 }
 
-bool notificationsEnabled = true;
-
 class _BrandingScreenState extends State<BrandingScreen> {
   final _formKey = GlobalKey<FormState>();
 

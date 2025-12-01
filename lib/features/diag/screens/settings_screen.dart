@@ -13,10 +13,9 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-bool notificationsEnabled = true;
-
 class _SettingsScreenState extends State<SettingsScreen> {
   final _formKey = GlobalKey<FormState>();
+  bool _notificationsEnabled = true;
 
   @override
   Widget build(BuildContext context) {
@@ -246,7 +245,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  notificationsEnabled ? 'Enabled' : 'Disabled',
+                  _notificationsEnabled ? trad(context)!.enabled : trad(context)!.disabled,
                   style: TextStyle(
                     fontFamily: AppTheme.defaultFontFamilyName,
                     fontSize: 12,
@@ -258,10 +257,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           CupertinoSwitch(
             activeTrackColor: Theme.of(context).colorScheme.primary,
-            value: notificationsEnabled,
+            value: _notificationsEnabled,
             onChanged: (value) {
               setState(() {
-                notificationsEnabled = value;
+                _notificationsEnabled = value;
               });
             },
           ),
@@ -290,7 +289,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(width: AppTheme.spacingSm),
               Text(
-                'Upcoming Reminders',
+                trad(context)!.upcoming_reminders,
                 style: TextStyle(
                   fontFamily: AppTheme.defaultFontFamilyName,
                   fontSize: 14,

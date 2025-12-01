@@ -115,7 +115,7 @@ class _HeatMapScreenState extends State<HeatMapScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'Less',
+            trad(context)!.less,
             style: TextStyle(
               fontSize: 12,
               color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
@@ -127,7 +127,7 @@ class _HeatMapScreenState extends State<HeatMapScreen> {
             return Container(
               width: 16,
               height: 16,
-              margin: EdgeInsets.symmetric(horizontal: 2),
+              margin: const EdgeInsets.symmetric(horizontal: 2),
               decoration: BoxDecoration(
                 color: index == 0
                     ? Theme.of(context).colorScheme.surfaceContainerHigh
@@ -140,7 +140,7 @@ class _HeatMapScreenState extends State<HeatMapScreen> {
           }),
           const SizedBox(width: AppTheme.spacingSm),
           Text(
-            'More',
+            trad(context)!.more,
             style: TextStyle(
               fontSize: 12,
               color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),

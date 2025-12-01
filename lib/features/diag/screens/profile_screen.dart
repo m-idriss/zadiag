@@ -114,7 +114,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ],
             ),
-            child: Center(
+            child: const Center(
               child: Icon(
                 Icons.person_rounded,
                 size: 48,

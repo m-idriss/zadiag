@@ -14,16 +14,16 @@ class LoginPage extends StatefulWidget {
   State<StatefulWidget> createState() => _LoginPageState();
 }
 
-final _loginEmailController = TextEditingController(
-  text: 'jean.dupont@email.com',
-);
-final _loginPasswordController = TextEditingController();
-bool _obscurePassword = true;
-
 class _LoginPageState extends State<LoginPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  
+  final _loginEmailController = TextEditingController(
+    text: 'jean.dupont@email.com',
+  );
+  final _loginPasswordController = TextEditingController();
+  bool _obscurePassword = true;
 
   @override
   void initState() {
@@ -44,6 +44,8 @@ class _LoginPageState extends State<LoginPage>
   @override
   void dispose() {
     _animationController.dispose();
+    _loginEmailController.dispose();
+    _loginPasswordController.dispose();
     super.dispose();
   }
 
