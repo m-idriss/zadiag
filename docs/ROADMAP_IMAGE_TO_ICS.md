@@ -262,7 +262,7 @@ lib/
 
 ## 📚 References
 
-- [iCalendar Specification (RFC 5545)](https://tools.ietf.org/html/rfc5545)
+- [iCalendar Specification (RFC 5545)](https://datatracker.ietf.org/doc/html/rfc5545)
 - [Flutter Image Picker](https://pub.dev/packages/image_picker)
 - [Table Calendar Package](https://pub.dev/packages/table_calendar)
 - [Original Angular Implementation](https://github.com/user-attachments/files/23862776/converter.ts)
