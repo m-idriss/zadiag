@@ -68,11 +68,6 @@ This document outlines the development roadmap for implementing the **Image to I
 ### Phase 3: Event Processing
 **Target: API Integration**
 
-- [ ] **Firebase Integration**
-  - Configure Firebase Cloud Functions (if needed)
-  - Implement secure API token handling
-  - Add user authentication validation
-
 - [ ] **Processing Flow**
   - Submit image(s) to converter API
   - Display processing state with animation
@@ -82,36 +77,17 @@ This document outlines the development roadmap for implementing the **Image to I
 ### Phase 4: Calendar Preview
 **Target: Event Visualization**
 
-- [ ] **Calendar View Component**
-  - Integrate calendar widget (e.g., `table_calendar` or `syncfusion_flutter_calendar`)
-  - Display extracted events in monthly/weekly/daily views
-  - Color-code events by type or source
-
 - [ ] **Event List View**
   - List all extracted events
   - Show event details in cards
   - Quick actions (edit, delete, select)
 
-### Phase 5: Event Editing
-**Target: User Control**
+- [ ] **Calendar View Component**
+    - Integrate calendar widget (e.g., `table_calendar` or `syncfusion_flutter_calendar`)
+    - Display extracted events in monthly/weekly/daily views
+    - Color-code events by type or source
 
-- [ ] **Event Editor**
-  - Create/edit event form with fields:
-    - Title (required)
-    - Start date/time (required)
-    - End date/time (required)
-    - Description (optional)
-    - Location (optional)
-    - All-day toggle
-  - Date/time pickers
-  - Form validation
-
-- [ ] **Batch Operations**
-  - Select multiple events
-  - Delete selected events
-  - Bulk edit common fields
-
-### Phase 6: ICS Generation & Export
+### Phase 5: ICS Generation & Export
 **Target: Output Generation**
 
 - [ ] **ICS Generator**
@@ -138,6 +114,25 @@ This document outlines the development roadmap for implementing the **Image to I
   - Add directly to device calendar
   - Copy event details to clipboard
 
+### Phase 6: Event Editing
+**Target: User Control**
+
+- [ ] **Event Editor**
+    - Create/edit event form with fields:
+        - Title (required)
+        - Start date/time (required)
+        - End date/time (required)
+        - Description (optional)
+        - Location (optional)
+        - All-day toggle
+    - Date/time pickers
+    - Form validation
+
+- [ ] **Batch Operations**
+    - Select multiple events
+    - Delete selected events
+    - Bulk edit common fields
+  
 ## 🛠 Technical Requirements
 
 ### Dependencies to Add
