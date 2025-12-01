@@ -69,7 +69,7 @@ class _BrandingScreenState extends State<BrandingScreen> {
     return buildBackground(colorScheme);
   }
 
-  Column _header(BuildContext context) {
+  Widget _header(BuildContext context) {
     return buildHeader(
       context,
       trad(context)!.branding,
@@ -78,13 +78,20 @@ class _BrandingScreenState extends State<BrandingScreen> {
   }
 
   Widget _brandingCard(BuildContext context, double radiusLg) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(radiusLg),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
-      elevation: 4,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(radiusLg),
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
         child: SizedBox(
           width: double.infinity,
           height: 240,
