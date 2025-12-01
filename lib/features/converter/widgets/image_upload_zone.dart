@@ -42,10 +42,10 @@ class ImageUploadZone extends StatefulWidget {
   });
 
   @override
-  State<ImageUploadZone> createState() => ImageUploadZoneState();
+  State<ImageUploadZone> createState() => _ImageUploadZoneState();
 }
 
-class ImageUploadZoneState extends State<ImageUploadZone> {
+class _ImageUploadZoneState extends State<ImageUploadZone> {
   final List<UploadedImage> _uploadedImages = [];
   final ImagePicker _imagePicker = ImagePicker();
   bool _isDragging = false;
@@ -291,7 +291,7 @@ class ImageUploadZoneState extends State<ImageUploadZone> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Maximum ${widget.maxImages} images allowed'),
+              content: Text(trad(context)!.max_images_allowed(widget.maxImages)),
               duration: const Duration(seconds: 2),
             ),
           );
@@ -344,7 +344,7 @@ class ImageUploadZoneState extends State<ImageUploadZone> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error selecting images: $e'),
+            content: Text('${trad(context)!.error_selecting_images}: $e'),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -359,8 +359,14 @@ class ImageUploadZoneState extends State<ImageUploadZone> {
   }
 
   /// Gets the MIME type based on file extension.
+  /// Handles edge cases like filenames without extensions.
   String _getMimeType(String fileName) {
-    final extension = fileName.toLowerCase().split('.').last;
+    final parts = fileName.toLowerCase().split('.');
+    // If no extension found (no dot or dot at the end), default to JPEG
+    if (parts.length < 2 || parts.last.isEmpty) {
+      return 'image/jpeg';
+    }
+    final extension = parts.last;
     switch (extension) {
       case 'jpg':
       case 'jpeg':
@@ -404,7 +410,7 @@ class ImageUploadZoneState extends State<ImageUploadZone> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Maximum ${widget.maxImages} images allowed'),
+              content: Text(trad(context)!.max_images_allowed(widget.maxImages)),
               duration: const Duration(seconds: 2),
             ),
           );
@@ -445,7 +451,7 @@ class ImageUploadZoneState extends State<ImageUploadZone> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error capturing image: $e'),
+            content: Text('${trad(context)!.error_capturing_image}: $e'),
             duration: const Duration(seconds: 2),
           ),
         );

@@ -54,7 +54,7 @@ class _ConverterPageState extends State<ConverterPage> {
 
   Future<void> _processImages() async {
     if (_uploadedImages.isEmpty) {
-      showSnackBar(context, 'Please upload at least one image', true);
+      showSnackBar(context, trad(context)!.please_upload_image, true);
       return;
     }
 
@@ -94,14 +94,14 @@ class _ConverterPageState extends State<ConverterPage> {
           // Store the ICS content from API if available
           _generatedIcs = result.icsContent;
           showSnackBar(
-              context, 'Found ${result.eventCount} events!');
+              context, trad(context)!.found_events(result.eventCount));
         } else {
-          _errorMessage = result.errorMessage ?? 'No events found in images';
+          _errorMessage = result.errorMessage ?? trad(context)!.no_events_found;
         }
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error processing images: $e';
+        _errorMessage = '${trad(context)!.error_processing_images}: $e';
       });
     } finally {
       setState(() {
@@ -119,7 +119,7 @@ class _ConverterPageState extends State<ConverterPage> {
 
   void _generateIcsFile() {
     if (_extractedEvents.isEmpty) {
-      showSnackBar(context, 'No events to export', true);
+      showSnackBar(context, trad(context)!.no_events_to_export, true);
       return;
     }
 
@@ -129,12 +129,12 @@ class _ConverterPageState extends State<ConverterPage> {
     });
 
     // Show success message
-    showSnackBar(context, 'ICS file generated! Ready to download.');
+    showSnackBar(context, trad(context)!.ics_generated);
   }
 
   Future<void> _downloadIcs() async {
     if (_extractedEvents.isEmpty) {
-      showSnackBar(context, 'No events to export', true);
+      showSnackBar(context, trad(context)!.no_events_to_export, true);
       return;
     }
 
@@ -149,7 +149,7 @@ class _ConverterPageState extends State<ConverterPage> {
       // Show download options dialog
       await _showDownloadOptionsDialog();
     } catch (e) {
-      showSnackBar(context, 'Error exporting ICS: $e', true);
+      showSnackBar(context, '${trad(context)!.error_exporting_ics}: $e', true);
     } finally {
       setState(() {
         _isExporting = false;
@@ -191,8 +191,8 @@ class _ConverterPageState extends State<ConverterPage> {
               _buildOptionTile(
                 context,
                 icon: Icons.download_rounded,
-                title: 'Save ICS File',
-                subtitle: 'Save to downloads folder',
+                title: trad(context)!.save_ics_file,
+                subtitle: trad(context)!.save_to_downloads,
                 onTap: () async {
                   Navigator.pop(context);
                   await _saveIcsFile();
@@ -204,8 +204,8 @@ class _ConverterPageState extends State<ConverterPage> {
               _buildOptionTile(
                 context,
                 icon: Icons.copy_rounded,
-                title: 'Copy to Clipboard',
-                subtitle: 'Copy ICS content to paste elsewhere',
+                title: trad(context)!.copy_to_clipboard,
+                subtitle: trad(context)!.copy_ics_hint,
                 onTap: () {
                   Navigator.pop(context);
                   _copyToClipboard();
@@ -217,8 +217,8 @@ class _ConverterPageState extends State<ConverterPage> {
               _buildOptionTile(
                 context,
                 icon: Icons.visibility_rounded,
-                title: 'Preview ICS',
-                subtitle: 'View the generated ICS content',
+                title: trad(context)!.preview_ics,
+                subtitle: trad(context)!.preview_ics_hint,
                 onTap: () {
                   Navigator.pop(context);
                   _showIcsPreview();
@@ -304,23 +304,23 @@ class _ConverterPageState extends State<ConverterPage> {
       );
 
       if (filePath != null) {
-        showSnackBar(context, 'ICS saved to: $filePath');
+        showSnackBar(context, trad(context)!.ics_saved_to(filePath));
         
         // Ask if user wants to open the file
         if (mounted) {
           final shouldOpen = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
-              title: const Text('File Saved'),
-              content: Text('ICS file saved to:\n$filePath\n\nWould you like to open it?'),
+              title: Text(trad(context)!.file_saved),
+              content: Text(trad(context)!.file_saved_message),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child: const Text('No'),
+                  child: Text(trad(context)!.no),
                 ),
                 FilledButton(
                   onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Open'),
+                  child: Text(trad(context)!.open),
                 ),
               ],
             ),
@@ -332,13 +332,13 @@ class _ConverterPageState extends State<ConverterPage> {
         }
       } else {
         // Web platform - download triggered
-        showSnackBar(context, 'Download started!');
+        showSnackBar(context, trad(context)!.download_started);
       }
     } catch (e) {
       if (kDebugMode) {
         print('Error saving ICS: $e');
       }
-      showSnackBar(context, 'Error saving file: $e', true);
+      showSnackBar(context, '${trad(context)!.error_saving_file}: $e', true);
     }
   }
 
@@ -346,7 +346,7 @@ class _ConverterPageState extends State<ConverterPage> {
     if (_generatedIcs == null) return;
     
     Clipboard.setData(ClipboardData(text: _generatedIcs!));
-    showSnackBar(context, 'ICS content copied to clipboard!');
+    showSnackBar(context, trad(context)!.ics_copied);
   }
 
   void _showIcsPreview() {
@@ -355,7 +355,7 @@ class _ConverterPageState extends State<ConverterPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Generated ICS File'),
+        title: Text(trad(context)!.generated_ics_file),
         content: SizedBox(
           width: double.maxFinite,
           height: 400,
@@ -374,11 +374,11 @@ class _ConverterPageState extends State<ConverterPage> {
             onPressed: () {
               _copyToClipboard();
             },
-            child: const Text('Copy'),
+            child: Text(trad(context)!.copy),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: Text(trad(context)!.close),
           ),
         ],
       ),

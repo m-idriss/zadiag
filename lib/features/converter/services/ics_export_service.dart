@@ -13,7 +13,10 @@ class IcsExportService {
   /// Exports the ICS content as a downloadable file.
   /// 
   /// On web: Opens a download dialog in the browser.
-  /// On mobile/desktop: Saves to the downloads directory and optionally opens it.
+  /// On mobile/desktop: Saves to the app's documents directory (private storage).
+  /// 
+  /// Note: On web platforms, the `fileName` parameter may not be respected by all browsers
+  /// due to data URL limitations. The browser may use a default filename instead.
   /// 
   /// Returns the file path where the ICS was saved (or null on web).
   Future<String?> exportIcs(String icsContent, {String? fileName}) async {
@@ -27,6 +30,11 @@ class IcsExportService {
   }
 
   /// Exports ICS content for web platform using a data URL.
+  /// 
+  /// Note: The `fileName` parameter is provided for API consistency but may not be
+  /// used by all browsers. Data URLs don't support specifying filenames in a 
+  /// cross-browser compatible way. For better filename support, consider using
+  /// dart:html's AnchorElement with download attribute on web.
   Future<String?> _exportForWeb(String icsContent, String fileName) async {
     try {
       // Create a data URL for the ICS content
@@ -51,22 +59,24 @@ class IcsExportService {
   }
 
   /// Exports ICS content for native platforms (mobile/desktop).
+  /// 
+  /// Uses private app storage to protect sensitive calendar data from other apps.
   Future<String?> _exportForNative(String icsContent, String fileName) async {
     try {
       // Get the appropriate directory for downloads
-      Directory? directory;
+      // Use private app storage to protect sensitive calendar data
+      Directory directory;
       
       if (Platform.isAndroid) {
-        // On Android, use external storage downloads directory if available
-        directory = await getExternalStorageDirectory();
-        directory ??= await getApplicationDocumentsDirectory();
+        // On Android, use private app documents directory for security
+        // External storage is world-readable by other apps
+        directory = await getApplicationDocumentsDirectory();
       } else if (Platform.isIOS) {
-        // On iOS, use the documents directory
+        // On iOS, use the documents directory (already private)
         directory = await getApplicationDocumentsDirectory();
       } else {
         // On desktop, try to use downloads directory, fall back to documents
-        directory = await getDownloadsDirectory();
-        directory ??= await getApplicationDocumentsDirectory();
+        directory = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
       }
 
       // Create the file path
