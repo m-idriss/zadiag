@@ -24,8 +24,8 @@ class _HomePageState extends State<HomePage>
   late AnimationController _controller;
   late Animation<double> animation;
 
-  final List<Widget> _pages = [
-    const BrandingScreen(),
+  List<Widget> get _pages => [
+    BrandingScreen(onGetStarted: _navigateToConverter),
     const HeatMapScreen(),
     const ConverterPage(),
     const ProfileScreen(),
@@ -34,6 +34,11 @@ class _HomePageState extends State<HomePage>
 
   Menu selectedBottonNav = bottomNavItems[0];
   int _previousIndex = 2;
+
+  void _navigateToConverter() {
+    // Index 2 corresponds to ConverterPage in the _pages list
+    updateSelectedBtmNav(bottomNavItems[2]);
+  }
 
   void updateSelectedBtmNav(Menu menu) {
     if (selectedBottonNav != menu) {

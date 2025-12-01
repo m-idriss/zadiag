@@ -4,11 +4,11 @@ import 'package:intl/intl.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/core/utils/translate.dart';
-import 'package:zadiag/features/converter/converter_page.dart';
-import 'package:zadiag/features/diag/diag_page.dart';
 
 class BrandingScreen extends StatefulWidget {
-  const BrandingScreen({super.key});
+  final VoidCallback? onGetStarted;
+  
+  const BrandingScreen({super.key, this.onGetStarted});
 
   @override
   State<BrandingScreen> createState() => _BrandingScreenState();
@@ -258,12 +258,7 @@ class _BrandingScreenState extends State<BrandingScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const ConverterPage()),
-            );
-          },
+          onTap: widget.onGetStarted,
           borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
           child: Center(
             child: Text(
