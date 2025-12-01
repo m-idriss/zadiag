@@ -475,6 +475,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Get Started'**
   String get get_started;
+
+  /// No description provided for @converter_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert Images'**
+  String get converter_title;
+
+  /// No description provided for @converter_subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload photos of appointments and schedules to extract calendar events.'**
+  String get converter_subtitle;
+
+  /// No description provided for @convert_button.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert to Calendar Events'**
+  String get convert_button;
+
+  /// No description provided for @extracted_events.
+  ///
+  /// In en, this message translates to:
+  /// **'Extracted Events'**
+  String get extracted_events;
+
+  /// No description provided for @download_ics.
+  ///
+  /// In en, this message translates to:
+  /// **'Download ICS File'**
+  String get download_ics;
+
+  /// No description provided for @no_events_found.
+  ///
+  /// In en, this message translates to:
+  /// **'No events found in images'**
+  String get no_events_found;
+
+  /// No description provided for @processing_images.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing images...'**
+  String get processing_images;
+
+  /// No description provided for @upload_images.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to upload images'**
+  String get upload_images;
+
+  /// No description provided for @upload_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload photos of appointments or schedules'**
+  String get upload_hint;
+
+  /// No description provided for @supported_formats.
+  ///
+  /// In en, this message translates to:
+  /// **'Supports: JPG, PNG, WEBP'**
+  String get supported_formats;
+
+  /// No description provided for @images_selected.
+  ///
+  /// In en, this message translates to:
+  /// **'images selected'**
+  String get images_selected;
+
+  /// No description provided for @clear_all.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get clear_all;
+
+  /// No description provided for @ics_generated.
+  ///
+  /// In en, this message translates to:
+  /// **'ICS file generated! Ready to download.'**
+  String get ics_generated;
 }
 
 class _AppLocalizationsDelegate

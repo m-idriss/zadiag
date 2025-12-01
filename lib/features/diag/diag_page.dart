@@ -10,6 +10,8 @@ import 'package:zadiag/shared/models/rive_utils.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 
+import '../converter/converter_page.dart';
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -25,7 +27,7 @@ class _HomePageState extends State<HomePage>
   final List<Widget> _pages = [
     const BrandingScreen(),
     const HeatMapScreen(),
-    const CaptureScreen(),
+    const ConverterPage(),
     const ProfileScreen(),
     const SettingsScreen(),
   ];

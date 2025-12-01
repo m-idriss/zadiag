@@ -5,6 +5,7 @@ import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/core/utils/translate.dart';
 import 'package:zadiag/features/converter/converter_page.dart';
+import 'package:zadiag/features/diag/diag_page.dart';
 
 class BrandingScreen extends StatefulWidget {
   const BrandingScreen({super.key});

@@ -203,4 +203,45 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get get_started => 'Commencer';
+
+  @override
+  String get converter_title => 'Convertir des images';
+
+  @override
+  String get converter_subtitle =>
+      'Téléchargez des photos de rendez-vous et d\'agendas pour extraire les événements du calendrier.';
+
+  @override
+  String get convert_button => 'Convertir en événements';
+
+  @override
+  String get extracted_events => 'Événements extraits';
+
+  @override
+  String get download_ics => 'Télécharger le fichier ICS';
+
+  @override
+  String get no_events_found => 'Aucun événement trouvé dans les images';
+
+  @override
+  String get processing_images => 'Traitement des images...';
+
+  @override
+  String get upload_images => 'Appuyez pour télécharger des images';
+
+  @override
+  String get upload_hint =>
+      'Téléchargez des photos de rendez-vous ou d\'agendas';
+
+  @override
+  String get supported_formats => 'Formats supportés : JPG, PNG, WEBP';
+
+  @override
+  String get images_selected => 'images sélectionnées';
+
+  @override
+  String get clear_all => 'Tout effacer';
+
+  @override
+  String get ics_generated => 'Fichier ICS généré ! Prêt à télécharger.';
 }

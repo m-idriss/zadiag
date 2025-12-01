@@ -106,6 +106,7 @@ class ConverterService {
 
       if (kDebugMode) {
         print('ConverterService: API response status: ${response.statusCode}');
+        print('ConverterService: API response body: ${response.body}');
         print('ConverterService: Processing time: ${processingTimeMs}ms');
       }
 
