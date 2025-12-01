@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/features/auth/screens/login_page.dart';
 import 'package:zadiag/main.dart';
@@ -16,6 +17,29 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _notificationsEnabled = true;
+
+  static const String _notificationsKey = 'notificationsEnabled';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationsSetting();
+  }
+
+  Future<void> _loadNotificationsSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _notificationsEnabled = prefs.getBool(_notificationsKey) ?? true;
+    });
+  }
+
+  Future<void> _saveNotificationsSetting(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_notificationsKey, value);
+    setState(() {
+      _notificationsEnabled = value;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -258,11 +282,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           CupertinoSwitch(
             activeTrackColor: Theme.of(context).colorScheme.primary,
             value: _notificationsEnabled,
-            onChanged: (value) {
-              setState(() {
-                _notificationsEnabled = value;
-              });
-            },
+            onChanged: _saveNotificationsSetting,
           ),
         ],
       ),
