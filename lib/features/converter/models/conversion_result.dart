@@ -1,4 +1,5 @@
 import 'calendar_event.dart';
+import '../services/ics_parser.dart';
 
 /// Model representing the result of image to calendar conversion.
 class ConversionResult {
@@ -7,6 +8,9 @@ class ConversionResult {
 
   /// List of extracted calendar events
   final List<CalendarEvent> events;
+
+  /// Raw ICS content from API (if provided)
+  final String? icsContent;
 
   /// Error message if conversion failed
   final String? errorMessage;
@@ -17,16 +21,18 @@ class ConversionResult {
   ConversionResult({
     required this.success,
     required this.events,
+    this.icsContent,
     this.errorMessage,
     this.processingTimeMs,
   });
 
   /// Creates a successful result with events
   factory ConversionResult.success(List<CalendarEvent> events,
-      {int? processingTimeMs}) {
+      {int? processingTimeMs, String? icsContent}) {
     return ConversionResult(
       success: true,
       events: events,
+      icsContent: icsContent,
       processingTimeMs: processingTimeMs,
     );
   }
@@ -41,14 +47,29 @@ class ConversionResult {
   }
 
   /// Creates a ConversionResult from JSON response
+  /// 
+  /// Handles two response formats:
+  /// 1. `events` array - list of event objects
+  /// 2. `icsContent` string - raw ICS content that needs to be parsed
   factory ConversionResult.fromJson(Map<String, dynamic> json) {
-    final eventsJson = json['events'] as List<dynamic>? ?? [];
-    final events =
-        eventsJson.map((e) => CalendarEvent.fromJson(e)).toList();
+    List<CalendarEvent> events = [];
+    String? icsContent;
+
+    // Check if response contains icsContent (raw ICS string)
+    if (json['icsContent'] != null && json['icsContent'] is String) {
+      icsContent = json['icsContent'] as String;
+      events = IcsParser.parse(icsContent);
+    } 
+    // Otherwise, try to get events array
+    else if (json['events'] != null && json['events'] is List) {
+      final eventsJson = json['events'] as List<dynamic>;
+      events = eventsJson.map((e) => CalendarEvent.fromJson(e)).toList();
+    }
 
     return ConversionResult(
       success: json['success'] ?? events.isNotEmpty,
       events: events,
+      icsContent: icsContent,
       errorMessage: json['error'] ?? json['message'],
       processingTimeMs: json['processingTimeMs'],
     );
@@ -59,6 +80,7 @@ class ConversionResult {
     return {
       'success': success,
       'events': events.map((e) => e.toJson()).toList(),
+      'icsContent': icsContent,
       'errorMessage': errorMessage,
       'processingTimeMs': processingTimeMs,
     };

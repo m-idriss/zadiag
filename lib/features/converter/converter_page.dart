@@ -91,6 +91,8 @@ class _ConverterPageState extends State<ConverterPage> {
       setState(() {
         if (result.success && result.hasEvents) {
           _extractedEvents = result.events;
+          // Store the ICS content from API if available
+          _generatedIcs = result.icsContent;
           showSnackBar(
               context, 'Found ${result.eventCount} events!');
         } else {
