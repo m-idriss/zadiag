@@ -401,15 +401,6 @@ class _RegisterPageState extends State<RegisterPage>
     return Container(
       height: 60,
       alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
-        border: Border(
-          top: BorderSide(
-            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-            width: 1,
-          ),
-        ),
-      ),
       child: TextButton(
         onPressed: () {
           WidgetsBinding.instance.addPostFrameCallback((_) {
