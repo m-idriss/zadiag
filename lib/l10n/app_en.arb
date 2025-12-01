@@ -1,4 +1,5 @@
 {
+  "@@locale": "en",
   "activity_tracking": "Activity Tracking",
   "activity_tracking_subtitle": "Track your daily activities and your progress over time.",
   "birthdate_hint": "Birthdate",
@@ -74,5 +75,51 @@
   "supported_formats": "Supports: JPG, PNG, WEBP",
   "images_selected": "images selected",
   "clear_all": "Clear all",
-  "ics_generated": "ICS file generated! Ready to download."
+  "ics_generated": "ICS file generated! Ready to download.",
+  "save_ics_file": "Save ICS File",
+  "save_to_downloads": "Save to downloads folder",
+  "copy_to_clipboard": "Copy to Clipboard",
+  "copy_ics_hint": "Copy ICS content to paste elsewhere",
+  "preview_ics": "Preview ICS",
+  "preview_ics_hint": "View the generated ICS content",
+  "file_saved": "File Saved",
+  "file_saved_message": "ICS file saved. Would you like to open it?",
+  "no": "No",
+  "open": "Open",
+  "download_started": "Download started!",
+  "error_saving_file": "Error saving file",
+  "ics_copied": "ICS content copied to clipboard!",
+  "generated_ics_file": "Generated ICS File",
+  "copy": "Copy",
+  "close": "Close",
+  "please_upload_image": "Please upload at least one image",
+  "found_events": "Found {count} events!",
+  "@found_events": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "no_events_to_export": "No events to export",
+  "error_processing_images": "Error processing images",
+  "error_exporting_ics": "Error exporting ICS",
+  "max_images_allowed": "Maximum {count} images allowed",
+  "@max_images_allowed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "error_selecting_images": "Error selecting images",
+  "error_capturing_image": "Error capturing image",
+  "ics_saved_to": "ICS saved to: {path}",
+  "@ics_saved_to": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  }
 }

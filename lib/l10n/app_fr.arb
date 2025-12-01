@@ -1,4 +1,5 @@
 {
+  "@@locale": "fr",
   "activity_tracking": "Suivi des activités",
   "activity_tracking_subtitle": "Suivez vos activités quotidiennes et votre progression au fil du temps.",
   "birthdate_hint": "Date de naissance",
@@ -74,5 +75,51 @@
   "supported_formats": "Formats supportés : JPG, PNG, WEBP",
   "images_selected": "images sélectionnées",
   "clear_all": "Tout effacer",
-  "ics_generated": "Fichier ICS généré ! Prêt à télécharger."
+  "ics_generated": "Fichier ICS généré ! Prêt à télécharger.",
+  "save_ics_file": "Enregistrer le fichier ICS",
+  "save_to_downloads": "Enregistrer dans les téléchargements",
+  "copy_to_clipboard": "Copier dans le presse-papiers",
+  "copy_ics_hint": "Copier le contenu ICS pour le coller ailleurs",
+  "preview_ics": "Aperçu ICS",
+  "preview_ics_hint": "Voir le contenu ICS généré",
+  "file_saved": "Fichier enregistré",
+  "file_saved_message": "Fichier ICS enregistré. Voulez-vous l'ouvrir ?",
+  "no": "Non",
+  "open": "Ouvrir",
+  "download_started": "Téléchargement démarré !",
+  "error_saving_file": "Erreur lors de l'enregistrement",
+  "ics_copied": "Contenu ICS copié dans le presse-papiers !",
+  "generated_ics_file": "Fichier ICS généré",
+  "copy": "Copier",
+  "close": "Fermer",
+  "please_upload_image": "Veuillez télécharger au moins une image",
+  "found_events": "{count} événements trouvés !",
+  "@found_events": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "no_events_to_export": "Aucun événement à exporter",
+  "error_processing_images": "Erreur lors du traitement des images",
+  "error_exporting_ics": "Erreur lors de l'exportation ICS",
+  "max_images_allowed": "Maximum {count} images autorisées",
+  "@max_images_allowed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "error_selecting_images": "Erreur lors de la sélection des images",
+  "error_capturing_image": "Erreur lors de la capture de l'image",
+  "ics_saved_to": "ICS enregistré dans : {path}",
+  "@ics_saved_to": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  }
 }

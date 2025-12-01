@@ -74,6 +74,12 @@ This document outlines the development roadmap for implementing the **Image to I
   - Handle and display extracted events
   - Error handling with user-friendly messages
 
+- [x] **Real API Integration**
+  - Implement actual HTTP POST to api.3dime.com
+  - Handle request/response with proper error handling
+  - Support both mock mode (for testing) and production mode
+  - Include processing time metrics
+
 ### Phase 4: Calendar Preview
 **Target: Event Visualization**
 
@@ -114,6 +120,12 @@ This document outlines the development roadmap for implementing the **Image to I
   - Add directly to device calendar
   - Copy event details to clipboard
 
+- [x] **ICS Export Service**
+  - Platform-aware file saving (web, mobile, desktop)
+  - Unique filename generation with timestamps
+  - Open file with default calendar application
+  - Copy ICS content to clipboard
+
 ### Phase 6: Event Editing
 **Target: User Control**
 
@@ -135,26 +147,19 @@ This document outlines the development roadmap for implementing the **Image to I
   
 ## 🛠 Technical Requirements
 
-### Dependencies to Add
+### Dependencies Added
 
 ```yaml
 dependencies:
   # Image handling
   image_picker: ^1.0.0
-  image_cropper: ^5.0.0
-
-  # Calendar display
-  table_calendar: ^3.0.0
-  # OR
-  syncfusion_flutter_calendar: ^24.0.0
 
   # File handling
   path_provider: ^2.1.0
-  share_plus: ^7.0.0
+  url_launcher: ^6.2.0
 
   # HTTP requests
-  http: ^1.1.0
-  # OR already using firebase
+  http: ^1.2.0
 ```
 
 ### API Endpoint
@@ -178,27 +183,23 @@ Request Body:
 }
 ```
 
-### File Structure
+### File Structure (Implemented)
 
 ```
 lib/
 ├── features/
 │   └── converter/
-│       ├── converter_page.dart         # Main page
-│       ├── screens/
-│       │   ├── upload_screen.dart      # Image upload UI
-│       │   ├── preview_screen.dart     # Calendar preview
-│       │   └── edit_screen.dart        # Event editing
-│       ├── services/
-│       │   ├── converter_service.dart  # API calls
-│       │   └── ics_generator.dart      # ICS file generation
+│       ├── converter_page.dart           # Main page with E2E flow
 │       ├── models/
-│       │   ├── calendar_event.dart     # Event model
-│       │   └── conversion_result.dart  # API response model
+│       │   ├── calendar_event.dart       # Event model
+│       │   └── conversion_result.dart    # API response model
+│       ├── services/
+│       │   ├── converter_service.dart    # API calls with real HTTP
+│       │   ├── ics_generator.dart        # ICS file generation
+│       │   └── ics_export_service.dart   # File export handling
 │       └── widgets/
-│           ├── event_card.dart         # Event display card
-│           ├── calendar_view.dart      # Calendar widget
-│           └── image_upload_zone.dart  # Upload component
+│           ├── event_card.dart           # Event display card
+│           └── image_upload_zone.dart    # Upload with image_picker
 ```
 
 ## 🎨 UI/UX Design Guidelines

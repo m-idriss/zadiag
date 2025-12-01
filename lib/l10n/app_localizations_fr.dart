@@ -203,4 +203,127 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get get_started => 'Commencer';
+
+  @override
+  String get converter_title => 'Convertir des images';
+
+  @override
+  String get converter_subtitle =>
+      'Téléchargez des photos de rendez-vous et d\'agendas pour extraire les événements du calendrier.';
+
+  @override
+  String get convert_button => 'Convertir en événements';
+
+  @override
+  String get extracted_events => 'Événements extraits';
+
+  @override
+  String get download_ics => 'Télécharger le fichier ICS';
+
+  @override
+  String get no_events_found => 'Aucun événement trouvé dans les images';
+
+  @override
+  String get processing_images => 'Traitement des images...';
+
+  @override
+  String get upload_images => 'Appuyez pour télécharger des images';
+
+  @override
+  String get upload_hint =>
+      'Téléchargez des photos de rendez-vous ou d\'agendas';
+
+  @override
+  String get supported_formats => 'Formats supportés : JPG, PNG, WEBP';
+
+  @override
+  String get images_selected => 'images sélectionnées';
+
+  @override
+  String get clear_all => 'Tout effacer';
+
+  @override
+  String get ics_generated => 'Fichier ICS généré ! Prêt à télécharger.';
+
+  @override
+  String get save_ics_file => 'Enregistrer le fichier ICS';
+
+  @override
+  String get save_to_downloads => 'Enregistrer dans les téléchargements';
+
+  @override
+  String get copy_to_clipboard => 'Copier dans le presse-papiers';
+
+  @override
+  String get copy_ics_hint => 'Copier le contenu ICS pour le coller ailleurs';
+
+  @override
+  String get preview_ics => 'Aperçu ICS';
+
+  @override
+  String get preview_ics_hint => 'Voir le contenu ICS généré';
+
+  @override
+  String get file_saved => 'Fichier enregistré';
+
+  @override
+  String get file_saved_message =>
+      'Fichier ICS enregistré. Voulez-vous l\'ouvrir ?';
+
+  @override
+  String get no => 'Non';
+
+  @override
+  String get open => 'Ouvrir';
+
+  @override
+  String get download_started => 'Téléchargement démarré !';
+
+  @override
+  String get error_saving_file => 'Erreur lors de l\'enregistrement';
+
+  @override
+  String get ics_copied => 'Contenu ICS copié dans le presse-papiers !';
+
+  @override
+  String get generated_ics_file => 'Fichier ICS généré';
+
+  @override
+  String get copy => 'Copier';
+
+  @override
+  String get close => 'Fermer';
+
+  @override
+  String get please_upload_image => 'Veuillez télécharger au moins une image';
+
+  @override
+  String found_events(int count) {
+    return '$count événements trouvés !';
+  }
+
+  @override
+  String get no_events_to_export => 'Aucun événement à exporter';
+
+  @override
+  String get error_processing_images => 'Erreur lors du traitement des images';
+
+  @override
+  String get error_exporting_ics => 'Erreur lors de l\'exportation ICS';
+
+  @override
+  String max_images_allowed(int count) {
+    return 'Maximum $count images autorisées';
+  }
+
+  @override
+  String get error_selecting_images => 'Erreur lors de la sélection des images';
+
+  @override
+  String get error_capturing_image => 'Erreur lors de la capture de l\'image';
+
+  @override
+  String ics_saved_to(String path) {
+    return 'ICS enregistré dans : $path';
+  }
 }
