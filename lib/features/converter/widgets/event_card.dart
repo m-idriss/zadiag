@@ -4,6 +4,7 @@ import 'package:zadiag/core/constants/app_theme.dart';
 import '../models/calendar_event.dart';
 
 /// Widget for displaying a single calendar event as a card.
+/// Displays a compact view with date badge, title, location, and times.
 class EventCard extends StatelessWidget {
   /// The calendar event to display
   final CalendarEvent event;
@@ -28,11 +29,12 @@ class EventCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final dateFormat = DateFormat('MMM d, yyyy');
-    final timeFormat = DateFormat('h:mm a');
+    final monthFormat = DateFormat('MMM');
+    final dayFormat = DateFormat('d');
+    final timeFormat = DateFormat('H:mm');
 
     return Container(
-      margin: const EdgeInsets.only(bottom: AppTheme.spacingMd),
+      margin: const EdgeInsets.only(bottom: AppTheme.spacingSm),
       decoration: BoxDecoration(
         color: isSelected
             ? colorScheme.primary.withValues(alpha: 0.1)
@@ -56,135 +58,160 @@ class EventCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
           child: Padding(
-            padding: const EdgeInsets.all(AppTheme.spacingMd),
-            child: Column(
+            padding: const EdgeInsets.all(AppTheme.spacingSm),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header row with title and delete button
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Event indicator
-                    Container(
-                      width: 4,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: AppTheme.spacingMd),
-                    // Title and time
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            event.title,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: colorScheme.onSurface,
-                              fontFamily: AppTheme.defaultFontFamilyName,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: AppTheme.spacingXs),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.access_time_rounded,
-                                size: 14,
-                                color: colorScheme.onSurface
-                                    .withValues(alpha: 0.6),
-                              ),
-                              const SizedBox(width: AppTheme.spacingXs),
-                              Text(
-                                event.isAllDay
-                                    ? dateFormat.format(event.startDateTime)
-                                    : '${dateFormat.format(event.startDateTime)} • ${timeFormat.format(event.startDateTime)}',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: colorScheme.onSurface
-                                      .withValues(alpha: 0.6),
-                                  fontFamily: AppTheme.defaultFontFamilyName,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Delete button
-                    if (onDelete != null)
-                      IconButton(
-                        onPressed: onDelete,
-                        icon: Icon(
-                          Icons.close_rounded,
-                          size: 20,
-                          color: colorScheme.error,
-                        ),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(
-                          minWidth: 32,
-                          minHeight: 32,
-                        ),
-                      ),
-                  ],
+                // Date badge (Month + Day)
+                _buildDateBadge(context, monthFormat, dayFormat, colorScheme),
+                const SizedBox(width: AppTheme.spacingSm),
+                // Title and location
+                Expanded(
+                  child: _buildEventDetails(context, colorScheme),
                 ),
-                // Location if available
-                if (event.location != null && event.location!.isNotEmpty) ...[
-                  const SizedBox(height: AppTheme.spacingSm),
-                  Row(
-                    children: [
-                      const SizedBox(width: 4 + AppTheme.spacingMd),
-                      Icon(
-                        Icons.location_on_outlined,
-                        size: 14,
-                        color: colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
-                      const SizedBox(width: AppTheme.spacingXs),
-                      Expanded(
-                        child: Text(
-                          event.location!,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: colorScheme.onSurface.withValues(alpha: 0.6),
-                            fontFamily: AppTheme.defaultFontFamilyName,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-                // Description if available
-                if (event.description != null &&
-                    event.description!.isNotEmpty) ...[
-                  const SizedBox(height: AppTheme.spacingSm),
-                  Padding(
-                    padding:
-                        const EdgeInsets.only(left: 4 + AppTheme.spacingMd),
-                    child: Text(
-                      event.description!,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: colorScheme.onSurface.withValues(alpha: 0.5),
-                        fontFamily: AppTheme.defaultFontFamilyName,
-                        height: 1.4,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
+                const SizedBox(width: AppTheme.spacingSm),
+                // Times column
+                _buildTimesColumn(context, timeFormat, colorScheme),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  /// Builds the date badge showing month and day number.
+  Widget _buildDateBadge(BuildContext context, DateFormat monthFormat,
+      DateFormat dayFormat, ColorScheme colorScheme) {
+    return Container(
+      width: 48,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTheme.spacingXs,
+        vertical: AppTheme.spacingXs,
+      ),
+      decoration: BoxDecoration(
+        color: colorScheme.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            monthFormat.format(event.startDateTime).toUpperCase(),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: colorScheme.primary,
+              fontFamily: AppTheme.defaultFontFamilyName,
+            ),
+          ),
+          Text(
+            dayFormat.format(event.startDateTime),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: colorScheme.primary,
+              fontFamily: AppTheme.defaultFontFamilyName,
+              height: 1.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds the event title and location details.
+  Widget _buildEventDetails(BuildContext context, ColorScheme colorScheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Title
+        Text(
+          event.title,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: colorScheme.onSurface,
+            fontFamily: AppTheme.defaultFontFamilyName,
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        // Location if available
+        if (event.location != null && event.location!.isNotEmpty) ...[
+          const SizedBox(height: AppTheme.spacingXs),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.location_on,
+                size: 14,
+                color: colorScheme.error.withValues(alpha: 0.8),
+              ),
+              const SizedBox(width: 2),
+              Expanded(
+                child: Text(
+                  event.location!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colorScheme.onSurface.withValues(alpha: 0.6),
+                    fontFamily: AppTheme.defaultFontFamilyName,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Builds the start and end times column.
+  Widget _buildTimesColumn(
+      BuildContext context, DateFormat timeFormat, ColorScheme colorScheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Start time
+        Text(
+          event.isAllDay ? 'All day' : timeFormat.format(event.startDateTime),
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: colorScheme.onSurface,
+            fontFamily: AppTheme.defaultFontFamilyName,
+          ),
+        ),
+        // End time
+        if (!event.isAllDay) ...[
+          const SizedBox(height: 2),
+          Text(
+            timeFormat.format(event.endDateTime),
+            style: TextStyle(
+              fontSize: 12,
+              color: colorScheme.onSurface.withValues(alpha: 0.6),
+              fontFamily: AppTheme.defaultFontFamilyName,
+            ),
+          ),
+        ],
+        // Delete button
+        if (onDelete != null)
+          GestureDetector(
+            onTap: onDelete,
+            child: Padding(
+              padding: const EdgeInsets.only(top: AppTheme.spacingXs),
+              child: Icon(
+                Icons.close_rounded,
+                size: 18,
+                color: colorScheme.error.withValues(alpha: 0.7),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

@@ -102,71 +102,74 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
               borderRadius: BorderRadius.circular(AppTheme.radiusXl),
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(AppTheme.spacingXl),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppTheme.spacingLg,
+                  vertical: AppTheme.spacingMd,
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     if (widget.isLoading) ...[
                       SizedBox(
-                        width: 48,
-                        height: 48,
+                        width: 36,
+                        height: 36,
                         child: CircularProgressIndicator(
                           strokeWidth: 3,
                           color: colorScheme.primary,
                         ),
                       ),
-                      const SizedBox(height: AppTheme.spacingMd),
+                      const SizedBox(height: AppTheme.spacingSm),
                       Text(
                         trad(context)!.processing_images,
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 14,
                           fontWeight: FontWeight.w500,
                           color: colorScheme.onSurface,
                           fontFamily: AppTheme.defaultFontFamilyName,
                         ),
                       ),
                     ] else ...[
-                      Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          color: colorScheme.primary.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.cloud_upload_outlined,
-                          size: 36,
-                          color: colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(height: AppTheme.spacingMd),
-                      Text(
-                        trad(context)!.upload_images,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onSurface,
-                          fontFamily: AppTheme.defaultFontFamilyName,
-                        ),
-                      ),
-                      const SizedBox(height: AppTheme.spacingSm),
-                      Text(
-                        trad(context)!.upload_hint,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: colorScheme.onSurface.withValues(alpha: 0.6),
-                          fontFamily: AppTheme.defaultFontFamilyName,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: AppTheme.spacingXs),
-                      Text(
-                        '${trad(context)!.supported_formats} (Max ${widget.maxImages} images)',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colorScheme.onSurface.withValues(alpha: 0.4),
-                          fontFamily: AppTheme.defaultFontFamilyName,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.cloud_upload_outlined,
+                              size: 24,
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                          const SizedBox(width: AppTheme.spacingMd),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                trad(context)!.upload_images,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: colorScheme.onSurface,
+                                  fontFamily: AppTheme.defaultFontFamilyName,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${trad(context)!.supported_formats} (Max ${widget.maxImages})',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: colorScheme.onSurface.withValues(alpha: 0.5),
+                                  fontFamily: AppTheme.defaultFontFamilyName,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ],
                   ],
@@ -178,14 +181,14 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
 
         // Image preview grid
         if (_uploadedImages.isNotEmpty) ...[
-          const SizedBox(height: AppTheme.spacingMd),
+          const SizedBox(height: AppTheme.spacingSm),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 '${_uploadedImages.length} image${_uploadedImages.length != 1 ? 's' : ''} selected',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 12,
                   fontWeight: FontWeight.w500,
                   color: colorScheme.onSurface,
                   fontFamily: AppTheme.defaultFontFamilyName,
@@ -195,23 +198,23 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
                 onPressed: _clearAllImages,
                 icon: Icon(
                   Icons.clear_all_rounded,
-                  size: 18,
+                  size: 16,
                   color: colorScheme.error,
                 ),
                 label: Text(
                   trad(context)!.clear_all,
                   style: TextStyle(
                     color: colorScheme.error,
-                    fontSize: 13,
+                    fontSize: 12,
                     fontFamily: AppTheme.defaultFontFamilyName,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppTheme.spacingSm),
+          const SizedBox(height: AppTheme.spacingXs),
           SizedBox(
-            height: 80,
+            height: 60,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: _uploadedImages.length,
@@ -232,14 +235,14 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
     return Stack(
       children: [
         Container(
-          width: 80,
-          height: 80,
+          width: 60,
+          height: 60,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
             border: Border.all(color: colorScheme.outline),
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppTheme.radiusMd - 1),
+            borderRadius: BorderRadius.circular(AppTheme.radiusSm - 1),
             child: Image.memory(
               image.bytes,
               fit: BoxFit.cover,
@@ -247,6 +250,7 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
                 color: colorScheme.surfaceContainerHigh,
                 child: Icon(
                   Icons.image_outlined,
+                  size: 20,
                   color: colorScheme.onSurface.withValues(alpha: 0.3),
                 ),
               ),
@@ -254,20 +258,20 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
           ),
         ),
         Positioned(
-          top: 4,
-          right: 4,
+          top: 2,
+          right: 2,
           child: GestureDetector(
             onTap: () => _removeImage(index),
             child: Container(
-              width: 20,
-              height: 20,
+              width: 16,
+              height: 16,
               decoration: BoxDecoration(
                 color: colorScheme.error,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.close_rounded,
-                size: 14,
+                size: 10,
                 color: Colors.white,
               ),
             ),
