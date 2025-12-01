@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
+import 'package:zadiag/core/utils/translate.dart';
 
 /// Model representing an uploaded image file.
 class UploadedImage {
@@ -112,7 +113,7 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
                       ),
                       const SizedBox(height: AppTheme.spacingMd),
                       Text(
-                        'Processing images...',
+                        trad(context)!.processing_images,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
@@ -136,7 +137,7 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
                       ),
                       const SizedBox(height: AppTheme.spacingMd),
                       Text(
-                        'Tap to upload images',
+                        trad(context)!.upload_images,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -146,7 +147,7 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
                       ),
                       const SizedBox(height: AppTheme.spacingSm),
                       Text(
-                        'Upload photos of appointments or schedules',
+                        trad(context)!.upload_hint,
                         style: TextStyle(
                           fontSize: 13,
                           color: colorScheme.onSurface.withValues(alpha: 0.6),
@@ -156,7 +157,7 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
                       ),
                       const SizedBox(height: AppTheme.spacingXs),
                       Text(
-                        'Supports: JPG, PNG, WEBP (Max ${widget.maxImages} images)',
+                        '${trad(context)!.supported_formats} (Max ${widget.maxImages} images)',
                         style: TextStyle(
                           fontSize: 12,
                           color: colorScheme.onSurface.withValues(alpha: 0.4),
@@ -194,7 +195,7 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
                   color: colorScheme.error,
                 ),
                 label: Text(
-                  'Clear all',
+                  trad(context)!.clear_all,
                   style: TextStyle(
                     color: colorScheme.error,
                     fontSize: 13,

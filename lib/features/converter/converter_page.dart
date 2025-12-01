@@ -205,8 +205,8 @@ class _ConverterPageState extends State<ConverterPage> {
   Widget _buildHeader(BuildContext context) {
     return buildHeader(
       context,
-      trad(context)!.branding,
-      trad(context)!.branding_subtitle,
+      trad(context)!.converter_title,
+      trad(context)!.converter_subtitle,
     );
   }
 
@@ -243,7 +243,7 @@ class _ConverterPageState extends State<ConverterPage> {
                     color: Colors.white, size: 22),
                 const SizedBox(width: AppTheme.spacingSm),
                 Text(
-                  'Convert to Calendar Events',
+                  trad(context)!.convert_button,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 17,
@@ -305,7 +305,7 @@ class _ConverterPageState extends State<ConverterPage> {
             ),
             const SizedBox(width: AppTheme.spacingSm),
             Text(
-              'Extracted Events (${_extractedEvents.length})',
+              '${trad(context)!.extracted_events} (${_extractedEvents.length})',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
@@ -353,7 +353,7 @@ class _ConverterPageState extends State<ConverterPage> {
                 const Icon(Icons.download_rounded, color: Colors.white, size: 22),
                 const SizedBox(width: AppTheme.spacingSm),
                 Text(
-                  'Download ICS File',
+                  trad(context)!.download_ics,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 17,
