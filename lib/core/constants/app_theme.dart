@@ -47,28 +47,30 @@ class AppTheme {
   static const double spacingXxl = 48.0;
 
   // Border radius constants
+  static const double radiusXs = 4.0;
   static const double radiusSm = 8.0;
   static const double radiusMd = 12.0;
   static const double radiusLg = 16.0;
   static const double radiusXl = 24.0;
+  static const double radiusXxl = 32.0;
   static const double radiusFull = 9999.0;
 
   // Shadow definitions
   static List<BoxShadow> get cardShadow => [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.05),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-        ),
-      ];
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.05),
+      blurRadius: 10,
+      offset: const Offset(0, 4),
+    ),
+  ];
 
   static List<BoxShadow> get elevatedShadow => [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.1),
-          blurRadius: 20,
-          offset: const Offset(0, 8),
-        ),
-      ];
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.1),
+      blurRadius: 20,
+      offset: const Offset(0, 8),
+    ),
+  ];
 }
 
 const lightColorScheme = ColorScheme(
@@ -91,8 +93,6 @@ const lightColorScheme = ColorScheme(
   shadow: AppTheme.lightPrimary,
   tertiaryContainer: AppTheme.lightPrimary,
   surfaceDim: AppTheme.lightMenuSurface,
-
-
 );
 
 const darkColorScheme = ColorScheme(

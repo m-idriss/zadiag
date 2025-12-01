@@ -55,10 +55,7 @@ class CaptureScreen extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        border: Border.all(
-          color: colorScheme.outline,
-          width: 2,
-        ),
+        border: Border.all(color: colorScheme.outline, width: 2),
         boxShadow: [
           BoxShadow(
             color: colorScheme.primary.withValues(alpha: 0.1),
@@ -85,11 +82,7 @@ class CaptureScreen extends StatelessWidget {
             ),
           ),
           // Corner decorations
-          Positioned(
-            top: 16,
-            left: 16,
-            child: _cornerDecoration(colorScheme),
-          ),
+          Positioned(top: 16, left: 16, child: _cornerDecoration(colorScheme)),
           Positioned(
             top: 16,
             right: 16,
@@ -135,28 +128,32 @@ class CaptureScreen extends StatelessWidget {
     );
   }
 
-    Widget _actionButtons(BuildContext context) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Expanded(
-            child: _buildGradientButton(
-              context,
-              trad(context)!.take_photo,
-              Icons.camera_alt_rounded,
-                  () => showSnackBar(context, trad(context)!.photo_taken),
-            ),
-          )
-        ],
-      );
-    }
+  Widget _actionButtons(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Expanded(
+          child: _buildGradientButton(
+            context,
+            trad(context)!.take_photo,
+            Icons.camera_alt_rounded,
+            () => showSnackBar(context, trad(context)!.photo_taken),
+          ),
+        ),
+      ],
+    );
+  }
 
   Widget _buildGradientButton(
-      BuildContext context, String label, IconData icon, VoidCallback onTap) {
+    BuildContext context,
+    String label,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
     return Container(
       height: 56,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         gradient: LinearGradient(
           colors: [
             Theme.of(context).colorScheme.primary,
@@ -168,14 +165,14 @@ class CaptureScreen extends StatelessWidget {
             color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
             blurRadius: 15,
             offset: const Offset(0, 8),
-          )
+          ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
           child: Center(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,

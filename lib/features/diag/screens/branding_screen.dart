@@ -92,10 +92,11 @@ class _BrandingScreenState extends State<BrandingScreen> {
             'assets/images/converter.svg',
             fit: BoxFit.cover,
             semanticsLabel: 'Converter illustration',
-            placeholderBuilder: (context) => Container(
-              color: Theme.of(context).colorScheme.surface,
-              child: const Center(child: CircularProgressIndicator()),
-            ),
+            placeholderBuilder:
+                (context) => Container(
+                  color: Theme.of(context).colorScheme.surface,
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
           ),
         ),
       ),
@@ -108,7 +109,11 @@ class _BrandingScreenState extends State<BrandingScreen> {
       children: [
         Row(
           children: [
-            Icon(Icons.bar_chart_rounded, color: Theme.of(context).colorScheme.primary, size: 28),
+            Icon(
+              Icons.bar_chart_rounded,
+              color: Theme.of(context).colorScheme.primary,
+              size: 28,
+            ),
             SizedBox(width: AppTheme.spacingSm),
             Text(
               trad(context)!.powering_productivity,
@@ -148,14 +153,14 @@ class _BrandingScreenState extends State<BrandingScreen> {
   }
 
   Widget _buildStatLine(
-      BuildContext context,
-      String pretext,
-      int value1,
-      String text1,
-      int? value2,
-      String? text2,
-      Color accentColor,
-      ) {
+    BuildContext context,
+    String pretext,
+    int value1,
+    String text1,
+    int? value2,
+    String? text2,
+    Color accentColor,
+  ) {
     return FittedBox(
       fit: BoxFit.scaleDown,
       child: Row(
@@ -164,7 +169,9 @@ class _BrandingScreenState extends State<BrandingScreen> {
           Text(
             "$pretext ",
             style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.85),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.85),
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
@@ -174,7 +181,9 @@ class _BrandingScreenState extends State<BrandingScreen> {
           Text(
             text1,
             style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.85),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.85),
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
@@ -186,7 +195,9 @@ class _BrandingScreenState extends State<BrandingScreen> {
             Text(
               text2!,
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha:0.85),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.85),
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
               ),
@@ -220,7 +231,7 @@ class _BrandingScreenState extends State<BrandingScreen> {
     return Container(
       height: 56,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         gradient: LinearGradient(
           colors: [
             Theme.of(context).colorScheme.primary,
@@ -232,15 +243,14 @@ class _BrandingScreenState extends State<BrandingScreen> {
             color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
             blurRadius: 15,
             offset: const Offset(0, 8),
-          )
+          ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-          },
-          borderRadius: BorderRadius.circular(30),
+          onTap: () {},
+          borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
           child: Center(
             child: Text(
               trad(context)!.get_started,
@@ -256,5 +266,4 @@ class _BrandingScreenState extends State<BrandingScreen> {
       ),
     );
   }
-
 }

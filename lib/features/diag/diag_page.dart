@@ -64,33 +64,41 @@ class _HomePageState extends State<HomePage>
   @override
   Widget build(BuildContext context) {
     final currentIndex = bottomNavItems.indexOf(selectedBottonNav);
-    
+
     return Scaffold(
       extendBody: true,
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        transitionBuilder: (Widget child, Animation<double> animation) {
-          final slideDirection = currentIndex > _previousIndex ? 1.0 : -1.0;
-          return SlideTransition(
-            position: Tween<Offset>(
-              begin: Offset(slideDirection * 0.1, 0),
-              end: Offset.zero,
-            ).animate(CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeOutCubic,
-            )),
-            child: FadeTransition(
-              opacity: animation,
-              child: child,
+      body: Stack(
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              final slideDirection = currentIndex > _previousIndex ? 1.0 : -1.0;
+              return SlideTransition(
+                position: Tween<Offset>(
+                  begin: Offset(slideDirection * 0.1, 0),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  ),
+                ),
+                child: FadeTransition(opacity: animation, child: child),
+              );
+            },
+            child: KeyedSubtree(
+              key: ValueKey<int>(currentIndex),
+              child: _pages[currentIndex],
             ),
-          );
-        },
-        child: KeyedSubtree(
-          key: ValueKey<int>(currentIndex),
-          child: _pages[currentIndex],
-        ),
+          ),
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: bottomNavBar(context),
+          ),
+        ],
       ),
-      bottomNavigationBar: bottomNavBar(context),
     );
   }
 

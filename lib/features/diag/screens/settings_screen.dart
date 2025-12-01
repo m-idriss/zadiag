@@ -65,6 +65,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _upcomingRemindersCard(context),
                 const SizedBox(height: AppTheme.spacingMd),
                 _logoutCard(context),
+                const SizedBox(height: 2 * AppTheme.spacingXxl),
               ],
             ),
           ),

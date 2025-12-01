@@ -17,7 +17,7 @@ class _RegisterPageState extends State<RegisterPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  
+
   final _registerEmailController = TextEditingController();
   final _registerPasswordController = TextEditingController();
   final _registerConfirmPasswordController = TextEditingController();
@@ -32,10 +32,7 @@ class _RegisterPageState extends State<RegisterPage>
       vsync: this,
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOut,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
     _animationController.forward();
   }
@@ -96,18 +93,16 @@ class _RegisterPageState extends State<RegisterPage>
         borderRadius: BorderRadius.circular(AppTheme.radiusXl),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
+            color: Theme.of(
+              context,
+            ).colorScheme.secondary.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
         ],
       ),
       child: const Center(
-        child: Icon(
-          Icons.person_add_rounded,
-          size: 36,
-          color: Colors.white,
-        ),
+        child: Icon(Icons.person_add_rounded, size: 36, color: Colors.white),
       ),
     );
   }
@@ -209,18 +204,14 @@ class _RegisterPageState extends State<RegisterPage>
         email: email,
         password: password,
       );
-      showSnackbar("Compte créé avec succès !",isError: true);
+      showSnackbar("Compte créé avec succès !", isError: true);
       if (!context.mounted) return;
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) => LoginPage(),
-          transitionsBuilder:
-              (context, animation, secondaryAnimation, child) {
-            return FadeTransition(
-              opacity: animation,
-              child: child,
-            );
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
           },
           transitionDuration: const Duration(milliseconds: 300),
         ),
@@ -248,9 +239,12 @@ class _RegisterPageState extends State<RegisterPage>
   }
 
   void showSnackbar(String message, {bool isError = true}) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: isError ? Colors.red : Colors.green));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+      ),
+    );
   }
 
   Widget _orConnectWithText(BuildContext context) {
