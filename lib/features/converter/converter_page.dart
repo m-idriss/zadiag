@@ -380,6 +380,7 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
                 onImagesUploaded: _onImagesUploaded,
                 isLoading: state.isProcessing,
                 maxImages: 5,
+                initialImages: state.uploadedImages,
               ),
               if (state.uploadedImages.isNotEmpty && !state.isProcessing) ...[
                 const SizedBox(height: AppTheme.spacingLg),
