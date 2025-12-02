@@ -379,15 +379,6 @@ class _ConverterPageState extends State<ConverterPage> {
             physics: const BouncingScrollPhysics(),
             children: [
               _buildHeader(context),
-              const SizedBox(height: AppTheme.spacingLg),
-              ImageUploadZone(
-                onImagesUploaded: _onImagesUploaded,
-                isLoading: _isProcessing,
-                maxImages: 5,
-              ),
-              const SizedBox(height: AppTheme.spacingLg),
-              if (_uploadedImages.isNotEmpty && !_isProcessing)
-                _buildConvertButton(context),
               if (_errorMessage != null) ...[
                 const SizedBox(height: AppTheme.spacingMd),
                 _buildErrorMessage(context),
@@ -400,7 +391,17 @@ class _ConverterPageState extends State<ConverterPage> {
                 const SizedBox(height: AppTheme.spacingLg),
                 _buildExportButton(context),
               ],
-              const SizedBox(height: 100),
+              const SizedBox(height: AppTheme.spacingLg),
+              ImageUploadZone(
+                onImagesUploaded: _onImagesUploaded,
+                isLoading: _isProcessing,
+                maxImages: 5,
+              ),
+              if (_uploadedImages.isNotEmpty && !_isProcessing) ...[
+                const SizedBox(height: AppTheme.spacingLg),
+                _buildConvertButton(context)
+              ],
+              const SizedBox(height: 3 * AppTheme.spacingXxl),
             ],
           ),
         ),
@@ -503,7 +504,14 @@ class _ConverterPageState extends State<ConverterPage> {
   }
 
   Widget _buildEventsSection(BuildContext context) {
-    return Column(
+    return Container(
+        padding: EdgeInsets.all(AppTheme.spacingMd),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+          boxShadow: AppTheme.cardShadow,
+        ),
+        child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
@@ -537,7 +545,7 @@ class _ConverterPageState extends State<ConverterPage> {
           );
         }),
       ],
-    );
+    ));
   }
 
   Widget _buildExportButton(BuildContext context) {

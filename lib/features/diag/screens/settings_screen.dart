@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/features/auth/screens/login_page.dart';
@@ -354,58 +355,153 @@ class _SettingsScreenState extends State<SettingsScreen> {
         required String title,
         required bool isActive,
       }) {
+
+    final monthFormat = DateFormat('MMM');
+    final dayFormat = DateFormat('d');
+    final timeFormat = DateFormat.Hm();
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
-      padding: EdgeInsets.all(AppTheme.spacingMd),
       decoration: BoxDecoration(
-        color: isActive
-            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)
-            : Theme.of(context).colorScheme.surfaceContainerHigh,
+        color: Theme.of(context).colorScheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         border: Border.all(
-          color: isActive
-              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
-              : Colors.transparent,
+          color: Colors.transparent,
         ),
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: isActive
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.outline,
-              shape: BoxShape.circle,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          child: Padding(
+            padding: const EdgeInsets.all(AppTheme.spacingSm),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Date badge
+                _buildDateBadge(monthFormat, dayFormat, colorScheme),
+                const SizedBox(width: AppTheme.spacingMd),
+                // Title and location
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: colorScheme.onSurface,
+                          fontFamily: AppTheme.defaultFontFamilyName,
+                          height: 1.3,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.location_on_rounded,
+                            size: 12,
+                            color: colorScheme.error,
+                          ),
+                          const SizedBox(width: 2),
+                          Expanded(
+                            child: Text(
+                              "location",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colorScheme.onSurface.withValues(alpha: 0.5),
+                                fontFamily: AppTheme.defaultFontFamilyName,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: AppTheme.spacingSm),
+                // Times column
+                _buildTimesColumn(timeFormat, colorScheme),
+              ],
             ),
           ),
-          const SizedBox(width: AppTheme.spacingMd),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontFamily: AppTheme.defaultFontFamilyName,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-                Text(
-                  time,
-                  style: TextStyle(
-                    fontFamily: AppTheme.defaultFontFamilyName,
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                  ),
-                ),
-              ],
+        ),
+      ),
+    );
+  }
+
+  /// Builds the date badge showing month and day number.
+  Widget _buildDateBadge(
+      DateFormat monthFormat,
+      DateFormat dayFormat,
+      ColorScheme colorScheme,
+      ) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            //hardcoded date for example purpose
+            dayFormat.format(DateTime.now()),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: colorScheme.primary,
+              fontFamily: AppTheme.defaultFontFamilyName,
+              height: 1.0,
+            ),
+          ),
+          Text(
+            monthFormat.format(DateTime.now()).toUpperCase(),
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface.withValues(alpha: 0.6),
+              fontFamily: AppTheme.defaultFontFamilyName,
+              letterSpacing: 0.5,
             ),
           ),
         ],
       ),
+    );
+  }
+
+  /// Builds the start and end times column.
+  Widget _buildTimesColumn(DateFormat timeFormat, ColorScheme colorScheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Start time
+        Text(
+          timeFormat.format(DateTime.now()),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: colorScheme.onSurface.withValues(alpha: 0.6),
+            fontFamily: AppTheme.defaultFontFamilyName,
+          ),
+        ),
+        Text(
+          timeFormat.format(DateTime.now().add(const Duration(hours: 1))),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: colorScheme.onSurface.withValues(alpha: 0.4),
+            fontFamily: AppTheme.defaultFontFamilyName,
+          ),
+        ),
+      ],
     );
   }
 }

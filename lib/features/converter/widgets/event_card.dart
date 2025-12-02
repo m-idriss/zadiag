@@ -50,7 +50,10 @@ class EventCard extends StatelessWidget {
   }
 
   /// Builds the dismiss background with delete icon
-  Widget _buildDismissBackground(BuildContext context, ColorScheme colorScheme) {
+  Widget _buildDismissBackground(
+    BuildContext context,
+    ColorScheme colorScheme,
+  ) {
     return Container(
       alignment: Alignment.centerRight,
       padding: const EdgeInsets.only(right: AppTheme.spacingLg),
@@ -58,11 +61,7 @@ class EventCard extends StatelessWidget {
         color: colorScheme.error,
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
       ),
-      child: const Icon(
-        Icons.delete_rounded,
-        color: Colors.white,
-        size: 24,
-      ),
+      child: const Icon(Icons.delete_rounded, color: Colors.white, size: 24),
     );
   }
 
@@ -70,40 +69,31 @@ class EventCard extends StatelessWidget {
   Widget _buildCard(BuildContext context, ColorScheme colorScheme) {
     final monthFormat = DateFormat('MMM');
     final dayFormat = DateFormat('d');
-    // Use locale-aware time format (respects user's 12h/24h preference)
     final timeFormat = DateFormat.Hm();
 
     return Container(
       decoration: BoxDecoration(
-        color: isSelected
-            ? colorScheme.primary.withValues(alpha: 0.08)
-            : colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        color: Theme.of(context).colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         border: Border.all(
-          color: isSelected
-              ? colorScheme.primary.withValues(alpha: 0.3)
-              : colorScheme.outline.withValues(alpha: 0.5),
-          width: 1,
+          color: Colors.transparent,
         ),
-        boxShadow: AppTheme.cardShadow,
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
           child: Padding(
-            padding: const EdgeInsets.all(AppTheme.spacingMd),
+            padding: const EdgeInsets.all(AppTheme.spacingSm),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Date badge (Month + Day) - Apple style
+                // Date badge
                 _buildDateBadge(monthFormat, dayFormat, colorScheme),
                 const SizedBox(width: AppTheme.spacingMd),
                 // Title and location
-                Expanded(
-                  child: _buildEventDetails(colorScheme),
-                ),
+                Expanded(child: _buildEventDetails(colorScheme)),
                 const SizedBox(width: AppTheme.spacingSm),
                 // Times column
                 _buildTimesColumn(timeFormat, colorScheme),
@@ -115,40 +105,40 @@ class EventCard extends StatelessWidget {
     );
   }
 
-  /// Builds the date badge showing month and day number with Apple-style design.
+  /// Builds the date badge showing month and day number.
   Widget _buildDateBadge(
-      DateFormat monthFormat, DateFormat dayFormat, ColorScheme colorScheme) {
+    DateFormat monthFormat,
+    DateFormat dayFormat,
+    ColorScheme colorScheme,
+  ) {
     return Container(
-      width: 52,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppTheme.spacingSm,
-        vertical: AppTheme.spacingSm,
-      ),
+      width: 48,
+      height: 48,
       decoration: BoxDecoration(
-        color: colorScheme.primary,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            monthFormat.format(event.startDateTime).toUpperCase(),
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-              fontFamily: AppTheme.defaultFontFamilyName,
-              letterSpacing: 0.5,
-            ),
-          ),
           Text(
             dayFormat.format(event.startDateTime),
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: colorScheme.primary,
               fontFamily: AppTheme.defaultFontFamilyName,
-              height: 1.2,
+              height: 1.0,
+            ),
+          ),
+          Text(
+            monthFormat.format(event.startDateTime).toUpperCase(),
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface.withValues(alpha: 0.6),
+              fontFamily: AppTheme.defaultFontFamilyName,
+              letterSpacing: 0.5,
             ),
           ),
         ],
@@ -166,8 +156,8 @@ class EventCard extends StatelessWidget {
         Text(
           event.title,
           style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
             color: colorScheme.onSurface,
             fontFamily: AppTheme.defaultFontFamilyName,
             height: 1.3,
@@ -177,29 +167,25 @@ class EventCard extends StatelessWidget {
         ),
         // Location if available
         if (event.location != null && event.location!.isNotEmpty) ...[
-          const SizedBox(height: AppTheme.spacingXs),
+          const SizedBox(height: 2),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 1),
-                child: Icon(
-                  Icons.location_on,
-                  size: 14,
-                  color: colorScheme.error,
-                ),
+              Icon(
+                Icons.location_on_rounded,
+                size: 12,
+                color: colorScheme.error,
               ),
-              const SizedBox(width: 3),
+              const SizedBox(width: 2),
               Expanded(
                 child: Text(
                   event.location!,
                   style: TextStyle(
-                    fontSize: 13,
-                    color: colorScheme.onSurface.withValues(alpha: 0.6),
+                    fontSize: 12,
+                    color: colorScheme.onSurface.withValues(alpha: 0.5),
                     fontFamily: AppTheme.defaultFontFamilyName,
-                    height: 1.3,
                   ),
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -220,20 +206,19 @@ class EventCard extends StatelessWidget {
         Text(
           event.isAllDay ? 'All day' : timeFormat.format(event.startDateTime),
           style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: colorScheme.onSurface,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: colorScheme.onSurface.withValues(alpha: 0.6),
             fontFamily: AppTheme.defaultFontFamilyName,
           ),
         ),
         // End time
         if (!event.isAllDay) ...[
-          const SizedBox(height: 4),
           Text(
             timeFormat.format(event.endDateTime),
             style: TextStyle(
-              fontSize: 13,
-              color: colorScheme.onSurface.withValues(alpha: 0.5),
+              fontSize: 12,
+              color: colorScheme.onSurface.withValues(alpha: 0.4),
               fontFamily: AppTheme.defaultFontFamilyName,
             ),
           ),
