@@ -8,6 +8,7 @@ import 'package:zadiag/core/utils/translate.dart';
 
 import 'models/calendar_event.dart';
 import 'services/converter_service.dart';
+import 'services/event_storage_service.dart';
 import 'services/ics_generator.dart';
 import 'services/ics_export_service.dart';
 import 'widgets/event_card.dart';
@@ -25,6 +26,7 @@ class _ConverterPageState extends State<ConverterPage> {
   final ConverterService _converterService = ConverterService();
   final IcsGenerator _icsGenerator = IcsGenerator();
   final IcsExportService _icsExportService = IcsExportService();
+  final EventStorageService _eventStorageService = EventStorageService();
 
   List<UploadedImage> _uploadedImages = [];
   List<CalendarEvent> _extractedEvents = [];
@@ -32,6 +34,24 @@ class _ConverterPageState extends State<ConverterPage> {
   bool _isExporting = false;
   String? _errorMessage;
   String? _generatedIcs;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedEvents();
+  }
+
+  /// Loads previously saved events from storage when the page is opened.
+  Future<void> _loadSavedEvents() async {
+    final savedEvents = await _eventStorageService.loadEvents();
+    final savedIcs = await _eventStorageService.loadIcsContent();
+    if (mounted && savedEvents.isNotEmpty) {
+      setState(() {
+        _extractedEvents = savedEvents;
+        _generatedIcs = savedIcs;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -43,8 +63,8 @@ class _ConverterPageState extends State<ConverterPage> {
     setState(() {
       _uploadedImages = images;
       if (images.isEmpty) {
-        _extractedEvents = [];
-        _generatedIcs = null;
+        // Only clear error message when images are removed
+        // Keep events and ICS until a new conversion is performed
         _errorMessage = null;
       }
     });
@@ -85,17 +105,24 @@ class _ConverterPageState extends State<ConverterPage> {
 
       if (!mounted) return;
 
-      setState(() {
-        if (result.success && result.hasEvents) {
+      if (result.success && result.hasEvents) {
+        setState(() {
           _extractedEvents = result.events;
           _generatedIcs = result.icsContent;
-          showSnackBar(
-              context, trad(context)!.found_events(result.eventCount));
-        } else {
+        });
+        // Save events to persistent storage
+        await _eventStorageService.saveEvents(
+          result.events,
+          icsContent: result.icsContent,
+        );
+        if (!mounted) return;
+        showSnackBar(context, trad(context)!.found_events(result.eventCount));
+      } else {
+        setState(() {
           _errorMessage =
               result.errorMessage ?? trad(context)!.no_events_found;
-        }
-      });
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -115,6 +142,8 @@ class _ConverterPageState extends State<ConverterPage> {
       _extractedEvents.removeAt(index);
       _generatedIcs = null;
     });
+    // Update saved events after removal
+    _eventStorageService.saveEvents(_extractedEvents);
   }
 
   Future<void> _downloadIcs() async {
