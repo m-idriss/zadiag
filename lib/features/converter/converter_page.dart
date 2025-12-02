@@ -372,6 +372,7 @@ class _ConverterPageState extends State<ConverterPage> {
       body: Container(
         decoration: buildBackground(colorScheme),
         child: SafeArea(
+          bottom: false,
           child: ListView(
             padding: const EdgeInsets.all(AppTheme.spacingLg),
             physics: const BouncingScrollPhysics(),

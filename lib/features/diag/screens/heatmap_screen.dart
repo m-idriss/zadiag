@@ -37,6 +37,7 @@ class _HeatMapScreenState extends State<HeatMapScreen> {
       body: Container(
         decoration: _background(defaultColorScheme),
         child: SafeArea(
+          bottom: false,
           child: ListView(
             padding: EdgeInsets.all(AppTheme.spacingLg),
             physics: const BouncingScrollPhysics(),

@@ -75,6 +75,7 @@ class _HomePageState extends State<HomePage>
 
     return Scaffold(
       extendBody: true,
+      backgroundColor: Colors.transparent,
       body: Stack(
         children: [
           AnimatedSwitcher(

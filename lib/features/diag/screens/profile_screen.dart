@@ -67,6 +67,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: Container(
         decoration: _background(defaultColorScheme),
         child: SafeArea(
+          bottom: false,
           child: Form(
             key: _formKey,
             child: ListView(
