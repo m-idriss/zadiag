@@ -173,5 +173,29 @@ void main() {
 
       expect(ics, isNull);
     });
+
+    test('loadEvents handles malformed JSON gracefully', () async {
+      SharedPreferences.setMockInitialValues({
+        'converter_saved_events': 'not a valid json',
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final malformedService = EventStorageService(prefs: prefs);
+
+      final events = await malformedService.loadEvents();
+
+      expect(events, isEmpty);
+    });
+
+    test('loadEvents handles non-list JSON gracefully', () async {
+      SharedPreferences.setMockInitialValues({
+        'converter_saved_events': '{"key": "value"}',
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final malformedService = EventStorageService(prefs: prefs);
+
+      final events = await malformedService.loadEvents();
+
+      expect(events, isEmpty);
+    });
   });
 }

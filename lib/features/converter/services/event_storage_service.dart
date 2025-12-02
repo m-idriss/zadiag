@@ -60,9 +60,13 @@ class EventStorageService {
         return [];
       }
 
-      final eventsList = jsonDecode(eventsString) as List<dynamic>;
-      return eventsList
-          .map((json) => CalendarEvent.fromJson(json as Map<String, dynamic>))
+      final decoded = jsonDecode(eventsString);
+      if (decoded is! List) {
+        return [];
+      }
+      return decoded
+          .whereType<Map<String, dynamic>>()
+          .map((json) => CalendarEvent.fromJson(json))
           .toList();
     } catch (e) {
       return [];

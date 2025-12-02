@@ -137,13 +137,13 @@ class _ConverterPageState extends State<ConverterPage> {
     }
   }
 
-  void _removeEvent(int index) {
+  Future<void> _removeEvent(int index) async {
     setState(() {
       _extractedEvents.removeAt(index);
       _generatedIcs = null;
     });
     // Update saved events after removal
-    _eventStorageService.saveEvents(_extractedEvents);
+    await _eventStorageService.saveEvents(_extractedEvents);
   }
 
   Future<void> _downloadIcs() async {
