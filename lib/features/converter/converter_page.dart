@@ -7,7 +7,6 @@ import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/core/utils/translate.dart';
 
 import 'models/calendar_event.dart';
-import 'models/conversion_result.dart';
 import 'services/converter_service.dart';
 import 'services/ics_generator.dart';
 import 'services/ics_export_service.dart';
@@ -117,21 +116,6 @@ class _ConverterPageState extends State<ConverterPage> {
     });
   }
 
-  void _generateIcsFile() {
-    if (_extractedEvents.isEmpty) {
-      showSnackBar(context, trad(context)!.no_events_to_export, true);
-      return;
-    }
-
-    final ics = _icsGenerator.generateIcs(_extractedEvents);
-    setState(() {
-      _generatedIcs = ics;
-    });
-
-    // Show success message
-    showSnackBar(context, trad(context)!.ics_generated);
-  }
-
   Future<void> _downloadIcs() async {
     if (_extractedEvents.isEmpty) {
       showSnackBar(context, trad(context)!.no_events_to_export, true);
@@ -186,7 +170,7 @@ class _ConverterPageState extends State<ConverterPage> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppTheme.spacingLg),
-              
+
               // Download/Save option
               _buildOptionTile(
                 context,
@@ -199,7 +183,7 @@ class _ConverterPageState extends State<ConverterPage> {
                 },
               ),
               const SizedBox(height: AppTheme.spacingSm),
-              
+
               // Copy to clipboard option
               _buildOptionTile(
                 context,
@@ -212,7 +196,7 @@ class _ConverterPageState extends State<ConverterPage> {
                 },
               ),
               const SizedBox(height: AppTheme.spacingSm),
-              
+
               // Preview option
               _buildOptionTile(
                 context,
@@ -225,7 +209,7 @@ class _ConverterPageState extends State<ConverterPage> {
                 },
               ),
               const SizedBox(height: AppTheme.spacingLg),
-              
+
               // Cancel button
               TextButton(
                 onPressed: () => Navigator.pop(context),
@@ -305,7 +289,7 @@ class _ConverterPageState extends State<ConverterPage> {
 
       if (filePath != null) {
         showSnackBar(context, trad(context)!.ics_saved_to(filePath));
-        
+
         // Ask if user wants to open the file
         if (mounted) {
           final shouldOpen = await showDialog<bool>(
@@ -344,7 +328,7 @@ class _ConverterPageState extends State<ConverterPage> {
 
   void _copyToClipboard() {
     if (_generatedIcs == null) return;
-    
+
     Clipboard.setData(ClipboardData(text: _generatedIcs!));
     showSnackBar(context, trad(context)!.ics_copied);
   }
@@ -478,13 +462,17 @@ class _ConverterPageState extends State<ConverterPage> {
                 const Icon(Icons.auto_awesome_rounded,
                     color: Colors.white, size: 22),
                 const SizedBox(width: AppTheme.spacingSm),
-                Text(
-                  trad(context)!.convert_button,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: AppTheme.defaultFontFamilyName,
+                Flexible(
+                  child: Text(
+                    trad(context)!.convert_button,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: AppTheme.defaultFontFamilyName,
+                    ),
                   ),
                 ),
               ],
@@ -540,13 +528,17 @@ class _ConverterPageState extends State<ConverterPage> {
               size: 24,
             ),
             const SizedBox(width: AppTheme.spacingSm),
-            Text(
-              '${trad(context)!.extracted_events} (${_extractedEvents.length})',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.onSurface,
-                fontFamily: AppTheme.defaultFontFamilyName,
+            Flexible(
+              child: Text(
+                '${trad(context)!.extracted_events} (${_extractedEvents.length})',
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontFamily: AppTheme.defaultFontFamilyName,
+                ),
               ),
             ),
           ],
@@ -597,13 +589,17 @@ class _ConverterPageState extends State<ConverterPage> {
                     children: [
                       const Icon(Icons.download_rounded, color: Colors.white, size: 22),
                       const SizedBox(width: AppTheme.spacingSm),
-                      Text(
-                        trad(context)!.download_ics,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: AppTheme.defaultFontFamilyName,
+                      Flexible(
+                        child: Text(
+                          trad(context)!.download_ics,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: AppTheme.defaultFontFamilyName,
+                          ),
                         ),
                       ),
                     ],

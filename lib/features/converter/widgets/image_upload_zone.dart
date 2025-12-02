@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -48,7 +47,7 @@ class ImageUploadZone extends StatefulWidget {
 class _ImageUploadZoneState extends State<ImageUploadZone> {
   final List<UploadedImage> _uploadedImages = [];
   final ImagePicker _imagePicker = ImagePicker();
-  bool _isDragging = false;
+  final bool _isDragging = false;
   bool _isPickerActive = false;
 
   void _removeImage(int index) {
@@ -218,7 +217,7 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: _uploadedImages.length,
-              separatorBuilder: (_, __) =>
+              separatorBuilder: (_, _) =>
                   const SizedBox(width: AppTheme.spacingSm),
               itemBuilder: (context, index) {
                 return _buildImageThumbnail(index, colorScheme);
@@ -246,7 +245,7 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
             child: Image.memory(
               image.bytes,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
+              errorBuilder: (_, _, _) => Container(
                 color: colorScheme.surfaceContainerHigh,
                 child: Icon(
                   Icons.image_outlined,

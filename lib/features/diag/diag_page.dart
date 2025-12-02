@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:zadiag/shared/components/btm_nav_item.dart';
-import 'package:zadiag/features/diag/screens/capture_screen.dart';
 import 'package:zadiag/features/diag/screens/profile_screen.dart';
 import 'package:zadiag/features/diag/screens/heatmap_screen.dart';
 import 'package:zadiag/features/diag/screens/branding_screen.dart';
