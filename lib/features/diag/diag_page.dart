@@ -112,7 +112,6 @@ class _HomePageState extends State<HomePage>
       margin: EdgeInsets.only(
         left: AppTheme.spacingLg,
         right: AppTheme.spacingLg,
-        bottom: AppTheme.spacingLg,
       ),
       child: SafeArea(
         top: false,
