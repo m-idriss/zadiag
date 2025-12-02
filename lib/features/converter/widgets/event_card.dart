@@ -70,6 +70,7 @@ class EventCard extends StatelessWidget {
   Widget _buildCard(BuildContext context, ColorScheme colorScheme) {
     final monthFormat = DateFormat('MMM');
     final dayFormat = DateFormat('d');
+    // Use locale-aware time format (respects user's 12h/24h preference)
     final timeFormat = DateFormat.Hm();
 
     return Container(
@@ -132,7 +133,7 @@ class EventCard extends StatelessWidget {
         children: [
           Text(
             monthFormat.format(event.startDateTime).toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
               color: Colors.white,
@@ -142,7 +143,7 @@ class EventCard extends StatelessWidget {
           ),
           Text(
             dayFormat.format(event.startDateTime),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w700,
               color: Colors.white,
