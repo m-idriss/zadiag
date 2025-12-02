@@ -84,7 +84,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 _actionButtons(context),
                 const SizedBox(height: AppTheme.spacingMd),
                 _deleteAccountCard(context),
-                const SizedBox(height: 2 * AppTheme.spacingXxl),
+                const SizedBox(height: 3 * AppTheme.spacingXxl),
               ],
             ),
           ),
