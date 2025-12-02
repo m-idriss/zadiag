@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/features/auth/screens/splash_page.dart';
@@ -13,7 +14,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await _loadSavedLocale();
-  runApp(const MyApp());
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 Future<void> _loadSavedLocale() async {
