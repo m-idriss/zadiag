@@ -47,6 +47,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     bool isDarkMode = themeNotifier.value == ThemeMode.dark;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Container(
         decoration: _background(defaultColorScheme),
         child: SafeArea(

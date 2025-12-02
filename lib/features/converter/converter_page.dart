@@ -369,6 +369,7 @@ class _ConverterPageState extends State<ConverterPage> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Container(
         decoration: buildBackground(colorScheme),
         child: SafeArea(

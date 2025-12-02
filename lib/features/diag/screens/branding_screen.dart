@@ -42,6 +42,7 @@ class _BrandingScreenState extends State<BrandingScreen> {
     final defaultColorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Container(
         decoration: _background(defaultColorScheme),
         child: SafeArea(
