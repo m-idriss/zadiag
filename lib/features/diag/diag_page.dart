@@ -107,6 +107,7 @@ class _HomePageState extends State<HomePage>
 
   Widget bottomNavBar(BuildContext context) {
     return Container(
+      color: Colors.transparent,
       margin: EdgeInsets.only(
         left: AppTheme.spacingLg,
         right: AppTheme.spacingLg,
