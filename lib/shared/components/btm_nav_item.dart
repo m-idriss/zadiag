@@ -28,10 +28,7 @@ class BtmNavItem extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOutCubic,
-        padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 8 : 4,
-          vertical: 4,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -39,8 +36,8 @@ class BtmNavItem extends StatelessWidget {
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeOutCubic,
-              height: isSelected ? 40 : 36,
-              width: isSelected ? 40 : 36,
+              height:  36,
+              width:  36,
               decoration: BoxDecoration(
                 color: isSelected
                     ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
