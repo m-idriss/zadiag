@@ -64,9 +64,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final defaultColorScheme = Theme.of(context).colorScheme;
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Container(
         decoration: _background(defaultColorScheme),
         child: SafeArea(
+          bottom: false,
           child: Form(
             key: _formKey,
             child: ListView(

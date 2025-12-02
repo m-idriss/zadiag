@@ -34,9 +34,11 @@ class _HeatMapScreenState extends State<HeatMapScreen> {
     final defaultColorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Container(
         decoration: _background(defaultColorScheme),
         child: SafeArea(
+          bottom: false,
           child: ListView(
             padding: EdgeInsets.all(AppTheme.spacingLg),
             physics: const BouncingScrollPhysics(),

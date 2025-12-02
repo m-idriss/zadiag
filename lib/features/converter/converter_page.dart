@@ -369,9 +369,11 @@ class _ConverterPageState extends State<ConverterPage> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Container(
         decoration: buildBackground(colorScheme),
         child: SafeArea(
+          bottom: false,
           child: ListView(
             padding: const EdgeInsets.all(AppTheme.spacingLg),
             physics: const BouncingScrollPhysics(),
