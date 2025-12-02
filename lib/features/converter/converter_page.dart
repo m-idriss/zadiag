@@ -42,7 +42,6 @@ class _ConverterPageState extends State<ConverterPage> {
   void _onImagesUploaded(List<UploadedImage> images) {
     setState(() {
       _uploadedImages = images;
-      // Clear previous results when images change
       if (images.isEmpty) {
         _extractedEvents = [];
         _generatedIcs = null;
@@ -64,7 +63,6 @@ class _ConverterPageState extends State<ConverterPage> {
     });
 
     try {
-      // Convert images to data URLs
       final dataUrls = <String>[];
       final fileNames = <String>[];
       final mimeTypes = <String>[];
@@ -76,10 +74,8 @@ class _ConverterPageState extends State<ConverterPage> {
         mimeTypes.add(image.mimeType);
       }
 
-      // Get user timezone
       final timeZone = DateTime.now().timeZoneName;
 
-      // Call converter service
       final result = await _converterService.convertImages(
         imageDataUrls: dataUrls,
         fileNames: fileNames,
@@ -87,25 +83,30 @@ class _ConverterPageState extends State<ConverterPage> {
         timeZone: timeZone,
       );
 
+      if (!mounted) return;
+
       setState(() {
         if (result.success && result.hasEvents) {
           _extractedEvents = result.events;
-          // Store the ICS content from API if available
           _generatedIcs = result.icsContent;
           showSnackBar(
               context, trad(context)!.found_events(result.eventCount));
         } else {
-          _errorMessage = result.errorMessage ?? trad(context)!.no_events_found;
+          _errorMessage =
+              result.errorMessage ?? trad(context)!.no_events_found;
         }
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = '${trad(context)!.error_processing_images}: $e';
       });
     } finally {
-      setState(() {
-        _isProcessing = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+      }
     }
   }
 
@@ -127,23 +128,26 @@ class _ConverterPageState extends State<ConverterPage> {
     });
 
     try {
-      // Generate ICS if not already generated
       _generatedIcs ??= _icsGenerator.generateIcs(_extractedEvents);
 
-      // Show download options dialog
       await _showDownloadOptionsDialog();
     } catch (e) {
+      if (!mounted) return;
       showSnackBar(context, '${trad(context)!.error_exporting_ics}: $e', true);
     } finally {
-      setState(() {
-        _isExporting = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isExporting = false;
+        });
+      }
     }
+
   }
 
   Future<void> _showDownloadOptionsDialog() async {
     if (_generatedIcs == null) return;
 
+    if (!mounted) return;
     await showModalBottomSheet(
       context: context,
       builder: (context) => Container(
@@ -171,7 +175,6 @@ class _ConverterPageState extends State<ConverterPage> {
               ),
               const SizedBox(height: AppTheme.spacingLg),
 
-              // Download/Save option
               _buildOptionTile(
                 context,
                 icon: Icons.download_rounded,
@@ -184,7 +187,6 @@ class _ConverterPageState extends State<ConverterPage> {
               ),
               const SizedBox(height: AppTheme.spacingSm),
 
-              // Copy to clipboard option
               _buildOptionTile(
                 context,
                 icon: Icons.copy_rounded,
@@ -197,7 +199,6 @@ class _ConverterPageState extends State<ConverterPage> {
               ),
               const SizedBox(height: AppTheme.spacingSm),
 
-              // Preview option
               _buildOptionTile(
                 context,
                 icon: Icons.visibility_rounded,
@@ -210,13 +211,13 @@ class _ConverterPageState extends State<ConverterPage> {
               ),
               const SizedBox(height: AppTheme.spacingLg),
 
-              // Cancel button
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: Text(
                   trad(context)!.cancel,
                   style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                    color:
+                    Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                     fontFamily: AppTheme.defaultFontFamilyName,
                   ),
                 ),
@@ -229,12 +230,12 @@ class _ConverterPageState extends State<ConverterPage> {
   }
 
   Widget _buildOptionTile(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
+      BuildContext context, {
+        required IconData icon,
+        required String title,
+        required String subtitle,
+        required VoidCallback onTap,
+      }) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
@@ -287,55 +288,51 @@ class _ConverterPageState extends State<ConverterPage> {
         fileName: fileName,
       );
 
+      if (!mounted) return;
+
       if (filePath != null) {
         showSnackBar(context, trad(context)!.ics_saved_to(filePath));
 
-        // Ask if user wants to open the file
-        if (mounted) {
-          final shouldOpen = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text(trad(context)!.file_saved),
-              content: Text(trad(context)!.file_saved_message),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: Text(trad(context)!.no),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: Text(trad(context)!.open),
-                ),
-              ],
-            ),
-          );
+        final shouldOpen = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(trad(context)!.file_saved),
+            content: Text(trad(context)!.file_saved_message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(trad(context)!.no),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(trad(context)!.open),
+              ),
+            ],
+          ),
+        );
 
-          if (shouldOpen == true) {
-            await _icsExportService.openIcsFile(filePath);
-          }
+        if (!mounted) return;
+        if (shouldOpen == true) {
+          await _icsExportService.openIcsFile(filePath);
         }
       } else {
-        // Web platform - download triggered
         showSnackBar(context, trad(context)!.download_started);
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('Error saving ICS: $e');
-      }
+      if (kDebugMode) print('Error saving ICS: $e');
+      if (!mounted) return;
       showSnackBar(context, '${trad(context)!.error_saving_file}: $e', true);
     }
   }
 
   void _copyToClipboard() {
     if (_generatedIcs == null) return;
-
     Clipboard.setData(ClipboardData(text: _generatedIcs!));
     showSnackBar(context, trad(context)!.ics_copied);
   }
 
   void _showIcsPreview() {
     if (_generatedIcs == null) return;
-
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -355,9 +352,7 @@ class _ConverterPageState extends State<ConverterPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () {
-              _copyToClipboard();
-            },
+            onPressed: _copyToClipboard,
             child: Text(trad(context)!.copy),
           ),
           FilledButton(
@@ -383,38 +378,27 @@ class _ConverterPageState extends State<ConverterPage> {
             children: [
               _buildHeader(context),
               const SizedBox(height: AppTheme.spacingLg),
-
-              // Image Upload Zone
               ImageUploadZone(
                 onImagesUploaded: _onImagesUploaded,
                 isLoading: _isProcessing,
                 maxImages: 5,
               ),
               const SizedBox(height: AppTheme.spacingLg),
-
-              // Convert Button
               if (_uploadedImages.isNotEmpty && !_isProcessing)
                 _buildConvertButton(context),
-
-              // Error Message
               if (_errorMessage != null) ...[
                 const SizedBox(height: AppTheme.spacingMd),
                 _buildErrorMessage(context),
               ],
-
-              // Extracted Events
               if (_extractedEvents.isNotEmpty) ...[
                 const SizedBox(height: AppTheme.spacingXl),
                 _buildEventsSection(context),
               ],
-
-              // Export Button
               if (_extractedEvents.isNotEmpty) ...[
                 const SizedBox(height: AppTheme.spacingLg),
                 _buildExportButton(context),
               ],
-
-              const SizedBox(height: 100), // Bottom padding for nav bar
+              const SizedBox(height: 100),
             ],
           ),
         ),
@@ -444,7 +428,7 @@ class _ConverterPageState extends State<ConverterPage> {
         boxShadow: [
           BoxShadow(
             color:
-                Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -563,7 +547,7 @@ class _ConverterPageState extends State<ConverterPage> {
         boxShadow: [
           BoxShadow(
             color:
-                Theme.of(context).colorScheme.secondary.withValues(alpha: 0.4),
+            Theme.of(context).colorScheme.secondary.withValues(alpha: 0.4),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -577,33 +561,33 @@ class _ConverterPageState extends State<ConverterPage> {
           child: Center(
             child: _isExporting
                 ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            )
                 : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.download_rounded, color: Colors.white, size: 22),
-                      const SizedBox(width: AppTheme.spacingSm),
-                      Flexible(
-                        child: Text(
-                          trad(context)!.download_ics,
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                            fontFamily: AppTheme.defaultFontFamilyName,
-                          ),
-                        ),
-                      ),
-                    ],
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.download_rounded, color: Colors.white, size: 22),
+                const SizedBox(width: AppTheme.spacingSm),
+                Flexible(
+                  child: Text(
+                    trad(context)!.download_ics,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: AppTheme.defaultFontFamilyName,
+                    ),
                   ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
