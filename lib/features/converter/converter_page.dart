@@ -2,11 +2,12 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/core/utils/translate.dart';
 
-import 'models/calendar_event.dart';
+import 'providers/converter_state.dart';
 import 'services/converter_service.dart';
 import 'services/ics_generator.dart';
 import 'services/ics_export_service.dart';
@@ -14,24 +15,17 @@ import 'widgets/event_card.dart';
 import 'widgets/image_upload_zone.dart';
 
 /// Main page for the Image to ICS Converter feature.
-class ConverterPage extends StatefulWidget {
+class ConverterPage extends ConsumerStatefulWidget {
   const ConverterPage({super.key});
 
   @override
-  State<ConverterPage> createState() => _ConverterPageState();
+  ConsumerState<ConverterPage> createState() => _ConverterPageState();
 }
 
-class _ConverterPageState extends State<ConverterPage> {
+class _ConverterPageState extends ConsumerState<ConverterPage> {
   final ConverterService _converterService = ConverterService();
   final IcsGenerator _icsGenerator = IcsGenerator();
   final IcsExportService _icsExportService = IcsExportService();
-
-  List<UploadedImage> _uploadedImages = [];
-  List<CalendarEvent> _extractedEvents = [];
-  bool _isProcessing = false;
-  bool _isExporting = false;
-  String? _errorMessage;
-  String? _generatedIcs;
 
   @override
   void dispose() {
@@ -40,34 +34,26 @@ class _ConverterPageState extends State<ConverterPage> {
   }
 
   void _onImagesUploaded(List<UploadedImage> images) {
-    setState(() {
-      _uploadedImages = images;
-      if (images.isEmpty) {
-        _extractedEvents = [];
-        _generatedIcs = null;
-        _errorMessage = null;
-      }
-    });
+    ref.read(converterProvider.notifier).setUploadedImages(images);
   }
 
   Future<void> _processImages() async {
-    if (_uploadedImages.isEmpty) {
+    final notifier = ref.read(converterProvider.notifier);
+    final state = ref.read(converterProvider);
+    
+    if (state.uploadedImages.isEmpty) {
       showSnackBar(context, trad(context)!.please_upload_image, true);
       return;
     }
 
-    setState(() {
-      _isProcessing = true;
-      _errorMessage = null;
-      _generatedIcs = null;
-    });
+    notifier.prepareForConversion();
 
     try {
       final dataUrls = <String>[];
       final fileNames = <String>[];
       final mimeTypes = <String>[];
 
-      for (final image in _uploadedImages) {
+      for (final image in state.uploadedImages) {
         final base64Data = base64Encode(image.bytes);
         dataUrls.add('data:${image.mimeType};base64,$base64Data');
         fileNames.add(image.name);
@@ -85,50 +71,45 @@ class _ConverterPageState extends State<ConverterPage> {
 
       if (!mounted) return;
 
-      setState(() {
-        if (result.success && result.hasEvents) {
-          _extractedEvents = result.events;
-          _generatedIcs = result.icsContent;
-          showSnackBar(
-              context, trad(context)!.found_events(result.eventCount));
-        } else {
-          _errorMessage =
-              result.errorMessage ?? trad(context)!.no_events_found;
-        }
-      });
+      if (result.success && result.hasEvents) {
+        notifier.setConversionResult(
+          events: result.events,
+          icsContent: result.icsContent,
+        );
+        showSnackBar(context, trad(context)!.found_events(result.eventCount));
+      } else {
+        notifier.setConversionResult(
+          events: [],
+          errorMessage: result.errorMessage ?? trad(context)!.no_events_found,
+        );
+      }
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _errorMessage = '${trad(context)!.error_processing_images}: $e';
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isProcessing = false;
-        });
-      }
+      notifier.setError('${trad(context)!.error_processing_images}: $e');
     }
   }
 
   void _removeEvent(int index) {
-    setState(() {
-      _extractedEvents.removeAt(index);
-      _generatedIcs = null;
-    });
+    ref.read(converterProvider.notifier).removeEvent(index);
   }
 
   Future<void> _downloadIcs() async {
-    if (_extractedEvents.isEmpty) {
+    final notifier = ref.read(converterProvider.notifier);
+    final state = ref.read(converterProvider);
+    
+    if (state.extractedEvents.isEmpty) {
       showSnackBar(context, trad(context)!.no_events_to_export, true);
       return;
     }
 
-    setState(() {
-      _isExporting = true;
-    });
+    notifier.setExporting(true);
 
     try {
-      _generatedIcs ??= _icsGenerator.generateIcs(_extractedEvents);
+      String? icsContent = state.generatedIcs;
+      if (icsContent == null) {
+        icsContent = _icsGenerator.generateIcs(state.extractedEvents);
+        notifier.setGeneratedIcs(icsContent);
+      }
 
       await _showDownloadOptionsDialog();
     } catch (e) {
@@ -136,16 +117,15 @@ class _ConverterPageState extends State<ConverterPage> {
       showSnackBar(context, '${trad(context)!.error_exporting_ics}: $e', true);
     } finally {
       if (mounted) {
-        setState(() {
-          _isExporting = false;
-        });
+        notifier.setExporting(false);
       }
     }
 
   }
 
   Future<void> _showDownloadOptionsDialog() async {
-    if (_generatedIcs == null) return;
+    final state = ref.read(converterProvider);
+    if (state.generatedIcs == null) return;
 
     if (!mounted) return;
     await showModalBottomSheet(
@@ -281,10 +261,11 @@ class _ConverterPageState extends State<ConverterPage> {
   }
 
   Future<void> _saveIcsFile() async {
+    final state = ref.read(converterProvider);
     try {
       final fileName = _icsExportService.getUniqueFileName();
       final filePath = await _icsExportService.exportIcs(
-        _generatedIcs!,
+        state.generatedIcs!,
         fileName: fileName,
       );
 
@@ -326,13 +307,15 @@ class _ConverterPageState extends State<ConverterPage> {
   }
 
   void _copyToClipboard() {
-    if (_generatedIcs == null) return;
-    Clipboard.setData(ClipboardData(text: _generatedIcs!));
+    final state = ref.read(converterProvider);
+    if (state.generatedIcs == null) return;
+    Clipboard.setData(ClipboardData(text: state.generatedIcs!));
     showSnackBar(context, trad(context)!.ics_copied);
   }
 
   void _showIcsPreview() {
-    if (_generatedIcs == null) return;
+    final state = ref.read(converterProvider);
+    if (state.generatedIcs == null) return;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -342,7 +325,7 @@ class _ConverterPageState extends State<ConverterPage> {
           height: 400,
           child: SingleChildScrollView(
             child: SelectableText(
-              _generatedIcs!,
+              state.generatedIcs!,
               style: const TextStyle(
                 fontFamily: 'monospace',
                 fontSize: 12,
@@ -367,6 +350,7 @@ class _ConverterPageState extends State<ConverterPage> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final state = ref.watch(converterProvider);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -379,25 +363,26 @@ class _ConverterPageState extends State<ConverterPage> {
             physics: const BouncingScrollPhysics(),
             children: [
               _buildHeader(context),
-              if (_errorMessage != null) ...[
+              if (state.errorMessage != null) ...[
                 const SizedBox(height: AppTheme.spacingMd),
-                _buildErrorMessage(context),
+                _buildErrorMessage(context, state.errorMessage!),
               ],
-              if (_extractedEvents.isNotEmpty) ...[
+              if (state.extractedEvents.isNotEmpty) ...[
                 const SizedBox(height: AppTheme.spacingXl),
-                _buildEventsSection(context),
+                _buildEventsSection(context, state),
               ],
-              if (_extractedEvents.isNotEmpty) ...[
+              if (state.extractedEvents.isNotEmpty) ...[
                 const SizedBox(height: AppTheme.spacingLg),
-                _buildExportButton(context),
+                _buildExportButton(context, state),
               ],
               const SizedBox(height: AppTheme.spacingLg),
               ImageUploadZone(
                 onImagesUploaded: _onImagesUploaded,
-                isLoading: _isProcessing,
+                isLoading: state.isProcessing,
                 maxImages: 5,
+                initialImages: state.uploadedImages,
               ),
-              if (_uploadedImages.isNotEmpty && !_isProcessing) ...[
+              if (state.uploadedImages.isNotEmpty && !state.isProcessing) ...[
                 const SizedBox(height: AppTheme.spacingLg),
                 _buildConvertButton(context)
               ],
@@ -470,7 +455,7 @@ class _ConverterPageState extends State<ConverterPage> {
     );
   }
 
-  Widget _buildErrorMessage(BuildContext context) {
+  Widget _buildErrorMessage(BuildContext context, String errorMessage) {
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacingMd),
       decoration: BoxDecoration(
@@ -490,7 +475,7 @@ class _ConverterPageState extends State<ConverterPage> {
           const SizedBox(width: AppTheme.spacingSm),
           Expanded(
             child: Text(
-              _errorMessage!,
+              errorMessage,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.error,
                 fontSize: 14,
@@ -503,7 +488,7 @@ class _ConverterPageState extends State<ConverterPage> {
     );
   }
 
-  Widget _buildEventsSection(BuildContext context) {
+  Widget _buildEventsSection(BuildContext context, ConverterState state) {
     return Container(
         padding: EdgeInsets.all(AppTheme.spacingMd),
         decoration: BoxDecoration(
@@ -524,7 +509,7 @@ class _ConverterPageState extends State<ConverterPage> {
             const SizedBox(width: AppTheme.spacingSm),
             Flexible(
               child: Text(
-                '${trad(context)!.extracted_events} (${_extractedEvents.length})',
+                '${trad(context)!.extracted_events} (${state.extractedEvents.length})',
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
                 style: TextStyle(
@@ -538,7 +523,7 @@ class _ConverterPageState extends State<ConverterPage> {
           ],
         ),
         const SizedBox(height: AppTheme.spacingMd),
-        ..._extractedEvents.asMap().entries.map((entry) {
+        ...state.extractedEvents.asMap().entries.map((entry) {
           return EventCard(
             event: entry.value,
             onDelete: () => _removeEvent(entry.key),
@@ -548,7 +533,7 @@ class _ConverterPageState extends State<ConverterPage> {
     ));
   }
 
-  Widget _buildExportButton(BuildContext context) {
+  Widget _buildExportButton(BuildContext context, ConverterState state) {
     return Container(
       height: 56,
       decoration: BoxDecoration(
@@ -566,10 +551,10 @@ class _ConverterPageState extends State<ConverterPage> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: _isExporting ? null : _downloadIcs,
+          onTap: state.isExporting ? null : _downloadIcs,
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
           child: Center(
-            child: _isExporting
+            child: state.isExporting
                 ? const SizedBox(
               width: 24,
               height: 24,

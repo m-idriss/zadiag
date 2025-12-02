@@ -33,11 +33,15 @@ class ImageUploadZone extends StatefulWidget {
   /// Whether upload is in progress
   final bool isLoading;
 
+  /// Initial list of uploaded images (for state restoration)
+  final List<UploadedImage> initialImages;
+
   const ImageUploadZone({
     super.key,
     required this.onImagesUploaded,
     this.maxImages = 5,
     this.isLoading = false,
+    this.initialImages = const [],
   });
 
   @override
@@ -45,10 +49,25 @@ class ImageUploadZone extends StatefulWidget {
 }
 
 class _ImageUploadZoneState extends State<ImageUploadZone> {
-  final List<UploadedImage> _uploadedImages = [];
+  late List<UploadedImage> _uploadedImages;
   final ImagePicker _imagePicker = ImagePicker();
   final bool _isDragging = false;
   bool _isPickerActive = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _uploadedImages = List.from(widget.initialImages);
+  }
+
+  @override
+  void didUpdateWidget(ImageUploadZone oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Sync with parent state if images changed externally
+    if (!listEquals(widget.initialImages, oldWidget.initialImages)) {
+      _uploadedImages = List.from(widget.initialImages);
+    }
+  }
 
   void _removeImage(int index) {
     setState(() {
