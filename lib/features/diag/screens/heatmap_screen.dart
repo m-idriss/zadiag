@@ -31,39 +31,48 @@ class _HeatMapScreenState extends State<HeatMapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final defaultColorScheme = Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Container(
-        decoration: _background(defaultColorScheme),
-        child: SafeArea(
-          bottom: false,
-          child: ListView(
-            padding: EdgeInsets.all(AppTheme.spacingLg),
-            physics: const BouncingScrollPhysics(),
-            children: [
-              _header(context),
-              const SizedBox(height: AppTheme.spacingLg),
-              _heatMapCard(context),
-              const SizedBox(height: AppTheme.spacingMd),
-              _legendCard(context),
-            ],
+      backgroundColor: colorScheme.surface,
+      appBar: AppBar(
+        title: Text(
+          trad(context)!.activity_tracking,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            fontFamily: AppTheme.defaultFontFamilyName,
+            color: colorScheme.onSurface,
           ),
         ),
+        centerTitle: true,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        backgroundColor: Colors.transparent,
       ),
-    );
-  }
-
-  BoxDecoration _background(ColorScheme colorScheme) {
-    return buildBackground(colorScheme);
-  }
-
-  Column _header(BuildContext context) {
-    return buildHeader(
-      context,
-      trad(context)!.activity_tracking,
-      trad(context)!.activity_tracking_subtitle,
+      body: Container(
+        decoration: buildBackground(colorScheme),
+        child: ListView(
+          padding: EdgeInsets.symmetric(horizontal: AppTheme.spacingLg),
+          physics: const BouncingScrollPhysics(),
+          children: [
+            const SizedBox(height: AppTheme.spacingSm),
+            Text(
+              trad(context)!.activity_tracking_subtitle,
+              style: AppTheme.bodyStyle(
+                colorScheme.onSurface,
+                alpha: 0.7,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppTheme.spacingLg),
+            _heatMapCard(context),
+            const SizedBox(height: AppTheme.spacingMd),
+            _legendCard(context),
+            const SizedBox(height: AppTheme.spacingXl),
+          ],
+        ),
+      ),
     );
   }
 

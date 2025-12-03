@@ -376,48 +376,68 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
     final state = ref.watch(converterProvider);
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: colorScheme.surface,
+      appBar: AppBar(
+        title: Text(
+          trad(context)!.converter_title,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            fontFamily: AppTheme.defaultFontFamilyName,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        centerTitle: true,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        backgroundColor: Colors.transparent,
+      ),
       body: Container(
         decoration: buildBackground(colorScheme),
-        child: SafeArea(
-          bottom: false,
-          child: ListView(
-            padding: const EdgeInsets.all(AppTheme.spacingLg),
-            physics: const BouncingScrollPhysics(),
-            children: [
-              _buildHeader(context),
-              if (state.uploadedImages.isEmpty) ...[
-                const SizedBox(height: AppTheme.spacingLg),
-                _brandingCard(context, AppTheme.radiusSm),
-              ],
-              if (state.errorMessage != null) ...[
-                const SizedBox(height: AppTheme.spacingMd),
-                _buildErrorMessage(context, state.errorMessage!),
-              ],
-              if (state.extractedEvents.isNotEmpty) ...[
-                const SizedBox(height: AppTheme.spacingXl),
-                _buildEventsSection(context, state),
-                const SizedBox(height: AppTheme.spacingLg),
-                _buildExportButton(context, state),
-              ],
-              const SizedBox(height: AppTheme.spacingLg),
-              ImageUploadZone(
-                onImagesUploaded: _onImagesUploaded,
-                isLoading: state.isProcessing,
-                maxImages: 5,
-                initialImages: state.uploadedImages,
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingLg),
+          physics: const BouncingScrollPhysics(),
+          children: [
+            const SizedBox(height: AppTheme.spacingSm),
+            Text(
+              trad(context)!.converter_subtitle,
+              style: AppTheme.bodyStyle(
+                colorScheme.onSurface,
+                alpha: 0.7,
               ),
-              if (state.uploadedImages.isNotEmpty && !state.isProcessing) ...[
-                const SizedBox(height: AppTheme.spacingLg),
-                _buildConvertButton(context),
-              ],
-              if (state.uploadedImages.isEmpty) ...[
-                const SizedBox(height: AppTheme.spacingLg),
-                _buildStatsSection(context),
-              ],
-              const SizedBox(height: 3 * AppTheme.spacingXxl),
+              textAlign: TextAlign.center,
+            ),
+            if (state.uploadedImages.isEmpty) ...[
+              const SizedBox(height: AppTheme.spacingLg),
+              _brandingCard(context, AppTheme.radiusSm),
             ],
-          ),
+            if (state.errorMessage != null) ...[
+              const SizedBox(height: AppTheme.spacingMd),
+              _buildErrorMessage(context, state.errorMessage!),
+            ],
+            if (state.extractedEvents.isNotEmpty) ...[
+              const SizedBox(height: AppTheme.spacingXl),
+              _buildEventsSection(context, state),
+              const SizedBox(height: AppTheme.spacingLg),
+              _buildExportButton(context, state),
+            ],
+            const SizedBox(height: AppTheme.spacingLg),
+            ImageUploadZone(
+              onImagesUploaded: _onImagesUploaded,
+              isLoading: state.isProcessing,
+              maxImages: 5,
+              initialImages: state.uploadedImages,
+            ),
+            if (state.uploadedImages.isNotEmpty && !state.isProcessing) ...[
+              const SizedBox(height: AppTheme.spacingLg),
+              _buildConvertButton(context),
+            ],
+            if (state.uploadedImages.isEmpty) ...[
+              const SizedBox(height: AppTheme.spacingLg),
+              _buildStatsSection(context),
+            ],
+            const SizedBox(height: AppTheme.spacingXl),
+          ],
         ),
       ),
     );

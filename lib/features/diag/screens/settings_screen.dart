@@ -44,32 +44,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final defaultColorScheme = Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: colorScheme.surface,
+      appBar: AppBar(
+        title: Text(
+          trad(context)!.settings,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            fontFamily: AppTheme.defaultFontFamilyName,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        centerTitle: true,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        backgroundColor: Colors.transparent,
+      ),
       body: Container(
-        decoration: _background(defaultColorScheme),
-        child: SafeArea(
-          bottom: false,
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              padding: EdgeInsets.all(AppTheme.spacingLg),
-              physics: const BouncingScrollPhysics(),
-              children: [
-                _header(context),
-                const SizedBox(height: AppTheme.spacingMd),
-                _settingsCard(context),
-                const SizedBox(height: AppTheme.spacingMd),
-                _notificationCard(context),
-                const SizedBox(height: AppTheme.spacingMd),
-                _upcomingRemindersCard(context),
-                const SizedBox(height: AppTheme.spacingMd),
-                _logoutCard(context),
-                const SizedBox(height: 2 * AppTheme.spacingXxl),
-              ],
-            ),
+        decoration: buildBackground(colorScheme),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: EdgeInsets.symmetric(horizontal: AppTheme.spacingLg),
+            physics: const BouncingScrollPhysics(),
+            children: [
+              const SizedBox(height: AppTheme.spacingSm),
+              Text(
+                trad(context)!.settings_subtitle,
+                style: AppTheme.bodyStyle(
+                  colorScheme.onSurface,
+                  alpha: 0.7,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppTheme.spacingMd),
+              _settingsCard(context),
+              const SizedBox(height: AppTheme.spacingMd),
+              _notificationCard(context),
+              const SizedBox(height: AppTheme.spacingMd),
+              _upcomingRemindersCard(context),
+              const SizedBox(height: AppTheme.spacingMd),
+              _logoutCard(context),
+              const SizedBox(height: AppTheme.spacingXl),
+            ],
           ),
         ),
       ),
@@ -323,18 +343,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  BoxDecoration _background(ColorScheme colorScheme) {
-    return buildBackground(colorScheme);
-  }
-
-  Column _header(BuildContext context) {
-    return buildHeader(
-      context,
-      trad(context)!.settings,
-      trad(context)!.settings_subtitle,
     );
   }
 
