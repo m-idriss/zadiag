@@ -66,16 +66,17 @@
   "hours_saved": "Hours Saved",
   "workdays_saved": "Workdays Saved",
   "get_started": "Get Started",
-  "converter_title": "Convert Images",
-  "converter_subtitle": "Upload photos of appointments and schedules to extract calendar events.",
+  "converter_title": "Convert Files",
+  "converter_subtitle": "Upload photos or PDFs of appointments and schedules to extract calendar events.",
   "convert_button": "Convert to Calendar Events",
   "extracted_events": "Extracted Events",
   "download_ics": "Download ICS File",
-  "no_events_found": "No events found in images",
-  "processing_images": "Processing images...",
+  "no_events_found": "No events found in files",
+  "processing_images": "Processing files...",
   "upload_images": "Tap to upload images",
-  "upload_hint": "Upload photos of appointments or schedules",
-  "supported_formats": "Supports: JPG, PNG, WEBP",
+  "upload_files": "Tap to upload files",
+  "upload_hint": "Upload photos or PDFs of appointments or schedules",
+  "supported_formats": "Supports: JPG, PNG, WEBP, PDF",
   "images_selected": "images selected",
   "clear_all": "Clear all",
   "ics_generated": "ICS file generated! Ready to download.",
@@ -95,7 +96,7 @@
   "generated_ics_file": "Generated ICS File",
   "copy": "Copy",
   "close": "Close",
-  "please_upload_image": "Please upload at least one image",
+  "please_upload_image": "Please upload at least one file",
   "found_events": "Found {count} events!",
   "@found_events": {
     "placeholders": {
@@ -105,9 +106,9 @@
     }
   },
   "no_events_to_export": "No events to export",
-  "error_processing_images": "Error processing images",
+  "error_processing_images": "Error processing files",
   "error_exporting_ics": "Error exporting ICS",
-  "max_images_allowed": "Maximum {count} images allowed",
+  "max_images_allowed": "Maximum {count} files allowed",
   "@max_images_allowed": {
     "placeholders": {
       "count": {
@@ -115,7 +116,24 @@
       }
     }
   },
+  "max_files_allowed": "Maximum {count} files allowed",
+  "@max_files_allowed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "files_selected": "{count} file(s) selected",
+  "@files_selected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "error_selecting_images": "Error selecting images",
+  "error_selecting_files": "Error selecting files",
   "error_capturing_image": "Error capturing image",
   "ics_saved_to": "ICS saved to: {path}",
   "@ics_saved_to": {
@@ -126,8 +144,10 @@
     }
   },
   "choose_image_source": "Choose Image Source",
+  "choose_file_source": "Choose File Source",
   "camera": "Camera",
   "gallery": "Gallery",
+  "pdf_files": "PDF Files",
   "unknown_error": "Unknown error",
   "user_not_found": "User not found",
   "wrong_password": "Incorrect password",

@@ -1,18 +1,19 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/core/utils/translate.dart';
 
-/// Model representing an uploaded image file.
+/// Model representing an uploaded file (image or PDF).
 class UploadedImage {
-  /// The image data as bytes
+  /// The file data as bytes
   final Uint8List bytes;
 
   /// Original file name
   final String name;
 
-  /// MIME type of the image
+  /// MIME type of the file
   final String mimeType;
 
   UploadedImage({
@@ -20,6 +21,12 @@ class UploadedImage {
     required this.name,
     required this.mimeType,
   });
+
+  /// Returns true if this is a PDF file
+  bool get isPdf => mimeType == 'application/pdf';
+
+  /// Returns true if this is an image file
+  bool get isImage => mimeType.startsWith('image/');
 }
 
 /// Widget for uploading images with drag-and-drop and file picker support.
@@ -172,7 +179,7 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  trad(context)!.upload_images,
+                                  trad(context)!.upload_files,
                                   style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w600,
@@ -204,14 +211,14 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
           ),
         ),
 
-        // Image preview grid
+        // File preview grid
         if (_uploadedImages.isNotEmpty) ...[
           const SizedBox(height: AppTheme.spacingSm),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${_uploadedImages.length} image${_uploadedImages.length != 1 ? 's' : ''} selected',
+                trad(context)!.files_selected(_uploadedImages.length),
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
@@ -256,7 +263,7 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
   }
 
   Widget _buildImageThumbnail(int index, ColorScheme colorScheme) {
-    final image = _uploadedImages[index];
+    final file = _uploadedImages[index];
     return Stack(
       children: [
         Container(
@@ -268,19 +275,30 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(AppTheme.radiusSm - 1),
-            child: Image.memory(
-              image.bytes,
-              fit: BoxFit.cover,
-              errorBuilder:
-                  (_, _, _) => Container(
+            child: file.isPdf
+                ? Container(
                     color: colorScheme.surfaceContainerHigh,
-                    child: Icon(
-                      Icons.image_outlined,
-                      size: 20,
-                      color: colorScheme.onSurface.withValues(alpha: 0.3),
+                    child: Center(
+                      child: Icon(
+                        Icons.picture_as_pdf,
+                        size: 28,
+                        color: Colors.red.shade400,
+                      ),
                     ),
+                  )
+                : Image.memory(
+                    file.bytes,
+                    fit: BoxFit.cover,
+                    errorBuilder:
+                        (_, _, _) => Container(
+                          color: colorScheme.surfaceContainerHigh,
+                          child: Icon(
+                            Icons.image_outlined,
+                            size: 20,
+                            color: colorScheme.onSurface.withValues(alpha: 0.3),
+                          ),
+                        ),
                   ),
-            ),
           ),
         ),
         Positioned(
@@ -307,7 +325,7 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
     );
   }
 
-  /// Shows a bottom sheet to let the user choose between Camera and Gallery
+  /// Shows a bottom sheet to let the user choose between Camera, Gallery, or PDF
   void _showImageSourceSelection() {
     if (widget.isLoading || _isPickerActive) return;
 
@@ -329,7 +347,7 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
                     vertical: AppTheme.spacingMd,
                   ),
                   child: Text(
-                    trad(context)!.choose_image_source,
+                    trad(context)!.choose_file_source,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -351,6 +369,14 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
                   onTap: () {
                     Navigator.pop(context);
                     pickFromCamera();
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.picture_as_pdf_outlined),
+                  title: Text(trad(context)!.pdf_files),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickPdfFiles();
                   },
                 ),
                 const SizedBox(height: AppTheme.spacingMd),
@@ -463,8 +489,95 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
       case 'heic':
       case 'heif':
         return 'image/heic';
+      case 'pdf':
+        return 'application/pdf';
       default:
         return 'image/jpeg'; // Default to JPEG
+    }
+  }
+
+  /// Picks PDF files from the device.
+  Future<void> _pickPdfFiles() async {
+    if (_isPickerActive) return;
+
+    setState(() {
+      _isPickerActive = true;
+    });
+
+    try {
+      final remaining = widget.maxImages - _uploadedImages.length;
+      if (remaining <= 0) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                trad(context)!.max_files_allowed(widget.maxImages),
+              ),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+        return;
+      }
+
+      // Pick PDF files
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+        allowMultiple: true,
+        withData: true,
+      );
+
+      if (result == null || result.files.isEmpty) {
+        return; // User cancelled
+      }
+
+      // Take only up to remaining allowed files
+      final filesToProcess = result.files.take(remaining).toList();
+
+      final newFiles = <UploadedImage>[];
+      for (final file in filesToProcess) {
+        try {
+          if (file.bytes != null) {
+            newFiles.add(
+              UploadedImage(
+                bytes: file.bytes!,
+                name: file.name,
+                mimeType: 'application/pdf',
+              ),
+            );
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print('Error processing PDF ${file.name}: $e');
+          }
+        }
+      }
+
+      if (newFiles.isNotEmpty && mounted) {
+        setState(() {
+          _uploadedImages.addAll(newFiles);
+        });
+        widget.onImagesUploaded(_uploadedImages);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error picking PDF files: $e');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${trad(context)!.error_selecting_files}: $e'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPickerActive = false;
+        });
+      }
     }
   }
 

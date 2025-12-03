@@ -728,6 +728,12 @@ abstract class AppLocalizations {
   /// **'Choose Image Source'**
   String get choose_image_source;
 
+  /// No description provided for @choose_file_source.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose File Source'**
+  String get choose_file_source;
+
   /// No description provided for @camera.
   ///
   /// In en, this message translates to:
@@ -739,6 +745,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Gallery'**
   String get gallery;
+
+  /// No description provided for @pdf_files.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF Files'**
+  String get pdf_files;
+
+  /// No description provided for @upload_files.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to upload files'**
+  String get upload_files;
+
+  /// No description provided for @max_files_allowed.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum {count} files allowed'**
+  String max_files_allowed(int count);
+
+  /// No description provided for @files_selected.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} file(s) selected'**
+  String files_selected(int count);
+
+  /// No description provided for @error_selecting_files.
+  ///
+  /// In en, this message translates to:
+  /// **'Error selecting files'**
+  String get error_selecting_files;
 
   /// No description provided for @unknown_error.
   ///
