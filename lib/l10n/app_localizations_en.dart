@@ -323,4 +323,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String ics_saved_to(String path) {
     return 'ICS saved to: $path';
   }
+
+  @override
+  String get choose_image_source => 'Choose Image Source';
+
+  @override
+  String get camera => 'Camera';
+
+  @override
+  String get gallery => 'Gallery';
 }

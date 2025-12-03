@@ -121,5 +121,8 @@
         "type": "String"
       }
     }
-  }
+  },
+  "choose_image_source": "Choisir la source de l'image",
+  "camera": "Appareil photo",
+  "gallery": "Galerie"
 }

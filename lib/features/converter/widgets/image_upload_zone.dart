@@ -116,7 +116,10 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: widget.isLoading || _isPickerActive ? null : _pickImages,
+              onTap:
+                  widget.isLoading || _isPickerActive
+                      ? null
+                      : _showImageSourceSelection,
               borderRadius: BorderRadius.circular(AppTheme.radiusXl),
               child: Container(
                 width: double.infinity,
@@ -304,8 +307,61 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
     );
   }
 
+  /// Shows a bottom sheet to let the user choose between Camera and Gallery
+  void _showImageSourceSelection() {
+    if (widget.isLoading || _isPickerActive) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusLg),
+        ),
+      ),
+      builder:
+          (context) => SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: AppTheme.spacingMd,
+                  ),
+                  child: Text(
+                    trad(context)!.choose_image_source,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library_outlined),
+                  title: Text(trad(context)!.gallery),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImagesFromGallery();
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.camera_alt_outlined),
+                  title: Text(trad(context)!.camera),
+                  onTap: () {
+                    Navigator.pop(context);
+                    pickFromCamera();
+                  },
+                ),
+                const SizedBox(height: AppTheme.spacingMd),
+              ],
+            ),
+          ),
+    );
+  }
+
   /// Picks images from the device gallery.
-  Future<void> _pickImages() async {
+  Future<void> _pickImagesFromGallery() async {
     if (_isPickerActive) return;
 
     setState(() {

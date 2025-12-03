@@ -703,6 +703,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'ICS saved to: {path}'**
   String ics_saved_to(String path);
+
+  /// No description provided for @choose_image_source.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Image Source'**
+  String get choose_image_source;
+
+  /// No description provided for @camera.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get camera;
+
+  /// No description provided for @gallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery'**
+  String get gallery;
 }
 
 class _AppLocalizationsDelegate

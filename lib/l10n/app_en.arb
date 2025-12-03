@@ -121,5 +121,8 @@
         "type": "String"
       }
     }
-  }
+  },
+  "choose_image_source": "Choose Image Source",
+  "camera": "Camera",
+  "gallery": "Gallery"
 }
