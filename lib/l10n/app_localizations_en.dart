@@ -56,7 +56,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get changes_saved => 'Changes saved';
 
   @override
-  String get dark_mode => 'Dark Mode';
+  String get appearance => 'Appearance';
+
+  @override
+  String get theme_light => 'Light';
+
+  @override
+  String get theme_dark => 'Dark';
+
+  @override
+  String get theme_auto => 'Auto';
 
   @override
   String get email_hint => 'john.doe@email.com';
@@ -332,4 +341,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gallery => 'Gallery';
+
+  @override
+  String get unknown_error => 'Unknown error';
+
+  @override
+  String get user_not_found => 'User not found';
+
+  @override
+  String get wrong_password => 'Incorrect password';
+
+  @override
+  String get passwords_do_not_match => 'Passwords do not match';
+
+  @override
+  String get account_created => 'Account created successfully!';
+
+  @override
+  String get email_already_in_use => 'This email is already in use.';
+
+  @override
+  String get invalid_email => 'Invalid email address.';
+
+  @override
+  String get weak_password => 'Password is too weak.';
+
+  @override
+  String get error => 'Error';
 }

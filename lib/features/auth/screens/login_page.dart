@@ -1,12 +1,15 @@
-import 'dart:ui' as ui;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:zadiag/features/diag/diag_page.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/core/utils/translate.dart';
+import 'package:zadiag/core/utils/navigation_helper.dart';
 import 'package:zadiag/features/auth/screens/register_page.dart';
 import 'package:zadiag/features/auth/screens/components/auth_elements.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
+import 'package:zadiag/shared/components/glass_scaffold.dart';
+import 'package:zadiag/shared/components/glass_container.dart';
+import 'package:zadiag/shared/components/zadiag_logo.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -62,144 +65,39 @@ class _LoginPageState extends State<LoginPage>
 
   @override
   Widget build(BuildContext context) {
-    final defaultColorScheme = Theme.of(context).colorScheme;
-    return Scaffold(
-      extendBody: true,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              defaultColorScheme.primary,
-              defaultColorScheme.tertiary,
-              defaultColorScheme.secondary,
-            ],
-            stops: const [0.0, 0.5, 1.0],
+    return GlassScaffold(
+      body: SafeArea(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: ListView(
+              padding: EdgeInsets.symmetric(horizontal: AppTheme.spacingLg),
+              physics: const BouncingScrollPhysics(),
+              children: [
+                const SizedBox(height: AppTheme.spacingXl),
+                const Center(child: ZadiagLogo(size: 100, fontSize: 36)),
+                const SizedBox(height: AppTheme.spacingXs),
+                _loginWelcomeText(context),
+                _loginSubtitle(context),
+                _formCard(context),
+                _orConnectWithText(context),
+                socialButtons(context),
+                const SizedBox(height: 80), // Space for bottom bar
+              ],
+            ),
           ),
-        ),
-        child: Stack(
-          children: [
-            // Decorative background circles
-            Positioned(
-              top: -100,
-              right: -100,
-              child: Container(
-                width: 300,
-                height: 300,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.05),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: -50,
-              left: -50,
-              child: Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.05),
-                ),
-              ),
-            ),
-            SafeArea(
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: SlideTransition(
-                  position: _slideAnimation,
-                  child: ListView(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppTheme.spacingLg,
-                    ),
-                    physics: const BouncingScrollPhysics(),
-                    children: [
-                      const SizedBox(height: AppTheme.spacingXl),
-                      Center(child: _brandingSection(context)),
-                      const SizedBox(height: AppTheme.spacingXs),
-                      _loginWelcomeText(context),
-                      _loginSubtitle(context),
-                      _formCard(context),
-                      _orConnectWithText(context),
-                      socialButtons(context),
-                      const SizedBox(height: 80), // Space for bottom bar
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
         ),
       ),
       bottomNavigationBar: _bottom(context),
     );
   }
 
-  Widget _brandingSection(BuildContext context) {
-    return Container(
-      width: 100,
-      height: 100,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.2),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Center(
-            child: Container(
-              width: 60,
-              height: 60,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  'Z',
-                  style: TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w900,
-                    color: Theme.of(context).colorScheme.primary,
-                    fontFamily: AppTheme.defaultFontFamilyName,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _formCard(BuildContext context) {
-    return Container(
+    return GlassContainer(
       padding: EdgeInsets.all(AppTheme.spacingLg),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
+      borderRadius: AppTheme.radiusXl,
+      opacity: 0.9,
       child: Column(
         children: [
           _emailTextField(context),
@@ -272,28 +170,19 @@ class _LoginPageState extends State<LoginPage>
       );
       if (!mounted) return;
 
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder:
-              (context, animation, secondaryAnimation) => const HomePage(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 300),
-        ),
-      );
+      NavigationHelper.navigateWithFade(context, const HomePage());
     } on FirebaseAuthException catch (e) {
-      String message = 'Erreur inconnue';
+      if (!mounted) return;
+      String message = trad(context)?.unknown_error ?? 'Unknown error';
       if (e.code == 'user-not-found') {
-        message = 'Utilisateur non trouvé';
+        message = trad(context)?.user_not_found ?? 'User not found';
       } else if (e.code == 'wrong-password') {
-        message = 'Mot de passe incorrect';
+        message = trad(context)?.wrong_password ?? 'Wrong password';
       }
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
     }
   }
 
@@ -392,25 +281,10 @@ class _LoginPageState extends State<LoginPage>
       alignment: Alignment.center,
       child: TextButton(
         onPressed: () {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            Navigator.pushReplacement(
-              context,
-              PageRouteBuilder(
-                pageBuilder:
-                    (context, animation, secondaryAnimation) =>
-                        const RegisterPage(),
-                transitionsBuilder: (
-                  context,
-                  animation,
-                  secondaryAnimation,
-                  child,
-                ) {
-                  return FadeTransition(opacity: animation, child: child);
-                },
-                transitionDuration: const Duration(milliseconds: 300),
-              ),
-            );
-          });
+          NavigationHelper.navigateWithFadePostFrame(
+            context,
+            const RegisterPage(),
+          );
         },
         style: TextButton.styleFrom(
           padding: EdgeInsets.symmetric(

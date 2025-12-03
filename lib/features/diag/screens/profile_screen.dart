@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:zadiag/core/utils/language_manager.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
+import 'package:zadiag/core/utils/navigation_helper.dart';
 import 'package:intl/intl.dart';
 import 'package:zadiag/core/utils/translate.dart';
 import 'package:zadiag/features/auth/screens/login_page.dart';
@@ -469,21 +470,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       await user.delete();
 
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const LoginPage(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
-        );
+        NavigationHelper.navigateWithFade(context, const LoginPage());
       }
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;

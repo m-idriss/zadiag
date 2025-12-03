@@ -56,7 +56,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get changes_saved => 'Modifications sauvegardées';
 
   @override
-  String get dark_mode => 'Mode sombre';
+  String get appearance => 'Apparence';
+
+  @override
+  String get theme_light => 'Clair';
+
+  @override
+  String get theme_dark => 'Sombre';
+
+  @override
+  String get theme_auto => 'Auto';
 
   @override
   String get email_hint => 'jean.dupont@email.com';
@@ -335,4 +344,31 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get gallery => 'Galerie';
+
+  @override
+  String get unknown_error => 'Erreur inconnue';
+
+  @override
+  String get user_not_found => 'Utilisateur non trouvé';
+
+  @override
+  String get wrong_password => 'Mot de passe incorrect';
+
+  @override
+  String get passwords_do_not_match => 'Les mots de passe ne correspondent pas';
+
+  @override
+  String get account_created => 'Compte créé avec succès !';
+
+  @override
+  String get email_already_in_use => 'Cet e-mail est déjà utilisé.';
+
+  @override
+  String get invalid_email => 'Adresse e-mail invalide.';
+
+  @override
+  String get weak_password => 'Mot de passe trop faible.';
+
+  @override
+  String get error => 'Erreur';
 }

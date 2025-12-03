@@ -45,7 +45,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final defaultColorScheme = Theme.of(context).colorScheme;
-    bool isDarkMode = themeNotifier.value == ThemeMode.dark;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -61,7 +60,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 _header(context),
                 const SizedBox(height: AppTheme.spacingMd),
-                _settingsCard(context, isDarkMode),
+                _settingsCard(context),
                 const SizedBox(height: AppTheme.spacingMd),
                 _notificationCard(context),
                 const SizedBox(height: AppTheme.spacingMd),
@@ -77,7 +76,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _settingsCard(BuildContext context, bool isDarkMode) {
+  Future<void> _saveThemePreference(ThemeMode mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    String themeModeString;
+    switch (mode) {
+      case ThemeMode.light:
+        themeModeString = 'light';
+        break;
+      case ThemeMode.dark:
+        themeModeString = 'dark';
+        break;
+      case ThemeMode.system:
+        themeModeString = 'system';
+        break;
+    }
+    await prefs.setString('themeMode', themeModeString);
+    setState(() {
+      themeNotifier.value = mode;
+    });
+  }
+
+  Widget _settingsCard(BuildContext context) {
     return Container(
       padding: EdgeInsets.all(AppTheme.spacingMd),
       decoration: BoxDecoration(
@@ -86,63 +105,149 @@ class _SettingsScreenState extends State<SettingsScreen> {
         boxShadow: AppTheme.cardShadow,
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _settingsItem(
-            context,
-            icon: Icons.dark_mode_rounded,
-            title: trad(context)!.dark_mode,
-            trailing: CupertinoSwitch(
-              activeTrackColor: Theme.of(context).colorScheme.primary,
-              value: isDarkMode,
-              onChanged: (value) {
-                setState(() {
-                  themeNotifier.value = value ? ThemeMode.dark : ThemeMode.light;
-                });
-              },
-            ),
+          // Header
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                ),
+                child: Icon(
+                  Icons.brightness_6_rounded,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: AppTheme.spacingMd),
+              Text(
+                trad(context)!.appearance,
+                style: TextStyle(
+                  fontFamily: AppTheme.defaultFontFamilyName,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppTheme.spacingMd),
+          // Theme options
+          Row(
+            children: [
+              Expanded(
+                child: _themeOptionCard(
+                  context,
+                  mode: ThemeMode.light,
+                  icon: Icons.wb_sunny_rounded,
+                  label: trad(context)!.theme_light,
+                ),
+              ),
+              const SizedBox(width: AppTheme.spacingSm),
+              Expanded(
+                child: _themeOptionCard(
+                  context,
+                  mode: ThemeMode.dark,
+                  icon: Icons.nightlight_round,
+                  label: trad(context)!.theme_dark,
+                ),
+              ),
+              const SizedBox(width: AppTheme.spacingSm),
+              Expanded(
+                child: _themeOptionCard(
+                  context,
+                  mode: ThemeMode.system,
+                  icon: Icons.brightness_auto_rounded,
+                  label: trad(context)!.theme_auto,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _settingsItem(
+  Widget _themeOptionCard(
     BuildContext context, {
+    required ThemeMode mode,
     required IconData icon,
-    required String title,
-    required Widget trailing,
+    required String label,
   }) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: AppTheme.spacingSm),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-            ),
-            child: Icon(
-              icon,
-              color: Theme.of(context).colorScheme.primary,
-              size: 22,
-            ),
+    final isSelected = themeNotifier.value == mode;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return GestureDetector(
+      onTap: () => _saveThemePreference(mode),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        padding: EdgeInsets.symmetric(
+          vertical: AppTheme.spacingMd,
+          horizontal: AppTheme.spacingSm,
+        ),
+        decoration: BoxDecoration(
+          gradient:
+              isSelected
+                  ? LinearGradient(
+                    colors: [colorScheme.primary, colorScheme.secondary],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                  : null,
+          color: isSelected ? null : colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          border: Border.all(
+            color:
+                isSelected
+                    ? colorScheme.primary.withValues(alpha: 0.3)
+                    : Colors.transparent,
+            width: 2,
           ),
-          const SizedBox(width: AppTheme.spacingMd),
-          Expanded(
-            child: Text(
-              title,
+          boxShadow:
+              isSelected
+                  ? [
+                    BoxShadow(
+                      color: colorScheme.primary.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                  : null,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color:
+                  isSelected
+                      ? Colors.white
+                      : colorScheme.onSurface.withValues(alpha: 0.7),
+              size: 28,
+            ),
+            const SizedBox(height: AppTheme.spacingXs),
+            Text(
+              label,
               style: TextStyle(
                 fontFamily: AppTheme.defaultFontFamilyName,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color:
+                    isSelected
+                        ? Colors.white
+                        : colorScheme.onSurface.withValues(alpha: 0.8),
               ),
+              textAlign: TextAlign.center,
             ),
-          ),
-          trailing,
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -161,14 +266,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Navigator.pushReplacement(
               context,
               PageRouteBuilder(
-                pageBuilder: (context, animation, secondaryAnimation) =>
-                    const LoginPage(),
-                transitionsBuilder:
-                    (context, animation, secondaryAnimation, child) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: child,
-                  );
+                pageBuilder:
+                    (context, animation, secondaryAnimation) =>
+                        const LoginPage(),
+                transitionsBuilder: (
+                  context,
+                  animation,
+                  secondaryAnimation,
+                  child,
+                ) {
+                  return FadeTransition(opacity: animation, child: child);
                 },
                 transitionDuration: const Duration(milliseconds: 300),
               ),
@@ -183,7 +290,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                   ),
                   child: Icon(
@@ -273,11 +382,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  _notificationsEnabled ? trad(context)!.enabled : trad(context)!.disabled,
+                  _notificationsEnabled
+                      ? trad(context)!.enabled
+                      : trad(context)!.disabled,
                   style: TextStyle(
                     fontFamily: AppTheme.defaultFontFamilyName,
                     fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               ],
@@ -350,12 +463,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _reminderItem(
-      BuildContext context, {
-        required String time,
-        required String title,
-        required bool isActive,
-      }) {
-
+    BuildContext context, {
+    required String time,
+    required String title,
+    required bool isActive,
+  }) {
     final monthFormat = DateFormat('MMM');
     final dayFormat = DateFormat('d');
     final timeFormat = DateFormat.Hm();
@@ -365,9 +477,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-        border: Border.all(
-          color: Colors.transparent,
-        ),
+        border: Border.all(color: Colors.transparent),
       ),
       child: Material(
         color: Colors.transparent,
@@ -411,7 +521,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               "location",
                               style: TextStyle(
                                 fontSize: 12,
-                                color: colorScheme.onSurface.withValues(alpha: 0.5),
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.5,
+                                ),
                                 fontFamily: AppTheme.defaultFontFamilyName,
                               ),
                               maxLines: 1,
@@ -436,10 +548,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// Builds the date badge showing month and day number.
   Widget _buildDateBadge(
-      DateFormat monthFormat,
-      DateFormat dayFormat,
-      ColorScheme colorScheme,
-      ) {
+    DateFormat monthFormat,
+    DateFormat dayFormat,
+    ColorScheme colorScheme,
+  ) {
     return Container(
       width: 48,
       height: 48,

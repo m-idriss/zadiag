@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/core/utils/translate.dart';
+import 'package:zadiag/shared/components/glass_container.dart';
 
 import 'providers/converter_state.dart';
 import 'services/converter_service.dart';
@@ -627,23 +628,14 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
   }
 
   Widget _brandingCard(BuildContext context, double radiusLg) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        child: SizedBox(
-          width: double.infinity,
-          height: 240,
+    return GlassContainer(
+      borderRadius: AppTheme.radiusXl,
+      opacity: 0.9,
+      child: SizedBox(
+        width: double.infinity,
+        height: 240,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
           child: SvgPicture.asset(
             'assets/images/converter.svg',
             fit: BoxFit.cover,

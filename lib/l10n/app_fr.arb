@@ -15,7 +15,10 @@
   "capture_title": "Vérification",
   "changes_canceled": "Modifications annulées",
   "changes_saved": "Modifications sauvegardées",
-  "dark_mode": "Mode sombre",
+  "appearance": "Apparence",
+  "theme_light": "Clair",
+  "theme_dark": "Sombre",
+  "theme_auto": "Auto",
   "email_hint": "jean.dupont@email.com",
   "forgot_password": "Mot de passe oublié ?",
   "login_button": "Se connecter",
@@ -124,5 +127,14 @@
   },
   "choose_image_source": "Choisir la source de l'image",
   "camera": "Appareil photo",
-  "gallery": "Galerie"
+  "gallery": "Galerie",
+  "unknown_error": "Erreur inconnue",
+  "user_not_found": "Utilisateur non trouvé",
+  "wrong_password": "Mot de passe incorrect",
+  "passwords_do_not_match": "Les mots de passe ne correspondent pas",
+  "account_created": "Compte créé avec succès !",
+  "email_already_in_use": "Cet e-mail est déjà utilisé.",
+  "invalid_email": "Adresse e-mail invalide.",
+  "weak_password": "Mot de passe trop faible.",
+  "error": "Erreur"
 }
