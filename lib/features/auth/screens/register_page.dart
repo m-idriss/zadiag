@@ -240,7 +240,7 @@ class _RegisterPageState extends State<RegisterPage>
     final confirm = _registerConfirmPasswordController.text;
 
     if (password != confirm) {
-      showSnackbar(trad(context)?.passwords_do_not_match ?? "Passwords do not match");
+      showSnackBar(context, trad(context)?.passwords_do_not_match ?? "Passwords do not match", true);
       return;
     }
 
@@ -249,8 +249,8 @@ class _RegisterPageState extends State<RegisterPage>
         email: email,
         password: password,
       );
-      showSnackbar(trad(context)?.account_created ?? "Account created successfully!", isError: false);
       if (!context.mounted) return;
+      showSnackBar(context, trad(context)?.account_created ?? "Account created successfully!");
       NavigationHelper.navigateWithFade(context, const LoginPage());
     } on FirebaseAuthException catch (e) {
       String message;
@@ -270,17 +270,9 @@ class _RegisterPageState extends State<RegisterPage>
         default:
           message = "${trad(context)?.error ?? 'Error'}: ${e.message}";
       }
-      showSnackbar(message);
+      if (!context.mounted) return;
+      showSnackBar(context, message, true);
     }
-  }
-
-  void showSnackbar(String message, {bool isError = true}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red : Colors.green,
-      ),
-    );
   }
 
   Widget _orConnectWithText(BuildContext context) {
