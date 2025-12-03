@@ -213,11 +213,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get get_started => 'Get Started';
 
   @override
-  String get converter_title => 'Convert Images';
+  String get converter_title => 'Convert Files';
 
   @override
   String get converter_subtitle =>
-      'Upload photos of appointments and schedules to extract calendar events.';
+      'Upload photos or PDFs of appointments and schedules to extract calendar events.';
 
   @override
   String get convert_button => 'Convert to Calendar Events';
@@ -229,19 +229,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get download_ics => 'Download ICS File';
 
   @override
-  String get no_events_found => 'No events found in images';
+  String get no_events_found => 'No events found in files';
 
   @override
-  String get processing_images => 'Processing images...';
+  String get processing_images => 'Processing files...';
 
   @override
   String get upload_images => 'Tap to upload images';
 
   @override
-  String get upload_hint => 'Upload photos of appointments or schedules';
+  String get upload_files => 'Tap to upload files';
 
   @override
-  String get supported_formats => 'Supports: JPG, PNG, WEBP';
+  String get upload_hint =>
+      'Upload photos or PDFs of appointments or schedules';
+
+  @override
+  String get supported_formats => 'Supports: JPG, PNG, WEBP, PDF';
 
   @override
   String get images_selected => 'images selected';
@@ -301,7 +305,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get close => 'Close';
 
   @override
-  String get please_upload_image => 'Please upload at least one image';
+  String get please_upload_image => 'Please upload at least one file';
 
   @override
   String found_events(int count) {
@@ -312,18 +316,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get no_events_to_export => 'No events to export';
 
   @override
-  String get error_processing_images => 'Error processing images';
+  String get error_processing_images => 'Error processing files';
 
   @override
   String get error_exporting_ics => 'Error exporting ICS';
 
   @override
   String max_images_allowed(int count) {
-    return 'Maximum $count images allowed';
+    return 'Maximum $count files allowed';
+  }
+
+  @override
+  String max_files_allowed(int count) {
+    return 'Maximum $count files allowed';
+  }
+
+  @override
+  String files_selected(int count) {
+    return '$count file(s) selected';
   }
 
   @override
   String get error_selecting_images => 'Error selecting images';
+
+  @override
+  String get error_selecting_files => 'Error selecting files';
 
   @override
   String get error_capturing_image => 'Error capturing image';
@@ -337,10 +354,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get choose_image_source => 'Choose Image Source';
 
   @override
+  String get choose_file_source => 'Choose File Source';
+
+  @override
   String get camera => 'Camera';
 
   @override
   String get gallery => 'Gallery';
+
+  @override
+  String get pdf_files => 'PDF Files';
 
   @override
   String get unknown_error => 'Unknown error';

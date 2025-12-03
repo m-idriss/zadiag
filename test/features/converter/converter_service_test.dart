@@ -256,6 +256,89 @@ void main() {
 
         service.dispose();
       });
+
+      test('handles PDF files correctly', () async {
+        Map<String, dynamic>? capturedPayload;
+
+        final mockClient = MockClient((request) async {
+          capturedPayload = jsonDecode(request.body);
+          return http.Response(
+            jsonEncode({
+              'success': true,
+              'events': [
+                {
+                  'id': '1',
+                  'title': 'PDF Event',
+                  'startDateTime': '2024-01-15T10:00:00.000Z',
+                  'endDateTime': '2024-01-15T11:00:00.000Z',
+                },
+              ],
+            }),
+            200,
+          );
+        });
+
+        final service = ConverterService(httpClient: mockClient);
+
+        final result = await service.convertImages(
+          imageDataUrls: ['data:application/pdf;base64,JVBERi0xLjQK'],
+          fileNames: ['document.pdf'],
+          mimeTypes: ['application/pdf'],
+          timeZone: 'UTC',
+        );
+
+        expect(result.success, true);
+        expect(result.events.length, 1);
+        expect(result.events[0].title, 'PDF Event');
+        expect(capturedPayload!['files'][0]['type'], 'application/pdf');
+        expect(capturedPayload!['files'][0]['name'], 'document.pdf');
+
+        service.dispose();
+      });
+
+      test('handles mixed images and PDFs', () async {
+        final mockClient = MockClient((request) async {
+          final payload = jsonDecode(request.body);
+          expect(payload['files'], hasLength(2));
+          return http.Response(
+            jsonEncode({
+              'success': true,
+              'events': [
+                {
+                  'id': '1',
+                  'title': 'Event from Image',
+                  'startDateTime': '2024-01-15T10:00:00.000Z',
+                  'endDateTime': '2024-01-15T11:00:00.000Z',
+                },
+                {
+                  'id': '2',
+                  'title': 'Event from PDF',
+                  'startDateTime': '2024-01-16T10:00:00.000Z',
+                  'endDateTime': '2024-01-16T11:00:00.000Z',
+                },
+              ],
+            }),
+            200,
+          );
+        });
+
+        final service = ConverterService(httpClient: mockClient);
+
+        final result = await service.convertImages(
+          imageDataUrls: [
+            'data:image/jpeg;base64,img1',
+            'data:application/pdf;base64,JVBERi0xLjQK',
+          ],
+          fileNames: ['photo.jpg', 'document.pdf'],
+          mimeTypes: ['image/jpeg', 'application/pdf'],
+          timeZone: 'UTC',
+        );
+
+        expect(result.success, true);
+        expect(result.events.length, 2);
+
+        service.dispose();
+      });
     });
   });
 }

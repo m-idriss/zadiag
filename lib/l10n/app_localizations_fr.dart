@@ -214,11 +214,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get get_started => 'Commencer';
 
   @override
-  String get converter_title => 'Convertir des images';
+  String get converter_title => 'Convertir des fichiers';
 
   @override
   String get converter_subtitle =>
-      'Téléchargez des photos de rendez-vous et d\'agendas pour extraire les événements du calendrier.';
+      'Téléchargez des photos ou des PDF de rendez-vous et d\'agendas pour extraire les événements du calendrier.';
 
   @override
   String get convert_button => 'Convertir en événements';
@@ -230,20 +230,23 @@ class AppLocalizationsFr extends AppLocalizations {
   String get download_ics => 'Télécharger le fichier ICS';
 
   @override
-  String get no_events_found => 'Aucun événement trouvé dans les images';
+  String get no_events_found => 'Aucun événement trouvé dans les fichiers';
 
   @override
-  String get processing_images => 'Traitement des images...';
+  String get processing_images => 'Traitement des fichiers...';
 
   @override
   String get upload_images => 'Appuyez pour télécharger des images';
 
   @override
-  String get upload_hint =>
-      'Téléchargez des photos de rendez-vous ou d\'agendas';
+  String get upload_files => 'Appuyez pour télécharger des fichiers';
 
   @override
-  String get supported_formats => 'Formats supportés : JPG, PNG, WEBP';
+  String get upload_hint =>
+      'Téléchargez des photos ou des PDF de rendez-vous ou d\'agendas';
+
+  @override
+  String get supported_formats => 'Formats supportés : JPG, PNG, WEBP, PDF';
 
   @override
   String get images_selected => 'images sélectionnées';
@@ -304,7 +307,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get close => 'Fermer';
 
   @override
-  String get please_upload_image => 'Veuillez télécharger au moins une image';
+  String get please_upload_image => 'Veuillez télécharger au moins un fichier';
 
   @override
   String found_events(int count) {
@@ -315,18 +318,33 @@ class AppLocalizationsFr extends AppLocalizations {
   String get no_events_to_export => 'Aucun événement à exporter';
 
   @override
-  String get error_processing_images => 'Erreur lors du traitement des images';
+  String get error_processing_images =>
+      'Erreur lors du traitement des fichiers';
 
   @override
   String get error_exporting_ics => 'Erreur lors de l\'exportation ICS';
 
   @override
   String max_images_allowed(int count) {
-    return 'Maximum $count images autorisées';
+    return 'Maximum $count fichiers autorisés';
+  }
+
+  @override
+  String max_files_allowed(int count) {
+    return 'Maximum $count fichiers autorisés';
+  }
+
+  @override
+  String files_selected(int count) {
+    return '$count fichier(s) sélectionné(s)';
   }
 
   @override
   String get error_selecting_images => 'Erreur lors de la sélection des images';
+
+  @override
+  String get error_selecting_files =>
+      'Erreur lors de la sélection des fichiers';
 
   @override
   String get error_capturing_image => 'Erreur lors de la capture de l\'image';
@@ -340,10 +358,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get choose_image_source => 'Choisir la source de l\'image';
 
   @override
+  String get choose_file_source => 'Choisir la source du fichier';
+
+  @override
   String get camera => 'Appareil photo';
 
   @override
   String get gallery => 'Galerie';
+
+  @override
+  String get pdf_files => 'Fichiers PDF';
 
   @override
   String get unknown_error => 'Erreur inconnue';

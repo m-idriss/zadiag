@@ -66,16 +66,17 @@
   "hours_saved": "Heures économisées",
   "workdays_saved": "Jours ouvrables économisés",
   "get_started": "Commencer",
-  "converter_title": "Convertir des images",
-  "converter_subtitle": "Téléchargez des photos de rendez-vous et d'agendas pour extraire les événements du calendrier.",
+  "converter_title": "Convertir des fichiers",
+  "converter_subtitle": "Téléchargez des photos ou des PDF de rendez-vous et d'agendas pour extraire les événements du calendrier.",
   "convert_button": "Convertir en événements",
   "extracted_events": "Événements extraits",
   "download_ics": "Télécharger le fichier ICS",
-  "no_events_found": "Aucun événement trouvé dans les images",
-  "processing_images": "Traitement des images...",
+  "no_events_found": "Aucun événement trouvé dans les fichiers",
+  "processing_images": "Traitement des fichiers...",
   "upload_images": "Appuyez pour télécharger des images",
-  "upload_hint": "Téléchargez des photos de rendez-vous ou d'agendas",
-  "supported_formats": "Formats supportés : JPG, PNG, WEBP",
+  "upload_files": "Appuyez pour télécharger des fichiers",
+  "upload_hint": "Téléchargez des photos ou des PDF de rendez-vous ou d'agendas",
+  "supported_formats": "Formats supportés : JPG, PNG, WEBP, PDF",
   "images_selected": "images sélectionnées",
   "clear_all": "Tout effacer",
   "ics_generated": "Fichier ICS généré ! Prêt à télécharger.",
@@ -95,7 +96,7 @@
   "generated_ics_file": "Fichier ICS généré",
   "copy": "Copier",
   "close": "Fermer",
-  "please_upload_image": "Veuillez télécharger au moins une image",
+  "please_upload_image": "Veuillez télécharger au moins un fichier",
   "found_events": "{count} événements trouvés !",
   "@found_events": {
     "placeholders": {
@@ -105,9 +106,9 @@
     }
   },
   "no_events_to_export": "Aucun événement à exporter",
-  "error_processing_images": "Erreur lors du traitement des images",
+  "error_processing_images": "Erreur lors du traitement des fichiers",
   "error_exporting_ics": "Erreur lors de l'exportation ICS",
-  "max_images_allowed": "Maximum {count} images autorisées",
+  "max_images_allowed": "Maximum {count} fichiers autorisés",
   "@max_images_allowed": {
     "placeholders": {
       "count": {
@@ -115,7 +116,24 @@
       }
     }
   },
+  "max_files_allowed": "Maximum {count} fichiers autorisés",
+  "@max_files_allowed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "files_selected": "{count} fichier(s) sélectionné(s)",
+  "@files_selected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "error_selecting_images": "Erreur lors de la sélection des images",
+  "error_selecting_files": "Erreur lors de la sélection des fichiers",
   "error_capturing_image": "Erreur lors de la capture de l'image",
   "ics_saved_to": "ICS enregistré dans : {path}",
   "@ics_saved_to": {
@@ -126,8 +144,10 @@
     }
   },
   "choose_image_source": "Choisir la source de l'image",
+  "choose_file_source": "Choisir la source du fichier",
   "camera": "Appareil photo",
   "gallery": "Galerie",
+  "pdf_files": "Fichiers PDF",
   "unknown_error": "Erreur inconnue",
   "user_not_found": "Utilisateur non trouvé",
   "wrong_password": "Mot de passe incorrect",
