@@ -241,7 +241,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get upload_files => 'Tap to upload files';
 
   @override
-  String get upload_hint => 'Upload photos or PDFs of appointments or schedules';
+  String get upload_hint =>
+      'Upload photos or PDFs of appointments or schedules';
 
   @override
   String get supported_formats => 'Supports: JPG, PNG, WEBP, PDF';

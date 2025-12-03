@@ -318,7 +318,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get no_events_to_export => 'Aucun événement à exporter';
 
   @override
-  String get error_processing_images => 'Erreur lors du traitement des fichiers';
+  String get error_processing_images =>
+      'Erreur lors du traitement des fichiers';
 
   @override
   String get error_exporting_ics => 'Erreur lors de l\'exportation ICS';
@@ -342,7 +343,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get error_selecting_images => 'Erreur lors de la sélection des images';
 
   @override
-  String get error_selecting_files => 'Erreur lors de la sélection des fichiers';
+  String get error_selecting_files =>
+      'Erreur lors de la sélection des fichiers';
 
   @override
   String get error_capturing_image => 'Erreur lors de la capture de l\'image';

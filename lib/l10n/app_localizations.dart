@@ -497,13 +497,13 @@ abstract class AppLocalizations {
   /// No description provided for @converter_title.
   ///
   /// In en, this message translates to:
-  /// **'Convert Images'**
+  /// **'Convert Files'**
   String get converter_title;
 
   /// No description provided for @converter_subtitle.
   ///
   /// In en, this message translates to:
-  /// **'Upload photos of appointments and schedules to extract calendar events.'**
+  /// **'Upload photos or PDFs of appointments and schedules to extract calendar events.'**
   String get converter_subtitle;
 
   /// No description provided for @convert_button.
@@ -527,13 +527,13 @@ abstract class AppLocalizations {
   /// No description provided for @no_events_found.
   ///
   /// In en, this message translates to:
-  /// **'No events found in images'**
+  /// **'No events found in files'**
   String get no_events_found;
 
   /// No description provided for @processing_images.
   ///
   /// In en, this message translates to:
-  /// **'Processing images...'**
+  /// **'Processing files...'**
   String get processing_images;
 
   /// No description provided for @upload_images.
@@ -542,16 +542,22 @@ abstract class AppLocalizations {
   /// **'Tap to upload images'**
   String get upload_images;
 
+  /// No description provided for @upload_files.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to upload files'**
+  String get upload_files;
+
   /// No description provided for @upload_hint.
   ///
   /// In en, this message translates to:
-  /// **'Upload photos of appointments or schedules'**
+  /// **'Upload photos or PDFs of appointments or schedules'**
   String get upload_hint;
 
   /// No description provided for @supported_formats.
   ///
   /// In en, this message translates to:
-  /// **'Supports: JPG, PNG, WEBP'**
+  /// **'Supports: JPG, PNG, WEBP, PDF'**
   String get supported_formats;
 
   /// No description provided for @images_selected.
@@ -671,7 +677,7 @@ abstract class AppLocalizations {
   /// No description provided for @please_upload_image.
   ///
   /// In en, this message translates to:
-  /// **'Please upload at least one image'**
+  /// **'Please upload at least one file'**
   String get please_upload_image;
 
   /// No description provided for @found_events.
@@ -689,7 +695,7 @@ abstract class AppLocalizations {
   /// No description provided for @error_processing_images.
   ///
   /// In en, this message translates to:
-  /// **'Error processing images'**
+  /// **'Error processing files'**
   String get error_processing_images;
 
   /// No description provided for @error_exporting_ics.
@@ -701,14 +707,32 @@ abstract class AppLocalizations {
   /// No description provided for @max_images_allowed.
   ///
   /// In en, this message translates to:
-  /// **'Maximum {count} images allowed'**
+  /// **'Maximum {count} files allowed'**
   String max_images_allowed(int count);
+
+  /// No description provided for @max_files_allowed.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum {count} files allowed'**
+  String max_files_allowed(int count);
+
+  /// No description provided for @files_selected.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} file(s) selected'**
+  String files_selected(int count);
 
   /// No description provided for @error_selecting_images.
   ///
   /// In en, this message translates to:
   /// **'Error selecting images'**
   String get error_selecting_images;
+
+  /// No description provided for @error_selecting_files.
+  ///
+  /// In en, this message translates to:
+  /// **'Error selecting files'**
+  String get error_selecting_files;
 
   /// No description provided for @error_capturing_image.
   ///
@@ -751,30 +775,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'PDF Files'**
   String get pdf_files;
-
-  /// No description provided for @upload_files.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap to upload files'**
-  String get upload_files;
-
-  /// No description provided for @max_files_allowed.
-  ///
-  /// In en, this message translates to:
-  /// **'Maximum {count} files allowed'**
-  String max_files_allowed(int count);
-
-  /// No description provided for @files_selected.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} file(s) selected'**
-  String files_selected(int count);
-
-  /// No description provided for @error_selecting_files.
-  ///
-  /// In en, this message translates to:
-  /// **'Error selecting files'**
-  String get error_selecting_files;
 
   /// No description provided for @unknown_error.
   ///
