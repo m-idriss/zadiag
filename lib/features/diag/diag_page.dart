@@ -103,50 +103,74 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget bottomNavBar(BuildContext context) {
-    return Container(
-      color: Colors.transparent,
-      margin: EdgeInsets.only(
-        left: AppTheme.spacingLg,
-        right: AppTheme.spacingLg,
-      ),
-      child: SafeArea(
-        top: false,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppTheme.spacingMd,
-                vertical: AppTheme.spacingSm,
-              ),
-              decoration: bottomMenu(context),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  ...List.generate(bottomNavItems.length, (index) {
-                    Menu navBar = bottomNavItems[index];
-                    return BtmNavItem(
-                      navBar: navBar,
-                      press: () {
-                        RiveUtils.changeSMIBoolState(navBar.rive.status!);
-                        updateSelectedBtmNav(navBar);
-                      },
-                      riveOnInit: (artboard) {
-                        navBar.rive.status = RiveUtils.getRiveInput(
-                          artboard,
-                          stateMachineName: navBar.rive.stateMachineName,
+    final menuColor = Theme.of(context).colorScheme.surfaceDim;
+    
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Gradient fade overlay to hide content above the menu
+        Container(
+          height: AppTheme.spacingXl,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                menuColor.withValues(alpha: 0),
+                menuColor.withValues(alpha: 0.8),
+                menuColor,
+              ],
+              stops: const [0.0, 0.6, 1.0],
+            ),
+          ),
+        ),
+        // Bottom navigation bar
+        Container(
+          color: Colors.transparent,
+          margin: EdgeInsets.only(
+            left: AppTheme.spacingLg,
+            right: AppTheme.spacingLg,
+          ),
+          child: SafeArea(
+            top: false,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTheme.spacingMd,
+                    vertical: AppTheme.spacingSm,
+                  ),
+                  decoration: bottomMenu(context),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      ...List.generate(bottomNavItems.length, (index) {
+                        Menu navBar = bottomNavItems[index];
+                        return BtmNavItem(
+                          navBar: navBar,
+                          press: () {
+                            RiveUtils.changeSMIBoolState(navBar.rive.status!);
+                            updateSelectedBtmNav(navBar);
+                          },
+                          riveOnInit: (artboard) {
+                            navBar.rive.status = RiveUtils.getRiveInput(
+                              artboard,
+                              stateMachineName: navBar.rive.stateMachineName,
+                            );
+                          },
+                          selectedNav: selectedBottonNav,
                         );
-                      },
-                      selectedNav: selectedBottonNav,
-                    );
-                  }),
-                ],
+                      }),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }

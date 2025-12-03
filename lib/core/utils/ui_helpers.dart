@@ -347,10 +347,10 @@ Widget buildTextField({
 /// Creates a decoration for the bottom navigation menu with glassmorphism effect.
 BoxDecoration bottomMenu(BuildContext context) {
   return BoxDecoration(
-    color: Theme.of(context).colorScheme.surfaceDim.withValues(alpha: 0.85),
+    color: Theme.of(context).colorScheme.surfaceDim.withValues(alpha: 0.95),
     borderRadius: BorderRadius.circular(AppTheme.radiusXl),
     border: Border.all(
-      color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+      color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
       width: 1,
     ),
     boxShadow: [
