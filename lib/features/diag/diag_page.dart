@@ -41,14 +41,14 @@ class _HomePageState extends State<HomePage>
     trad(context)!.settings,
   ];
 
-  Menu selectedBottonNav = bottomNavItems[_converterPageIndex];
+  Menu selectedBottomNav = bottomNavItems[_converterPageIndex];
   int _previousIndex = _converterPageIndex;
 
   void updateSelectedBtmNav(Menu menu) {
-    if (selectedBottonNav != menu) {
+    if (selectedBottomNav != menu) {
       setState(() {
-        _previousIndex = bottomNavItems.indexOf(selectedBottonNav);
-        selectedBottonNav = menu;
+        _previousIndex = bottomNavItems.indexOf(selectedBottomNav);
+        selectedBottomNav = menu;
       });
     }
   }
@@ -74,7 +74,7 @@ class _HomePageState extends State<HomePage>
 
   @override
   Widget build(BuildContext context) {
-    final currentIndex = bottomNavItems.indexOf(selectedBottonNav);
+    final currentIndex = bottomNavItems.indexOf(selectedBottomNav);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -148,7 +148,7 @@ class _HomePageState extends State<HomePage>
                       stateMachineName: navBar.rive.stateMachineName,
                     );
                   },
-                  selectedNav: selectedBottonNav,
+                  selectedNav: selectedBottomNav,
                 );
               }),
             ],
