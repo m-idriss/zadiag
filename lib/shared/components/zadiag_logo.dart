@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:zadiag/core/constants/app_theme.dart';
+
 import 'package:zadiag/shared/components/glass_container.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class ZadiagLogo extends StatelessWidget {
   final double size;
-  final double fontSize;
 
-  const ZadiagLogo({super.key, this.size = 120, this.fontSize = 48});
+  const ZadiagLogo({super.key, this.size = 120});
 
   @override
   Widget build(BuildContext context) {
@@ -32,14 +32,10 @@ class ZadiagLogo extends StatelessWidget {
             ],
           ),
           child: Center(
-            child: Text(
-              'Z',
-              style: TextStyle(
-                fontSize: fontSize,
-                fontWeight: FontWeight.w900,
-                fontFamily: AppTheme.defaultFontFamilyName,
-                color: colorScheme.primary,
-              ),
+            child: SvgPicture.asset(
+              'assets/logo/icon.svg',
+              width: size * 0.4,
+              height: size * 0.4,
             ),
           ),
         ),

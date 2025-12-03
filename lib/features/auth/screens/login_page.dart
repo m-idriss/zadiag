@@ -76,7 +76,7 @@ class _LoginPageState extends State<LoginPage>
               physics: const BouncingScrollPhysics(),
               children: [
                 const SizedBox(height: AppTheme.spacingXl),
-                const Center(child: ZadiagLogo(size: 100, fontSize: 36)),
+                const Center(child: ZadiagLogo(size: 100)),
                 const SizedBox(height: AppTheme.spacingXs),
                 _loginWelcomeText(context),
                 _loginSubtitle(context),
@@ -180,9 +180,9 @@ class _LoginPageState extends State<LoginPage>
         message = trad(context)?.wrong_password ?? 'Wrong password';
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
