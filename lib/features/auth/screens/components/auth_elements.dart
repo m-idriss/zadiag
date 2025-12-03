@@ -4,39 +4,44 @@ import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/core/utils/navigation_helper.dart';
 
+/// Reusable authentication UI components.
+/// 
+/// This file contains shared widgets and components used across
+/// authentication-related screens (login, register, etc.).
+
+/// Builds a title container with consistent styling for auth screens.
 Container title(BuildContext context, String title) {
   return Container(
     margin: EdgeInsets.only(top: AppTheme.spacingMd, bottom: AppTheme.spacingMd),
     child: Text(
       title,
       textAlign: TextAlign.center,
-      style: TextStyle(
-        color: Theme.of(context).colorScheme.onSurface,
-        fontWeight: FontWeight.w700,
-        fontFamily: AppTheme.defaultFontFamilyName,
-        fontSize: 28,
-        letterSpacing: -0.5,
+      style: AppTheme.headingStyle(
+        Theme.of(context).colorScheme.onSurface,
       ),
     ),
   );
 }
 
+/// Builds a subtitle container with consistent styling for auth screens.
 Container subtitle(BuildContext context, String subtitle) {
   return Container(
     margin: EdgeInsets.only(bottom: AppTheme.spacingMd),
     child: Text(
       subtitle,
       textAlign: TextAlign.center,
-      style: TextStyle(
-        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-        fontSize: 14,
-        height: 1.5,
-        fontFamily: AppTheme.defaultFontFamilyName,
+      style: AppTheme.bodyStyle(
+        Theme.of(context).colorScheme.onSurface,
+        alpha: 0.7,
       ),
     ),
   );
 }
 
+/// Builds a primary action button for sign-in/sign-up flows.
+/// 
+/// If [onTap] is provided, it will be called when the button is pressed.
+/// If [page] is provided instead, the app will navigate to that page.
 Widget signButton(
   BuildContext context,
   IconData icon,
@@ -51,17 +56,13 @@ Widget signButton(
       if (onTap != null) {
         onTap();
       } else if (page != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => page),
-          );
-        });
+        NavigationHelper.navigateWithFadePostFrame(context, page);
       }
     }),
   );
 }
 
+/// Builds an "Or connect with" divider text for social login sections.
 Container orConnectWithText(BuildContext context, String text) {
   return Container(
     margin: EdgeInsets.only(top: AppTheme.spacingXl, bottom: AppTheme.spacingMd),
@@ -77,12 +78,9 @@ Container orConnectWithText(BuildContext context, String text) {
           padding: EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
           child: Text(
             text,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-              fontSize: 12,
-              fontFamily: AppTheme.defaultFontFamilyName,
-              fontWeight: FontWeight.w500,
-            ),
+            style: AppTheme.labelStyle(
+              Theme.of(context).colorScheme.onSurface,
+            ).copyWith(fontWeight: FontWeight.w500),
           ),
         ),
         Expanded(
@@ -96,27 +94,33 @@ Container orConnectWithText(BuildContext context, String text) {
   );
 }
 
+/// Builds a row of social login buttons (Google, Apple, Facebook).
 Container socialButtons(BuildContext context) {
   return Container(
     margin: EdgeInsets.only(bottom: AppTheme.spacingXl),
     child: Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-       // _socialIcon(context, 'Apple'),
+        // TODO: Implement Apple sign-in
+        // _socialIcon(context, 'Apple'),
         _socialIcon(context, 'Google'),
-       // _socialIcon(context, 'Facebook'),
+        // TODO: Implement Facebook sign-in
+        // _socialIcon(context, 'Facebook'),
       ],
     ),
   );
 }
 
-Widget _socialIcon(BuildContext context, String iconUrl) {
+/// Builds a single social login icon button.
+Widget _socialIcon(BuildContext context, String iconName) {
   return Container(
     margin: EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
     child: Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {},
+        onTap: () {
+          // TODO: Implement social login functionality
+        },
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         child: Container(
           width: 56,
@@ -138,7 +142,7 @@ Widget _socialIcon(BuildContext context, String iconUrl) {
           ),
           child: Center(
             child: SvgPicture.asset(
-              'assets/icons/$iconUrl.svg',
+              'assets/icons/$iconName.svg',
               width: 24,
               height: 24,
               colorFilter: ColorFilter.mode(
@@ -153,6 +157,9 @@ Widget _socialIcon(BuildContext context, String iconUrl) {
   );
 }
 
+/// Builds a bottom navigation bar with a link to another auth page.
+/// 
+/// Used for "Already have an account?" / "Don't have an account?" links.
 Widget bottom(BuildContext context, StatefulWidget page, String text) {
   return Container(
     height: 60,

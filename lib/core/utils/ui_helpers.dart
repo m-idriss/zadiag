@@ -4,6 +4,12 @@ import 'package:zadiag/core/utils/translate.dart';
 import 'dart:math';
 import 'package:zadiag/core/constants/app_theme.dart';
 
+/// Common UI helper functions used across the application.
+/// 
+/// This file contains reusable utility functions for building
+/// consistent UI elements throughout the app.
+
+/// Builds a gradient background decoration using theme colors.
 BoxDecoration buildBackground(ColorScheme colorScheme) {
   return BoxDecoration(
     gradient: LinearGradient(
@@ -17,6 +23,11 @@ BoxDecoration buildBackground(ColorScheme colorScheme) {
   );
 }
 
+/// Shows a floating snackbar with a message.
+/// 
+/// [context] - The build context for the snackbar.
+/// [message] - The message to display.
+/// [isError] - Whether this is an error message (shows in red).
 void showSnackBar(BuildContext context, String message, [bool isError = false]) {
   ScaffoldMessenger.of(context).clearSnackBars();
   ScaffoldMessenger.of(context).showSnackBar(
@@ -28,8 +39,8 @@ void showSnackBar(BuildContext context, String message, [bool isError = false]) 
       closeIconColor: Colors.white,
       content: Row(
         children: [
-          const Icon(
-            Icons.check_circle_outline,
+          Icon(
+            isError ? Icons.error_outline : Icons.check_circle_outline,
             color: Colors.white,
             size: 20,
           ),
@@ -58,6 +69,9 @@ void showSnackBar(BuildContext context, String message, [bool isError = false]) 
   );
 }
 
+/// Generates random heat map data for the past 365 days.
+/// 
+/// Returns a map where keys are dates and values are activity levels (0-4).
 Map<DateTime, int> generateRandomHeatMapData() {
   Map<DateTime, int> heatMapDatasets = {};
   final now = DateTime.now();
@@ -69,29 +83,24 @@ Map<DateTime, int> generateRandomHeatMapData() {
   return heatMapDatasets;
 }
 
+/// Builds a page header with title and subtitle.
 Column buildHeader(BuildContext context, String title, String subtitle) {
   return Column(
     children: [
       const SizedBox(height: AppTheme.spacingMd),
       Text(
         title,
-        style: TextStyle(
-          fontSize: 28,
-          fontWeight: FontWeight.w700,
-          fontFamily: AppTheme.defaultFontFamilyName,
-          color: Theme.of(context).colorScheme.onSurface,
-          letterSpacing: -0.5,
+        style: AppTheme.headingStyle(
+          Theme.of(context).colorScheme.onSurface,
         ),
         textAlign: TextAlign.center,
       ),
       const SizedBox(height: AppTheme.spacingSm),
       Text(
         subtitle,
-        style: TextStyle(
-          fontSize: 14,
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-          fontFamily: AppTheme.defaultFontFamilyName,
-          height: 1.5,
+        style: AppTheme.bodyStyle(
+          Theme.of(context).colorScheme.onSurface,
+          alpha: 0.7,
         ),
         textAlign: TextAlign.center,
       ),
@@ -99,6 +108,7 @@ Column buildHeader(BuildContext context, String title, String subtitle) {
   );
 }
 
+/// Returns the localized day of week name for a given index (0 = Sunday).
 String buildDayOfWeek(BuildContext context, int index) {
   switch (index) {
     case 0:
@@ -120,29 +130,32 @@ String buildDayOfWeek(BuildContext context, int index) {
   }
 }
 
-dynamic buildSettingsButton(
+/// Builds a small settings-style gradient button.
+Widget buildSettingsButton(
   BuildContext context,
   String action,
   IconData icon,
-  Function() onPressed,
+  VoidCallback onPressed,
 ) {
   return _buildButton(context, action, icon, onPressed, 16, false);
 }
 
-dynamic buildConnectButton(
+/// Builds a large connect-style gradient button for auth screens.
+Widget buildConnectButton(
   BuildContext context,
   String action,
   IconData icon,
-  Function() onPressed,
+  VoidCallback onPressed,
 ) {
   return _buildButton(context, action, icon, onPressed, 20, true);
 }
 
+/// Internal helper to build gradient action buttons.
 Widget _buildButton(
   BuildContext context,
   String action,
   IconData icon,
-  Function() onPressed,
+  VoidCallback onPressed,
   double padding,
   bool isLarge,
 ) {
@@ -207,6 +220,11 @@ Widget _buildButton(
   );
 }
 
+/// Creates a styled input decoration with an SVG prefix icon.
+/// 
+/// [hintText] - Placeholder text for the input.
+/// [iconPath] - Path to the SVG icon asset.
+/// [suffixIcon] - Optional suffix widget (e.g., password visibility toggle).
 InputDecoration inputDecoration(
   BuildContext context,
   String hintText,
@@ -267,6 +285,7 @@ InputDecoration inputDecoration(
   );
 }
 
+/// Creates a dropdown decoration (uses the same style as input decoration).
 InputDecoration dropdownDecoration(
   BuildContext context,
   String label,
@@ -275,6 +294,15 @@ InputDecoration dropdownDecoration(
   return inputDecoration(context, label, iconPath);
 }
 
+/// Builds a styled text form field with consistent theming.
+/// 
+/// [controller] - The text editing controller.
+/// [hintText] - Placeholder text.
+/// [iconPath] - Path to the prefix SVG icon.
+/// [keyboardType] - Keyboard type for input.
+/// [obscureText] - Whether to hide text (for passwords).
+/// [suffixIconPath] - Optional suffix icon path (e.g., for password toggle).
+/// [onSuffixTap] - Callback when suffix icon is tapped.
 Widget buildTextField({
   required BuildContext context,
   required TextEditingController controller,
@@ -287,11 +315,7 @@ Widget buildTextField({
 }) {
   return TextFormField(
     controller: controller,
-    style: TextStyle(
-      color: Theme.of(context).colorScheme.onSurface,
-      fontSize: 14,
-      fontFamily: AppTheme.defaultFontFamilyName,
-    ),
+    style: AppTheme.bodyStyle(Theme.of(context).colorScheme.onSurface),
     obscureText: obscureText,
     keyboardType: keyboardType,
     cursorColor: Theme.of(context).colorScheme.primary,
@@ -320,6 +344,7 @@ Widget buildTextField({
   );
 }
 
+/// Creates a decoration for the bottom navigation menu.
 BoxDecoration bottomMenu(BuildContext context) {
   return BoxDecoration(
     color: Theme.of(context).colorScheme.surfaceDim,
