@@ -23,12 +23,12 @@ class _HomePageState extends State<HomePage>
   late Animation<double> animation;
 
   // Page indices for navigation
-  static const int _converterPageIndex = 1;
+  static const int _converterPageIndex = 2;
 
   List<Widget> get _pages => [
-    const HeatMapScreen(),
-    const ConverterPage(),
     const ProfileScreen(),
+    const ConverterPage(),
+    const HeatMapScreen(),
     const SettingsScreen(),
   ];
 

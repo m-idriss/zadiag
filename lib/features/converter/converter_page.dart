@@ -385,10 +385,12 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
             physics: const BouncingScrollPhysics(),
             children: [
               _buildHeader(context),
-              const SizedBox(height: AppTheme.spacingLg),
-              _brandingCard(context, AppTheme.radiusSm),
-              const SizedBox(height: AppTheme.spacingLg),
-              _buildStatsSection(context),
+              if (state.extractedEvents.isEmpty) ...[
+                const SizedBox(height: AppTheme.spacingLg),
+                _brandingCard(context, AppTheme.radiusSm),
+                const SizedBox(height: AppTheme.spacingLg),
+                _buildStatsSection(context),
+              ],
               if (state.errorMessage != null) ...[
                 const SizedBox(height: AppTheme.spacingMd),
                 _buildErrorMessage(context, state.errorMessage!),
