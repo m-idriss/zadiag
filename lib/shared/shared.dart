@@ -7,6 +7,7 @@ library shared;
 // Components
 export 'components/animated_bar.dart';
 export 'components/btm_nav_item.dart';
+export 'components/modern_app_bar.dart';
 
 // Models
 export 'models/menu.dart';

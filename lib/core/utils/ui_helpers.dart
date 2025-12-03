@@ -83,26 +83,75 @@ Map<DateTime, int> generateRandomHeatMapData() {
   return heatMapDatasets;
 }
 
-/// Builds a page header with title and subtitle.
-Column buildHeader(BuildContext context, String title, String subtitle) {
+/// Builds a modern, minimal page header with title and subtitle.
+///
+/// [context] - The build context.
+/// [title] - The main title text.
+/// [subtitle] - The subtitle text displayed below the title.
+/// [leading] - Optional leading widget (e.g., back button).
+/// [actions] - Optional list of trailing action widgets.
+/// [centerTitle] - Whether to center the title (default: true).
+Column buildHeader(
+  BuildContext context,
+  String title,
+  String subtitle, {
+  Widget? leading,
+  List<Widget>? actions,
+  bool centerTitle = true,
+}) {
+  final colorScheme = Theme.of(context).colorScheme;
+
   return Column(
     children: [
       const SizedBox(height: AppTheme.spacingMd),
-      Text(
-        title,
-        style: AppTheme.headingStyle(
-          Theme.of(context).colorScheme.onSurface,
-        ),
-        textAlign: TextAlign.center,
-      ),
-      const SizedBox(height: AppTheme.spacingSm),
-      Text(
-        subtitle,
-        style: AppTheme.bodyStyle(
-          Theme.of(context).colorScheme.onSurface,
-          alpha: 0.7,
-        ),
-        textAlign: TextAlign.center,
+      // Modern minimal AppBar row
+      Row(
+        children: [
+          // Leading widget
+          if (leading != null) ...[
+            leading,
+            const SizedBox(width: AppTheme.spacingSm),
+          ],
+
+          // Title section
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  centerTitle ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: AppTheme.defaultFontFamilyName,
+                    color: colorScheme.onSurface,
+                    letterSpacing: -0.5,
+                  ),
+                  textAlign: centerTitle ? TextAlign.center : TextAlign.start,
+                ),
+                const SizedBox(height: AppTheme.spacingXs),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontFamily: AppTheme.defaultFontFamilyName,
+                    color: colorScheme.onSurface.withValues(alpha: 0.6),
+                    height: 1.4,
+                  ),
+                  textAlign: centerTitle ? TextAlign.center : TextAlign.start,
+                ),
+              ],
+            ),
+          ),
+
+          // Actions
+          if (actions != null && actions.isNotEmpty) ...[
+            const SizedBox(width: AppTheme.spacingSm),
+            ...actions,
+          ],
+        ],
       ),
     ],
   );
