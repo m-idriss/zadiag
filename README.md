@@ -5,7 +5,7 @@
 **Comprehensive Diagnostic & Tracking Application**
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.7%2B-02569B?logo=flutter)](https://flutter.dev)
-[![Dart](https://img.shields.io/badge/Dart-3.0%2B-0175C2?logo=dart)](https://dart.dev)
+[![Dart](https://img.shields.io/badge/Dart-3.7%2B-0175C2?logo=dart)](https://dart.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Style: Lint](https://img.shields.io/badge/style-lint-4BC0F5.svg)](https://pub.dev/packages/flutter_lints)
 
@@ -53,7 +53,7 @@
 -   **Animations**: [Rive](https://rive.app/)
 -   **Backend**: [Firebase](https://firebase.google.com/) (Auth, Firestore)
 -   **Visualization**: [flutter_heatmap_calendar](https://pub.dev/packages/flutter_heatmap_calendar)
--   **State Management**: `setState` / `ValueNotifier` (Simple & Effective)
+-   **State Management**: [Riverpod](https://riverpod.dev/) (Modern & Reactive)
 
 ## 📂 Project Structure
 
@@ -61,14 +61,22 @@
 lib/
 ├── core/                   # Core utilities, constants, and theme
 │   ├── constants/          # App-wide constants (Theme, Strings)
-│   └── utils/              # Helper functions (UI, Translation)
+│   ├── core.dart           # Barrel export for core module
+│   └── utils/              # Helper functions (UI, Translation, Navigation)
 ├── features/               # Feature-based modules
 │   ├── auth/               # Authentication screens and logic
 │   ├── converter/          # Image to ICS converter feature
+│   │   ├── models/         # CalendarEvent, ConversionResult
+│   │   ├── providers/      # Riverpod state management
+│   │   ├── services/       # API, ICS generation, export
+│   │   └── widgets/        # EventCard, ImageUploadZone
 │   └── diag/               # Main diagnostic screens (Dashboard, Heatmap)
+│       └── screens/        # Profile, Settings, Heatmap, Capture
 ├── shared/                 # Shared widgets and models
 │   ├── components/         # Reusable UI components
-│   └── models/             # Data models
+│   ├── models/             # Data models
+│   └── shared.dart         # Barrel export for shared module
+├── l10n/                   # Localization files (EN, FR)
 └── main.dart               # Application entry point
 ```
 
@@ -79,14 +87,14 @@ Follow these steps to get a local copy up and running.
 ### Prerequisites
 
 -   [Flutter SDK](https://flutter.dev/docs/get-started/install) (3.7.2+)
--   Dart SDK
+-   Dart SDK (3.7.2+)
 -   A Firebase project configured (for Auth/Database features)
 
 ### Installation
 
 1.  **Clone the repository**
     ```bash
-    git clone https://github.com/yourusername/zadiag.git
+    git clone https://github.com/m-idriss/zadiag.git
     cd zadiag
     ```
 
