@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:zadiag/shared/components/btm_nav_item.dart';
 import 'package:zadiag/features/diag/screens/profile_screen.dart';
@@ -109,33 +111,39 @@ class _HomePageState extends State<HomePage>
       ),
       child: SafeArea(
         top: false,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppTheme.spacingMd,
-            vertical: AppTheme.spacingSm,
-          ),
-          decoration: bottomMenu(context),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              ...List.generate(bottomNavItems.length, (index) {
-                Menu navBar = bottomNavItems[index];
-                return BtmNavItem(
-                  navBar: navBar,
-                  press: () {
-                    RiveUtils.changeSMIBoolState(navBar.rive.status!);
-                    updateSelectedBtmNav(navBar);
-                  },
-                  riveOnInit: (artboard) {
-                    navBar.rive.status = RiveUtils.getRiveInput(
-                      artboard,
-                      stateMachineName: navBar.rive.stateMachineName,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTheme.spacingMd,
+                vertical: AppTheme.spacingSm,
+              ),
+              decoration: bottomMenu(context),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  ...List.generate(bottomNavItems.length, (index) {
+                    Menu navBar = bottomNavItems[index];
+                    return BtmNavItem(
+                      navBar: navBar,
+                      press: () {
+                        RiveUtils.changeSMIBoolState(navBar.rive.status!);
+                        updateSelectedBtmNav(navBar);
+                      },
+                      riveOnInit: (artboard) {
+                        navBar.rive.status = RiveUtils.getRiveInput(
+                          artboard,
+                          stateMachineName: navBar.rive.stateMachineName,
+                        );
+                      },
+                      selectedNav: selectedBottonNav,
                     );
-                  },
-                  selectedNav: selectedBottonNav,
-                );
-              }),
-            ],
+                  }),
+                ],
+              ),
+            ),
           ),
         ),
       ),
