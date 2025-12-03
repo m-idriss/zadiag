@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
@@ -27,6 +29,26 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
   final IcsGenerator _icsGenerator = IcsGenerator();
   final IcsExportService _icsExportService = IcsExportService();
 
+  int _eventsGenerated = 28453;
+  int _imagesProcessed = 2112;
+  int _hoursSaved = 198;
+  int _workdaysSaved = 25;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _eventsGenerated = 28453;
+          _imagesProcessed = 2112;
+          _hoursSaved = 198;
+          _workdaysSaved = 25;
+        });
+      }
+    });
+  }
+
   @override
   void dispose() {
     _converterService.dispose();
@@ -40,7 +62,7 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
   Future<void> _processImages() async {
     final notifier = ref.read(converterProvider.notifier);
     final state = ref.read(converterProvider);
-    
+
     if (state.uploadedImages.isEmpty) {
       showSnackBar(context, trad(context)!.please_upload_image, true);
       return;
@@ -96,7 +118,7 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
   Future<void> _downloadIcs() async {
     final notifier = ref.read(converterProvider.notifier);
     final state = ref.read(converterProvider);
-    
+
     if (state.extractedEvents.isEmpty) {
       showSnackBar(context, trad(context)!.no_events_to_export, true);
       return;
@@ -120,7 +142,6 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
         notifier.setExporting(false);
       }
     }
-
   }
 
   Future<void> _showDownloadOptionsDialog() async {
@@ -130,92 +151,94 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
     if (!mounted) return;
     await showModalBottomSheet(
       context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(AppTheme.spacingLg),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(AppTheme.radiusXl),
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                trad(context)!.download_ics,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontFamily: AppTheme.defaultFontFamilyName,
-                ),
-                textAlign: TextAlign.center,
+      builder:
+          (context) => Container(
+            padding: const EdgeInsets.all(AppTheme.spacingLg),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppTheme.radiusXl),
               ),
-              const SizedBox(height: AppTheme.spacingLg),
-
-              _buildOptionTile(
-                context,
-                icon: Icons.download_rounded,
-                title: trad(context)!.save_ics_file,
-                subtitle: trad(context)!.save_to_downloads,
-                onTap: () async {
-                  Navigator.pop(context);
-                  await _saveIcsFile();
-                },
-              ),
-              const SizedBox(height: AppTheme.spacingSm),
-
-              _buildOptionTile(
-                context,
-                icon: Icons.copy_rounded,
-                title: trad(context)!.copy_to_clipboard,
-                subtitle: trad(context)!.copy_ics_hint,
-                onTap: () {
-                  Navigator.pop(context);
-                  _copyToClipboard();
-                },
-              ),
-              const SizedBox(height: AppTheme.spacingSm),
-
-              _buildOptionTile(
-                context,
-                icon: Icons.visibility_rounded,
-                title: trad(context)!.preview_ics,
-                subtitle: trad(context)!.preview_ics_hint,
-                onTap: () {
-                  Navigator.pop(context);
-                  _showIcsPreview();
-                },
-              ),
-              const SizedBox(height: AppTheme.spacingLg),
-
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(
-                  trad(context)!.cancel,
-                  style: TextStyle(
-                    color:
-                    Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                    fontFamily: AppTheme.defaultFontFamilyName,
+            ),
+            child: SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    trad(context)!.download_ics,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontFamily: AppTheme.defaultFontFamilyName,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                ),
+                  const SizedBox(height: AppTheme.spacingLg),
+
+                  _buildOptionTile(
+                    context,
+                    icon: Icons.download_rounded,
+                    title: trad(context)!.save_ics_file,
+                    subtitle: trad(context)!.save_to_downloads,
+                    onTap: () async {
+                      Navigator.pop(context);
+                      await _saveIcsFile();
+                    },
+                  ),
+                  const SizedBox(height: AppTheme.spacingSm),
+
+                  _buildOptionTile(
+                    context,
+                    icon: Icons.copy_rounded,
+                    title: trad(context)!.copy_to_clipboard,
+                    subtitle: trad(context)!.copy_ics_hint,
+                    onTap: () {
+                      Navigator.pop(context);
+                      _copyToClipboard();
+                    },
+                  ),
+                  const SizedBox(height: AppTheme.spacingSm),
+
+                  _buildOptionTile(
+                    context,
+                    icon: Icons.visibility_rounded,
+                    title: trad(context)!.preview_ics,
+                    subtitle: trad(context)!.preview_ics_hint,
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showIcsPreview();
+                    },
+                  ),
+                  const SizedBox(height: AppTheme.spacingLg),
+
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(
+                      trad(context)!.cancel,
+                      style: TextStyle(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.7),
+                        fontFamily: AppTheme.defaultFontFamilyName,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 
   Widget _buildOptionTile(
-      BuildContext context, {
-        required IconData icon,
-        required String title,
-        required String subtitle,
-        required VoidCallback onTap,
-      }) {
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
@@ -276,20 +299,21 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
 
         final shouldOpen = await showDialog<bool>(
           context: context,
-          builder: (context) => AlertDialog(
-            title: Text(trad(context)!.file_saved),
-            content: Text(trad(context)!.file_saved_message),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: Text(trad(context)!.no),
+          builder:
+              (context) => AlertDialog(
+                title: Text(trad(context)!.file_saved),
+                content: Text(trad(context)!.file_saved_message),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text(trad(context)!.no),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: Text(trad(context)!.open),
+                  ),
+                ],
               ),
-              FilledButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: Text(trad(context)!.open),
-              ),
-            ],
-          ),
         );
 
         if (!mounted) return;
@@ -318,32 +342,30 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
     if (state.generatedIcs == null) return;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(trad(context)!.generated_ics_file),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 400,
-          child: SingleChildScrollView(
-            child: SelectableText(
-              state.generatedIcs!,
-              style: const TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 12,
+      builder:
+          (context) => AlertDialog(
+            title: Text(trad(context)!.generated_ics_file),
+            content: SizedBox(
+              width: double.maxFinite,
+              height: 400,
+              child: SingleChildScrollView(
+                child: SelectableText(
+                  state.generatedIcs!,
+                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                ),
               ),
             ),
+            actions: [
+              TextButton(
+                onPressed: _copyToClipboard,
+                child: Text(trad(context)!.copy),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(trad(context)!.close),
+              ),
+            ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: _copyToClipboard,
-            child: Text(trad(context)!.copy),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(trad(context)!.close),
-          ),
-        ],
-      ),
     );
   }
 
@@ -363,6 +385,10 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
             physics: const BouncingScrollPhysics(),
             children: [
               _buildHeader(context),
+              const SizedBox(height: AppTheme.spacingLg),
+              _brandingCard(context, AppTheme.radiusSm),
+              const SizedBox(height: AppTheme.spacingLg),
+              _buildStatsSection(context),
               if (state.errorMessage != null) ...[
                 const SizedBox(height: AppTheme.spacingMd),
                 _buildErrorMessage(context, state.errorMessage!),
@@ -384,7 +410,7 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
               ),
               if (state.uploadedImages.isNotEmpty && !state.isProcessing) ...[
                 const SizedBox(height: AppTheme.spacingLg),
-                _buildConvertButton(context)
+                _buildConvertButton(context),
               ],
               const SizedBox(height: 3 * AppTheme.spacingXxl),
             ],
@@ -415,8 +441,7 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
         ),
         boxShadow: [
           BoxShadow(
-            color:
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -431,8 +456,11 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.auto_awesome_rounded,
-                    color: Colors.white, size: 22),
+                const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
                 const SizedBox(width: AppTheme.spacingSm),
                 Flexible(
                   child: Text(
@@ -490,47 +518,48 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
 
   Widget _buildEventsSection(BuildContext context, ConverterState state) {
     return Container(
-        padding: EdgeInsets.all(AppTheme.spacingMd),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-          boxShadow: AppTheme.cardShadow,
-        ),
-        child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(
-              Icons.event_available_rounded,
-              color: Theme.of(context).colorScheme.primary,
-              size: 24,
-            ),
-            const SizedBox(width: AppTheme.spacingSm),
-            Flexible(
-              child: Text(
-                '${trad(context)!.extracted_events} (${state.extractedEvents.length})',
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontFamily: AppTheme.defaultFontFamilyName,
+      padding: EdgeInsets.all(AppTheme.spacingMd),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.event_available_rounded,
+                color: Theme.of(context).colorScheme.primary,
+                size: 24,
+              ),
+              const SizedBox(width: AppTheme.spacingSm),
+              Flexible(
+                child: Text(
+                  '${trad(context)!.extracted_events} (${state.extractedEvents.length})',
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontFamily: AppTheme.defaultFontFamilyName,
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppTheme.spacingMd),
-        ...state.extractedEvents.asMap().entries.map((entry) {
-          return EventCard(
-            event: entry.value,
-            onDelete: () => _removeEvent(entry.key),
-          );
-        }),
-      ],
-    ));
+            ],
+          ),
+          const SizedBox(height: AppTheme.spacingMd),
+          ...state.extractedEvents.asMap().entries.map((entry) {
+            return EventCard(
+              event: entry.value,
+              onDelete: () => _removeEvent(entry.key),
+            );
+          }),
+        ],
+      ),
+    );
   }
 
   Widget _buildExportButton(BuildContext context, ConverterState state) {
@@ -541,8 +570,9 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
         color: Theme.of(context).colorScheme.secondary,
         boxShadow: [
           BoxShadow(
-            color:
-            Theme.of(context).colorScheme.secondary.withValues(alpha: 0.4),
+            color: Theme.of(
+              context,
+            ).colorScheme.secondary.withValues(alpha: 0.4),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -554,38 +584,200 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
           onTap: state.isExporting ? null : _downloadIcs,
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
           child: Center(
-            child: state.isExporting
-                ? const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            )
-                : Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.download_rounded, color: Colors.white, size: 22),
-                const SizedBox(width: AppTheme.spacingSm),
-                Flexible(
-                  child: Text(
-                    trad(context)!.download_ics,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: AppTheme.defaultFontFamilyName,
+            child:
+                state.isExporting
+                    ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                    : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.download_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                        const SizedBox(width: AppTheme.spacingSm),
+                        Flexible(
+                          child: Text(
+                            trad(context)!.download_ics,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: AppTheme.defaultFontFamilyName,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ),
-              ],
-            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _brandingCard(BuildContext context, double radiusLg) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        child: SizedBox(
+          width: double.infinity,
+          height: 240,
+          child: SvgPicture.asset(
+            'assets/images/converter.svg',
+            fit: BoxFit.cover,
+            semanticsLabel: 'Converter illustration',
+            placeholderBuilder:
+                (context) => Container(
+                  color: Theme.of(context).colorScheme.surface,
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatsSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.bar_chart_rounded,
+              color: Theme.of(context).colorScheme.primary,
+              size: 28,
+            ),
+            SizedBox(width: AppTheme.spacingSm),
+            Text(
+              trad(context)!.powering_productivity,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.secondary,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: AppTheme.spacingMd),
+
+        _buildStatLine(
+          context,
+          trad(context)!.pre_events_generated,
+          _eventsGenerated,
+          trad(context)!.events_generated,
+          _imagesProcessed,
+          trad(context)!.images,
+          Theme.of(context).colorScheme.secondary,
+        ),
+        SizedBox(height: AppTheme.spacingSm),
+
+        _buildStatLine(
+          context,
+          trad(context)!.pre_hours_saved,
+          _hoursSaved,
+          trad(context)!.hours_saved,
+          _workdaysSaved,
+          trad(context)!.workdays_saved,
+          Theme.of(context).colorScheme.secondary,
+        ),
+        SizedBox(height: AppTheme.spacingSm),
+      ],
+    );
+  }
+
+  Widget _buildStatLine(
+    BuildContext context,
+    String pretext,
+    int value1,
+    String text1,
+    int? value2,
+    String? text2,
+    Color accentColor,
+  ) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Text(
+            "$pretext ",
+            style: TextStyle(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.85),
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          _buildAnimatedCounter(value1, accentColor),
+          SizedBox(width: AppTheme.spacingSm / 2),
+          Text(
+            text1,
+            style: TextStyle(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.85),
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          if (value2 != null) ...[
+            SizedBox(width: AppTheme.spacingMd),
+            _buildAnimatedCounter(value2, accentColor),
+            SizedBox(width: AppTheme.spacingSm / 2),
+            Text(
+              text2!,
+              style: TextStyle(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.85),
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnimatedCounter(int targetValue, Color accentColor) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: targetValue.toDouble()),
+      duration: const Duration(seconds: 1),
+      builder: (context, value, child) {
+        final formatter = NumberFormat('#,###', 'fr_FR');
+        return Text(
+          formatter.format(value.toInt()),
+          style: TextStyle(
+            color: accentColor,
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.5,
+          ),
+        );
+      },
     );
   }
 }

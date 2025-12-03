@@ -9,7 +9,6 @@ class Menu {
 }
 
 List<Menu> bottomNavItems = [
-  riveMenuButton(RiveIcon.home2),
   riveMenuButton(RiveIcon.timer),
   riveMenuButton(RiveIcon.add),
   riveMenuButton(RiveIcon.profile),

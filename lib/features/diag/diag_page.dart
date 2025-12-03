@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:zadiag/shared/components/btm_nav_item.dart';
 import 'package:zadiag/features/diag/screens/profile_screen.dart';
 import 'package:zadiag/features/diag/screens/heatmap_screen.dart';
-import 'package:zadiag/features/diag/screens/branding_screen.dart';
 import 'package:zadiag/features/diag/screens/settings_screen.dart';
 import 'package:zadiag/shared/models/menu.dart';
 import 'package:zadiag/shared/models/rive_utils.dart';
@@ -24,10 +23,9 @@ class _HomePageState extends State<HomePage>
   late Animation<double> animation;
 
   // Page indices for navigation
-  static const int _converterPageIndex = 2;
+  static const int _converterPageIndex = 1;
 
   List<Widget> get _pages => [
-    BrandingScreen(onGetStarted: _navigateToConverter),
     const HeatMapScreen(),
     const ConverterPage(),
     const ProfileScreen(),
@@ -36,10 +34,6 @@ class _HomePageState extends State<HomePage>
 
   Menu selectedBottonNav = bottomNavItems[0];
   int _previousIndex = _converterPageIndex;
-
-  void _navigateToConverter() {
-    updateSelectedBtmNav(bottomNavItems[_converterPageIndex]);
-  }
 
   void updateSelectedBtmNav(Menu menu) {
     if (selectedBottonNav != menu) {
