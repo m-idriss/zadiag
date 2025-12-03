@@ -188,11 +188,29 @@ abstract class AppLocalizations {
   /// **'Changes saved'**
   String get changes_saved;
 
-  /// No description provided for @dark_mode.
+  /// No description provided for @appearance.
   ///
   /// In en, this message translates to:
-  /// **'Dark Mode'**
-  String get dark_mode;
+  /// **'Appearance'**
+  String get appearance;
+
+  /// No description provided for @theme_light.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get theme_light;
+
+  /// No description provided for @theme_dark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get theme_dark;
+
+  /// No description provided for @theme_auto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get theme_auto;
 
   /// No description provided for @email_hint.
   ///

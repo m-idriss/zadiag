@@ -13,8 +13,27 @@ final ValueNotifier<Locale?> localeNotifier = ValueNotifier(null);
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await _loadSavedTheme();
   await _loadSavedLocale();
   runApp(const ProviderScope(child: MyApp()));
+}
+
+Future<void> _loadSavedTheme() async {
+  final prefs = await SharedPreferences.getInstance();
+  final themeModeString = prefs.getString('themeMode');
+  if (themeModeString != null) {
+    switch (themeModeString) {
+      case 'light':
+        themeNotifier.value = ThemeMode.light;
+        break;
+      case 'dark':
+        themeNotifier.value = ThemeMode.dark;
+        break;
+      case 'system':
+        themeNotifier.value = ThemeMode.system;
+        break;
+    }
+  }
 }
 
 Future<void> _loadSavedLocale() async {

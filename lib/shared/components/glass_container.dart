@@ -31,21 +31,34 @@ class GlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get theme-aware base color
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final baseColor =
+        isDarkMode
+            ? Colors.black.withValues(alpha: opacity)
+            : Colors.white.withValues(alpha: opacity);
+
     return Container(
       width: width,
       height: height,
       margin: margin,
       decoration: BoxDecoration(
-        color: color ?? Colors.white.withValues(alpha: opacity),
+        color: color ?? baseColor,
         borderRadius: BorderRadius.circular(borderRadius),
         border:
             border ??
-            Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1.5),
+            Border.all(
+              color:
+                  isDarkMode
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : Colors.white.withValues(alpha: 0.2),
+              width: 1.5,
+            ),
         boxShadow:
             boxShadow ??
             [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
+                color: Colors.black.withValues(alpha: isDarkMode ? 0.3 : 0.1),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),

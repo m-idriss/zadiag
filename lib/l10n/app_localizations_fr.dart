@@ -56,7 +56,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get changes_saved => 'Modifications sauvegardées';
 
   @override
-  String get dark_mode => 'Mode sombre';
+  String get appearance => 'Apparence';
+
+  @override
+  String get theme_light => 'Clair';
+
+  @override
+  String get theme_dark => 'Sombre';
+
+  @override
+  String get theme_auto => 'Auto';
 
   @override
   String get email_hint => 'jean.dupont@email.com';

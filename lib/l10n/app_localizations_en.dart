@@ -56,7 +56,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get changes_saved => 'Changes saved';
 
   @override
-  String get dark_mode => 'Dark Mode';
+  String get appearance => 'Appearance';
+
+  @override
+  String get theme_light => 'Light';
+
+  @override
+  String get theme_dark => 'Dark';
+
+  @override
+  String get theme_auto => 'Auto';
 
   @override
   String get email_hint => 'john.doe@email.com';
