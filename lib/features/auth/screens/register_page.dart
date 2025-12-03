@@ -1,4 +1,3 @@
-import 'dart:ui' as ui;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
@@ -6,6 +5,8 @@ import 'package:zadiag/core/utils/translate.dart';
 import 'package:zadiag/features/auth/screens/login_page.dart';
 import 'package:zadiag/features/auth/screens/components/auth_elements.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
+import 'package:zadiag/shared/components/glass_scaffold.dart';
+import 'package:zadiag/shared/components/glass_container.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -59,140 +60,74 @@ class _RegisterPageState extends State<RegisterPage>
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Scaffold(
-      extendBody: true,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              colorScheme.primary,
-              colorScheme.tertiary,
-              colorScheme.secondary,
-            ],
-            stops: const [0.0, 0.5, 1.0],
-          ),
-        ),
-        child: Stack(
-          children: [
-            // Decorative background circles
-            Positioned(
-              top: -100,
-              right: -100,
-              child: Container(
-                width: 300,
-                height: 300,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.05),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: -50,
-              left: -50,
-              child: Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.05),
-                ),
-              ),
-            ),
-            SafeArea(
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: SlideTransition(
-                  position: _slideAnimation,
-                  child: ListView(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppTheme.spacingLg,
+    return GlassScaffold(
+      body: SafeArea(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: ListView(
+              padding: EdgeInsets.symmetric(horizontal: AppTheme.spacingLg),
+              physics: const BouncingScrollPhysics(),
+              children: [
+                const SizedBox(height: AppTheme.spacingXl),
+                Center(
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
                     ),
-                    physics: const BouncingScrollPhysics(),
-                    children: [
-                      const SizedBox(height: AppTheme.spacingXl),
-                      Center(child: _brandingSection(context)),
-                      const SizedBox(height: AppTheme.spacingXs),
-                      _registerTitle(context),
-                      _registerSubtitle(context),
-                      _formCard(context),
-                      _orConnectWithText(context),
-                      _socialButtons(context),
-                      const SizedBox(height: 80), // Space for bottom bar
-                    ],
+                    child: Container(
+                      width: 60,
+                      height: 60,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.person_add_rounded,
+                          size: 32,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(height: AppTheme.spacingXs),
+                _registerTitle(context),
+                _registerSubtitle(context),
+                _formCard(context),
+                _orConnectWithText(context),
+                _socialButtons(context),
+                const SizedBox(height: 80), // Space for bottom bar
+              ],
             ),
-          ],
+          ),
         ),
       ),
       bottomNavigationBar: _bottom(context),
     );
   }
 
-  Widget _brandingSection(BuildContext context) {
-    return Container(
-      width: 100,
-      height: 100,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.2),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Center(
-            child: Container(
-              width: 60,
-              height: 60,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Icon(
-                  Icons.person_add_rounded,
-                  size: 32,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _formCard(BuildContext context) {
-    return Container(
+    return GlassContainer(
       padding: EdgeInsets.all(AppTheme.spacingLg),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
+      borderRadius: AppTheme.radiusXl,
+      opacity: 0.9,
       child: Column(
         children: [
           _emailTextField(context),
