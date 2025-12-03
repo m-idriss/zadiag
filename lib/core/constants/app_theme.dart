@@ -71,6 +71,58 @@ class AppTheme {
       offset: const Offset(0, 8),
     ),
   ];
+
+  // Private constructor to prevent instantiation
+  const AppTheme._();
+
+  /// Creates a heading text style (large, bold titles).
+  static TextStyle headingStyle(Color color) => TextStyle(
+        fontSize: 28,
+        fontWeight: FontWeight.w700,
+        fontFamily: defaultFontFamilyName,
+        color: color,
+        letterSpacing: -0.5,
+      );
+
+  /// Creates a title text style (section headers).
+  static TextStyle titleStyle(Color color) => TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+        fontFamily: defaultFontFamilyName,
+        color: color,
+      );
+
+  /// Creates a body text style (regular content).
+  static TextStyle bodyStyle(Color color, {double alpha = 1.0}) => TextStyle(
+        fontSize: 14,
+        fontFamily: defaultFontFamilyName,
+        color: color.withValues(alpha: alpha),
+        height: 1.5,
+      );
+
+  /// Creates a label text style (small, secondary text).
+  static TextStyle labelStyle(Color color, {double alpha = 0.6}) => TextStyle(
+        fontSize: 12,
+        fontFamily: defaultFontFamilyName,
+        color: color.withValues(alpha: alpha),
+      );
+
+  /// Creates a button text style.
+  static TextStyle buttonStyle({Color color = Colors.white}) => TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        fontFamily: defaultFontFamilyName,
+        color: color,
+        letterSpacing: 0.5,
+      );
+
+  /// Creates a large button text style.
+  static TextStyle buttonStyleLarge({Color color = Colors.white}) => TextStyle(
+        fontSize: 17,
+        fontWeight: FontWeight.w700,
+        fontFamily: defaultFontFamilyName,
+        color: color,
+      );
 }
 
 const lightColorScheme = ColorScheme(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
+import 'package:zadiag/core/utils/navigation_helper.dart';
 
 Container title(BuildContext context, String title) {
   return Container(
@@ -167,22 +168,7 @@ Widget bottom(BuildContext context, StatefulWidget page, String text) {
     ),
     child: TextButton(
       onPressed: () {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Navigator.pushReplacement(
-            context,
-            PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) => page,
-              transitionsBuilder:
-                  (context, animation, secondaryAnimation, child) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: child,
-                );
-              },
-              transitionDuration: const Duration(milliseconds: 300),
-            ),
-          );
-        });
+        NavigationHelper.navigateWithFadePostFrame(context, page);
       },
       style: TextButton.styleFrom(
         padding: EdgeInsets.symmetric(

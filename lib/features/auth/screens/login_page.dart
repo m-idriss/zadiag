@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:zadiag/features/diag/diag_page.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/core/utils/translate.dart';
+import 'package:zadiag/core/utils/navigation_helper.dart';
 import 'package:zadiag/features/auth/screens/register_page.dart';
 import 'package:zadiag/features/auth/screens/components/auth_elements.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
@@ -169,28 +170,19 @@ class _LoginPageState extends State<LoginPage>
       );
       if (!mounted) return;
 
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder:
-              (context, animation, secondaryAnimation) => const HomePage(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 300),
-        ),
-      );
+      NavigationHelper.navigateWithFade(context, const HomePage());
     } on FirebaseAuthException catch (e) {
-      String message = 'Erreur inconnue';
+      if (!mounted) return;
+      String message = trad(context)?.unknown_error ?? 'Unknown error';
       if (e.code == 'user-not-found') {
-        message = 'Utilisateur non trouvé';
+        message = trad(context)?.user_not_found ?? 'User not found';
       } else if (e.code == 'wrong-password') {
-        message = 'Mot de passe incorrect';
+        message = trad(context)?.wrong_password ?? 'Wrong password';
       }
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
     }
   }
 
@@ -289,25 +281,10 @@ class _LoginPageState extends State<LoginPage>
       alignment: Alignment.center,
       child: TextButton(
         onPressed: () {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            Navigator.pushReplacement(
-              context,
-              PageRouteBuilder(
-                pageBuilder:
-                    (context, animation, secondaryAnimation) =>
-                        const RegisterPage(),
-                transitionsBuilder: (
-                  context,
-                  animation,
-                  secondaryAnimation,
-                  child,
-                ) {
-                  return FadeTransition(opacity: animation, child: child);
-                },
-                transitionDuration: const Duration(milliseconds: 300),
-              ),
-            );
-          });
+          NavigationHelper.navigateWithFadePostFrame(
+            context,
+            const RegisterPage(),
+          );
         },
         style: TextButton.styleFrom(
           padding: EdgeInsets.symmetric(

@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/core/utils/translate.dart';
+import 'package:zadiag/core/utils/navigation_helper.dart';
 import 'package:zadiag/features/auth/screens/login_page.dart';
 import 'package:zadiag/features/auth/screens/components/auth_elements.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
@@ -239,7 +240,7 @@ class _RegisterPageState extends State<RegisterPage>
     final confirm = _registerConfirmPasswordController.text;
 
     if (password != confirm) {
-      showSnackbar("Les mots de passe ne correspondent pas");
+      showSnackbar(trad(context)?.passwords_do_not_match ?? "Passwords do not match");
       return;
     }
 
@@ -248,18 +249,9 @@ class _RegisterPageState extends State<RegisterPage>
         email: email,
         password: password,
       );
-      showSnackbar("Compte créé avec succès !", isError: true);
+      showSnackbar(trad(context)?.account_created ?? "Account created successfully!", isError: false);
       if (!context.mounted) return;
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => LoginPage(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 300),
-        ),
-      );
+      NavigationHelper.navigateWithFade(context, const LoginPage());
     } on FirebaseAuthException catch (e) {
       String message;
       debugPrint(
@@ -267,16 +259,16 @@ class _RegisterPageState extends State<RegisterPage>
       );
       switch (e.code) {
         case 'email-already-in-use':
-          message = "Cet e-mail est déjà utilisé.";
+          message = trad(context)?.email_already_in_use ?? "This email is already in use.";
           break;
         case 'invalid-email':
-          message = "Adresse e-mail invalide.";
+          message = trad(context)?.invalid_email ?? "Invalid email address.";
           break;
         case 'weak-password':
-          message = "Mot de passe trop faible.";
+          message = trad(context)?.weak_password ?? "Password is too weak.";
           break;
         default:
-          message = "Erreur : ${e.message}";
+          message = "${trad(context)?.error ?? 'Error'}: ${e.message}";
       }
       showSnackbar(message);
     }
@@ -338,25 +330,10 @@ class _RegisterPageState extends State<RegisterPage>
       alignment: Alignment.center,
       child: TextButton(
         onPressed: () {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            Navigator.pushReplacement(
-              context,
-              PageRouteBuilder(
-                pageBuilder:
-                    (context, animation, secondaryAnimation) =>
-                        const LoginPage(),
-                transitionsBuilder: (
-                  context,
-                  animation,
-                  secondaryAnimation,
-                  child,
-                ) {
-                  return FadeTransition(opacity: animation, child: child);
-                },
-                transitionDuration: const Duration(milliseconds: 300),
-              ),
-            );
-          });
+          NavigationHelper.navigateWithFadePostFrame(
+            context,
+            const LoginPage(),
+          );
         },
         style: TextButton.styleFrom(
           padding: EdgeInsets.symmetric(

@@ -127,5 +127,14 @@
   },
   "choose_image_source": "Choose Image Source",
   "camera": "Camera",
-  "gallery": "Gallery"
+  "gallery": "Gallery",
+  "unknown_error": "Unknown error",
+  "user_not_found": "User not found",
+  "wrong_password": "Incorrect password",
+  "passwords_do_not_match": "Passwords do not match",
+  "account_created": "Account created successfully!",
+  "email_already_in_use": "This email is already in use.",
+  "invalid_email": "Invalid email address.",
+  "weak_password": "Password is too weak.",
+  "error": "Error"
 }
