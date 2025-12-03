@@ -397,8 +397,6 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
               if (state.extractedEvents.isNotEmpty) ...[
                 const SizedBox(height: AppTheme.spacingXl),
                 _buildEventsSection(context, state),
-                const SizedBox(height: AppTheme.spacingLg),
-                _buildExportButton(context, state),
               ],
               const SizedBox(height: AppTheme.spacingLg),
               ImageUploadZone(
@@ -407,8 +405,12 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
                 maxImages: 5,
                 initialImages: state.uploadedImages,
               ),
-              if (state.uploadedImages.isNotEmpty && !state.isProcessing) ...[
+              if (state.extractedEvents.isNotEmpty) ...[
                 const SizedBox(height: AppTheme.spacingLg),
+                _buildExportButton(context, state),
+              ],
+              if (state.uploadedImages.isNotEmpty && !state.isProcessing) ...[
+              const SizedBox(height: AppTheme.spacingLg),
                 _buildConvertButton(context),
               ],
               if (state.uploadedImages.isEmpty) ...[
