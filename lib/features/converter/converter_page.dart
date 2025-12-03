@@ -386,11 +386,9 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
             physics: const BouncingScrollPhysics(),
             children: [
               _buildHeader(context),
-              if (state.extractedEvents.isEmpty) ...[
+              if (state.uploadedImages.isEmpty) ...[
                 const SizedBox(height: AppTheme.spacingLg),
                 _brandingCard(context, AppTheme.radiusSm),
-                const SizedBox(height: AppTheme.spacingLg),
-                _buildStatsSection(context),
               ],
               if (state.errorMessage != null) ...[
                 const SizedBox(height: AppTheme.spacingMd),
@@ -399,8 +397,6 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
               if (state.extractedEvents.isNotEmpty) ...[
                 const SizedBox(height: AppTheme.spacingXl),
                 _buildEventsSection(context, state),
-              ],
-              if (state.extractedEvents.isNotEmpty) ...[
                 const SizedBox(height: AppTheme.spacingLg),
                 _buildExportButton(context, state),
               ],
@@ -414,6 +410,10 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
               if (state.uploadedImages.isNotEmpty && !state.isProcessing) ...[
                 const SizedBox(height: AppTheme.spacingLg),
                 _buildConvertButton(context),
+              ],
+              if (state.uploadedImages.isEmpty) ...[
+                const SizedBox(height: AppTheme.spacingLg),
+                _buildStatsSection(context),
               ],
               const SizedBox(height: 3 * AppTheme.spacingXxl),
             ],
