@@ -38,8 +38,9 @@ void main() {
     });
 
     test('isImage returns true for WebP files', () {
+      // WebP files start with RIFF....WEBP
       final webpFile = UploadedImage(
-        bytes: Uint8List.fromList([0x52, 0x49, 0x46, 0x46]), // RIFF
+        bytes: Uint8List.fromList([0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50]),
         name: 'image.webp',
         mimeType: 'image/webp',
       );
