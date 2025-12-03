@@ -164,28 +164,32 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
                             ),
                           ),
                           const SizedBox(width: AppTheme.spacingMd),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                trad(context)!.upload_images,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                  color: colorScheme.onSurface,
-                                  fontFamily: AppTheme.defaultFontFamilyName,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  trad(context)!.upload_images,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: colorScheme.onSurface,
+                                    fontFamily: AppTheme.defaultFontFamilyName,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${trad(context)!.supported_formats} (Max ${widget.maxImages})',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: colorScheme.onSurface.withValues(alpha: 0.5),
-                                  fontFamily: AppTheme.defaultFontFamilyName,
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${trad(context)!.supported_formats} (Max ${widget.maxImages})',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: colorScheme.onSurface.withValues(
+                                      alpha: 0.5,
+                                    ),
+                                    fontFamily: AppTheme.defaultFontFamilyName,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -236,8 +240,8 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: _uploadedImages.length,
-              separatorBuilder: (_, _) =>
-                  const SizedBox(width: AppTheme.spacingSm),
+              separatorBuilder:
+                  (_, _) => const SizedBox(width: AppTheme.spacingSm),
               itemBuilder: (context, index) {
                 return _buildImageThumbnail(index, colorScheme);
               },
@@ -264,14 +268,15 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
             child: Image.memory(
               image.bytes,
               fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Container(
-                color: colorScheme.surfaceContainerHigh,
-                child: Icon(
-                  Icons.image_outlined,
-                  size: 20,
-                  color: colorScheme.onSurface.withValues(alpha: 0.3),
-                ),
-              ),
+              errorBuilder:
+                  (_, _, _) => Container(
+                    color: colorScheme.surfaceContainerHigh,
+                    child: Icon(
+                      Icons.image_outlined,
+                      size: 20,
+                      color: colorScheme.onSurface.withValues(alpha: 0.3),
+                    ),
+                  ),
             ),
           ),
         ),
@@ -302,7 +307,7 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
   /// Picks images from the device gallery.
   Future<void> _pickImages() async {
     if (_isPickerActive) return;
-    
+
     setState(() {
       _isPickerActive = true;
     });
@@ -313,7 +318,9 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(trad(context)!.max_images_allowed(widget.maxImages)),
+              content: Text(
+                trad(context)!.max_images_allowed(widget.maxImages),
+              ),
               duration: const Duration(seconds: 2),
             ),
           );
@@ -324,7 +331,7 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
       // Pick multiple images from gallery
       final List<XFile> pickedFiles = await _imagePicker.pickMultiImage(
         imageQuality: 85, // Compress images for optimal upload size
-        maxWidth: 1920,   // Limit max dimensions for reasonable file size
+        maxWidth: 1920, // Limit max dimensions for reasonable file size
         maxHeight: 1920,
       );
 
@@ -334,18 +341,16 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
 
       // Take only up to remaining allowed images
       final filesToProcess = pickedFiles.take(remaining).toList();
-      
+
       final newImages = <UploadedImage>[];
       for (final file in filesToProcess) {
         try {
           final bytes = await file.readAsBytes();
           final mimeType = _getMimeType(file.name);
-          
-          newImages.add(UploadedImage(
-            bytes: bytes,
-            name: file.name,
-            mimeType: mimeType,
-          ));
+
+          newImages.add(
+            UploadedImage(bytes: bytes, name: file.name, mimeType: mimeType),
+          );
         } catch (e) {
           if (kDebugMode) {
             print('Error processing image ${file.name}: $e');
@@ -421,7 +426,7 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
   /// Picks a single image from camera (useful for mobile devices)
   Future<void> pickFromCamera() async {
     if (_isPickerActive) return;
-    
+
     setState(() {
       _isPickerActive = true;
     });
@@ -432,7 +437,9 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(trad(context)!.max_images_allowed(widget.maxImages)),
+              content: Text(
+                trad(context)!.max_images_allowed(widget.maxImages),
+              ),
               duration: const Duration(seconds: 2),
             ),
           );
@@ -453,7 +460,7 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
 
       final bytes = await pickedFile.readAsBytes();
       final mimeType = _getMimeType(pickedFile.name);
-      
+
       final newImage = UploadedImage(
         bytes: bytes,
         name: pickedFile.name,
