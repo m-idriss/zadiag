@@ -829,6 +829,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error'**
   String get error;
+
+  /// No description provided for @calendar_preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar Preview'**
+  String get calendar_preview;
+
+  /// No description provided for @calendar_preview_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview events in calendar view'**
+  String get calendar_preview_hint;
+
+  /// No description provided for @daily_view.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get daily_view;
+
+  /// No description provided for @weekly_view.
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get weekly_view;
+
+  /// No description provided for @monthly_view.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get monthly_view;
+
+  /// No description provided for @no_events_for_date.
+  ///
+  /// In en, this message translates to:
+  /// **'No events for this date'**
+  String get no_events_for_date;
+
+  /// No description provided for @today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get today;
+
+  /// No description provided for @all_day.
+  ///
+  /// In en, this message translates to:
+  /// **'All day'**
+  String get all_day;
 }
 
 class _AppLocalizationsDelegate

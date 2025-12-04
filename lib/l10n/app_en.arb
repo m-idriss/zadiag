@@ -156,5 +156,13 @@
   "email_already_in_use": "This email is already in use.",
   "invalid_email": "Invalid email address.",
   "weak_password": "Password is too weak.",
-  "error": "Error"
+  "error": "Error",
+  "calendar_preview": "Calendar Preview",
+  "calendar_preview_hint": "Preview events in calendar view",
+  "daily_view": "Day",
+  "weekly_view": "Week",
+  "monthly_view": "Month",
+  "no_events_for_date": "No events for this date",
+  "today": "Today",
+  "all_day": "All day"
 }

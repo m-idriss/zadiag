@@ -395,4 +395,28 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get error => 'Erreur';
+
+  @override
+  String get calendar_preview => 'Aperçu du calendrier';
+
+  @override
+  String get calendar_preview_hint => 'Prévisualiser les événements dans le calendrier';
+
+  @override
+  String get daily_view => 'Jour';
+
+  @override
+  String get weekly_view => 'Semaine';
+
+  @override
+  String get monthly_view => 'Mois';
+
+  @override
+  String get no_events_for_date => 'Aucun événement pour cette date';
+
+  @override
+  String get today => 'Aujourd\'hui';
+
+  @override
+  String get all_day => 'Toute la journée';
 }

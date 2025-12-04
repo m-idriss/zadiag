@@ -14,6 +14,7 @@ import 'providers/converter_state.dart';
 import 'services/converter_service.dart';
 import 'services/ics_generator.dart';
 import 'services/ics_export_service.dart';
+import 'widgets/calendar_preview_dialog.dart';
 import 'widgets/event_card.dart';
 import 'widgets/image_upload_zone.dart';
 
@@ -177,6 +178,18 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: AppTheme.spacingLg),
+
+                  _buildOptionTile(
+                    context,
+                    icon: Icons.calendar_month_rounded,
+                    title: trad(context)!.calendar_preview,
+                    subtitle: trad(context)!.calendar_preview_hint,
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showCalendarPreview();
+                    },
+                  ),
+                  const SizedBox(height: AppTheme.spacingSm),
 
                   _buildOptionTile(
                     context,
@@ -367,6 +380,15 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
               ),
             ],
           ),
+    );
+  }
+
+  void _showCalendarPreview() {
+    final state = ref.read(converterProvider);
+    if (state.extractedEvents.isEmpty) return;
+    showDialog(
+      context: context,
+      builder: (context) => CalendarPreviewDialog(events: state.extractedEvents),
     );
   }
 
