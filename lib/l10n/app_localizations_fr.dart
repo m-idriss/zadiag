@@ -419,4 +419,36 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get all_day => 'Toute la journée';
+
+  @override
+  String events_count(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'événements',
+      one: 'événement',
+    );
+    return '$count $_temp0';
+  }
+
+  @override
+  String get weekday_monday_short => 'L';
+
+  @override
+  String get weekday_tuesday_short => 'M';
+
+  @override
+  String get weekday_wednesday_short => 'M';
+
+  @override
+  String get weekday_thursday_short => 'J';
+
+  @override
+  String get weekday_friday_short => 'V';
+
+  @override
+  String get weekday_saturday_short => 'S';
+
+  @override
+  String get weekday_sunday_short => 'D';
 }

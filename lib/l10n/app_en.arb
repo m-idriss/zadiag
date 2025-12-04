@@ -164,5 +164,20 @@
   "monthly_view": "Month",
   "no_events_for_date": "No events for this date",
   "today": "Today",
-  "all_day": "All day"
+  "all_day": "All day",
+  "events_count": "{count} {count, plural, =1{event} other{events}}",
+  "@events_count": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "weekday_monday_short": "M",
+  "weekday_tuesday_short": "T",
+  "weekday_wednesday_short": "W",
+  "weekday_thursday_short": "T",
+  "weekday_friday_short": "F",
+  "weekday_saturday_short": "S",
+  "weekday_sunday_short": "S"
 }

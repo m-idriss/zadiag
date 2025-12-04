@@ -164,5 +164,20 @@
   "monthly_view": "Mois",
   "no_events_for_date": "Aucun événement pour cette date",
   "today": "Aujourd'hui",
-  "all_day": "Toute la journée"
+  "all_day": "Toute la journée",
+  "events_count": "{count} {count, plural, =1{événement} other{événements}}",
+  "@events_count": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "weekday_monday_short": "L",
+  "weekday_tuesday_short": "M",
+  "weekday_wednesday_short": "M",
+  "weekday_thursday_short": "J",
+  "weekday_friday_short": "V",
+  "weekday_saturday_short": "S",
+  "weekday_sunday_short": "D"
 }

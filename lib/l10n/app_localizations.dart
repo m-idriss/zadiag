@@ -877,6 +877,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All day'**
   String get all_day;
+
+  /// No description provided for @events_count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} {count, plural, =1{event} other{events}}'**
+  String events_count(int count);
+
+  /// No description provided for @weekday_monday_short.
+  ///
+  /// In en, this message translates to:
+  /// **'M'**
+  String get weekday_monday_short;
+
+  /// No description provided for @weekday_tuesday_short.
+  ///
+  /// In en, this message translates to:
+  /// **'T'**
+  String get weekday_tuesday_short;
+
+  /// No description provided for @weekday_wednesday_short.
+  ///
+  /// In en, this message translates to:
+  /// **'W'**
+  String get weekday_wednesday_short;
+
+  /// No description provided for @weekday_thursday_short.
+  ///
+  /// In en, this message translates to:
+  /// **'T'**
+  String get weekday_thursday_short;
+
+  /// No description provided for @weekday_friday_short.
+  ///
+  /// In en, this message translates to:
+  /// **'F'**
+  String get weekday_friday_short;
+
+  /// No description provided for @weekday_saturday_short.
+  ///
+  /// In en, this message translates to:
+  /// **'S'**
+  String get weekday_saturday_short;
+
+  /// No description provided for @weekday_sunday_short.
+  ///
+  /// In en, this message translates to:
+  /// **'S'**
+  String get weekday_sunday_short;
 }
 
 class _AppLocalizationsDelegate

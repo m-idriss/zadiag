@@ -433,12 +433,20 @@ class _CalendarPreviewDialogState extends State<CalendarPreviewDialog> {
           // Week day headers
           Row(
             children: List.generate(7, (index) {
-              final weekday = (index + 1) % 7; // Monday first
-              final names = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+              // Monday is index 0
+              final weekdayLabels = [
+                trad(context)!.weekday_monday_short,
+                trad(context)!.weekday_tuesday_short,
+                trad(context)!.weekday_wednesday_short,
+                trad(context)!.weekday_thursday_short,
+                trad(context)!.weekday_friday_short,
+                trad(context)!.weekday_saturday_short,
+                trad(context)!.weekday_sunday_short,
+              ];
               return Expanded(
                 child: Center(
                   child: Text(
-                    names[weekday == 0 ? 6 : weekday - 1],
+                    weekdayLabels[index],
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -702,7 +710,7 @@ class _CalendarPreviewDialogState extends State<CalendarPreviewDialog> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            '${widget.events.length} ${widget.events.length == 1 ? 'event' : 'events'}',
+            trad(context)!.events_count(widget.events.length),
             style: TextStyle(
               fontSize: 12,
               color: colorScheme.onSurface.withValues(alpha: 0.6),
