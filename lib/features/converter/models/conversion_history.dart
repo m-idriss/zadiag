@@ -72,7 +72,7 @@ class ConversionHistory {
     return ConversionHistory(
       id: id ?? this.id,
       timestamp: timestamp ?? this.timestamp,
-      events: events ?? this.events,
+      events: events != null ? List<CalendarEvent>.from(events) : this.events,
       eventCount: eventCount ?? this.eventCount,
       icsContent: icsContent ?? this.icsContent,
       userId: userId ?? this.userId,
