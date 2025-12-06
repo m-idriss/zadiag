@@ -19,8 +19,10 @@ class HeatMapScreen extends ConsumerStatefulWidget {
 }
 
 class _HeatMapScreenState extends ConsumerState<HeatMapScreen> {
+  static const int _initialItemsCount = 10;
   String _expandedConversionId = '';
   DateTime? _selectedDate;
+  int _visibleConversionsCount = _initialItemsCount;
 
   @override
   Widget build(BuildContext context) {
@@ -117,6 +119,7 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen> {
               } else {
                 _selectedDate = normalizedDate;
               }
+              _visibleConversionsCount = _initialItemsCount;
             });
           },
         ),
@@ -217,7 +220,7 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen> {
           ),
           const SizedBox(height: AppTheme.spacingSm),
           Text(
-            translate(context, 'error_card.copy_hint'),
+            trad(context)!.error_occurred_please_try_again,
             style: TextStyle(
               color: Theme.of(
                 context,
@@ -275,7 +278,10 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen> {
             ),
             if (_selectedDate != null)
               GestureDetector(
-                onTap: () => setState(() => _selectedDate = null),
+                onTap: () => setState(() {
+                  _selectedDate = null;
+                  _visibleConversionsCount = _initialItemsCount;
+                }),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -326,10 +332,55 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen> {
               ),
             ),
           )
-        else
-          ...filtered.take(10).map((conversion) {
+        else ...[
+          ...filtered.take(_visibleConversionsCount).map((conversion) {
             return _buildConversionCard(context, conversion);
           }),
+          if (filtered.length > _visibleConversionsCount)
+            Padding(
+              padding: const EdgeInsets.only(top: AppTheme.spacingSm),
+              child: Center(
+                child: TextButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _visibleConversionsCount += _initialItemsCount;
+                    });
+                  },
+                  icon: Icon(Icons.expand_more, color: colorScheme.primary),
+                  label: Text(
+                    trad(context)!.show_more,
+                    style: TextStyle(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: AppTheme.defaultFontFamilyName,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          if (filtered.length > _initialItemsCount && _visibleConversionsCount > _initialItemsCount)
+            Padding(
+              padding: const EdgeInsets.only(top: AppTheme.spacingSm),
+              child: Center(
+                child: TextButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _visibleConversionsCount = _initialItemsCount;
+                    });
+                  },
+                  icon: Icon(Icons.expand_less, color: colorScheme.primary),
+                  label: Text(
+                    trad(context)!.show_less,
+                    style: TextStyle(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: AppTheme.defaultFontFamilyName,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ],
     );
   }
