@@ -178,5 +178,7 @@
         "type": "String"
       }
     }
-  }
+  },
+  "show_more": "Voir plus",
+  "show_less": "Voir moins"
 }
