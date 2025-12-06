@@ -830,6 +830,102 @@ abstract class AppLocalizations {
   /// **'Error'**
   String get error;
 
+  /// No description provided for @calendar_preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar Preview'**
+  String get calendar_preview;
+
+  /// No description provided for @calendar_preview_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview events in calendar view'**
+  String get calendar_preview_hint;
+
+  /// No description provided for @daily_view.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get daily_view;
+
+  /// No description provided for @weekly_view.
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get weekly_view;
+
+  /// No description provided for @monthly_view.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get monthly_view;
+
+  /// No description provided for @no_events_for_date.
+  ///
+  /// In en, this message translates to:
+  /// **'No events for this date'**
+  String get no_events_for_date;
+
+  /// No description provided for @today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get today;
+
+  /// No description provided for @all_day.
+  ///
+  /// In en, this message translates to:
+  /// **'All day'**
+  String get all_day;
+
+  /// No description provided for @events_count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} {count, plural, =1{event} other{events}}'**
+  String events_count(int count);
+
+  /// No description provided for @weekday_monday_short.
+  ///
+  /// In en, this message translates to:
+  /// **'M'**
+  String get weekday_monday_short;
+
+  /// No description provided for @weekday_tuesday_short.
+  ///
+  /// In en, this message translates to:
+  /// **'T'**
+  String get weekday_tuesday_short;
+
+  /// No description provided for @weekday_wednesday_short.
+  ///
+  /// In en, this message translates to:
+  /// **'W'**
+  String get weekday_wednesday_short;
+
+  /// No description provided for @weekday_thursday_short.
+  ///
+  /// In en, this message translates to:
+  /// **'T'**
+  String get weekday_thursday_short;
+
+  /// No description provided for @weekday_friday_short.
+  ///
+  /// In en, this message translates to:
+  /// **'F'**
+  String get weekday_friday_short;
+
+  /// No description provided for @weekday_saturday_short.
+  ///
+  /// In en, this message translates to:
+  /// **'S'**
+  String get weekday_saturday_short;
+
+  /// No description provided for @weekday_sunday_short.
+  ///
+  /// In en, this message translates to:
+  /// **'S'**
+  String get weekday_sunday_short;
+
   /// No description provided for @conversion_archive.
   ///
   /// In en, this message translates to:
