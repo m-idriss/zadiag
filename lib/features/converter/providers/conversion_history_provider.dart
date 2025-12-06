@@ -38,6 +38,9 @@ final conversionHeatmapDataProvider = FutureProvider<Map<DateTime, int>>((
   }
 
   final maxCount = counts.values.reduce((a, b) => a > b ? a : b);
+  if (maxCount == 0) {
+    return {};
+  }
   final Map<DateTime, int> heatmapData = {};
 
   for (final entry in counts.entries) {

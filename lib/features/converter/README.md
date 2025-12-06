@@ -56,7 +56,7 @@ Apply these rules in your Firebase Console:
 After adding the translation keys, generate the localization files:
 
 ```bash
-cd /Users/idriss/dev/projects/2025/dime/appli/zadiag
+cd <project-root>
 flutter gen-l10n
 ```
 

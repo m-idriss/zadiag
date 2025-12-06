@@ -67,7 +67,10 @@ class _ConversionArchiveScreenState
                             ),
                             const SizedBox(height: AppTheme.spacingMd),
                             SelectableText(
-                              'Error loading conversions:\n\n$error',
+                              tr(
+                                'error_loading_conversions',
+                                args: {'error': error.toString()},
+                              ),
                               style: TextStyle(
                                 color: colorScheme.error,
                                 fontFamily: AppTheme.defaultFontFamilyName,
