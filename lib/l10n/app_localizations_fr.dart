@@ -426,6 +426,14 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get history_not_saved_auth_required =>
+      'Historique de conversion non enregistré. Veuillez vous connecter pour enregistrer votre historique de conversion.';
+
+  @override
+  String get history_save_failed =>
+      'Échec de l\'enregistrement de l\'historique de conversion';
+
+  @override
   String get show_more => 'Voir plus';
 
   @override

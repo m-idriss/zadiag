@@ -878,6 +878,18 @@ abstract class AppLocalizations {
   /// **'No conversions on {date}'**
   String no_conversions_on_date(String date);
 
+  /// No description provided for @history_not_saved_auth_required.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversion history not saved. Please sign in to save your conversion history.'**
+  String get history_not_saved_auth_required;
+
+  /// No description provided for @history_save_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save conversion history'**
+  String get history_save_failed;
+
   /// No description provided for @show_more.
   ///
   /// In en, this message translates to:
