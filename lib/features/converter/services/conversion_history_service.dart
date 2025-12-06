@@ -131,18 +131,24 @@ class ConversionHistoryService {
       return {'totalConversions': 0, 'totalEvents': 0};
     }
 
-    // Use Firestore aggregation queries for better performance
-    final query = _conversionsCollection.where('userId', isEqualTo: _userId);
+    try {
+      // Use Firestore aggregation queries for better performance
+      final query = _conversionsCollection.where('userId', isEqualTo: _userId);
 
-    // Perform both aggregations in a single query for better efficiency
-    final snapshot = await query.aggregate(
-      count(),
-      sum('eventCount'),
-    ).get();
+      // Perform both aggregations in a single query for better efficiency
+      final snapshot = await query.aggregate(
+        count(),
+        sum('eventCount'),
+      ).get();
 
-    final totalConversions = snapshot.count ?? 0;
-    final totalEvents = snapshot.getSum('eventCount')?.toInt() ?? 0;
+      final totalConversions = snapshot.count ?? 0;
+      final totalEvents = snapshot.getSum('eventCount')?.toInt() ?? 0;
 
-    return {'totalConversions': totalConversions, 'totalEvents': totalEvents};
+      return {'totalConversions': totalConversions, 'totalEvents': totalEvents};
+    } catch (e) {
+      // If aggregation fails, return zeros rather than throwing
+      // This could happen if the field doesn't exist on some documents
+      return {'totalConversions': 0, 'totalEvents': 0};
+    }
   }
 }
