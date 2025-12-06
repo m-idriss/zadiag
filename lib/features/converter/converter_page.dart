@@ -14,6 +14,7 @@ import 'providers/converter_state.dart';
 import 'services/converter_service.dart';
 import 'services/ics_generator.dart';
 import 'services/ics_export_service.dart';
+import 'services/conversion_history_service.dart';
 import 'widgets/event_card.dart';
 import 'widgets/image_upload_zone.dart';
 
@@ -29,6 +30,7 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
   final ConverterService _converterService = ConverterService();
   final IcsGenerator _icsGenerator = IcsGenerator();
   final IcsExportService _icsExportService = IcsExportService();
+  final ConversionHistoryService _historyService = ConversionHistoryService();
 
   int _eventsGenerated = 28453;
   int _imagesProcessed = 2112;
@@ -296,6 +298,17 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
       if (!mounted) return;
 
       if (filePath != null) {
+        // Save conversion to history
+        try {
+          await _historyService.saveConversion(
+            events: state.extractedEvents,
+            icsContent: state.generatedIcs!,
+          );
+        } catch (e) {
+          if (kDebugMode) print('Error saving to history: $e');
+          // Don't block the user flow if history saving fails
+        }
+
         showSnackBar(context, trad(context)!.ics_saved_to(filePath));
 
         final shouldOpen = await showDialog<bool>(
@@ -322,6 +335,15 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
           await _icsExportService.openIcsFile(filePath);
         }
       } else {
+        // For web or other platforms, still save to history
+        try {
+          await _historyService.saveConversion(
+            events: state.extractedEvents,
+            icsContent: state.generatedIcs!,
+          );
+        } catch (e) {
+          if (kDebugMode) print('Error saving to history: $e');
+        }
         showSnackBar(context, trad(context)!.download_started);
       }
     } catch (e) {
@@ -335,6 +357,17 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
     final state = ref.read(converterProvider);
     if (state.generatedIcs == null) return;
     Clipboard.setData(ClipboardData(text: state.generatedIcs!));
+
+    // Save to history
+    _historyService
+        .saveConversion(
+          events: state.extractedEvents,
+          icsContent: state.generatedIcs!,
+        )
+        .catchError((e) {
+          if (kDebugMode) print('Error saving to history: $e');
+        });
+
     showSnackBar(context, trad(context)!.ics_copied);
   }
 
@@ -410,7 +443,7 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
                 _buildExportButton(context, state),
               ],
               if (state.uploadedImages.isNotEmpty && !state.isProcessing) ...[
-              const SizedBox(height: AppTheme.spacingLg),
+                const SizedBox(height: AppTheme.spacingLg),
                 _buildConvertButton(context),
               ],
               if (state.uploadedImages.isEmpty) ...[

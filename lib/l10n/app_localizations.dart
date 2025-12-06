@@ -829,6 +829,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error'**
   String get error;
+
+  /// No description provided for @conversion_archive.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversion Archive'**
+  String get conversion_archive;
+
+  /// No description provided for @conversion_archive_subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'View your conversion history'**
+  String get conversion_archive_subtitle;
+
+  /// No description provided for @no_conversions_yet.
+  ///
+  /// In en, this message translates to:
+  /// **'No conversions yet'**
+  String get no_conversions_yet;
+
+  /// No description provided for @events_converted.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} events converted'**
+  String events_converted(String count);
+
+  /// No description provided for @view_archive.
+  ///
+  /// In en, this message translates to:
+  /// **'View Archive'**
+  String get view_archive;
+
+  /// No description provided for @events.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get events;
+
+  /// No description provided for @preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get preview;
+
+  /// No description provided for @no_conversions_on_date.
+  ///
+  /// In en, this message translates to:
+  /// **'No conversions on {date}'**
+  String no_conversions_on_date(String date);
 }
 
 class _AppLocalizationsDelegate

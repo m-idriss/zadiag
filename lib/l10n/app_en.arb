@@ -156,5 +156,27 @@
   "email_already_in_use": "This email is already in use.",
   "invalid_email": "Invalid email address.",
   "weak_password": "Password is too weak.",
-  "error": "Error"
+  "error": "Error",
+  "conversion_archive": "Conversion Archive",
+  "conversion_archive_subtitle":  "View your conversion history",
+  "no_conversions_yet": "No conversions yet",
+  "events_converted": "{count} events converted",
+  "@events_converted": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "view_archive": "View Archive",
+  "events": "Events",
+  "preview": "Preview",
+  "no_conversions_on_date": "No conversions on {date}",
+  "@no_conversions_on_date": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  }
 }

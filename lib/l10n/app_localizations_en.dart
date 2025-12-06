@@ -391,4 +391,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get error => 'Error';
+
+  @override
+  String get conversion_archive => 'Conversion Archive';
+
+  @override
+  String get conversion_archive_subtitle => 'View your conversion history';
+
+  @override
+  String get no_conversions_yet => 'No conversions yet';
+
+  @override
+  String events_converted(String count) {
+    return '$count events converted';
+  }
+
+  @override
+  String get view_archive => 'View Archive';
+
+  @override
+  String get events => 'Events';
+
+  @override
+  String get preview => 'Preview';
+
+  @override
+  String no_conversions_on_date(String date) {
+    return 'No conversions on $date';
+  }
 }

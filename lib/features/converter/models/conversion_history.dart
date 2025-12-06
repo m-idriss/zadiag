@@ -1,0 +1,95 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'calendar_event.dart';
+
+/// Model representing a conversion history entry.
+///
+/// Each entry tracks when a user converted events to ICS format,
+/// including the events themselves and the generated ICS content.
+class ConversionHistory {
+  /// Unique identifier for the conversion
+  final String id;
+
+  /// When the conversion was created
+  final DateTime timestamp;
+
+  /// List of calendar events that were converted
+  final List<CalendarEvent> events;
+
+  /// Number of events converted
+  final int eventCount;
+
+  /// Generated ICS content (for archiving and re-download)
+  final String icsContent;
+
+  /// User ID who performed the conversion
+  final String userId;
+
+  ConversionHistory({
+    required this.id,
+    required this.timestamp,
+    required this.events,
+    required this.eventCount,
+    required this.icsContent,
+    required this.userId,
+  });
+
+  /// Creates a ConversionHistory from Firestore document
+  factory ConversionHistory.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return ConversionHistory(
+      id: doc.id,
+      timestamp: (data['timestamp'] as Timestamp).toDate(),
+      events:
+          (data['events'] as List<dynamic>)
+              .map((e) => CalendarEvent.fromJson(e as Map<String, dynamic>))
+              .toList(),
+      eventCount: data['eventCount'] as int,
+      icsContent: data['icsContent'] as String,
+      userId: data['userId'] as String,
+    );
+  }
+
+  /// Converts to Firestore-compatible map
+  Map<String, dynamic> toFirestore() {
+    return {
+      'timestamp': Timestamp.fromDate(timestamp),
+      'events': events.map((e) => e.toJson()).toList(),
+      'eventCount': eventCount,
+      'icsContent': icsContent,
+      'userId': userId,
+    };
+  }
+
+  /// Creates a copy with modified fields
+  ConversionHistory copyWith({
+    String? id,
+    DateTime? timestamp,
+    List<CalendarEvent>? events,
+    int? eventCount,
+    String? icsContent,
+    String? userId,
+  }) {
+    return ConversionHistory(
+      id: id ?? this.id,
+      timestamp: timestamp ?? this.timestamp,
+      events: events ?? this.events,
+      eventCount: eventCount ?? this.eventCount,
+      icsContent: icsContent ?? this.icsContent,
+      userId: userId ?? this.userId,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'ConversionHistory(id: $id, timestamp: $timestamp, eventCount: $eventCount)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is ConversionHistory && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
+}
