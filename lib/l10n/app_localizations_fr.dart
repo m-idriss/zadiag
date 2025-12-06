@@ -424,4 +424,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String no_conversions_on_date(String date) {
     return 'Aucune conversion le $date';
   }
+
+  @override
+  String get history_not_saved_auth_required =>
+      'Historique de conversion non enregistré. Veuillez vous connecter pour enregistrer votre historique de conversion.';
+
+  @override
+  String get history_save_failed =>
+      'Échec de l\'enregistrement de l\'historique de conversion';
+
+  @override
+  String get show_more => 'Voir plus';
+
+  @override
+  String get show_less => 'Voir moins';
+
+  @override
+  String get error_occurred_please_try_again =>
+      'Une erreur est survenue, veuillez réessayer.';
 }

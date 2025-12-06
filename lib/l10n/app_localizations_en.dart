@@ -419,4 +419,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String no_conversions_on_date(String date) {
     return 'No conversions on $date';
   }
+
+  @override
+  String get history_not_saved_auth_required =>
+      'Conversion history not saved. Please sign in to save your conversion history.';
+
+  @override
+  String get history_save_failed => 'Failed to save conversion history';
+
+  @override
+  String get show_more => 'Show More';
+
+  @override
+  String get show_less => 'Show Less';
+
+  @override
+  String get error_occurred_please_try_again =>
+      'An error occurred, please try again.';
 }

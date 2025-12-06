@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/core/utils/translate.dart';
@@ -298,15 +299,30 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
       if (!mounted) return;
 
       if (filePath != null) {
-        // Save conversion to history
-        try {
-          await _historyService.saveConversion(
-            events: state.extractedEvents,
-            icsContent: state.generatedIcs!,
-          );
-        } catch (e) {
-          if (kDebugMode) print('Error saving to history: $e');
-          // Don't block the user flow if history saving fails
+        // Save conversion to history if user is authenticated
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          try {
+            await _historyService.saveConversion(
+              events: state.extractedEvents,
+              icsContent: state.generatedIcs!,
+            );
+          } catch (e) {
+            if (kDebugMode) print('Error saving to history: $e');
+            // Show error message if history saving fails for other reasons
+            if (mounted) {
+              showSnackBar(context, trad(context)!.history_save_failed, true);
+            }
+          }
+        } else {
+          // User is not authenticated - show info message
+          if (mounted) {
+            showSnackBar(
+              context,
+              trad(context)!.history_not_saved_auth_required,
+              false,
+            );
+          }
         }
 
         showSnackBar(context, trad(context)!.ics_saved_to(filePath));
