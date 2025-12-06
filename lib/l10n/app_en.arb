@@ -178,5 +178,8 @@
         "type": "String"
       }
     }
-  }
+  },
+  "show_more": "Show More",
+  "show_less": "Show Less",
+  "error_occurred_please_try_again": "An error occurred, please try again."
 }
