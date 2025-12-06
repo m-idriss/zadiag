@@ -18,6 +18,7 @@ import 'services/ics_export_service.dart';
 import 'services/conversion_history_service.dart';
 import 'widgets/event_card.dart';
 import 'widgets/image_upload_zone.dart';
+import 'widgets/calendar/calendar_view.dart';
 
 /// Main page for the Image to ICS Converter feature.
 class ConverterPage extends ConsumerStatefulWidget {
@@ -37,6 +38,8 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
   int _imagesProcessed = 2112;
   int _hoursSaved = 198;
   int _workdaysSaved = 25;
+
+  bool _showCalendarView = false;
 
   @override
   void initState() {
@@ -581,6 +584,7 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header with view toggle
           Row(
             children: [
               Icon(
@@ -602,16 +606,105 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
                   ),
                 ),
               ),
+              const Spacer(),
+              // View mode toggle
+              _buildViewToggle(context),
             ],
           ),
           const SizedBox(height: AppTheme.spacingMd),
-          ...state.extractedEvents.asMap().entries.map((entry) {
-            return EventCard(
-              event: entry.value,
-              onDelete: () => _removeEvent(entry.key),
-            );
-          }),
+
+          // Animated view switcher
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.1),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              );
+            },
+            child:
+                _showCalendarView
+                    ? CalendarView(
+                      key: const ValueKey('calendar'),
+                      events: state.extractedEvents,
+                    )
+                    : Column(
+                      key: const ValueKey('list'),
+                      children:
+                          state.extractedEvents.asMap().entries.map((entry) {
+                            return EventCard(
+                              event: entry.value,
+                              onDelete: () => _removeEvent(entry.key),
+                            );
+                          }).toList(),
+                    ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildViewToggle(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildViewToggleButton(
+            context,
+            icon: Icons.list_rounded,
+            isSelected: !_showCalendarView,
+            onTap: () => setState(() => _showCalendarView = false),
+          ),
+          const SizedBox(width: 2),
+          _buildViewToggleButton(
+            context,
+            icon: Icons.calendar_month_rounded,
+            isSelected: _showCalendarView,
+            onTap: () => setState(() => _showCalendarView = true),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildViewToggleButton(
+    BuildContext context, {
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(AppTheme.spacingSm),
+        decoration: BoxDecoration(
+          color: isSelected ? colorScheme.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppTheme.radiusXs),
+        ),
+        child: Icon(
+          icon,
+          size: 20,
+          color:
+              isSelected
+                  ? Colors.white
+                  : colorScheme.onSurface.withValues(alpha: 0.5),
+        ),
       ),
     );
   }

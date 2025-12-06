@@ -157,6 +157,30 @@
   "invalid_email": "Invalid email address.",
   "weak_password": "Password is too weak.",
   "error": "Error",
+  "calendar_preview": "Calendar Preview",
+  "calendar_preview_hint": "Preview events in calendar view",
+  "daily_view": "Day",
+  "weekly_view": "Week",
+  "monthly_view": "Month",
+  "no_events_for_date": "No events for this date",
+  "today": "Today",
+  "all_day": "All day",
+  "events_count": "{count} {count, plural, =1{event} other{events}}",
+  "@events_count": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "weekday_monday_short": "M",
+  "weekday_tuesday_short": "T",
+  "weekday_wednesday_short": "W",
+  "weekday_thursday_short": "T",
+  "weekday_friday_short": "F",
+  "weekday_saturday_short": "S",
+  "weekday_sunday_short": "S",
+  "all_day": "All day",
   "conversion_archive": "Conversion Archive",
   "conversion_archive_subtitle":  "View your conversion history",
   "no_conversions_yet": "No conversions yet",
