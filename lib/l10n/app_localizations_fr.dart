@@ -397,60 +397,61 @@ class AppLocalizationsFr extends AppLocalizations {
   String get error => 'Erreur';
 
   @override
-  String get calendar_preview => 'Calendar Preview';
+  String get calendar_preview => 'Aperçu du calendrier';
 
   @override
-  String get calendar_preview_hint => 'Preview events in calendar view';
+  String get calendar_preview_hint =>
+      'Prévisualiser les événements dans la vue calendrier';
 
   @override
-  String get daily_view => 'Day';
+  String get daily_view => 'Jour';
 
   @override
-  String get weekly_view => 'Week';
+  String get weekly_view => 'Semaine';
 
   @override
-  String get monthly_view => 'Month';
+  String get monthly_view => 'Mois';
 
   @override
-  String get no_events_for_date => 'No events for this date';
+  String get no_events_for_date => 'Aucun événement pour cette date';
 
   @override
-  String get today => 'Today';
+  String get today => 'Aujourd\'hui';
 
   @override
-  String get all_day => 'All day';
+  String get all_day => 'Toute la journée';
 
   @override
   String events_count(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'events',
-      one: 'event',
+      other: 'événements',
+      one: 'événement',
     );
     return '$count $_temp0';
   }
 
   @override
-  String get weekday_monday_short => 'M';
+  String get weekday_monday_short => 'L';
 
   @override
-  String get weekday_tuesday_short => 'T';
+  String get weekday_tuesday_short => 'M';
 
   @override
-  String get weekday_wednesday_short => 'W';
+  String get weekday_wednesday_short => 'M';
 
   @override
-  String get weekday_thursday_short => 'T';
+  String get weekday_thursday_short => 'J';
 
   @override
-  String get weekday_friday_short => 'F';
+  String get weekday_friday_short => 'V';
 
   @override
   String get weekday_saturday_short => 'S';
 
   @override
-  String get weekday_sunday_short => 'S';
+  String get weekday_sunday_short => 'D';
 
   @override
   String get conversion_archive => 'Archive des conversions';

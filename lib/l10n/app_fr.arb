@@ -157,6 +157,29 @@
   "invalid_email": "Adresse e-mail invalide.",
   "weak_password": "Mot de passe trop faible.",
   "error": "Erreur",
+  "calendar_preview": "Aperçu du calendrier",
+  "calendar_preview_hint": "Prévisualiser les événements dans la vue calendrier",
+  "daily_view": "Jour",
+  "weekly_view": "Semaine",
+  "monthly_view": "Mois",
+  "no_events_for_date": "Aucun événement pour cette date",
+  "today": "Aujourd'hui",
+  "all_day": "Toute la journée",
+  "events_count": "{count} {count, plural, =1{événement} other{événements}}",
+  "@events_count": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "weekday_monday_short": "L",
+  "weekday_tuesday_short": "M",
+  "weekday_wednesday_short": "M",
+  "weekday_thursday_short": "J",
+  "weekday_friday_short": "V",
+  "weekday_saturday_short": "S",
+  "weekday_sunday_short": "D",
   "conversion_archive": "Archive des conversions",
   "conversion_archive_subtitle": "Consultez votre historique de conversions",
   "no_conversions_yet": "Aucune conversion pour le moment",
