@@ -311,11 +311,7 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
             if (kDebugMode) print('Error saving to history: $e');
             // Show error message if history saving fails for other reasons
             if (mounted) {
-              showSnackBar(
-                context,
-                trad(context)!.history_save_failed,
-                isError: true,
-              );
+              showSnackBar(context, trad(context)!.history_save_failed, true);
             }
           }
         } else {

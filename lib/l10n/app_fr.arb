@@ -180,8 +180,7 @@
     }
   },
   "history_not_saved_auth_required": "Historique de conversion non enregistré. Veuillez vous connecter pour enregistrer votre historique de conversion.",
-  "history_save_failed": "Échec de l'enregistrement de l'historique de conversion"
-  },
+  "history_save_failed": "Échec de l'enregistrement de l'historique de conversion",
   "show_more": "Voir plus",
   "show_less": "Voir moins",
   "error_occurred_please_try_again": "Une erreur est survenue, veuillez réessayer."
