@@ -156,5 +156,33 @@
   "email_already_in_use": "Cet e-mail est déjà utilisé.",
   "invalid_email": "Adresse e-mail invalide.",
   "weak_password": "Mot de passe trop faible.",
-  "error": "Erreur"
+  "error": "Erreur",
+  "conversion_archive": "Archive des conversions",
+  "conversion_archive_subtitle": "Consultez votre historique de conversions",
+  "no_conversions_yet": "Aucune conversion pour le moment",
+  "events_converted": "{count} événements convertis",
+  "@events_converted": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "view_archive": "Voir l'archive",
+  "events": "Événements",
+  "preview": "Aperçu",
+  "no_conversions_on_date": "Aucune conversion le {date}",
+  "@no_conversions_on_date": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "history_not_saved_auth_required": "Historique de conversion non enregistré. Veuillez vous connecter pour enregistrer votre historique de conversion.",
+  "history_save_failed": "Échec de l'enregistrement de l'historique de conversion",
+  "show_more": "Voir plus",
+  "show_less": "Voir moins",
+  "error_occurred_please_try_again": "Une erreur est survenue, veuillez réessayer."
+
 }

@@ -156,5 +156,32 @@
   "email_already_in_use": "This email is already in use.",
   "invalid_email": "Invalid email address.",
   "weak_password": "Password is too weak.",
-  "error": "Error"
+  "error": "Error",
+  "conversion_archive": "Conversion Archive",
+  "conversion_archive_subtitle":  "View your conversion history",
+  "no_conversions_yet": "No conversions yet",
+  "events_converted": "{count} events converted",
+  "@events_converted": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "view_archive": "View Archive",
+  "events": "Events",
+  "preview": "Preview",
+  "no_conversions_on_date": "No conversions on {date}",
+  "@no_conversions_on_date": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "history_not_saved_auth_required": "Conversion history not saved. Please sign in to save your conversion history.",
+  "history_save_failed": "Failed to save conversion history",
+  "show_more": "Show More",
+  "show_less": "Show Less",
+  "error_occurred_please_try_again": "An error occurred, please try again."
 }

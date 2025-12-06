@@ -391,4 +391,49 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get error => 'Error';
+
+  @override
+  String get conversion_archive => 'Conversion Archive';
+
+  @override
+  String get conversion_archive_subtitle => 'View your conversion history';
+
+  @override
+  String get no_conversions_yet => 'No conversions yet';
+
+  @override
+  String events_converted(String count) {
+    return '$count events converted';
+  }
+
+  @override
+  String get view_archive => 'View Archive';
+
+  @override
+  String get events => 'Events';
+
+  @override
+  String get preview => 'Preview';
+
+  @override
+  String no_conversions_on_date(String date) {
+    return 'No conversions on $date';
+  }
+
+  @override
+  String get history_not_saved_auth_required =>
+      'Conversion history not saved. Please sign in to save your conversion history.';
+
+  @override
+  String get history_save_failed => 'Failed to save conversion history';
+
+  @override
+  String get show_more => 'Show More';
+
+  @override
+  String get show_less => 'Show Less';
+
+  @override
+  String get error_occurred_please_try_again =>
+      'An error occurred, please try again.';
 }

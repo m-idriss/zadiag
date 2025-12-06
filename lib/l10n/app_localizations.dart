@@ -829,6 +829,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error'**
   String get error;
+
+  /// No description provided for @conversion_archive.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversion Archive'**
+  String get conversion_archive;
+
+  /// No description provided for @conversion_archive_subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'View your conversion history'**
+  String get conversion_archive_subtitle;
+
+  /// No description provided for @no_conversions_yet.
+  ///
+  /// In en, this message translates to:
+  /// **'No conversions yet'**
+  String get no_conversions_yet;
+
+  /// No description provided for @events_converted.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} events converted'**
+  String events_converted(String count);
+
+  /// No description provided for @view_archive.
+  ///
+  /// In en, this message translates to:
+  /// **'View Archive'**
+  String get view_archive;
+
+  /// No description provided for @events.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get events;
+
+  /// No description provided for @preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get preview;
+
+  /// No description provided for @no_conversions_on_date.
+  ///
+  /// In en, this message translates to:
+  /// **'No conversions on {date}'**
+  String no_conversions_on_date(String date);
+
+  /// No description provided for @history_not_saved_auth_required.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversion history not saved. Please sign in to save your conversion history.'**
+  String get history_not_saved_auth_required;
+
+  /// No description provided for @history_save_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save conversion history'**
+  String get history_save_failed;
+
+  /// No description provided for @show_more.
+  ///
+  /// In en, this message translates to:
+  /// **'Show More'**
+  String get show_more;
+
+  /// No description provided for @show_less.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Less'**
+  String get show_less;
+
+  /// No description provided for @error_occurred_please_try_again.
+  ///
+  /// In en, this message translates to:
+  /// **'An error occurred, please try again.'**
+  String get error_occurred_please_try_again;
 }
 
 class _AppLocalizationsDelegate
