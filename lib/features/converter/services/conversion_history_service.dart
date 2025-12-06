@@ -125,23 +125,30 @@ class ConversionHistoryService {
     await _conversionsCollection.doc(conversionId).delete();
   }
 
-  /// Gets total conversion statistics
+  /// Gets total conversion statistics using Firestore aggregation queries
   Future<Map<String, int>> getStatistics() async {
     if (_userId == null) {
       return {'totalConversions': 0, 'totalEvents': 0};
     }
 
-    final snapshot =
-        await _conversionsCollection.where('userId', isEqualTo: _userId).get();
+    try {
+      // Use Firestore aggregation queries for better performance
+      final query = _conversionsCollection.where('userId', isEqualTo: _userId);
 
-    int totalConversions = snapshot.docs.length;
-    int totalEvents = 0;
+      // Perform both aggregations in a single query for better efficiency
+      final snapshot = await query.aggregate(
+        count(),
+        sum('eventCount'),
+      ).get();
 
-    for (final doc in snapshot.docs) {
-      final data = doc.data() as Map<String, dynamic>;
-      totalEvents += (data['eventCount'] as int? ?? 0);
+      final totalConversions = snapshot.count ?? 0;
+      final totalEvents = snapshot.getSum('eventCount')?.toInt() ?? 0;
+
+      return {'totalConversions': totalConversions, 'totalEvents': totalEvents};
+    } catch (e) {
+      // If aggregation fails, return zeros rather than throwing
+      // This could happen if the field doesn't exist on some documents
+      return {'totalConversions': 0, 'totalEvents': 0};
     }
-
-    return {'totalConversions': totalConversions, 'totalEvents': totalEvents};
   }
 }
