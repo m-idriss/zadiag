@@ -217,7 +217,7 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen> {
           ),
           const SizedBox(height: AppTheme.spacingSm),
           Text(
-            'Tap and hold to select and copy the error message',
+            translate(context, 'error_card.copy_hint'),
             style: TextStyle(
               color: Theme.of(
                 context,
