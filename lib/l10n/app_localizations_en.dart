@@ -421,6 +421,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get history_not_saved_auth_required =>
+      'Conversion history not saved. Please sign in to save your conversion history.';
+
+  @override
+  String get history_save_failed => 'Failed to save conversion history';
+
+  @override
   String get show_more => 'Show More';
 
   @override

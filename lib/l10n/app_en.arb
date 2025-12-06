@@ -179,6 +179,8 @@
       }
     }
   },
+  "history_not_saved_auth_required": "Conversion history not saved. Please sign in to save your conversion history.",
+  "history_save_failed": "Failed to save conversion history",
   "show_more": "Show More",
   "show_less": "Show Less",
   "error_occurred_please_try_again": "An error occurred, please try again."
