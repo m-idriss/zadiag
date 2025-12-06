@@ -877,6 +877,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No conversions on {date}'**
   String no_conversions_on_date(String date);
+
+  /// No description provided for @show_more.
+  ///
+  /// In en, this message translates to:
+  /// **'Show More'**
+  String get show_more;
+
+  /// No description provided for @show_less.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Less'**
+  String get show_less;
+
+  /// No description provided for @error_occurred_please_try_again.
+  ///
+  /// In en, this message translates to:
+  /// **'An error occurred, please try again.'**
+  String get error_occurred_please_try_again;
 }
 
 class _AppLocalizationsDelegate

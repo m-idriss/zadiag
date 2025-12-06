@@ -220,7 +220,7 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen> {
           ),
           const SizedBox(height: AppTheme.spacingSm),
           Text(
-            translate(context, 'error_card.copy_hint'),
+            trad(context)!.error_occurred_please_try_again,
             style: TextStyle(
               color: Theme.of(
                 context,

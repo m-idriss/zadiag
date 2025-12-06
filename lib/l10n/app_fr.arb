@@ -180,5 +180,7 @@
     }
   },
   "show_more": "Voir plus",
-  "show_less": "Voir moins"
+  "show_less": "Voir moins",
+  "error_occurred_please_try_again": "Une erreur est survenue, veuillez réessayer."
+
 }
