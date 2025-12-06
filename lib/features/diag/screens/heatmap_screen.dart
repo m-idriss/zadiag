@@ -19,9 +19,10 @@ class HeatMapScreen extends ConsumerStatefulWidget {
 }
 
 class _HeatMapScreenState extends ConsumerState<HeatMapScreen> {
+  static const int _initialItemsCount = 10;
   String _expandedConversionId = '';
   DateTime? _selectedDate;
-  int _visibleConversionsCount = 10;
+  int _visibleConversionsCount = _initialItemsCount;
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +119,7 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen> {
               } else {
                 _selectedDate = normalizedDate;
               }
-              _visibleConversionsCount = 10;
+              _visibleConversionsCount = _initialItemsCount;
             });
           },
         ),
@@ -279,7 +280,7 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen> {
               GestureDetector(
                 onTap: () => setState(() {
                   _selectedDate = null;
-                  _visibleConversionsCount = 10;
+                  _visibleConversionsCount = _initialItemsCount;
                 }),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -342,7 +343,7 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen> {
                 child: TextButton.icon(
                   onPressed: () {
                     setState(() {
-                      _visibleConversionsCount += 10;
+                      _visibleConversionsCount += _initialItemsCount;
                     });
                   },
                   icon: Icon(Icons.expand_more, color: colorScheme.primary),
@@ -357,14 +358,14 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen> {
                 ),
               ),
             ),
-          if (filtered.length > 10 && _visibleConversionsCount > 10)
+          if (filtered.length > _initialItemsCount && _visibleConversionsCount > _initialItemsCount)
             Padding(
               padding: const EdgeInsets.only(top: AppTheme.spacingSm),
               child: Center(
                 child: TextButton.icon(
                   onPressed: () {
                     setState(() {
-                      _visibleConversionsCount = 10;
+                      _visibleConversionsCount = _initialItemsCount;
                     });
                   },
                   icon: Icon(Icons.expand_less, color: colorScheme.primary),
