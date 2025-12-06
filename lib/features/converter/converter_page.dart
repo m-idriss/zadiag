@@ -324,7 +324,7 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
             showSnackBar(
               context,
               trad(context)!.history_not_saved_auth_required,
-              isError: true,
+              false,
             );
           }
         }
