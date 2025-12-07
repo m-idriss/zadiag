@@ -1,23 +1,23 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:open_filex/open_filex.dart';
 
-/// Service for exporting ICS files to various destinations.
+/// Service for exporting and sharing ICS files.
 class IcsExportService {
   /// Default filename for exported ICS files
   static const String defaultFileName = 'calendar_events.ics';
 
-  /// Exports the ICS content as a downloadable file.
-  /// 
-  /// On web: Opens a download dialog in the browser.
-  /// On mobile/desktop: Saves to the app's documents directory (private storage).
-  /// 
-  /// Note: On web platforms, the `fileName` parameter may not be respected by all browsers
-  /// due to data URL limitations. The browser may use a default filename instead.
-  /// 
+  /// Exports the ICS content and opens it with calendar app.
+  ///
+  /// On mobile: Opens the calendar app directly with the ICS file.
+  /// On web: Triggers a download.
+  /// On desktop: Saves to Downloads folder.
+  ///
   /// Returns the file path where the ICS was saved (or null on web).
   Future<String?> exportIcs(String icsContent, {String? fileName}) async {
     final effectiveFileName = fileName ?? defaultFileName;
@@ -25,31 +25,34 @@ class IcsExportService {
     if (kIsWeb) {
       return _exportForWeb(icsContent, effectiveFileName);
     } else {
-      return _exportForNative(icsContent, effectiveFileName);
+      return _openWithCalendar(icsContent, effectiveFileName);
     }
   }
 
-  /// Exports ICS content for web platform using a data URL.
-  /// 
-  /// Note: The `fileName` parameter is provided for API consistency but may not be
-  /// used by all browsers. Data URLs don't support specifying filenames in a 
-  /// cross-browser compatible way. For better filename support, consider using
-  /// dart:html's AnchorElement with download attribute on web.
+  /// Exports ICS content for web platform using share or download.
   Future<String?> _exportForWeb(String icsContent, String fileName) async {
     try {
-      // Create a data URL for the ICS content
+      // Try to use the Web Share API if available
+      final result = await Share.shareXFiles([
+        XFile.fromData(
+          utf8.encode(icsContent),
+          mimeType: 'text/calendar',
+          name: fileName,
+        ),
+      ]);
+
+      if (result.status == ShareResultStatus.success) {
+        return null;
+      }
+
+      // Fallback: Create a download link
       final bytes = utf8.encode(icsContent);
       final base64Data = base64Encode(bytes);
       final dataUrl = 'data:text/calendar;charset=utf-8;base64,$base64Data';
 
-      // Launch the data URL which will trigger a download in browsers
-      final uri = Uri.parse(dataUrl);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-        return null; // Web downloads don't return a path
-      } else {
-        throw Exception('Could not launch download URL');
-      }
+      // Note: This will trigger a download in the browser
+      await Share.share(dataUrl);
+      return null;
     } catch (e) {
       if (kDebugMode) {
         print('Error exporting ICS for web: $e');
@@ -58,28 +61,15 @@ class IcsExportService {
     }
   }
 
-  /// Exports ICS content for native platforms (mobile/desktop).
-  /// 
-  /// Uses private app storage to protect sensitive calendar data from other apps.
-  Future<String?> _exportForNative(String icsContent, String fileName) async {
+  /// Opens ICS file directly with calendar app on native platforms.
+  ///
+  /// Creates a temporary file and attempts to open it with the system calendar.
+  Future<String?> _openWithCalendar(String icsContent, String fileName) async {
     try {
-      // Get the appropriate directory for downloads
-      // Use private app storage to protect sensitive calendar data
-      Directory directory;
-      
-      if (Platform.isAndroid) {
-        // On Android, use private app documents directory for security
-        // External storage is world-readable by other apps
-        directory = await getApplicationDocumentsDirectory();
-      } else if (Platform.isIOS) {
-        // On iOS, use the documents directory (already private)
-        directory = await getApplicationDocumentsDirectory();
-      } else {
-        // On desktop, try to use downloads directory, fall back to documents
-        directory = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
-      }
+      // Get the temporary directory
+      final directory = await getTemporaryDirectory();
 
-      // Create the file path
+      // Create the file path in temp directory
       final filePath = '${directory.path}/$fileName';
       final file = File(filePath);
 
@@ -87,29 +77,69 @@ class IcsExportService {
       await file.writeAsString(icsContent, flush: true);
 
       if (kDebugMode) {
-        print('ICS file saved to: $filePath');
+        print('ICS file created at: $filePath');
       }
 
+      // Try to open the file directly with the calendar app using OpenFilex
+      try {
+        final result = await OpenFilex.open(
+          filePath,
+          type: 'text/calendar',
+          uti: 'com.apple.ical.ics', // iOS-specific uniform type identifier
+        );
+
+        if (kDebugMode) {
+          print('OpenFilex result: ${result.type} - ${result.message}');
+        }
+
+        // Check if file opened successfully
+        if (result.type == ResultType.done) {
+          return filePath;
+        }
+
+        // If opening failed, fall back to share sheet
+        if (kDebugMode) {
+          print('OpenFilex failed with: ${result.type}, falling back to share');
+        }
+
+        await Share.shareXFiles(
+          [XFile(filePath, mimeType: 'text/calendar')],
+          subject: 'Add Calendar Events',
+          sharePositionOrigin: const Rect.fromLTWH(0, 0, 100, 100),
+        );
+      } catch (e) {
+        if (kDebugMode) {
+          print('Error opening file: $e, falling back to share');
+        }
+
+        // Fallback to share if direct launch fails
+        await Share.shareXFiles(
+          [XFile(filePath, mimeType: 'text/calendar')],
+          subject: 'Add Calendar Events',
+          sharePositionOrigin: const Rect.fromLTWH(0, 0, 100, 100),
+        );
+      }
+
+      // Return the file path for reference
       return filePath;
     } catch (e) {
       if (kDebugMode) {
-        print('Error exporting ICS for native: $e');
+        print('Error opening ICS for native: $e');
       }
       rethrow;
     }
   }
 
   /// Opens the ICS file with the default calendar application.
-  /// 
-  /// This uses the file:// URL scheme on native platforms.
-  /// Returns true if the file was successfully opened.
+  ///
+  /// Note: This method is deprecated in favor of direct opening.
+  /// Kept for backwards compatibility.
+  @deprecated
   Future<bool> openIcsFile(String filePath) async {
     try {
-      final uri = Uri.file(filePath);
-      if (await canLaunchUrl(uri)) {
-        return await launchUrl(uri);
-      }
-      return false;
+      // Just share the file instead
+      await Share.shareXFiles([XFile(filePath, mimeType: 'text/calendar')]);
+      return true;
     } catch (e) {
       if (kDebugMode) {
         print('Error opening ICS file: $e');
@@ -119,19 +149,10 @@ class IcsExportService {
   }
 
   /// Shares the ICS content using the system share sheet.
-  /// 
-  /// Note: This requires the share_plus package for full functionality.
-  /// For now, this creates a temp file and attempts to open it.
+  ///
+  /// This is now the primary method for exporting ICS files.
   Future<String?> shareIcs(String icsContent, {String? fileName}) async {
-    // Save the file first
-    final filePath = await exportIcs(icsContent, fileName: fileName);
-    
-    if (filePath != null) {
-      // Attempt to open the file (which may trigger share on some platforms)
-      await openIcsFile(filePath);
-    }
-    
-    return filePath;
+    return exportIcs(icsContent, fileName: fileName);
   }
 
   /// Gets a unique filename with timestamp to avoid conflicts.

@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zadiag/shared/components/btm_nav_item.dart';
 import 'package:zadiag/features/diag/screens/profile_screen.dart';
 import 'package:zadiag/features/diag/screens/heatmap_screen.dart';
@@ -10,15 +11,16 @@ import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 
 import '../converter/converter_page.dart';
+import 'providers/bottom_nav_provider.dart';
 
-class HomePage extends StatefulWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-  State<StatefulWidget> createState() => _HomePageState();
+  ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage>
+class _HomePageState extends ConsumerState<HomePage>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> animation;
@@ -42,6 +44,8 @@ class _HomePageState extends State<HomePage>
         _previousIndex = bottomNavItems.indexOf(selectedBottonNav);
         selectedBottonNav = menu;
       });
+      // Update provider to keep it in sync
+      ref.read(bottomNavProvider.notifier).selectPage(menu);
     }
   }
 
@@ -66,6 +70,16 @@ class _HomePageState extends State<HomePage>
 
   @override
   Widget build(BuildContext context) {
+    // Listen to provider changes and sync with local state
+    ref.listen<Menu>(bottomNavProvider, (previous, next) {
+      if (selectedBottonNav != next) {
+        setState(() {
+          _previousIndex = bottomNavItems.indexOf(selectedBottonNav);
+          selectedBottonNav = next;
+        });
+      }
+    });
+
     final currentIndex = bottomNavItems.indexOf(selectedBottonNav);
 
     return Scaffold(

@@ -10,6 +10,7 @@ import 'package:zadiag/features/converter/providers/conversion_history_provider.
 import 'package:zadiag/features/converter/providers/converter_state.dart';
 import 'package:zadiag/features/converter/models/conversion_history.dart';
 import 'package:zadiag/shared/components/glass_container.dart';
+import 'package:zadiag/features/diag/providers/bottom_nav_provider.dart';
 
 class HeatMapScreen extends ConsumerStatefulWidget {
   const HeatMapScreen({super.key});
@@ -278,10 +279,11 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen> {
             ),
             if (_selectedDate != null)
               GestureDetector(
-                onTap: () => setState(() {
-                  _selectedDate = null;
-                  _visibleConversionsCount = _initialItemsCount;
-                }),
+                onTap:
+                    () => setState(() {
+                      _selectedDate = null;
+                      _visibleConversionsCount = _initialItemsCount;
+                    }),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -358,7 +360,8 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen> {
                 ),
               ),
             ),
-          if (filtered.length > _initialItemsCount && _visibleConversionsCount > _initialItemsCount)
+          if (filtered.length > _initialItemsCount &&
+              _visibleConversionsCount > _initialItemsCount)
             Padding(
               padding: const EdgeInsets.only(top: AppTheme.spacingSm),
               child: Center(
@@ -546,31 +549,12 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen> {
   ) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Row(
-      children: [
-        Expanded(
-          child: _buildActionButton(
-            context,
-            icon: Icons.copy_rounded,
-            label: trad(context)!.copy,
-            onTap: () {
-              Clipboard.setData(ClipboardData(text: conversion.icsContent));
-              showSnackBar(context, trad(context)!.ics_copied);
-            },
-            color: colorScheme.primary,
-          ),
-        ),
-        const SizedBox(width: AppTheme.spacingSm),
-        Expanded(
-          child: _buildActionButton(
-            context,
-            icon: Icons.visibility_rounded,
-            label: trad(context)!.preview,
-            onTap: () => _loadInConverter(context, conversion),
-            color: colorScheme.secondary,
-          ),
-        ),
-      ],
+    return _buildActionButton(
+      context,
+      icon: Icons.visibility_rounded,
+      label: trad(context)!.preview,
+      onTap: () => _loadInConverter(context, conversion),
+      color: colorScheme.secondary,
     );
   }
 
@@ -627,8 +611,7 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen> {
           icsContent: conversion.icsContent,
         );
 
-    // Navigate to converter page (index 1 in bottom nav)
-    // This assumes the app uses a bottom navigation with converter at index 1
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    // Switch to the Converter page using the bottom navigation provider
+    ref.read(bottomNavProvider.notifier).selectConverterPage();
   }
 }

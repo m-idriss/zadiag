@@ -140,286 +140,53 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
         notifier.setGeneratedIcs(icsContent);
       }
 
-      await _showDownloadOptionsDialog();
+      // Launch calendar addition without waiting for completion
+      // This allows the spinner to stop immediately
+      _saveIcsFile();
     } catch (e) {
       if (!mounted) return;
       showSnackBar(context, '${trad(context)!.error_exporting_ics}: $e', true);
     } finally {
+      // Stop spinner immediately so user can interact with calendar
       if (mounted) {
         notifier.setExporting(false);
       }
     }
   }
 
-  Future<void> _showDownloadOptionsDialog() async {
-    final state = ref.read(converterProvider);
-    if (state.generatedIcs == null) return;
-
-    if (!mounted) return;
-    await showModalBottomSheet(
-      context: context,
-      builder:
-          (context) => Container(
-            padding: const EdgeInsets.all(AppTheme.spacingLg),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppTheme.radiusXl),
-              ),
-            ),
-            child: SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    trad(context)!.download_ics,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Theme.of(context).colorScheme.onSurface,
-                      fontFamily: AppTheme.defaultFontFamilyName,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: AppTheme.spacingLg),
-
-                  _buildOptionTile(
-                    context,
-                    icon: Icons.download_rounded,
-                    title: trad(context)!.save_ics_file,
-                    subtitle: trad(context)!.save_to_downloads,
-                    onTap: () async {
-                      Navigator.pop(context);
-                      await _saveIcsFile();
-                    },
-                  ),
-                  const SizedBox(height: AppTheme.spacingSm),
-
-                  _buildOptionTile(
-                    context,
-                    icon: Icons.copy_rounded,
-                    title: trad(context)!.copy_to_clipboard,
-                    subtitle: trad(context)!.copy_ics_hint,
-                    onTap: () {
-                      Navigator.pop(context);
-                      _copyToClipboard();
-                    },
-                  ),
-                  const SizedBox(height: AppTheme.spacingSm),
-
-                  _buildOptionTile(
-                    context,
-                    icon: Icons.visibility_rounded,
-                    title: trad(context)!.preview_ics,
-                    subtitle: trad(context)!.preview_ics_hint,
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showIcsPreview();
-                    },
-                  ),
-                  const SizedBox(height: AppTheme.spacingLg),
-
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(
-                      trad(context)!.cancel,
-                      style: TextStyle(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.7),
-                        fontFamily: AppTheme.defaultFontFamilyName,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-    );
-  }
-
-  Widget _buildOptionTile(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-      ),
-      child: ListTile(
-        leading: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: colorScheme.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-          ),
-          child: Icon(icon, color: colorScheme.primary),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontFamily: AppTheme.defaultFontFamilyName,
-          ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(
-            fontSize: 12,
-            color: colorScheme.onSurface.withValues(alpha: 0.6),
-            fontFamily: AppTheme.defaultFontFamilyName,
-          ),
-        ),
-        trailing: Icon(
-          Icons.arrow_forward_ios_rounded,
-          size: 16,
-          color: colorScheme.onSurface.withValues(alpha: 0.4),
-        ),
-        onTap: onTap,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-        ),
-      ),
-    );
-  }
-
   Future<void> _saveIcsFile() async {
     final state = ref.read(converterProvider);
     try {
+      // Generate ICS content
+      String? icsContent = state.generatedIcs;
+      if (icsContent == null) {
+        icsContent = _icsGenerator.generateIcs(state.extractedEvents);
+      }
+
+      // Export/share the ICS file
       final fileName = _icsExportService.getUniqueFileName();
-      final filePath = await _icsExportService.exportIcs(
-        state.generatedIcs!,
-        fileName: fileName,
-      );
+      await _icsExportService.exportIcs(icsContent, fileName: fileName);
 
       if (!mounted) return;
 
-      if (filePath != null) {
-        // Save conversion to history if user is authenticated
-        final user = FirebaseAuth.instance.currentUser;
-        if (user != null) {
-          try {
-            await _historyService.saveConversion(
-              events: state.extractedEvents,
-              icsContent: state.generatedIcs!,
-            );
-          } catch (e) {
-            if (kDebugMode) print('Error saving to history: $e');
-            // Show error message if history saving fails for other reasons
-            if (mounted) {
-              showSnackBar(context, trad(context)!.history_save_failed, true);
-            }
-          }
-        } else {
-          // User is not authenticated - show info message
-          if (mounted) {
-            showSnackBar(
-              context,
-              trad(context)!.history_not_saved_auth_required,
-              false,
-            );
-          }
-        }
-
-        showSnackBar(context, trad(context)!.ics_saved_to(filePath));
-
-        final shouldOpen = await showDialog<bool>(
-          context: context,
-          builder:
-              (context) => AlertDialog(
-                title: Text(trad(context)!.file_saved),
-                content: Text(trad(context)!.file_saved_message),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: Text(trad(context)!.no),
-                  ),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: Text(trad(context)!.open),
-                  ),
-                ],
-              ),
-        );
-
-        if (!mounted) return;
-        if (shouldOpen == true) {
-          await _icsExportService.openIcsFile(filePath);
-        }
-      } else {
-        // For web or other platforms, still save to history
+      // Save conversion to history if user is authenticated (silently)
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
         try {
           await _historyService.saveConversion(
             events: state.extractedEvents,
-            icsContent: state.generatedIcs!,
+            icsContent: icsContent,
           );
         } catch (e) {
           if (kDebugMode) print('Error saving to history: $e');
+          // Silently fail - don't interrupt the user's flow
         }
-        showSnackBar(context, trad(context)!.download_started);
       }
     } catch (e) {
-      if (kDebugMode) print('Error saving ICS: $e');
+      if (kDebugMode) print('Error exporting ICS: $e');
       if (!mounted) return;
-      showSnackBar(context, '${trad(context)!.error_saving_file}: $e', true);
+      showSnackBar(context, '${trad(context)!.error_exporting_ics}: $e', true);
     }
-  }
-
-  void _copyToClipboard() {
-    final state = ref.read(converterProvider);
-    if (state.generatedIcs == null) return;
-    Clipboard.setData(ClipboardData(text: state.generatedIcs!));
-
-    // Save to history
-    _historyService
-        .saveConversion(
-          events: state.extractedEvents,
-          icsContent: state.generatedIcs!,
-        )
-        .catchError((e) {
-          if (kDebugMode) print('Error saving to history: $e');
-        });
-
-    showSnackBar(context, trad(context)!.ics_copied);
-  }
-
-  void _showIcsPreview() {
-    final state = ref.read(converterProvider);
-    if (state.generatedIcs == null) return;
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: Text(trad(context)!.generated_ics_file),
-            content: SizedBox(
-              width: double.maxFinite,
-              height: 400,
-              child: SingleChildScrollView(
-                child: SelectableText(
-                  state.generatedIcs!,
-                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: _copyToClipboard,
-                child: Text(trad(context)!.copy),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(trad(context)!.close),
-              ),
-            ],
-          ),
-    );
   }
 
   @override
