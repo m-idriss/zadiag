@@ -14,7 +14,9 @@ class IcsGenerator {
     buffer.writeln('VERSION:2.0');
     buffer.writeln('PRODID:$prodId');
     buffer.writeln('CALSCALE:GREGORIAN');
-    buffer.writeln('METHOD:PUBLISH');
+    buffer.writeln('METHOD:REQUEST');
+    buffer.writeln('X-WR-CALNAME:Zadiag Calendar Events');
+    buffer.writeln('X-WR-TIMEZONE:UTC');
 
     // Add each event
     for (final event in events) {
