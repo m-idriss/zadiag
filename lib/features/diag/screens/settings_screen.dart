@@ -472,7 +472,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         await user.updateDisplayName(_nameController.text.trim());
       }
       if (!mounted) return;
-      showSnackBar(context, trad(context)!.changes_saved);
+
       setState(() {
         _isProfileExpanded = false;
       });

@@ -137,7 +137,7 @@ class CaptureScreen extends StatelessWidget {
             context,
             trad(context)!.take_photo,
             Icons.camera_alt_rounded,
-            () => showSnackBar(context, trad(context)!.photo_taken),
+            () {},
           ),
         ),
       ],

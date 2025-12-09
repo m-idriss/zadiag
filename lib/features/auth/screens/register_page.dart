@@ -240,7 +240,11 @@ class _RegisterPageState extends State<RegisterPage>
     final confirm = _registerConfirmPasswordController.text;
 
     if (password != confirm) {
-      showSnackBar(context, trad(context)?.passwords_do_not_match ?? "Passwords do not match", true);
+      showSnackBar(
+        context,
+        trad(context)?.passwords_do_not_match ?? "Passwords do not match",
+        true,
+      );
       return;
     }
 
@@ -250,7 +254,7 @@ class _RegisterPageState extends State<RegisterPage>
         password: password,
       );
       if (!context.mounted) return;
-      showSnackBar(context, trad(context)?.account_created ?? "Account created successfully!");
+
       NavigationHelper.navigateWithFade(context, const LoginPage());
     } on FirebaseAuthException catch (e) {
       String message;
@@ -259,7 +263,9 @@ class _RegisterPageState extends State<RegisterPage>
       );
       switch (e.code) {
         case 'email-already-in-use':
-          message = trad(context)?.email_already_in_use ?? "This email is already in use.";
+          message =
+              trad(context)?.email_already_in_use ??
+              "This email is already in use.";
           break;
         case 'invalid-email':
           message = trad(context)?.invalid_email ?? "Invalid email address.";

@@ -142,7 +142,6 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
           events: result.events,
           icsContent: result.icsContent,
         );
-        showSnackBar(context, trad(context)!.found_events(result.eventCount));
       } else {
         Log.w(
           'ConverterPage: Processing returned no events or failed. Error: ${result.errorMessage}',
