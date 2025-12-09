@@ -5,7 +5,7 @@ import 'dart:math';
 import 'package:zadiag/core/constants/app_theme.dart';
 
 /// Common UI helper functions used across the application.
-/// 
+///
 /// This file contains reusable utility functions for building
 /// consistent UI elements throughout the app.
 
@@ -13,10 +13,7 @@ import 'package:zadiag/core/constants/app_theme.dart';
 BoxDecoration buildBackground(ColorScheme colorScheme) {
   return BoxDecoration(
     gradient: LinearGradient(
-      colors: [
-        colorScheme.surface,
-        colorScheme.surfaceContainerHigh,
-      ],
+      colors: [colorScheme.surface, colorScheme.surfaceContainerHigh],
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
     ),
@@ -24,11 +21,15 @@ BoxDecoration buildBackground(ColorScheme colorScheme) {
 }
 
 /// Shows a floating snackbar with a message.
-/// 
+///
 /// [context] - The build context for the snackbar.
 /// [message] - The message to display.
 /// [isError] - Whether this is an error message (shows in red).
-void showSnackBar(BuildContext context, String message, [bool isError = false]) {
+void showSnackBar(
+  BuildContext context,
+  String message, [
+  bool isError = false,
+]) {
   ScaffoldMessenger.of(context).clearSnackBars();
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
@@ -58,9 +59,7 @@ void showSnackBar(BuildContext context, String message, [bool isError = false]) 
           ),
         ],
       ),
-      backgroundColor: isError
-          ? Colors.redAccent
-          : Colors.greenAccent.shade700,
+      backgroundColor: isError ? Colors.redAccent : Colors.greenAccent.shade700,
       behavior: SnackBarBehavior.floating,
       margin: const EdgeInsets.all(AppTheme.spacingMd),
       duration: const Duration(seconds: 2),
@@ -70,7 +69,7 @@ void showSnackBar(BuildContext context, String message, [bool isError = false]) 
 }
 
 /// Generates random heat map data for the past 365 days.
-/// 
+///
 /// Returns a map where keys are dates and values are activity levels (0-4).
 Map<DateTime, int> generateRandomHeatMapData() {
   Map<DateTime, int> heatMapDatasets = {};
@@ -90,9 +89,7 @@ Column buildHeader(BuildContext context, String title, String subtitle) {
       const SizedBox(height: AppTheme.spacingMd),
       Text(
         title,
-        style: AppTheme.headingStyle(
-          Theme.of(context).colorScheme.onSurface,
-        ),
+        style: AppTheme.headingStyle(Theme.of(context).colorScheme.onSurface),
         textAlign: TextAlign.center,
       ),
       const SizedBox(height: AppTheme.spacingSm),
@@ -191,11 +188,7 @@ Widget _buildButton(
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                color: Colors.white,
-                size: isLarge ? 22 : 18,
-              ),
+              Icon(icon, color: Colors.white, size: isLarge ? 22 : 18),
               SizedBox(width: isLarge ? 12 : 8),
               Flexible(
                 child: Text(
@@ -221,7 +214,7 @@ Widget _buildButton(
 }
 
 /// Creates a styled input decoration with an SVG prefix icon.
-/// 
+///
 /// [hintText] - Placeholder text for the input.
 /// [iconPath] - Path to the SVG icon asset.
 /// [suffixIcon] - Optional suffix widget (e.g., password visibility toggle).
@@ -295,7 +288,7 @@ InputDecoration dropdownDecoration(
 }
 
 /// Builds a styled text form field with consistent theming.
-/// 
+///
 /// [controller] - The text editing controller.
 /// [hintText] - Placeholder text.
 /// [iconPath] - Path to the prefix SVG icon.
@@ -312,9 +305,11 @@ Widget buildTextField({
   bool obscureText = false,
   String? suffixIconPath,
   VoidCallback? onSuffixTap,
+  bool readOnly = false,
 }) {
   return TextFormField(
     controller: controller,
+    readOnly: readOnly,
     style: AppTheme.bodyStyle(Theme.of(context).colorScheme.onSurface),
     obscureText: obscureText,
     keyboardType: keyboardType,

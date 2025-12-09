@@ -6,7 +6,12 @@ import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/features/auth/screens/login_page.dart';
 import 'package:zadiag/main.dart';
 import 'package:zadiag/core/utils/translate.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
+import 'package:zadiag/core/utils/language_manager.dart';
+import 'package:zadiag/core/utils/navigation_helper.dart';
+import 'package:intl/intl.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -17,7 +22,18 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _profileFormKey = GlobalKey<FormState>();
   bool _notificationsEnabled = true;
+  bool _isProfileExpanded = false;
+
+  // Profile State
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  DateTime? _birthDate;
+  final _dateFormatter = DateFormat('dd/MM/yyyy');
+  String _selectedLanguage = LanguageManager.defaultLanguage;
+  bool _obscurePassword = true;
 
   static const String _notificationsKey = 'notificationsEnabled';
 
@@ -25,6 +41,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _loadNotificationsSetting();
+    _selectedLanguage = LanguageManager.getLanguageName(
+      localeNotifier.value?.languageCode ?? 'en',
+    );
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      _nameController.text = user.displayName ?? '';
+      _emailController.text = user.email ?? '';
+    }
+    if (user?.uid == null) return;
+
+    final userDoc =
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user!.uid)
+            .get();
+    if (userDoc.exists && mounted) {
+      setState(() {
+        _nameController.text =
+            (userDoc.data() as Map<String, dynamic>)['username'] ?? '';
+        _selectedLanguage =
+            (userDoc.data() as Map<String, dynamic>)['language'] ??
+            LanguageManager.defaultLanguage;
+        _birthDate =
+            (userDoc.data() as Map<String, dynamic>)['birthDate']?.toDate();
+      });
+    }
   }
 
   Future<void> _loadNotificationsSetting() async {
@@ -60,6 +106,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 _header(context),
                 const SizedBox(height: AppTheme.spacingMd),
+                _profileCard(context),
+                const SizedBox(height: AppTheme.spacingMd),
                 _settingsCard(context),
                 const SizedBox(height: AppTheme.spacingMd),
                 _notificationCard(context),
@@ -93,6 +141,459 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {
       themeNotifier.value = mode;
     });
+  }
+
+  Widget _profileCard(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      padding: EdgeInsets.all(AppTheme.spacingMd),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            colorScheme.primary.withValues(alpha: 0.1),
+            colorScheme.secondary.withValues(alpha: 0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        border: Border.all(
+          color: colorScheme.primary.withValues(alpha: 0.2),
+          width: 1,
+        ),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _isProfileExpanded = !_isProfileExpanded;
+              });
+            },
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              children: [
+                // Avatar
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [colorScheme.primary, colorScheme.tertiary],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: colorScheme.primary.withValues(alpha: 0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      user?.email?.substring(0, 1).toUpperCase() ?? "U",
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppTheme.spacingMd),
+                // Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _nameController.text.isNotEmpty
+                            ? _nameController.text
+                            : (trad(context)!.profile),
+                        style: TextStyle(
+                          fontFamily: AppTheme.defaultFontFamilyName,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        user?.email ?? 'No email',
+                        style: TextStyle(
+                          fontFamily: AppTheme.defaultFontFamilyName,
+                          fontSize: 14,
+                          color: colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                // Arrow
+                AnimatedRotation(
+                  turns: _isProfileExpanded ? 0.25 : 0,
+                  duration: const Duration(milliseconds: 300),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface.withValues(alpha: 0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: colorScheme.primary,
+                      size: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Expanded Content
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: Column(
+              children: [
+                const SizedBox(height: AppTheme.spacingLg),
+                const Divider(height: 1),
+                const SizedBox(height: AppTheme.spacingLg),
+                Form(
+                  key: _profileFormKey,
+                  child: Column(
+                    children: [
+                      _usernameTextField(context),
+                      const SizedBox(height: AppTheme.spacingMd),
+                      _emailTextField(context),
+                      const SizedBox(height: AppTheme.spacingMd),
+                      _passwordTextField(context),
+                      const SizedBox(height: AppTheme.spacingMd),
+                      _birthdaySelector(context),
+                      const SizedBox(height: AppTheme.spacingMd),
+                      _languageSelector(context),
+                      const SizedBox(height: AppTheme.spacingLg),
+                      _actionButtons(context),
+                      const SizedBox(height: AppTheme.spacingLg),
+                      _deleteAccountCard(context),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            crossFadeState:
+                _isProfileExpanded
+                    ? CrossFadeState.showSecond
+                    : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 300),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _usernameTextField(BuildContext context) {
+    return buildTextField(
+      context: context,
+      controller: _nameController,
+      hintText: trad(context)!.name_hint,
+      iconPath: 'assets/icons/User.svg',
+    );
+  }
+
+  Widget _emailTextField(BuildContext context) {
+    return buildTextField(
+      context: context,
+      controller: _emailController,
+      hintText: trad(context)!.email_hint,
+      iconPath: 'assets/icons/Message.svg',
+      keyboardType: TextInputType.emailAddress,
+    );
+  }
+
+  Widget _passwordTextField(BuildContext context) {
+    return buildTextField(
+      context: context,
+      controller: _passwordController,
+      hintText: trad(context)!.password_hint,
+      iconPath: 'assets/icons/Lock.svg',
+      obscureText: _obscurePassword,
+      suffixIconPath: 'assets/icons/Hide.svg',
+      onSuffixTap: () {
+        setState(() {
+          _obscurePassword = !_obscurePassword;
+        });
+      },
+      readOnly:
+          true, // Password change might be complex inline without re-auth, keeping readonly or enabling basic
+    );
+  }
+
+  GestureDetector _birthdaySelector(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _selectBirthDate(context),
+      child: AbsorbPointer(
+        child: TextFormField(
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontSize: 14,
+            fontFamily: AppTheme.defaultFontFamilyName,
+          ),
+          decoration: inputDecoration(
+            context,
+            _birthDate != null
+                ? _dateFormatter.format(_birthDate!)
+                : trad(context)!.birthdate_hint,
+            'assets/icons/Time Circle.svg',
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectBirthDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate:
+          _birthDate ??
+          DateTime(
+            DateTime.now().year - 30,
+            DateTime.now().month,
+            DateTime.now().day,
+          ),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      locale: const Locale('fr', 'FR'),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(
+            context,
+          ).copyWith(colorScheme: Theme.of(context).colorScheme),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && picked != _birthDate) {
+      setState(() {
+        _birthDate = picked;
+      });
+    }
+  }
+
+  DropdownButtonFormField<String> _languageSelector(BuildContext context) {
+    return DropdownButtonFormField<String>(
+      style: TextStyle(
+        color: Theme.of(context).colorScheme.onSurface,
+        fontSize: 14,
+        fontFamily: AppTheme.defaultFontFamilyName,
+      ),
+      icon: Icon(
+        Icons.arrow_drop_down_rounded,
+        color: Theme.of(context).colorScheme.primary,
+      ),
+      decoration: dropdownDecoration(
+        context,
+        trad(context)!.preferred_language,
+        'assets/icons/Home.svg',
+      ),
+      dropdownColor: Theme.of(context).colorScheme.surface,
+      initialValue: _selectedLanguage,
+      items:
+          LanguageManager.supportedLanguageNameLocalesMap.values
+              .map((lang) => DropdownMenuItem(value: lang, child: Text(lang)))
+              .toList(),
+      onChanged: (val) {
+        if (val != null) {
+          _changeLanguage(val);
+        }
+      },
+    );
+  }
+
+  void _changeLanguage(String language) {
+    Locale newLocale = LanguageManager.getLocaleFromLanguageName(language);
+
+    setState(() {
+      _selectedLanguage = language;
+    });
+
+    MyApp.changeLanguage(context, newLocale);
+  }
+
+  Widget _actionButtons(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: buildSettingsButton(
+            context,
+            trad(context)!.cancel,
+            Icons.close_rounded,
+            () {
+              setState(() {
+                _isProfileExpanded = false;
+                _loadUserData(); // Reset fields
+              });
+            },
+          ),
+        ),
+        const SizedBox(width: AppTheme.spacingMd),
+        Expanded(
+          child: buildSettingsButton(
+            context,
+            trad(context)!.save,
+            Icons.check_rounded,
+            _saveProfileSettings,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _saveProfileSettings() async {
+    if (_profileFormKey.currentState!.validate()) {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'username': _nameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'birthDate': _birthDate,
+          'language': _selectedLanguage,
+        }, SetOptions(merge: true));
+
+        // Update display name
+        await user.updateDisplayName(_nameController.text.trim());
+      }
+      if (!mounted) return;
+      showSnackBar(context, trad(context)!.changes_saved);
+      setState(() {
+        _isProfileExpanded = false;
+      });
+    }
+  }
+
+  Widget _deleteAccountCard(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _deleteAccount,
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+          child: Padding(
+            padding: EdgeInsets.all(AppTheme.spacingMd),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  ),
+                  child: Icon(
+                    Icons.delete_forever_rounded,
+                    color: Colors.red,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: AppTheme.spacingMd),
+                Expanded(
+                  child: Text(
+                    trad(context)!.delete_account,
+                    style: TextStyle(
+                      fontFamily: AppTheme.defaultFontFamilyName,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: Colors.red,
+                  size: 18,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deleteAccount() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+            ),
+            title: Text(
+              trad(context)!.confirm,
+              style: TextStyle(
+                fontFamily: AppTheme.defaultFontFamilyName,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            content: Text(
+              trad(context)!.confirm_delete_account,
+              style: TextStyle(fontFamily: AppTheme.defaultFontFamilyName),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(
+                  trad(context)!.cancel,
+                  style: TextStyle(fontFamily: AppTheme.defaultFontFamilyName),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(
+                  trad(context)!.delete,
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontFamily: AppTheme.defaultFontFamilyName,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+    );
+
+    if (confirmed != true) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .delete();
+
+      await user.delete();
+
+      if (mounted) {
+        NavigationHelper.navigateWithFade(context, const LoginPage());
+      }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      showSnackBar(context, e.message ?? trad(context)!.error_occurred);
+    }
   }
 
   Widget _settingsCard(BuildContext context) {

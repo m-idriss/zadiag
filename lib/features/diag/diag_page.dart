@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zadiag/shared/components/btm_nav_item.dart';
-import 'package:zadiag/features/diag/screens/profile_screen.dart';
+
 import 'package:zadiag/features/diag/screens/heatmap_screen.dart';
 import 'package:zadiag/features/diag/screens/settings_screen.dart';
 import 'package:zadiag/shared/models/menu.dart';
@@ -26,16 +26,15 @@ class _HomePageState extends ConsumerState<HomePage>
   late Animation<double> animation;
 
   // Page indices for navigation
-  static const int _converterPageIndex = 2;
+  static const int _converterPageIndex = 1;
 
   List<Widget> get _pages => [
-    const ProfileScreen(),
-    const ConverterPage(),
     const HeatMapScreen(),
+    const ConverterPage(),
     const SettingsScreen(),
   ];
 
-  Menu selectedBottonNav = bottomNavItems[0];
+  Menu selectedBottonNav = bottomNavItems[1];
   int _previousIndex = _converterPageIndex;
 
   void updateSelectedBtmNav(Menu menu) {
