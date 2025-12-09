@@ -9,7 +9,7 @@ void main() {
   group('ConverterState', () {
     test('initial state has empty lists and false flags', () {
       const state = ConverterState();
-      
+
       expect(state.uploadedImages, isEmpty);
       expect(state.extractedEvents, isEmpty);
       expect(state.isProcessing, false);
@@ -29,34 +29,30 @@ void main() {
           endDateTime: DateTime(2024, 1, 15, 11),
         ),
       ];
-      
+
       final newState = state.copyWith(
         extractedEvents: events,
         isProcessing: true,
       );
-      
+
       expect(newState.extractedEvents, events);
       expect(newState.isProcessing, true);
       expect(newState.uploadedImages, isEmpty);
     });
 
     test('copyWith with clearError removes error message', () {
-      final state = ConverterState(
-        errorMessage: 'Some error',
-      );
-      
+      final state = ConverterState(errorMessage: 'Some error');
+
       final newState = state.copyWith(clearError: true);
-      
+
       expect(newState.errorMessage, isNull);
     });
 
     test('copyWith with clearIcs removes generated ICS', () {
-      final state = ConverterState(
-        generatedIcs: 'BEGIN:VCALENDAR...',
-      );
-      
+      final state = ConverterState(generatedIcs: 'BEGIN:VCALENDAR...');
+
       final newState = state.copyWith(clearIcs: true);
-      
+
       expect(newState.generatedIcs, isNull);
     });
 
@@ -71,7 +67,7 @@ void main() {
           ),
         ],
       );
-      
+
       expect(state.hasEvents, true);
     });
   });
@@ -97,9 +93,9 @@ void main() {
           mimeType: 'image/jpeg',
         ),
       ];
-      
+
       notifier.setUploadedImages(images);
-      
+
       final state = container.read(converterProvider);
       expect(state.uploadedImages.length, 1);
       expect(state.uploadedImages.first.name, 'test.jpg');
@@ -120,10 +116,10 @@ void main() {
         errorMessage: null,
       );
       notifier.setError('Some error');
-      
+
       // Then clear with empty images
       notifier.setUploadedImages([]);
-      
+
       final state = container.read(converterProvider);
       expect(state.extractedEvents, isEmpty);
       expect(state.generatedIcs, isNull);
@@ -133,7 +129,7 @@ void main() {
     test('setProcessing updates the processing flag', () {
       notifier.setProcessing(true);
       expect(container.read(converterProvider).isProcessing, true);
-      
+
       notifier.setProcessing(false);
       expect(container.read(converterProvider).isProcessing, false);
     });
@@ -141,7 +137,7 @@ void main() {
     test('setExporting updates the exporting flag', () {
       notifier.setExporting(true);
       expect(container.read(converterProvider).isExporting, true);
-      
+
       notifier.setExporting(false);
       expect(container.read(converterProvider).isExporting, false);
     });
@@ -153,9 +149,9 @@ void main() {
         icsContent: 'BEGIN:VCALENDAR...',
         errorMessage: 'Some error',
       );
-      
+
       notifier.prepareForConversion();
-      
+
       final state = container.read(converterProvider);
       expect(state.isProcessing, true);
       expect(state.errorMessage, isNull);
@@ -171,12 +167,12 @@ void main() {
           endDateTime: DateTime(2024, 1, 15, 11),
         ),
       ];
-      
+
       notifier.setConversionResult(
         events: events,
         icsContent: 'BEGIN:VCALENDAR...',
       );
-      
+
       final state = container.read(converterProvider);
       expect(state.extractedEvents.length, 1);
       expect(state.generatedIcs, 'BEGIN:VCALENDAR...');
@@ -186,7 +182,7 @@ void main() {
     test('setError updates error message and stops processing', () {
       notifier.setProcessing(true);
       notifier.setError('Test error');
-      
+
       final state = container.read(converterProvider);
       expect(state.errorMessage, 'Test error');
       expect(state.isProcessing, false);
@@ -207,14 +203,14 @@ void main() {
           endDateTime: DateTime(2024, 1, 16, 11),
         ),
       ];
-      
+
       notifier.setConversionResult(
         events: events,
         icsContent: 'BEGIN:VCALENDAR...',
       );
-      
+
       notifier.removeEvent(0);
-      
+
       final state = container.read(converterProvider);
       expect(state.extractedEvents.length, 1);
       expect(state.extractedEvents.first.title, 'Event 2');
@@ -230,21 +226,21 @@ void main() {
           endDateTime: DateTime(2024, 1, 15, 11),
         ),
       ];
-      
+
       notifier.setConversionResult(
         events: events,
         icsContent: 'BEGIN:VCALENDAR...',
       );
-      
+
       notifier.removeEvent(5); // Invalid index
-      
+
       final state = container.read(converterProvider);
       expect(state.extractedEvents.length, 1);
     });
 
     test('setGeneratedIcs updates the generated ICS content', () {
       notifier.setGeneratedIcs('BEGIN:VCALENDAR\nVERSION:2.0...');
-      
+
       final state = container.read(converterProvider);
       expect(state.generatedIcs, 'BEGIN:VCALENDAR\nVERSION:2.0...');
     });
@@ -256,18 +252,18 @@ void main() {
           CalendarEvent(
             id: '1',
             title: 'Event 1',
-            startDateTime: DateTime(2024, 1, 15, 10),
-            endDateTime: DateTime(2024, 1, 15, 11),
+            start: DateTime(2024, 1, 15, 10),
+            end: DateTime(2024, 1, 15, 11),
           ),
         ],
         icsContent: 'BEGIN:VCALENDAR...',
       );
       notifier.setError('Some error');
       notifier.setProcessing(true);
-      
+
       // Clear all state
       notifier.clear();
-      
+
       final state = container.read(converterProvider);
       expect(state.uploadedImages, isEmpty);
       expect(state.extractedEvents, isEmpty);
@@ -286,15 +282,15 @@ void main() {
           mimeType: 'image/jpeg',
         ),
       ];
-      
+
       // Upload images
       notifier.setUploadedImages(images);
       expect(container.read(converterProvider).uploadedImages.length, 1);
-      
+
       // Prepare for conversion
       notifier.prepareForConversion();
       expect(container.read(converterProvider).isProcessing, true);
-      
+
       // Complete conversion with results
       final events = [
         CalendarEvent(
@@ -308,7 +304,7 @@ void main() {
         events: events,
         icsContent: 'BEGIN:VCALENDAR...',
       );
-      
+
       // Verify final state - this simulates navigation away and back
       final finalState = container.read(converterProvider);
       expect(finalState.uploadedImages.length, 1);

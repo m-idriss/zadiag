@@ -404,7 +404,9 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen> {
           onTap: () {
             setState(() {
               _expandedConversionId =
-                  _expandedConversionId == conversion.id ? '' : conversion.id;
+                  _expandedConversionId == conversion.id.toString()
+                      ? ''
+                      : conversion.id.toString();
             });
           },
           borderRadius: BorderRadius.circular(AppTheme.radiusXl),
@@ -459,14 +461,14 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen> {
                       ),
                     ),
                     Icon(
-                      _expandedConversionId == conversion.id
+                      _expandedConversionId == conversion.id.toString()
                           ? Icons.expand_less_rounded
                           : Icons.expand_more_rounded,
                       color: colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                   ],
                 ),
-                if (_expandedConversionId == conversion.id) ...[
+                if (_expandedConversionId == conversion.id.toString()) ...[
                   const SizedBox(height: AppTheme.spacingMd),
                   const Divider(),
                   const SizedBox(height: AppTheme.spacingSm),

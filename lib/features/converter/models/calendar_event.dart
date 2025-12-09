@@ -1,4 +1,9 @@
+import 'package:isar/isar.dart';
+
+part 'calendar_event.g.dart';
+
 /// Model representing a calendar event extracted from an image.
+@embedded
 class CalendarEvent {
   /// Unique identifier for the event
   final String id;
@@ -10,10 +15,10 @@ class CalendarEvent {
   final String? description;
 
   /// Start date and time
-  final DateTime startDateTime;
+  DateTime startDateTime = DateTime.now();
 
   /// End date and time
-  final DateTime endDateTime;
+  DateTime endDateTime = DateTime.now();
 
   /// Event location (optional)
   final String? location;
@@ -25,28 +30,33 @@ class CalendarEvent {
   final List<int> reminders;
 
   CalendarEvent({
-    required this.id,
-    required this.title,
+    this.id = '',
+    this.title = '',
     this.description,
-    required this.startDateTime,
-    required this.endDateTime,
+    DateTime? start,
+    DateTime? end,
     this.location,
     this.isAllDay = false,
     this.reminders = const [],
-  });
+  }) {
+    if (start != null) startDateTime = start;
+    if (end != null) endDateTime = end;
+  }
 
   /// Creates a CalendarEvent from JSON response
   factory CalendarEvent.fromJson(Map<String, dynamic> json) {
     return CalendarEvent(
-      id: json['id']?.toString() ??
+      id:
+          json['id']?.toString() ??
           DateTime.now().millisecondsSinceEpoch.toString(),
       title: json['title'] ?? json['summary'] ?? 'Untitled Event',
       description: json['description'],
-      startDateTime: _parseDateTime(json['startDateTime'] ?? json['start']),
-      endDateTime: _parseDateTime(json['endDateTime'] ?? json['end']),
+      start: _parseDateTime(json['startDateTime'] ?? json['start']),
+      end: _parseDateTime(json['endDateTime'] ?? json['end']),
       location: json['location'],
       isAllDay: json['isAllDay'] ?? json['allDay'] ?? false,
-      reminders: (json['reminders'] as List<dynamic>?)
+      reminders:
+          (json['reminders'] as List<dynamic>?)
               ?.map((e) => e as int)
               .toList() ??
           [],
@@ -96,8 +106,8 @@ class CalendarEvent {
       id: id ?? this.id,
       title: title ?? this.title,
       description: description ?? this.description,
-      startDateTime: startDateTime ?? this.startDateTime,
-      endDateTime: endDateTime ?? this.endDateTime,
+      start: startDateTime ?? this.startDateTime,
+      end: endDateTime ?? this.endDateTime,
       location: location ?? this.location,
       isAllDay: isAllDay ?? this.isAllDay,
       reminders: reminders ?? this.reminders,
@@ -105,6 +115,7 @@ class CalendarEvent {
   }
 
   /// Calculates the duration of the event
+  @ignore
   Duration get duration => endDateTime.difference(startDateTime);
 
   @override

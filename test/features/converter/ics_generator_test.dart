@@ -28,8 +28,8 @@ void main() {
           id: 'test-123',
           title: 'Test Meeting',
           description: 'A test meeting',
-          startDateTime: DateTime.utc(2024, 1, 15, 10, 0),
-          endDateTime: DateTime.utc(2024, 1, 15, 11, 0),
+          start: DateTime.utc(2024, 1, 15, 10, 0),
+          end: DateTime.utc(2024, 1, 15, 11, 0),
           location: 'Room 101',
         ),
       ];
@@ -51,14 +51,14 @@ void main() {
         CalendarEvent(
           id: '1',
           title: 'Event 1',
-          startDateTime: DateTime.utc(2024, 1, 15, 10, 0),
-          endDateTime: DateTime.utc(2024, 1, 15, 11, 0),
+          start: DateTime.utc(2024, 1, 15, 10, 0),
+          end: DateTime.utc(2024, 1, 15, 11, 0),
         ),
         CalendarEvent(
           id: '2',
           title: 'Event 2',
-          startDateTime: DateTime.utc(2024, 1, 16, 14, 0),
-          endDateTime: DateTime.utc(2024, 1, 16, 15, 0),
+          start: DateTime.utc(2024, 1, 16, 14, 0),
+          end: DateTime.utc(2024, 1, 16, 15, 0),
         ),
       ];
 
@@ -79,8 +79,8 @@ void main() {
         CalendarEvent(
           id: '1',
           title: 'All Day Event',
-          startDateTime: DateTime.utc(2024, 1, 15),
-          endDateTime: DateTime.utc(2024, 1, 16),
+          start: DateTime.utc(2024, 1, 15),
+          end: DateTime.utc(2024, 1, 16),
           isAllDay: true,
         ),
       ];
@@ -96,8 +96,8 @@ void main() {
         CalendarEvent(
           id: '1',
           title: 'Event with Reminder',
-          startDateTime: DateTime.utc(2024, 1, 15, 10, 0),
-          endDateTime: DateTime.utc(2024, 1, 15, 11, 0),
+          start: DateTime.utc(2024, 1, 15, 10, 0),
+          end: DateTime.utc(2024, 1, 15, 11, 0),
           reminders: [15, 30],
         ),
       ];
@@ -121,8 +121,8 @@ void main() {
           id: '1',
           title: 'Meeting, Important; Review',
           description: 'Line 1\nLine 2',
-          startDateTime: DateTime.utc(2024, 1, 15, 10, 0),
-          endDateTime: DateTime.utc(2024, 1, 15, 11, 0),
+          start: DateTime.utc(2024, 1, 15, 10, 0),
+          end: DateTime.utc(2024, 1, 15, 11, 0),
         ),
       ];
 
@@ -137,8 +137,8 @@ void main() {
         CalendarEvent(
           id: '1',
           title: 'Simple Event',
-          startDateTime: DateTime.utc(2024, 1, 15, 10, 0),
-          endDateTime: DateTime.utc(2024, 1, 15, 11, 0),
+          start: DateTime.utc(2024, 1, 15, 10, 0),
+          end: DateTime.utc(2024, 1, 15, 11, 0),
         ),
       ];
 
@@ -153,8 +153,8 @@ void main() {
         CalendarEvent(
           id: '1',
           title: 'Test Event',
-          startDateTime: DateTime.utc(2024, 1, 15, 10, 0),
-          endDateTime: DateTime.utc(2024, 1, 15, 11, 0),
+          start: DateTime.utc(2024, 1, 15, 10, 0),
+          end: DateTime.utc(2024, 1, 15, 11, 0),
         ),
       ];
 

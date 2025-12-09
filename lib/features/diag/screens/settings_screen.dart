@@ -6,7 +6,7 @@ import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/features/auth/screens/login_page.dart';
 import 'package:zadiag/main.dart';
 import 'package:zadiag/core/utils/translate.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:zadiag/features/auth/services/user_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/core/utils/language_manager.dart';
@@ -23,6 +23,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _formKey = GlobalKey<FormState>();
   final _profileFormKey = GlobalKey<FormState>();
+  final _userService = UserService();
   bool _notificationsEnabled = true;
   bool _isProfileExpanded = false;
 
@@ -53,22 +54,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _nameController.text = user.displayName ?? '';
       _emailController.text = user.email ?? '';
     }
-    if (user?.uid == null) return;
 
-    final userDoc =
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user!.uid)
-            .get();
-    if (userDoc.exists && mounted) {
+    final userProfile = await _userService.getUserProfile();
+    if (userProfile != null && mounted) {
       setState(() {
-        _nameController.text =
-            (userDoc.data() as Map<String, dynamic>)['username'] ?? '';
-        _selectedLanguage =
-            (userDoc.data() as Map<String, dynamic>)['language'] ??
-            LanguageManager.defaultLanguage;
-        _birthDate =
-            (userDoc.data() as Map<String, dynamic>)['birthDate']?.toDate();
+        if (userProfile.username != null)
+          _nameController.text = userProfile.username!;
+        if (userProfile.language != null)
+          _selectedLanguage = userProfile.language!;
+        if (userProfile.birthDate != null) _birthDate = userProfile.birthDate!;
       });
     }
   }
@@ -141,6 +135,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {
       themeNotifier.value = mode;
     });
+
+    // Also save to Isar if possible
+    await _userService.updateUserProfile(themeMode: themeModeString);
   }
 
   Widget _profileCard(BuildContext context) {
@@ -461,14 +458,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (_profileFormKey.currentState!.validate()) {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-          'username': _nameController.text.trim(),
-          'email': _emailController.text.trim(),
-          'birthDate': _birthDate,
-          'language': _selectedLanguage,
-        }, SetOptions(merge: true));
+        // Update Isar
+        await _userService.updateUserProfile(
+          username: _nameController.text.trim(),
+          email: _emailController.text.trim(),
+          birthDate: _birthDate,
+          language: _selectedLanguage,
+        );
 
-        // Update display name
+        // Update display name in Firebase Auth if needed
         await user.updateDisplayName(_nameController.text.trim());
       }
       if (!mounted) return;
@@ -580,12 +578,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (confirmed != true) return;
     try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .delete();
-
-      await user.delete();
+      await _userService.deleteUserAccount();
 
       if (mounted) {
         NavigationHelper.navigateWithFade(context, const LoginPage());

@@ -1,24 +1,17 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:isar/isar.dart';
+import 'package:zadiag/core/services/isar_service.dart';
 import '../models/conversion_history.dart';
 import '../models/calendar_event.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-/// Service for managing conversion history in Firestore.
-///
-/// Handles CRUD operations for conversion records and provides
-/// aggregated data for heatmap visualization.
+/// Service for managing conversion history in Isar.
 class ConversionHistoryService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final IsarService _isarService = IsarService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  /// Gets the current user ID
   String? get _userId => _auth.currentUser?.uid;
 
-  /// Collection reference for conversion history
-  CollectionReference get _conversionsCollection =>
-      _firestore.collection('conversions');
-
-  /// Saves a conversion to Firestore
+  /// Saves a conversion to Isar
   Future<void> saveConversion({
     required List<CalendarEvent> events,
     required String icsContent,
@@ -27,8 +20,8 @@ class ConversionHistoryService {
       throw Exception('User must be authenticated to save conversions');
     }
 
+    final isar = await _isarService.db;
     final conversion = ConversionHistory(
-      id: '', // Will be set by Firestore
       timestamp: DateTime.now(),
       events: events,
       eventCount: events.length,
@@ -36,24 +29,24 @@ class ConversionHistoryService {
       userId: _userId!,
     );
 
-    await _conversionsCollection.add(conversion.toFirestore());
+    await isar.writeTxn(() async {
+      await isar.conversionHistorys.put(conversion);
+    });
   }
 
   /// Streams all conversions for the current user
-  Stream<List<ConversionHistory>> streamUserConversions() {
+  Stream<List<ConversionHistory>> streamUserConversions() async* {
     if (_userId == null) {
-      return Stream.value([]);
+      yield [];
+      return;
     }
 
-    return _conversionsCollection
-        .where('userId', isEqualTo: _userId)
-        .orderBy('timestamp', descending: true)
-        .snapshots()
-        .map((snapshot) {
-          return snapshot.docs
-              .map((doc) => ConversionHistory.fromFirestore(doc))
-              .toList();
-        });
+    final isar = await _isarService.db;
+    yield* isar.conversionHistorys
+        .where()
+        .userIdEqualTo(_userId!)
+        .sortByTimestampDesc()
+        .watch(fireImmediately: true);
   }
 
   /// Gets conversions for a specific date
@@ -65,20 +58,15 @@ class ConversionHistoryService {
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
-    final snapshot =
-        await _conversionsCollection
-            .where('userId', isEqualTo: _userId)
-            .where(
-              'timestamp',
-              isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay),
-            )
-            .where('timestamp', isLessThan: Timestamp.fromDate(endOfDay))
-            .orderBy('timestamp', descending: true)
-            .get();
-
-    return snapshot.docs
-        .map((doc) => ConversionHistory.fromFirestore(doc))
-        .toList();
+    final isar = await _isarService.db;
+    return await isar.conversionHistorys
+        .where()
+        .userIdEqualTo(_userId!)
+        .filter()
+        .timestampGreaterThan(startOfDay, include: true)
+        .timestampLessThan(endOfDay)
+        .sortByTimestampDesc()
+        .findAll();
   }
 
   /// Gets conversion count for a date range (for heatmap)
@@ -90,25 +78,19 @@ class ConversionHistoryService {
       return {};
     }
 
-    // Query without orderBy to avoid composite index requirement
-    // We don't need ordering since we're just counting
-    final snapshot =
-        await _conversionsCollection
-            .where('userId', isEqualTo: _userId)
-            .where(
-              'timestamp',
-              isGreaterThanOrEqualTo: Timestamp.fromDate(startDate),
-            )
-            .where(
-              'timestamp',
-              isLessThanOrEqualTo: Timestamp.fromDate(endDate),
-            )
-            .get();
+    final isar = await _isarService.db;
+    final conversions =
+        await isar.conversionHistorys
+            .where()
+            .userIdEqualTo(_userId!)
+            .filter()
+            .timestampGreaterThan(startDate, include: true)
+            .timestampLessThan(endDate, include: true)
+            .findAll();
 
     final Map<DateTime, int> counts = {};
 
-    for (final doc in snapshot.docs) {
-      final conversion = ConversionHistory.fromFirestore(doc);
+    for (final conversion in conversions) {
       final date = DateTime(
         conversion.timestamp.year,
         conversion.timestamp.month,
@@ -121,34 +103,29 @@ class ConversionHistoryService {
   }
 
   /// Deletes a conversion record
-  Future<void> deleteConversion(String conversionId) async {
-    await _conversionsCollection.doc(conversionId).delete();
+  Future<void> deleteConversion(int conversionId) async {
+    final isar = await _isarService.db;
+    await isar.writeTxn(() async {
+      await isar.conversionHistorys.delete(conversionId);
+    });
   }
 
-  /// Gets total conversion statistics using Firestore aggregation queries
+  /// Gets total conversion statistics
   Future<Map<String, int>> getStatistics() async {
     if (_userId == null) {
       return {'totalConversions': 0, 'totalEvents': 0};
     }
 
-    try {
-      // Use Firestore aggregation queries for better performance
-      final query = _conversionsCollection.where('userId', isEqualTo: _userId);
+    final isar = await _isarService.db;
+    final conversions =
+        await isar.conversionHistorys.where().userIdEqualTo(_userId!).findAll();
 
-      // Perform both aggregations in a single query for better efficiency
-      final snapshot = await query.aggregate(
-        count(),
-        sum('eventCount'),
-      ).get();
+    final totalConversions = conversions.length;
+    final totalEvents = conversions.fold<int>(
+      0,
+      (sum, item) => sum + item.eventCount,
+    );
 
-      final totalConversions = snapshot.count ?? 0;
-      final totalEvents = snapshot.getSum('eventCount')?.toInt() ?? 0;
-
-      return {'totalConversions': totalConversions, 'totalEvents': totalEvents};
-    } catch (e) {
-      // If aggregation fails, return zeros rather than throwing
-      // This could happen if the field doesn't exist on some documents
-      return {'totalConversions': 0, 'totalEvents': 0};
-    }
+    return {'totalConversions': totalConversions, 'totalEvents': totalEvents};
   }
 }

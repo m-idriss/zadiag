@@ -9,8 +9,8 @@ void main() {
         CalendarEvent(
           id: '1',
           title: 'Event 1',
-          startDateTime: DateTime(2024, 1, 15, 10, 0),
-          endDateTime: DateTime(2024, 1, 15, 11, 0),
+          start: DateTime(2024, 1, 15, 10, 0),
+          end: DateTime(2024, 1, 15, 11, 0),
         ),
       ];
 
@@ -139,14 +139,14 @@ END:VCALENDAR''',
         CalendarEvent(
           id: '1',
           title: 'Event 1',
-          startDateTime: DateTime(2024, 1, 15, 10, 0),
-          endDateTime: DateTime(2024, 1, 15, 11, 0),
+          start: DateTime(2024, 1, 15, 10, 0),
+          end: DateTime(2024, 1, 15, 11, 0),
         ),
         CalendarEvent(
           id: '2',
           title: 'Event 2',
-          startDateTime: DateTime(2024, 1, 16, 10, 0),
-          endDateTime: DateTime(2024, 1, 16, 11, 0),
+          start: DateTime(2024, 1, 16, 10, 0),
+          end: DateTime(2024, 1, 16, 11, 0),
         ),
       ];
 
@@ -160,8 +160,8 @@ END:VCALENDAR''',
         CalendarEvent(
           id: '1',
           title: 'Event',
-          startDateTime: DateTime(2024, 1, 15, 10, 0),
-          endDateTime: DateTime(2024, 1, 15, 11, 0),
+          start: DateTime(2024, 1, 15, 10, 0),
+          end: DateTime(2024, 1, 15, 11, 0),
         ),
       ];
 
@@ -179,8 +179,8 @@ END:VCALENDAR''',
         CalendarEvent(
           id: '1',
           title: 'Test',
-          startDateTime: DateTime.utc(2024, 1, 15, 10, 0),
-          endDateTime: DateTime.utc(2024, 1, 15, 11, 0),
+          start: DateTime.utc(2024, 1, 15, 10, 0),
+          end: DateTime.utc(2024, 1, 15, 11, 0),
         ),
       ];
 
@@ -202,8 +202,8 @@ END:VCALENDAR''',
         CalendarEvent(
           id: '1',
           title: 'Test',
-          startDateTime: DateTime.utc(2024, 1, 15, 10, 0),
-          endDateTime: DateTime.utc(2024, 1, 15, 11, 0),
+          start: DateTime.utc(2024, 1, 15, 10, 0),
+          end: DateTime.utc(2024, 1, 15, 11, 0),
         ),
       ];
 

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/core/services/log_service.dart';
+import 'package:zadiag/core/services/isar_service.dart';
 import 'package:zadiag/features/auth/screens/splash_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:zadiag/firebase_options.dart';
@@ -37,6 +38,9 @@ void main() async {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
+      // Initialize Isar
+      await IsarService().openDB();
+
       await _loadSavedTheme();
       await _loadSavedLocale();
 

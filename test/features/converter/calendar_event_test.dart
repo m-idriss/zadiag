@@ -101,7 +101,10 @@ void main() {
         endDateTime: DateTime(2024, 1, 15, 11, 0),
       );
 
-      final modified = original.copyWith(title: 'Modified', location: 'New Location');
+      final modified = original.copyWith(
+        title: 'Modified',
+        location: 'New Location',
+      );
 
       expect(modified.id, '5'); // Unchanged
       expect(modified.title, 'Modified');
@@ -110,11 +113,12 @@ void main() {
     });
 
     test('duration calculates correctly', () {
+      final now = DateTime(2024, 1, 15, 9, 0);
       final event = CalendarEvent(
         id: '6',
         title: 'Long Meeting',
-        startDateTime: DateTime(2024, 1, 15, 9, 0),
-        endDateTime: DateTime(2024, 1, 15, 12, 0),
+        start: now,
+        end: now.add(const Duration(hours: 3)),
       );
 
       expect(event.duration, const Duration(hours: 3));
