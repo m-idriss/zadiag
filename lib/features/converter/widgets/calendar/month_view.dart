@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:table_calendar/table_calendar.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/features/converter/models/calendar_event.dart';
 import 'package:zadiag/features/converter/utils/calendar_utils.dart';
 import 'calendar_event_cell.dart';
 
-/// Month view calendar grid showing events as dots.
-class MonthView extends StatelessWidget {
+/// Month view calendar using table_calendar package showing events as dots.
+class MonthView extends StatefulWidget {
   /// The month to display
   final DateTime displayMonth;
 
@@ -23,171 +24,187 @@ class MonthView extends StatelessWidget {
   });
 
   @override
+  State<MonthView> createState() => _MonthViewState();
+}
+
+class _MonthViewState extends State<MonthView> {
+  late DateTime _focusedDay;
+  DateTime? _selectedDay;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusedDay = widget.displayMonth;
+  }
+
+  @override
+  void didUpdateWidget(MonthView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.displayMonth != oldWidget.displayMonth) {
+      _focusedDay = widget.displayMonth;
+    }
+  }
+
+  List<CalendarEvent> _getEventsForDay(DateTime day) {
+    return CalendarUtils.getEventsForDate(widget.events, day);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final monthGrid = CalendarUtils.generateMonthGrid(displayMonth);
-    final groupedEvents = CalendarUtils.groupEventsByDate(events);
+    final groupedEvents = CalendarUtils.groupEventsByDate(widget.events);
 
-    return Column(
-      children: [
-        // Weekday headers
-        _buildWeekdayHeaders(context, colorScheme),
-        const SizedBox(height: AppTheme.spacingSm),
-
-        // Calendar grid
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 7,
-            childAspectRatio: 1.0,
-            crossAxisSpacing: 4,
-            mainAxisSpacing: 4,
-          ),
-          itemCount: 42,
-          itemBuilder: (context, index) {
-            final date = monthGrid[index];
-            final dayEvents =
-                groupedEvents[DateTime(date.year, date.month, date.day)] ?? [];
-
-            return _buildDayCell(
-              context,
-              date: date,
-              events: dayEvents,
-              isCurrentMonth: CalendarUtils.isCurrentMonth(date, displayMonth),
-              isToday: CalendarUtils.isToday(date),
-              colorScheme: colorScheme,
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildWeekdayHeaders(BuildContext context, ColorScheme colorScheme) {
-    final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-    return Row(
-      children:
-          weekdays.map((day) {
-            return Expanded(
-              child: Center(
-                child: Text(
-                  day,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface.withValues(alpha: 0.5),
-                    fontFamily: AppTheme.defaultFontFamilyName,
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-    );
-  }
-
-  Widget _buildDayCell(
-    BuildContext context, {
-    required DateTime date,
-    required List<CalendarEvent> events,
-    required bool isCurrentMonth,
-    required bool isToday,
-    required ColorScheme colorScheme,
-  }) {
-    final dayNumber = date.day;
-
-    return GestureDetector(
-      onTap: events.isNotEmpty ? () => onDayTapped?.call(date) : null,
-      child: Container(
-        decoration: BoxDecoration(
-          color:
-              isToday
-                  ? colorScheme.primary.withValues(alpha: 0.1)
-                  : colorScheme.surfaceContainerHigh,
+    return TableCalendar<CalendarEvent>(
+      firstDay: DateTime.utc(2020, 1, 1),
+      lastDay: DateTime.utc(2030, 12, 31),
+      focusedDay: _focusedDay,
+      selectedDayPredicate: (day) => _selectedDay != null && CalendarUtils.isSameDay(day, _selectedDay!),
+      eventLoader: _getEventsForDay,
+      startingDayOfWeek: StartingDayOfWeek.monday,
+      calendarFormat: CalendarFormat.month,
+      availableCalendarFormats: const {CalendarFormat.month: 'Month'},
+      headerVisible: false,
+      onDaySelected: (selectedDay, focusedDay) {
+        final events = _getEventsForDay(selectedDay);
+        if (events.isNotEmpty) {
+          setState(() {
+            _selectedDay = selectedDay;
+            _focusedDay = focusedDay;
+          });
+          widget.onDayTapped?.call(selectedDay);
+        }
+      },
+      onPageChanged: (focusedDay) {
+        _focusedDay = focusedDay;
+      },
+      calendarStyle: CalendarStyle(
+        // Cell decorations
+        defaultDecoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-          border:
-              isToday
-                  ? Border.all(
-                    color: colorScheme.primary.withValues(alpha: 0.5),
-                    width: 1.5,
-                  )
-                  : null,
         ),
-        child: ClipRect(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
+        todayDecoration: BoxDecoration(
+          color: colorScheme.primary.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+          border: Border.all(
+            color: colorScheme.primary.withValues(alpha: 0.5),
+            width: 1.5,
+          ),
+        ),
+        selectedDecoration: BoxDecoration(
+          color: colorScheme.primary.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+          border: Border.all(
+            color: colorScheme.primary,
+            width: 2.0,
+          ),
+        ),
+        outsideDecoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+        ),
+        
+        // Text styles
+        defaultTextStyle: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: colorScheme.onSurface,
+          fontFamily: AppTheme.defaultFontFamilyName,
+        ),
+        todayTextStyle: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: colorScheme.primary,
+          fontFamily: AppTheme.defaultFontFamilyName,
+        ),
+        selectedTextStyle: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: colorScheme.primary,
+          fontFamily: AppTheme.defaultFontFamilyName,
+        ),
+        outsideTextStyle: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: colorScheme.onSurface.withValues(alpha: 0.3),
+          fontFamily: AppTheme.defaultFontFamilyName,
+        ),
+        weekendTextStyle: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: colorScheme.onSurface,
+          fontFamily: AppTheme.defaultFontFamilyName,
+        ),
+        
+        // Spacing
+        cellMargin: const EdgeInsets.all(2),
+        cellPadding: const EdgeInsets.all(0),
+        
+        // Markers (event indicators)
+        markersMaxCount: 3,
+        markerDecoration: BoxDecoration(
+          color: colorScheme.primary,
+          shape: BoxShape.circle,
+        ),
+        markerSize: 6.0,
+        markerMargin: const EdgeInsets.symmetric(horizontal: 1.0, vertical: 2.0),
+        markersAlignment: Alignment.bottomCenter,
+      ),
+      daysOfWeekStyle: DaysOfWeekStyle(
+        weekdayStyle: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: colorScheme.onSurface.withValues(alpha: 0.5),
+          fontFamily: AppTheme.defaultFontFamilyName,
+        ),
+        weekendStyle: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: colorScheme.onSurface.withValues(alpha: 0.5),
+          fontFamily: AppTheme.defaultFontFamilyName,
+        ),
+      ),
+      calendarBuilders: CalendarBuilders(
+        // Custom marker builder to show "+N" for overflow events
+        markerBuilder: (context, date, events) {
+          if (events.isEmpty) return const SizedBox();
+          
+          final eventsList = events.cast<CalendarEvent>();
+          const maxDots = 3;
+          final visibleEvents = eventsList.take(maxDots).toList();
+          final remainingCount = eventsList.length - visibleEvents.length;
+          
+          return Positioned(
+            bottom: 2,
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Day number
-                Text(
-                  dayNumber.toString(),
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
-                    color:
-                        isCurrentMonth
-                            ? (isToday
-                                ? colorScheme.primary
-                                : colorScheme.onSurface)
-                            : colorScheme.onSurface.withValues(alpha: 0.3),
-                    fontFamily: AppTheme.defaultFontFamilyName,
-                  ),
-                ),
-
-                const SizedBox(height: 2),
-
-                // Event indicators
-                if (events.isNotEmpty)
-                  Flexible(
-                    child: _buildEventIndicators(context, events, colorScheme),
+                // Event dots
+                ...visibleEvents.map((event) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 1.0),
+                    child: EventIndicatorDot(color: colorScheme.primary),
+                  );
+                }),
+                // "+N more" indicator
+                if (remainingCount > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 2),
+                    child: Text(
+                      '+$remainingCount',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface.withValues(alpha: 0.5),
+                        fontFamily: AppTheme.defaultFontFamilyName,
+                      ),
+                    ),
                   ),
               ],
             ),
-          ),
-        ),
+          );
+        },
       ),
-    );
-  }
-
-  Widget _buildEventIndicators(
-    BuildContext context,
-    List<CalendarEvent> events,
-    ColorScheme colorScheme,
-  ) {
-    const maxDots = 3;
-    final visibleEvents = events.take(maxDots).toList();
-    final remainingCount = events.length - visibleEvents.length;
-
-    return Column(
-      children: [
-        // Event dots
-        Wrap(
-          spacing: 2,
-          runSpacing: 2,
-          alignment: WrapAlignment.center,
-          children:
-              visibleEvents.map((event) {
-                return EventIndicatorDot(color: colorScheme.primary);
-              }).toList(),
-        ),
-
-        // "+N more" indicator
-        if (remainingCount > 0) ...[
-          const SizedBox(height: 2),
-          Text(
-            '+$remainingCount',
-            style: TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w600,
-              color: colorScheme.onSurface.withValues(alpha: 0.5),
-              fontFamily: AppTheme.defaultFontFamilyName,
-            ),
-          ),
-        ],
-      ],
     );
   }
 }
