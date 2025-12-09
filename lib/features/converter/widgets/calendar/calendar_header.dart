@@ -58,66 +58,90 @@ class CalendarHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Column(
-      children: [
-        // Title and navigation
-        Row(
-          children: [
-            // Title
-            Expanded(
-              child: Text(
-                _getHeaderText(),
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: colorScheme.onSurface,
-                  fontFamily: AppTheme.defaultFontFamilyName,
-                ),
-              ),
-            ),
-
-            // Today button
-            TextButton(
-              onPressed: onToday,
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.spacingMd,
-                  vertical: AppTheme.spacingSm,
-                ),
-              ),
-              child: Text(
-                'Today',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.primary,
-                  fontFamily: AppTheme.defaultFontFamilyName,
-                ),
-              ),
-            ),
-
-            const SizedBox(width: AppTheme.spacingSm),
-
-            // Navigation buttons
-            _buildNavButton(
-              context,
-              icon: Icons.chevron_left_rounded,
-              onPressed: onPrevious,
-            ),
-            const SizedBox(width: AppTheme.spacingXs),
-            _buildNavButton(
-              context,
-              icon: Icons.chevron_right_rounded,
-              onPressed: onNext,
-            ),
-          ],
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.spacingMd),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHigh.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        border: Border.all(
+          color: colorScheme.outline.withValues(alpha: 0.1),
+          width: 1,
         ),
+      ),
+      child: Column(
+        children: [
+          // Title and navigation
+          Row(
+            children: [
+              // Title
+              Expanded(
+                child: Text(
+                  _getHeaderText(),
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: colorScheme.onSurface,
+                    fontFamily: AppTheme.defaultFontFamilyName,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ),
 
-        const SizedBox(height: AppTheme.spacingMd),
+              // Today button
+              Container(
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                  border: Border.all(
+                    color: colorScheme.primary.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
+                ),
+                child: TextButton(
+                  onPressed: onToday,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppTheme.spacingMd,
+                      vertical: AppTheme.spacingSm,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    'Today',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: colorScheme.primary,
+                      fontFamily: AppTheme.defaultFontFamilyName,
+                    ),
+                  ),
+                ),
+              ),
 
-        // View mode switcher
-        _buildViewModeSwitcher(context, colorScheme),
-      ],
+              const SizedBox(width: AppTheme.spacingSm),
+
+              // Navigation buttons
+              _buildNavButton(
+                context,
+                icon: Icons.chevron_left_rounded,
+                onPressed: onPrevious,
+              ),
+              const SizedBox(width: AppTheme.spacingXs),
+              _buildNavButton(
+                context,
+                icon: Icons.chevron_right_rounded,
+                onPressed: onNext,
+              ),
+            ],
+          ),
+
+          const SizedBox(height: AppTheme.spacingMd),
+
+          // View mode switcher
+          _buildViewModeSwitcher(context, colorScheme),
+        ],
+      ),
     );
   }
 
@@ -129,27 +153,50 @@ class CalendarHeader extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      width: 36,
-      height: 36,
+      width: 38,
+      height: 38,
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        border: Border.all(
+          color: colorScheme.outline.withValues(alpha: 0.2),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: IconButton(
-        icon: Icon(icon, size: 20),
+        icon: Icon(icon, size: 22),
         onPressed: onPressed,
         padding: EdgeInsets.zero,
         color: colorScheme.onSurface,
+        hoverColor: colorScheme.primary.withValues(alpha: 0.1),
       ),
     );
   }
 
   Widget _buildViewModeSwitcher(BuildContext context, ColorScheme colorScheme) {
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        border: Border.all(
+          color: colorScheme.outline.withValues(alpha: 0.2),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -160,14 +207,14 @@ class CalendarHeader extends StatelessWidget {
             mode: CalendarViewMode.day,
             colorScheme: colorScheme,
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 6),
           _buildModeButton(
             context,
             label: 'Week',
             mode: CalendarViewMode.week,
             colorScheme: colorScheme,
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 6),
           _buildModeButton(
             context,
             label: 'Month',
@@ -187,28 +234,53 @@ class CalendarHeader extends StatelessWidget {
   }) {
     final isSelected = viewMode == mode;
 
-    return GestureDetector(
-      onTap: () => onViewModeChanged(mode),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppTheme.spacingMd,
-          vertical: AppTheme.spacingSm,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected ? colorScheme.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppTheme.radiusXs),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color:
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => onViewModeChanged(mode),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 10,
+          ),
+          decoration: BoxDecoration(
+            gradient: isSelected
+                ? LinearGradient(
+                  colors: [
+                    colorScheme.primary,
+                    colorScheme.primary.withValues(alpha: 0.85),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+                : null,
+            color: isSelected ? null : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+            boxShadow:
                 isSelected
-                    ? Colors.white
-                    : colorScheme.onSurface.withValues(alpha: 0.7),
-            fontFamily: AppTheme.defaultFontFamilyName,
+                    ? [
+                      BoxShadow(
+                        color: colorScheme.primary.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                    : null,
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+              color:
+                  isSelected
+                      ? Colors.white
+                      : colorScheme.onSurface.withValues(alpha: 0.7),
+              fontFamily: AppTheme.defaultFontFamilyName,
+              letterSpacing: 0.3,
+            ),
           ),
         ),
       ),

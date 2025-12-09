@@ -110,8 +110,24 @@ class _CalendarViewState extends State<CalendarView> {
 
         // Calendar content
         AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: _buildCurrentView(),
+          duration: const Duration(milliseconds: 350),
+          switchInCurve: Curves.easeInOut,
+          switchOutCurve: Curves.easeInOut,
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0.0, 0.05),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
+              ),
+            );
+          },
+          child: widget.events.isEmpty
+              ? _buildEmptyState(context)
+              : _buildCurrentView(),
         ),
 
         // Selected day events (month view only)
@@ -158,38 +174,90 @@ class _CalendarViewState extends State<CalendarView> {
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHigh,
+        gradient: LinearGradient(
+          colors: [
+            colorScheme.surfaceContainerHigh,
+            colorScheme.surfaceContainerHigh.withValues(alpha: 0.7),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        border: Border.all(
+          color: colorScheme.outline.withValues(alpha: 0.2),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Header
-          Padding(
+          Container(
             padding: const EdgeInsets.all(AppTheme.spacingMd),
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.05),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(AppTheme.radiusLg),
+                topRight: Radius.circular(AppTheme.radiusLg),
+              ),
+            ),
             child: Row(
               children: [
-                Icon(Icons.event_rounded, color: colorScheme.primary, size: 20),
-                const SizedBox(width: AppTheme.spacingSm),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.event_rounded,
+                    color: colorScheme.primary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: AppTheme.spacingMd),
                 Expanded(
-                  child: Text(
-                    '${date.day}/${date.month}/${date.year} - ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: colorScheme.onSurface,
-                      fontFamily: AppTheme.defaultFontFamilyName,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${date.day}/${date.month}/${date.year}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: colorScheme.onSurface,
+                          fontFamily: AppTheme.defaultFontFamilyName,
+                        ),
+                      ),
+                      Text(
+                        '${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: colorScheme.onSurface.withValues(alpha: 0.6),
+                          fontFamily: AppTheme.defaultFontFamilyName,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 20),
+                  icon: const Icon(Icons.close_rounded, size: 22),
                   onPressed: () => setState(() => _selectedDate = null),
                   color: colorScheme.onSurface,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
+                  style: IconButton.styleFrom(
+                    backgroundColor: colorScheme.surfaceContainerHigh,
+                  ),
                 ),
               ],
             ),
@@ -197,18 +265,31 @@ class _CalendarViewState extends State<CalendarView> {
 
           // Event list
           if (dayEvents.isNotEmpty)
-            ...dayEvents.map((event) {
-              return Padding(
-                padding: const EdgeInsets.only(
-                  left: AppTheme.spacingMd,
-                  right: AppTheme.spacingMd,
-                  bottom: AppTheme.spacingSm,
+            Padding(
+              padding: const EdgeInsets.all(AppTheme.spacingMd),
+              child: Column(
+                children: dayEvents.map((event) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: AppTheme.spacingSm),
+                    child: EventCard(event: event),
+                  );
+                }).toList(),
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.all(AppTheme.spacingXl),
+              child: Center(
+                child: Text(
+                  'No events on this day',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: colorScheme.onSurface.withValues(alpha: 0.5),
+                    fontFamily: AppTheme.defaultFontFamilyName,
+                  ),
                 ),
-                child: EventCard(event: event),
-              );
-            }),
-
-          const SizedBox(height: AppTheme.spacingSm),
+              ),
+            ),
         ],
       ),
     );
@@ -283,6 +364,53 @@ class _CalendarViewState extends State<CalendarView> {
                 fontFamily: AppTheme.defaultFontFamilyName,
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      key: const ValueKey('empty'),
+      padding: const EdgeInsets.all(AppTheme.spacingXl * 2),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHigh.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        border: Border.all(
+          color: colorScheme.outline.withValues(alpha: 0.1),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.event_busy_rounded,
+            size: 64,
+            color: colorScheme.onSurface.withValues(alpha: 0.3),
+          ),
+          const SizedBox(height: AppTheme.spacingLg),
+          Text(
+            'No events to display',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: colorScheme.onSurface.withValues(alpha: 0.7),
+              fontFamily: AppTheme.defaultFontFamilyName,
+            ),
+          ),
+          const SizedBox(height: AppTheme.spacingSm),
+          Text(
+            'Add events to see them in the calendar',
+            style: TextStyle(
+              fontSize: 14,
+              color: colorScheme.onSurface.withValues(alpha: 0.5),
+              fontFamily: AppTheme.defaultFontFamilyName,
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),

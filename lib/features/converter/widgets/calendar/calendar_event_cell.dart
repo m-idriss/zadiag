@@ -107,15 +107,31 @@ class EventIndicatorDot extends StatelessWidget {
   /// Color of the dot
   final Color color;
 
-  const EventIndicatorDot({super.key, required this.color});
+  /// Size of the dot (default: 5.0)
+  final double size;
+
+  const EventIndicatorDot({
+    super.key,
+    required this.color,
+    this.size = 5.0,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 5,
-      height: 5,
-      margin: const EdgeInsets.only(right: 2),
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.3),
+            blurRadius: 2,
+            spreadRadius: 0.5,
+          ),
+        ],
+      ),
     );
   }
 }

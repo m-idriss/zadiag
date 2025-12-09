@@ -27,11 +27,25 @@ class DayView extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final dayEvents = CalendarUtils.getEventsForDate(events, displayDay);
     final sortedEvents = CalendarUtils.sortEventsByTime(dayEvents);
+    final isToday = CalendarUtils.isToday(displayDay);
 
-    return SizedBox(
-      height: 600,
-      child: SingleChildScrollView(
-        child: _buildTimeline(context, sortedEvents, colorScheme),
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        border: Border.all(
+          color: colorScheme.outline.withValues(alpha: 0.1),
+          width: 1,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        child: SizedBox(
+          height: 600,
+          child: SingleChildScrollView(
+            child: _buildTimeline(context, sortedEvents, colorScheme, isToday),
+          ),
+        ),
       ),
     );
   }
@@ -40,10 +54,17 @@ class DayView extends StatelessWidget {
     BuildContext context,
     List<CalendarEvent> dayEvents,
     ColorScheme colorScheme,
+    bool isToday,
   ) {
     const hourHeight = 80.0;
     const hours = 24;
     final layouts = CalendarUtils.layoutOverlappingEvents(dayEvents);
+    
+    // Calculate current time position for "now" indicator
+    final now = DateTime.now();
+    final currentTimePosition = isToday
+        ? (now.hour * 60 + now.minute) / (24 * 60)
+        : null;
 
     return SizedBox(
       height: hourHeight * hours,
@@ -55,6 +76,7 @@ class DayView extends StatelessWidget {
             width: 60,
             child: Column(
               children: List.generate(hours, (hour) {
+                final isCurrentHour = isToday && hour == now.hour;
                 return SizedBox(
                   height: hourHeight,
                   child: Align(
@@ -65,8 +87,10 @@ class DayView extends StatelessWidget {
                         '${hour.toString().padLeft(2, '0')}:00',
                         style: TextStyle(
                           fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: colorScheme.onSurface.withValues(alpha: 0.5),
+                          fontWeight: isCurrentHour ? FontWeight.w700 : FontWeight.w500,
+                          color: isCurrentHour
+                              ? colorScheme.primary
+                              : colorScheme.onSurface.withValues(alpha: 0.5),
                           fontFamily: AppTheme.defaultFontFamilyName,
                         ),
                       ),
@@ -83,7 +107,7 @@ class DayView extends StatelessWidget {
               decoration: BoxDecoration(
                 border: Border(
                   left: BorderSide(
-                    color: colorScheme.outline.withValues(alpha: 0.2),
+                    color: colorScheme.outline.withValues(alpha: 0.25),
                     width: 2,
                   ),
                 ),
@@ -123,93 +147,151 @@ class DayView extends StatelessWidget {
                         0,
                         90,
                       ),
-                      child: GestureDetector(
-                        onTap: () => onEventTapped?.call(event),
-                        child: Container(
-                          margin: const EdgeInsets.only(
-                            left: 8,
-                            right: 8,
-                            bottom: 2,
-                          ),
-                          padding: const EdgeInsets.all(AppTheme.spacingSm),
-                          decoration: BoxDecoration(
-                            color: colorScheme.primary.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(
-                              AppTheme.radiusSm,
+                      child: MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: GestureDetector(
+                          onTap: () => onEventTapped?.call(event),
+                          child: Container(
+                            margin: const EdgeInsets.only(
+                              left: 8,
+                              right: 8,
+                              bottom: 2,
                             ),
-                            border: Border.all(
-                              color: colorScheme.primary.withValues(alpha: 0.4),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Title
-                              Text(
-                                event.title,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: colorScheme.onSurface,
-                                  fontFamily: AppTheme.defaultFontFamilyName,
-                                  height: 1.3,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
+                            padding: const EdgeInsets.all(AppTheme.spacingSm),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  colorScheme.primary.withValues(alpha: 0.2),
+                                  colorScheme.primary.withValues(alpha: 0.15),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
                               ),
-
-                              const SizedBox(height: 4),
-
-                              // Time
-                              if (!event.isAllDay)
-                                Text(
-                                  '${DateFormat.Hm().format(event.startDateTime)} - ${DateFormat.Hm().format(event.endDateTime)}',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                    color: colorScheme.onSurface.withValues(
-                                      alpha: 0.7,
-                                    ),
-                                    fontFamily: AppTheme.defaultFontFamilyName,
-                                  ),
-                                ),
-
-                              // Location
-                              if (event.location != null &&
-                                  event.location!.isNotEmpty) ...[
-                                const SizedBox(height: 2),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.location_on_rounded,
-                                      size: 11,
-                                      color: colorScheme.error,
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Expanded(
-                                      child: Text(
-                                        event.location!,
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: colorScheme.onSurface
-                                              .withValues(alpha: 0.6),
-                                          fontFamily:
-                                              AppTheme.defaultFontFamilyName,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
+                              borderRadius: BorderRadius.circular(
+                                AppTheme.radiusMd,
+                              ),
+                              border: Border.all(
+                                color: colorScheme.primary.withValues(alpha: 0.5),
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colorScheme.primary.withValues(alpha: 0.15),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
                                 ),
                               ],
-                            ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Title
+                                Text(
+                                  event.title,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: colorScheme.onSurface,
+                                    fontFamily: AppTheme.defaultFontFamilyName,
+                                    height: 1.3,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+
+                                const SizedBox(height: 4),
+
+                                // Time
+                                if (!event.isAllDay)
+                                  Text(
+                                    '${DateFormat.Hm().format(event.startDateTime)} - ${DateFormat.Hm().format(event.endDateTime)}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: colorScheme.onSurface.withValues(
+                                        alpha: 0.7,
+                                      ),
+                                      fontFamily: AppTheme.defaultFontFamilyName,
+                                    ),
+                                  ),
+
+                                // Location
+                                if (event.location != null &&
+                                    event.location!.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.location_on_rounded,
+                                        size: 11,
+                                        color: colorScheme.error,
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Expanded(
+                                        child: Text(
+                                          event.location!,
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: colorScheme.onSurface
+                                                .withValues(alpha: 0.6),
+                                            fontFamily:
+                                                AppTheme.defaultFontFamilyName,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     );
                   }),
+
+                  // Current time indicator (only show if today)
+                  if (currentTimePosition != null)
+                    Positioned(
+                      top: currentTimePosition * hourHeight * 24,
+                      left: 0,
+                      right: 0,
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: colorScheme.error,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colorScheme.error.withValues(alpha: 0.4),
+                                  blurRadius: 4,
+                                  spreadRadius: 1,
+                                ),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: Container(
+                              height: 2,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    colorScheme.error,
+                                    colorScheme.error.withValues(alpha: 0.3),
+                                    Colors.transparent,
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),
