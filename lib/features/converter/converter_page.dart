@@ -19,6 +19,9 @@ import 'services/conversion_history_service.dart';
 import 'widgets/event_card.dart';
 import 'widgets/image_upload_zone.dart';
 import 'widgets/calendar/calendar_view.dart';
+import 'widgets/calendar/calendar_header.dart'; // For CalendarViewMode
+import 'utils/calendar_utils.dart';
+import 'models/calendar_event.dart'; // For CalendarEvent
 
 /// Main page for the Image to ICS Converter feature.
 class ConverterPage extends ConsumerStatefulWidget {
@@ -40,6 +43,33 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
   int _workdaysSaved = 25;
 
   bool _showCalendarView = false;
+
+  // Calendar state
+  CalendarViewMode _calendarMode = CalendarViewMode.month;
+  DateTime _calendarFocusedDate = DateTime.now();
+  DateTime? _calendarSelectedDate;
+
+  List<CalendarEvent> _getFilteredEvents(List<CalendarEvent> allEvents) {
+    if (!_showCalendarView) {
+      return allEvents;
+    }
+
+    if (_calendarSelectedDate != null) {
+      return CalendarUtils.getEventsForDate(allEvents, _calendarSelectedDate!);
+    }
+
+    switch (_calendarMode) {
+      case CalendarViewMode.month:
+        return allEvents.where((event) {
+          return event.startDateTime.year == _calendarFocusedDate.year &&
+              event.startDateTime.month == _calendarFocusedDate.month;
+        }).toList();
+      case CalendarViewMode.week:
+        return CalendarUtils.getEventsForWeek(allEvents, _calendarFocusedDate);
+      case CalendarViewMode.day:
+        return CalendarUtils.getEventsForDate(allEvents, _calendarFocusedDate);
+    }
+  }
 
   @override
   void initState() {
@@ -341,6 +371,8 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
   }
 
   Widget _buildEventsSection(BuildContext context, ConverterState state) {
+    final filteredEvents = _getFilteredEvents(state.extractedEvents);
+
     return Container(
       padding: EdgeInsets.all(AppTheme.spacingMd),
       decoration: BoxDecoration(
@@ -380,38 +412,59 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
           ),
           const SizedBox(height: AppTheme.spacingMd),
 
-          // Animated view switcher
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            transitionBuilder: (child, animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 0.1),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: child,
+          // Calendar View (if enabled)
+          if (_showCalendarView) ...[
+            CalendarView(
+              key: const ValueKey('calendar'),
+              events: state.extractedEvents,
+              viewMode: _calendarMode,
+              focusedDate: _calendarFocusedDate,
+              selectedDate: _calendarSelectedDate,
+              onViewModeChanged: (mode) => setState(() => _calendarMode = mode),
+              onFocusedDateChanged:
+                  (date) => setState(() => _calendarFocusedDate = date),
+              onSelectedDateChanged:
+                  (date) => setState(() => _calendarSelectedDate = date),
+            ),
+            const SizedBox(height: AppTheme.spacingMd),
+            const Divider(),
+            const SizedBox(height: AppTheme.spacingMd),
+          ],
+
+          // Filtered List View
+          if (filteredEvents.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(AppTheme.spacingLg),
+              child: Center(
+                child: Text(
+                  'No events found for this filter',
+                  style: TextStyle(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.5),
+                    fontFamily: AppTheme.defaultFontFamilyName,
+                  ),
                 ),
-              );
-            },
-            child:
-                _showCalendarView
-                    ? CalendarView(
-                      key: const ValueKey('calendar'),
-                      events: state.extractedEvents,
-                    )
-                    : Column(
-                      key: const ValueKey('list'),
-                      children:
-                          state.extractedEvents.asMap().entries.map((entry) {
-                            return EventCard(
-                              event: entry.value,
-                              onDelete: () => _removeEvent(entry.key),
-                            );
-                          }).toList(),
-                    ),
-          ),
+              ),
+            )
+          else
+            Column(
+              key: ValueKey('list_${filteredEvents.length}'),
+              children:
+                  filteredEvents.asMap().entries.map((entry) {
+                    // We need to find the original index to allow deletion
+                    final originalIndex = state.extractedEvents.indexOf(
+                      entry.value,
+                    );
+                    return EventCard(
+                      event: entry.value,
+                      onDelete:
+                          originalIndex != -1
+                              ? () => _removeEvent(originalIndex)
+                              : null,
+                    );
+                  }).toList(),
+            ),
         ],
       ),
     );

@@ -52,38 +52,39 @@ class WeekView extends StatelessWidget {
     return Row(
       children: [
         // Time column spacer
-        const SizedBox(width: 50),
-
+        const SizedBox(width: 35), // Reduced width
         // Day headers
         ...weekDates.map((date) {
           final isToday = CalendarUtils.isToday(date);
 
           return Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingSm),
+              padding: const EdgeInsets.symmetric(
+                vertical: 4,
+              ), // Reduced padding
               decoration: BoxDecoration(
                 color:
                     isToday
                         ? colorScheme.primary.withValues(alpha: 0.1)
                         : Colors.transparent,
-                borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                borderRadius: BorderRadius.circular(4),
               ),
               child: Column(
                 children: [
                   Text(
                     DateFormat('EEE').format(date),
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 10, // Reduced font
                       fontWeight: FontWeight.w600,
                       color: colorScheme.onSurface.withValues(alpha: 0.6),
                       fontFamily: AppTheme.defaultFontFamilyName,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 1),
                   Text(
                     date.day.toString(),
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 12, // Reduced font
                       fontWeight: isToday ? FontWeight.w700 : FontWeight.w600,
                       color:
                           isToday ? colorScheme.primary : colorScheme.onSurface,
@@ -104,7 +105,7 @@ class WeekView extends StatelessWidget {
     List<DateTime> weekDates,
     ColorScheme colorScheme,
   ) {
-    const hourHeight = 60.0;
+    const hourHeight = 35.0; // Drastically reduced hour height
     const hours = 24;
 
     return SizedBox(
@@ -114,7 +115,7 @@ class WeekView extends StatelessWidget {
         children: [
           // Time labels
           SizedBox(
-            width: 50,
+            width: 35, // Reduced width
             child: Column(
               children: List.generate(hours, (hour) {
                 return SizedBox(
@@ -124,7 +125,7 @@ class WeekView extends StatelessWidget {
                     child: Text(
                       '${hour.toString().padLeft(2, '0')}:00',
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 9, // Reduced font
                         color: colorScheme.onSurface.withValues(alpha: 0.5),
                         fontFamily: AppTheme.defaultFontFamilyName,
                       ),
@@ -161,7 +162,7 @@ class WeekView extends StatelessWidget {
         border: Border(
           left: BorderSide(
             color: colorScheme.outline.withValues(alpha: 0.2),
-            width: 1,
+            width: 0.5,
           ),
         ),
       ),
@@ -198,14 +199,17 @@ class WeekView extends StatelessWidget {
               child: GestureDetector(
                 onTap: () => onEventTapped?.call(event),
                 child: Container(
-                  margin: const EdgeInsets.only(right: 2, bottom: 2),
-                  padding: const EdgeInsets.all(2),
+                  margin: const EdgeInsets.only(
+                    right: 1,
+                    bottom: 1,
+                  ), // Reduced margin
+                  padding: const EdgeInsets.all(1), // Reduced padding
                   decoration: BoxDecoration(
                     color: colorScheme.primary.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(2),
                     border: Border.all(
                       color: colorScheme.primary.withValues(alpha: 0.4),
-                      width: 1,
+                      width: 0.5,
                     ),
                   ),
                   child: OverflowBox(
@@ -214,11 +218,11 @@ class WeekView extends StatelessWidget {
                     child: Text(
                       event.title,
                       style: TextStyle(
-                        fontSize: 8,
+                        fontSize: 7.5, // Reduced font
                         fontWeight: FontWeight.w600,
                         color: colorScheme.onSurface,
                         fontFamily: AppTheme.defaultFontFamilyName,
-                        height: 1.1,
+                        height: 1.0,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

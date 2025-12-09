@@ -41,7 +41,7 @@ class DayView extends StatelessWidget {
     List<CalendarEvent> dayEvents,
     ColorScheme colorScheme,
   ) {
-    const hourHeight = 80.0;
+    const hourHeight = 40.0; // Reduced from 80
     const hours = 24;
     final layouts = CalendarUtils.layoutOverlappingEvents(dayEvents);
 
@@ -52,7 +52,7 @@ class DayView extends StatelessWidget {
         children: [
           // Time labels
           SizedBox(
-            width: 60,
+            width: 40, // Reduced from 60
             child: Column(
               children: List.generate(hours, (hour) {
                 return SizedBox(
@@ -60,11 +60,11 @@ class DayView extends StatelessWidget {
                   child: Align(
                     alignment: Alignment.topRight,
                     child: Padding(
-                      padding: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.only(right: 6, top: 2),
                       child: Text(
                         '${hour.toString().padLeft(2, '0')}:00',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 10, // Reduced from 12
                           fontWeight: FontWeight.w500,
                           color: colorScheme.onSurface.withValues(alpha: 0.5),
                           fontFamily: AppTheme.defaultFontFamilyName,
@@ -84,7 +84,7 @@ class DayView extends StatelessWidget {
                 border: Border(
                   left: BorderSide(
                     color: colorScheme.outline.withValues(alpha: 0.2),
-                    width: 2,
+                    width: 1,
                   ),
                 ),
               ),
@@ -118,93 +118,113 @@ class DayView extends StatelessWidget {
                     return Positioned(
                       top: position['top']! * hourHeight * 24,
                       height: position['height']! * hourHeight * 24,
-                      left: (leftFraction * 100).clamp(0, 90),
+                      left: (leftFraction * 100).clamp(0, 95),
                       right: ((1 - leftFraction - widthFraction) * 100).clamp(
                         0,
-                        90,
+                        95,
                       ),
                       child: GestureDetector(
                         onTap: () => onEventTapped?.call(event),
                         child: Container(
                           margin: const EdgeInsets.only(
-                            left: 8,
-                            right: 8,
-                            bottom: 2,
+                            left: 4,
+                            right: 4,
+                            bottom: 1,
                           ),
-                          padding: const EdgeInsets.all(AppTheme.spacingSm),
+                          padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
                             color: colorScheme.primary.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(
-                              AppTheme.radiusSm,
-                            ),
+                            borderRadius: BorderRadius.circular(4),
                             border: Border.all(
                               color: colorScheme.primary.withValues(alpha: 0.4),
-                              width: 1.5,
+                              width: 1.0,
                             ),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Title
-                              Text(
-                                event.title,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: colorScheme.onSurface,
-                                  fontFamily: AppTheme.defaultFontFamilyName,
-                                  height: 1.3,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final availableHeight = constraints.maxHeight;
+                              // Minimum height needed for title + padding is roughly 20-25px
+                              // Logic: Title always priority. Time needs ~15px more. Location ~15px more.
 
-                              const SizedBox(height: 4),
+                              final showTime =
+                                  availableHeight > 35 && !event.isAllDay;
+                              final showLocation =
+                                  availableHeight > 50 &&
+                                  event.location != null &&
+                                  event.location!.isNotEmpty;
 
-                              // Time
-                              if (!event.isAllDay)
-                                Text(
-                                  '${DateFormat.Hm().format(event.startDateTime)} - ${DateFormat.Hm().format(event.endDateTime)}',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                    color: colorScheme.onSurface.withValues(
-                                      alpha: 0.7,
-                                    ),
-                                    fontFamily: AppTheme.defaultFontFamilyName,
-                                  ),
-                                ),
-
-                              // Location
-                              if (event.location != null &&
-                                  event.location!.isNotEmpty) ...[
-                                const SizedBox(height: 2),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.location_on_rounded,
-                                      size: 11,
-                                      color: colorScheme.error,
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Expanded(
-                                      child: Text(
-                                        event.location!,
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: colorScheme.onSurface
-                                              .withValues(alpha: 0.6),
-                                          fontFamily:
-                                              AppTheme.defaultFontFamilyName,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // Title
+                                  Flexible(
+                                    child: Text(
+                                      event.title,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: colorScheme.onSurface,
+                                        fontFamily:
+                                            AppTheme.defaultFontFamilyName,
+                                        height: 1.1,
                                       ),
+                                      maxLines: showTime ? 2 : 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+
+                                  // Time
+                                  if (showTime) ...[
+                                    const SizedBox(height: 1),
+                                    Text(
+                                      '${DateFormat.Hm().format(event.startDateTime)} - ${DateFormat.Hm().format(event.endDateTime)}',
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w500,
+                                        color: colorScheme.onSurface.withValues(
+                                          alpha: 0.7,
+                                        ),
+                                        fontFamily:
+                                            AppTheme.defaultFontFamilyName,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
-                                ),
-                              ],
-                            ],
+
+                                  // Location
+                                  if (showLocation) ...[
+                                    const SizedBox(height: 1),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.location_on_rounded,
+                                          size: 9,
+                                          color: colorScheme.error,
+                                        ),
+                                        const SizedBox(width: 2),
+                                        Expanded(
+                                          child: Text(
+                                            event.location!,
+                                            style: TextStyle(
+                                              fontSize: 9,
+                                              color: colorScheme.onSurface
+                                                  .withValues(alpha: 0.6),
+                                              fontFamily:
+                                                  AppTheme
+                                                      .defaultFontFamilyName,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              );
+                            },
                           ),
                         ),
                       ),
