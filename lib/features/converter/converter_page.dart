@@ -398,12 +398,12 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: Theme.of(context).colorScheme.onSurface,
                     fontFamily: AppTheme.defaultFontFamilyName,
                   ),
-                ),
+                )
               ),
               const Spacer(),
               // View mode toggle

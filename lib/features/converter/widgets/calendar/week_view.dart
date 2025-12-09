@@ -5,7 +5,7 @@ import 'package:zadiag/features/converter/models/calendar_event.dart';
 import 'package:zadiag/features/converter/utils/calendar_utils.dart';
 
 /// Week view showing events in a timeline grid.
-class WeekView extends StatelessWidget {
+class WeekView extends StatefulWidget {
   /// The week to display (any date in the week)
   final DateTime displayWeek;
 
@@ -23,9 +23,153 @@ class WeekView extends StatelessWidget {
   });
 
   @override
+  State<WeekView> createState() => _WeekViewState();
+}
+
+class _WeekViewState extends State<WeekView> {
+  late final ScrollController _scrollController;
+  final double _hourHeight = 25.0; // Increased to enable scrolling
+  bool _showUpIndicator = false;
+  bool _showDownIndicator = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Scroll to 12:00 by default to focus on work hours
+    _scrollController = ScrollController(initialScrollOffset: 12 * _hourHeight);
+
+    // Listen to scroll to update indicators
+    _scrollController.addListener(_updateIndicators);
+
+    // Initial check after layout
+    WidgetsBinding.instance.addPostFrameCallback((_) => _updateIndicators());
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_updateIndicators);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _updateIndicators() {
+    if (!mounted) return;
+
+    final offset = _scrollController.offset;
+    final viewportHeight = _scrollController.position.viewportDimension;
+
+    // If viewport is not ready
+    if (viewportHeight <= 0) return;
+
+    final topHour = offset / _hourHeight;
+    final bottomHour = (offset + viewportHeight) / _hourHeight;
+
+    final weekEvents = CalendarUtils.getEventsForWeek(
+      widget.events,
+      widget.displayWeek,
+    );
+
+    bool showUp = false;
+    bool showDown = false;
+
+    for (final event in weekEvents) {
+      final startHour =
+          event.startDateTime.hour + event.startDateTime.minute / 60.0;
+      final endHour = event.endDateTime.hour + event.endDateTime.minute / 60.0;
+
+      // Check if event is hidden above
+      if (endHour < topHour + 0.5) {
+        showUp = true;
+      }
+
+      // Check if event is hidden below
+      if (startHour > bottomHour - 0.5) {
+        showDown = true;
+      }
+
+      if (showUp && showDown) break; // Optimization
+    }
+
+    if (showUp != _showUpIndicator || showDown != _showDownIndicator) {
+      setState(() {
+        _showUpIndicator = showUp;
+        _showDownIndicator = showDown;
+      });
+    }
+  }
+
+  void _scrollToTop() {
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
+
+  void _scrollToBottom() {
+    _scrollController.animateTo(
+      _scrollController.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
+
+  Widget _buildIndicator(BuildContext context, {required bool isUp}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Positioned(
+      top: isUp ? 10 : null,
+      bottom: isUp ? null : 10,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: InkWell(
+          onTap: isUp ? _scrollToTop : _scrollToBottom,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: colorScheme.secondaryContainer.withValues(alpha: 0.9),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isUp
+                      ? Icons.arrow_upward_rounded
+                      : Icons.arrow_downward_rounded,
+                  size: 14,
+                  color: colorScheme.onSecondaryContainer,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  isUp ? 'Earlier' : 'Later',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSecondaryContainer,
+                    fontFamily: AppTheme.defaultFontFamilyName,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final weekDates = CalendarUtils.generateWeekDates(displayWeek);
+    final weekDates = CalendarUtils.generateWeekDates(widget.displayWeek);
 
     return Column(
       children: [
@@ -35,9 +179,21 @@ class WeekView extends StatelessWidget {
 
         // Timeline
         SizedBox(
-          height: 600,
-          child: SingleChildScrollView(
-            child: _buildTimeline(context, weekDates, colorScheme),
+          height: 230,
+          child: Stack(
+            children: [
+              SingleChildScrollView(
+                controller: _scrollController,
+                child: _buildTimeline(
+                  context,
+                  weekDates,
+                  colorScheme,
+                  _hourHeight,
+                ),
+              ),
+              if (_showUpIndicator) _buildIndicator(context, isUp: true),
+              if (_showDownIndicator) _buildIndicator(context, isUp: false),
+            ],
           ),
         ),
       ],
@@ -104,8 +260,8 @@ class WeekView extends StatelessWidget {
     BuildContext context,
     List<DateTime> weekDates,
     ColorScheme colorScheme,
+    double hourHeight,
   ) {
-    const hourHeight = 35.0; // Drastically reduced hour height
     const hours = 24;
 
     return SizedBox(
@@ -153,7 +309,7 @@ class WeekView extends StatelessWidget {
     double hourHeight,
     ColorScheme colorScheme,
   ) {
-    final dayEvents = CalendarUtils.getEventsForDate(events, date);
+    final dayEvents = CalendarUtils.getEventsForDate(widget.events, date);
     final sortedEvents = CalendarUtils.sortEventsByTime(dayEvents);
     final layouts = CalendarUtils.layoutOverlappingEvents(sortedEvents);
 
@@ -197,7 +353,7 @@ class WeekView extends StatelessWidget {
               left: leftFraction * 100,
               right: (1 - leftFraction - widthFraction) * 100,
               child: GestureDetector(
-                onTap: () => onEventTapped?.call(event),
+                onTap: () => widget.onEventTapped?.call(event),
                 child: Container(
                   margin: const EdgeInsets.only(
                     right: 1,
