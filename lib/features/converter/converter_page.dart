@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -10,6 +9,7 @@ import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/core/utils/translate.dart';
 import 'package:zadiag/shared/components/glass_container.dart';
+import 'package:zadiag/core/services/log_service.dart';
 
 import 'providers/converter_state.dart';
 import 'services/converter_service.dart';
@@ -93,6 +93,7 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
   }
 
   void _onImagesUploaded(List<UploadedImage> images) {
+    Log.i('ConverterPage: ${images.length} images uploaded');
     ref.read(converterProvider.notifier).setUploadedImages(images);
   }
 
@@ -101,10 +102,14 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
     final state = ref.read(converterProvider);
 
     if (state.uploadedImages.isEmpty) {
+      Log.w('ConverterPage: Attempted processing with no images');
       showSnackBar(context, trad(context)!.please_upload_image, true);
       return;
     }
 
+    Log.i(
+      'ConverterPage: Starting image processing for ${state.uploadedImages.length} images',
+    );
     notifier.prepareForConversion();
 
     try {
@@ -131,18 +136,25 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
       if (!mounted) return;
 
       if (result.success && result.hasEvents) {
+        Log.i(
+          'ConverterPage: Processing successful. Found ${result.eventCount} events.',
+        );
         notifier.setConversionResult(
           events: result.events,
           icsContent: result.icsContent,
         );
         showSnackBar(context, trad(context)!.found_events(result.eventCount));
       } else {
+        Log.w(
+          'ConverterPage: Processing returned no events or failed. Error: ${result.errorMessage}',
+        );
         notifier.setConversionResult(
           events: [],
           errorMessage: result.errorMessage ?? trad(context)!.no_events_found,
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      Log.e('ConverterPage: Error processing images', e, stack);
       if (!mounted) return;
       notifier.setError('${trad(context)!.error_processing_images}: $e');
     }
@@ -157,10 +169,12 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
     final state = ref.read(converterProvider);
 
     if (state.extractedEvents.isEmpty) {
+      Log.w('ConverterPage: Attempted ICS export with no events');
       showSnackBar(context, trad(context)!.no_events_to_export, true);
       return;
     }
 
+    Log.i('ConverterPage: Starting ICS export');
     notifier.setExporting(true);
 
     try {
@@ -173,7 +187,8 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
       // Launch calendar addition without waiting for completion
       // This allows the spinner to stop immediately
       _saveIcsFile();
-    } catch (e) {
+    } catch (e, stack) {
+      Log.e('ConverterPage: Error preparing ICS export', e, stack);
       if (!mounted) return;
       showSnackBar(context, '${trad(context)!.error_exporting_ics}: $e', true);
     } finally {
@@ -207,13 +222,13 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
             events: state.extractedEvents,
             icsContent: icsContent,
           );
-        } catch (e) {
-          if (kDebugMode) print('Error saving to history: $e');
+        } catch (e, stack) {
+          Log.e('ConverterPage: Error saving to history', e, stack);
           // Silently fail - don't interrupt the user's flow
         }
       }
-    } catch (e) {
-      if (kDebugMode) print('Error exporting ICS: $e');
+    } catch (e, stack) {
+      Log.e('ConverterPage: Error exporting ICS', e, stack);
       if (!mounted) return;
       showSnackBar(context, '${trad(context)!.error_exporting_ics}: $e', true);
     }
@@ -403,7 +418,7 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
                     color: Theme.of(context).colorScheme.onSurface,
                     fontFamily: AppTheme.defaultFontFamilyName,
                   ),
-                )
+                ),
               ),
               const Spacer(),
               // View mode toggle

@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/core/utils/translate.dart';
+import 'package:zadiag/core/services/log_service.dart';
 
 /// Model representing an uploaded file (image or PDF).
 class UploadedImage {
@@ -275,30 +276,33 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(AppTheme.radiusSm - 1),
-            child: file.isPdf
-                ? Container(
-                    color: colorScheme.surfaceContainerHigh,
-                    child: Center(
-                      child: Icon(
-                        Icons.picture_as_pdf,
-                        size: 28,
-                        color: Colors.red.shade400,
-                      ),
-                    ),
-                  )
-                : Image.memory(
-                    file.bytes,
-                    fit: BoxFit.cover,
-                    errorBuilder:
-                        (_, _, _) => Container(
-                          color: colorScheme.surfaceContainerHigh,
-                          child: Icon(
-                            Icons.image_outlined,
-                            size: 20,
-                            color: colorScheme.onSurface.withValues(alpha: 0.3),
-                          ),
+            child:
+                file.isPdf
+                    ? Container(
+                      color: colorScheme.surfaceContainerHigh,
+                      child: Center(
+                        child: Icon(
+                          Icons.picture_as_pdf,
+                          size: 28,
+                          color: Colors.red.shade400,
                         ),
-                  ),
+                      ),
+                    )
+                    : Image.memory(
+                      file.bytes,
+                      fit: BoxFit.cover,
+                      errorBuilder:
+                          (_, _, _) => Container(
+                            color: colorScheme.surfaceContainerHigh,
+                            child: Icon(
+                              Icons.image_outlined,
+                              size: 20,
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.3,
+                              ),
+                            ),
+                          ),
+                    ),
           ),
         ),
         Positioned(
@@ -433,10 +437,12 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
           newImages.add(
             UploadedImage(bytes: bytes, name: file.name, mimeType: mimeType),
           );
-        } catch (e) {
-          if (kDebugMode) {
-            print('Error processing image ${file.name}: $e');
-          }
+        } catch (e, stack) {
+          Log.e(
+            'ImageUploadZone: Error processing image ${file.name}',
+            e,
+            stack,
+          );
         }
       }
 
@@ -446,10 +452,8 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
         });
         widget.onImagesUploaded(_uploadedImages);
       }
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error picking images: $e');
-      }
+    } catch (e, stack) {
+      Log.e('ImageUploadZone: Error picking images', e, stack);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -510,9 +514,7 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                trad(context)!.max_files_allowed(widget.maxImages),
-              ),
+              content: Text(trad(context)!.max_files_allowed(widget.maxImages)),
               duration: const Duration(seconds: 2),
             ),
           );
@@ -547,10 +549,8 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
               ),
             );
           }
-        } catch (e) {
-          if (kDebugMode) {
-            print('Error processing PDF ${file.name}: $e');
-          }
+        } catch (e, stack) {
+          Log.e('ImageUploadZone: Error processing PDF ${file.name}', e, stack);
         }
       }
 
@@ -560,10 +560,8 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
         });
         widget.onImagesUploaded(_uploadedImages);
       }
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error picking PDF files: $e');
-      }
+    } catch (e, stack) {
+      Log.e('ImageUploadZone: Error picking PDF files', e, stack);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -642,10 +640,8 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
         });
         widget.onImagesUploaded(_uploadedImages);
       }
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error capturing image: $e');
-      }
+    } catch (e, stack) {
+      Log.e('ImageUploadZone: Error capturing image', e, stack);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

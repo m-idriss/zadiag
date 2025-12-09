@@ -1,7 +1,10 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
+import 'package:zadiag/core/services/log_service.dart';
 import 'package:zadiag/features/auth/screens/splash_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:zadiag/firebase_options.dart';
@@ -11,11 +14,38 @@ final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.system);
 final ValueNotifier<Locale?> localeNotifier = ValueNotifier(null);
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await _loadSavedTheme();
-  await _loadSavedLocale();
-  runApp(const ProviderScope(child: MyApp()));
+  runZonedGuarded(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
+
+      // Log app startup
+      Log.i('Starting Zadiag App...');
+
+      FlutterError.onError = (FlutterErrorDetails details) {
+        Log.e(
+          'Flutter Error: ${details.exception}',
+          details.exception,
+          details.stack,
+        );
+      };
+
+      PlatformDispatcher.instance.onError = (error, stack) {
+        Log.e('Platform Error: $error', error, stack);
+        return true;
+      };
+
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      await _loadSavedTheme();
+      await _loadSavedLocale();
+
+      runApp(const ProviderScope(child: MyApp()));
+    },
+    (error, stack) {
+      Log.e('Uncaught Error: $error', error, stack);
+    },
+  );
 }
 
 Future<void> _loadSavedTheme() async {

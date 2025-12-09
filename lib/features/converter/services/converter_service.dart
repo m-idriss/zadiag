@@ -1,6 +1,7 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:zadiag/core/services/log_service.dart';
 
 import '../models/calendar_event.dart';
 import '../models/conversion_result.dart';
@@ -17,13 +18,11 @@ class ConverterService {
   final bool useMockData;
 
   /// Creates a ConverterService instance.
-  /// 
+  ///
   /// [httpClient] - Optional HTTP client for dependency injection (useful for testing)
   /// [useMockData] - If true, returns mock data instead of calling the API
-  ConverterService({
-    http.Client? httpClient,
-    this.useMockData = false,
-  }) : _httpClient = httpClient ?? http.Client();
+  ConverterService({http.Client? httpClient, this.useMockData = false})
+    : _httpClient = httpClient ?? http.Client();
 
   /// Converts uploaded images to calendar events.
   ///
@@ -89,7 +88,7 @@ class ConverterService {
   /// Makes the actual API call to convert images.
   Future<ConversionResult> _realApiCall(Map<String, dynamic> payload) async {
     final stopwatch = Stopwatch()..start();
-    
+
     try {
       final response = await _httpClient.post(
         Uri.parse(_apiUrl),
@@ -103,25 +102,24 @@ class ConverterService {
       stopwatch.stop();
       final processingTimeMs = stopwatch.elapsedMilliseconds;
 
-      if (kDebugMode) {
-        print('ConverterService: API response status: ${response.statusCode}');
-        print('ConverterService: API response body: ${response.body}');
-        print('ConverterService: Processing time: ${processingTimeMs}ms');
-      }
+      Log.d('ConverterService: API response status: ${response.statusCode}');
+      Log.v('ConverterService: API response body: ${response.body}');
+      Log.i('ConverterService: Processing time: ${processingTimeMs}ms');
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body) as Map<String, dynamic>;
-        
+
         // Add processing time to the response
         responseData['processingTimeMs'] = processingTimeMs;
-        
+
         return ConversionResult.fromJson(responseData);
       } else {
         // Handle error response
         String errorMessage;
         try {
           final errorData = jsonDecode(response.body) as Map<String, dynamic>;
-          errorMessage = errorData['error'] ?? errorData['message'] ?? 'Unknown error';
+          errorMessage =
+              errorData['error'] ?? errorData['message'] ?? 'Unknown error';
         } catch (_) {
           errorMessage = 'Server error: ${response.statusCode}';
         }
@@ -162,15 +160,10 @@ class ConverterService {
       ),
     ];
 
-    if (kDebugMode) {
-      print('ConverterService: Mock API call with payload: $payload');
-      print('ConverterService: Returning ${mockEvents.length} mock events');
-    }
+    Log.d('ConverterService: Mock API call with payload: $payload');
+    Log.d('ConverterService: Returning ${mockEvents.length} mock events');
 
-    return ConversionResult.success(
-      mockEvents,
-      processingTimeMs: 2000,
-    );
+    return ConversionResult.success(mockEvents, processingTimeMs: 2000);
   }
 
   /// Closes the HTTP client. Call this when the service is no longer needed.

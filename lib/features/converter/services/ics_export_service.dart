@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:zadiag/core/services/log_service.dart';
 
 /// Service for exporting and sharing ICS files.
 class IcsExportService {
@@ -53,10 +54,8 @@ class IcsExportService {
       // Note: This will trigger a download in the browser
       await Share.share(dataUrl);
       return null;
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error exporting ICS for web: $e');
-      }
+    } catch (e, stack) {
+      Log.e('IcsExportService: Error exporting ICS for web', e, stack);
       rethrow;
     }
   }
@@ -76,9 +75,7 @@ class IcsExportService {
       // Write the ICS content to the file
       await file.writeAsString(icsContent, flush: true);
 
-      if (kDebugMode) {
-        print('ICS file created at: $filePath');
-      }
+      Log.d('IcsExportService: ICS file created at: $filePath');
 
       // Try to open the file directly with the calendar app using OpenFilex
       try {
@@ -88,9 +85,9 @@ class IcsExportService {
           uti: 'com.apple.ical.ics', // iOS-specific uniform type identifier
         );
 
-        if (kDebugMode) {
-          print('OpenFilex result: ${result.type} - ${result.message}');
-        }
+        Log.d(
+          'IcsExportService: OpenFilex result: ${result.type} - ${result.message}',
+        );
 
         // Check if file opened successfully
         if (result.type == ResultType.done) {
@@ -98,19 +95,21 @@ class IcsExportService {
         }
 
         // If opening failed, fall back to share sheet
-        if (kDebugMode) {
-          print('OpenFilex failed with: ${result.type}, falling back to share');
-        }
+        Log.w(
+          'IcsExportService: OpenFilex failed with: ${result.type}, falling back to share',
+        );
 
         await Share.shareXFiles(
           [XFile(filePath, mimeType: 'text/calendar')],
           subject: 'Add Calendar Events',
           sharePositionOrigin: const Rect.fromLTWH(0, 0, 100, 100),
         );
-      } catch (e) {
-        if (kDebugMode) {
-          print('Error opening file: $e, falling back to share');
-        }
+      } catch (e, stack) {
+        Log.e(
+          'IcsExportService: Error opening file, falling back to share',
+          e,
+          stack,
+        );
 
         // Fallback to share if direct launch fails
         await Share.shareXFiles(
@@ -122,10 +121,8 @@ class IcsExportService {
 
       // Return the file path for reference
       return filePath;
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error opening ICS for native: $e');
-      }
+    } catch (e, stack) {
+      Log.e('IcsExportService: Error opening ICS for native', e, stack);
       rethrow;
     }
   }
@@ -140,10 +137,8 @@ class IcsExportService {
       // Just share the file instead
       await Share.shareXFiles([XFile(filePath, mimeType: 'text/calendar')]);
       return true;
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error opening ICS file: $e');
-      }
+    } catch (e, stack) {
+      Log.e('IcsExportService: Error opening ICS file', e, stack);
       return false;
     }
   }

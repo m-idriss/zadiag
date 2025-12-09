@@ -1,5 +1,5 @@
 import 'package:add_2_calendar/add_2_calendar.dart';
-import 'package:flutter/foundation.dart';
+import 'package:zadiag/core/services/log_service.dart';
 import '../models/calendar_event.dart';
 
 /// Service for adding events directly to the native calendar.
@@ -29,13 +29,15 @@ class CalendarIntegrationService {
           successCount++;
         }
 
-        if (kDebugMode) {
-          print('Added event to calendar: ${event.title}');
-        }
-      } catch (e) {
-        if (kDebugMode) {
-          print('Error adding event "${event.title}" to calendar: $e');
-        }
+        Log.d(
+          'CalendarIntegrationService: Added event to calendar: ${event.title}',
+        );
+      } catch (e, stack) {
+        Log.e(
+          'CalendarIntegrationService: Error adding event "${event.title}" to calendar',
+          e,
+          stack,
+        );
         // Continue with other events even if one fails
       }
     }
@@ -56,10 +58,12 @@ class CalendarIntegrationService {
       );
 
       return await Add2Calendar.addEvent2Cal(calendarEvent);
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error adding event to calendar: $e');
-      }
+    } catch (e, stack) {
+      Log.e(
+        'CalendarIntegrationService: Error adding event to calendar',
+        e,
+        stack,
+      );
       return false;
     }
   }

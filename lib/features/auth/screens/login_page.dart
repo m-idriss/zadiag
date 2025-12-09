@@ -10,6 +10,7 @@ import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/shared/components/glass_scaffold.dart';
 import 'package:zadiag/shared/components/glass_container.dart';
 import 'package:zadiag/shared/components/zadiag_logo.dart';
+import 'package:zadiag/core/services/log_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -163,15 +164,21 @@ class _LoginPageState extends State<LoginPage>
     final email = _loginEmailController.text.trim();
     final password = _loginPasswordController.text;
 
+    Log.i('LoginPage: Attempting login for $email');
+
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+
+      Log.i('LoginPage: Login successful for $email');
+
       if (!mounted) return;
 
       NavigationHelper.navigateWithFade(context, const HomePage());
     } on FirebaseAuthException catch (e) {
+      Log.w('LoginPage: Login failed. Code: ${e.code}, Message: ${e.message}');
       if (!mounted) return;
       String message = trad(context)?.unknown_error ?? 'Unknown error';
       if (e.code == 'user-not-found') {
@@ -183,6 +190,8 @@ class _LoginPageState extends State<LoginPage>
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
+    } catch (e, stack) {
+      Log.e('LoginPage: Unexpected error during login', e, stack);
     }
   }
 
