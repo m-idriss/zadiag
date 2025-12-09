@@ -2,7 +2,7 @@
 /// 
 /// This file provides a single import point for all core utilities
 /// and constants used throughout the application.
-library core;
+library;
 
 // Constants
 export 'constants/app_theme.dart';

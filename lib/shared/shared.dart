@@ -2,7 +2,7 @@
 /// 
 /// This file provides a single import point for all shared
 /// components and models used throughout the application.
-library shared;
+library;
 
 // Components
 export 'components/animated_bar.dart';
