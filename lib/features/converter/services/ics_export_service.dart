@@ -131,7 +131,7 @@ class IcsExportService {
   ///
   /// Note: This method is deprecated in favor of direct opening.
   /// Kept for backwards compatibility.
-  @deprecated
+  @Deprecated("Use exportIcs or shareIcs instead")
   Future<bool> openIcsFile(String filePath) async {
     try {
       // Just share the file instead

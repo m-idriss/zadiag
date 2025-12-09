@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -204,9 +203,7 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
     try {
       // Generate ICS content
       String? icsContent = state.generatedIcs;
-      if (icsContent == null) {
-        icsContent = _icsGenerator.generateIcs(state.extractedEvents);
-      }
+      icsContent ??= _icsGenerator.generateIcs(state.extractedEvents);
 
       // Export/share the ICS file
       final fileName = _icsExportService.getUniqueFileName();
