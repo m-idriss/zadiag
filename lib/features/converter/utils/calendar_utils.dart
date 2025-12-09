@@ -109,6 +109,18 @@ class CalendarUtils {
     }).toList();
   }
 
+  /// Gets events for the week of the given date.
+  static List<CalendarEvent> getEventsForWeek(
+    List<CalendarEvent> events,
+    DateTime date,
+  ) {
+    final startOfWeek = getFirstDayOfWeek(date);
+    final endOfWeek = getLastDayOfWeek(
+      date,
+    ).add(const Duration(days: 1)); // Include end of the day
+    return getEventsInRange(events, startOfWeek, endOfWeek);
+  }
+
   /// Checks if two dates are the same day.
   static bool isSameDay(DateTime date1, DateTime date2) {
     return date1.year == date2.year &&

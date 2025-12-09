@@ -45,7 +45,7 @@ class CalendarHeader extends StatelessWidget {
           return '${DateFormat('MMM').format(firstDay)} - ${DateFormat('MMM yyyy').format(lastDay)}';
         }
       case CalendarViewMode.day:
-        return DateFormat('EEEE, MMMM d, yyyy').format(currentDate);
+        return DateFormat('EEE, MMM d, yyyy').format(currentDate);
     }
   }
 
@@ -68,7 +68,7 @@ class CalendarHeader extends StatelessWidget {
               child: Text(
                 _getHeaderText(),
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: colorScheme.onSurface,
                   fontFamily: AppTheme.defaultFontFamilyName,

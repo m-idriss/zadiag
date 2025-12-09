@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:table_calendar/table_calendar.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/features/converter/models/calendar_event.dart';
 import 'package:zadiag/features/converter/utils/calendar_utils.dart';
-import 'calendar_event_cell.dart';
+import 'package:zadiag/features/converter/widgets/calendar/month_day_cell.dart';
 
-/// Month view calendar grid showing events as dots.
-class MonthView extends StatelessWidget {
+/// Month view calendar using table_calendar package showing events as dots.
+class MonthView extends StatefulWidget {
   /// The month to display
   final DateTime displayMonth;
 
@@ -23,171 +24,105 @@ class MonthView extends StatelessWidget {
   });
 
   @override
+  State<MonthView> createState() => _MonthViewState();
+}
+
+class _MonthViewState extends State<MonthView> {
+  late DateTime _focusedDay;
+  DateTime? _selectedDay;
+
+  // Constants
+  static const double _rowHeight = 52.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusedDay = widget.displayMonth;
+  }
+
+  @override
+  void didUpdateWidget(MonthView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.displayMonth != oldWidget.displayMonth) {
+      _focusedDay = widget.displayMonth;
+    }
+  }
+
+  List<CalendarEvent> _getEventsForDay(DateTime day) {
+    return CalendarUtils.getEventsForDate(widget.events, day);
+  }
+
+  void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
+    // Also allow selecting empty days
+    setState(() {
+      _selectedDay = selectedDay;
+      _focusedDay = focusedDay;
+    });
+    widget.onDayTapped?.call(selectedDay);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final monthGrid = CalendarUtils.generateMonthGrid(displayMonth);
-    final groupedEvents = CalendarUtils.groupEventsByDate(events);
 
-    return Column(
-      children: [
-        // Weekday headers
-        _buildWeekdayHeaders(context, colorScheme),
-        const SizedBox(height: AppTheme.spacingSm),
-
-        // Calendar grid
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 7,
-            childAspectRatio: 1.0,
-            crossAxisSpacing: 4,
-            mainAxisSpacing: 4,
-          ),
-          itemCount: 42,
-          itemBuilder: (context, index) {
-            final date = monthGrid[index];
-            final dayEvents =
-                groupedEvents[DateTime(date.year, date.month, date.day)] ?? [];
-
-            return _buildDayCell(
-              context,
-              date: date,
-              events: dayEvents,
-              isCurrentMonth: CalendarUtils.isCurrentMonth(date, displayMonth),
-              isToday: CalendarUtils.isToday(date),
-              colorScheme: colorScheme,
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildWeekdayHeaders(BuildContext context, ColorScheme colorScheme) {
-    final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-    return Row(
-      children:
-          weekdays.map((day) {
-            return Expanded(
-              child: Center(
-                child: Text(
-                  day,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface.withValues(alpha: 0.5),
-                    fontFamily: AppTheme.defaultFontFamilyName,
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-    );
-  }
-
-  Widget _buildDayCell(
-    BuildContext context, {
-    required DateTime date,
-    required List<CalendarEvent> events,
-    required bool isCurrentMonth,
-    required bool isToday,
-    required ColorScheme colorScheme,
-  }) {
-    final dayNumber = date.day;
-
-    return GestureDetector(
-      onTap: events.isNotEmpty ? () => onDayTapped?.call(date) : null,
-      child: Container(
-        decoration: BoxDecoration(
-          color:
-              isToday
-                  ? colorScheme.primary.withValues(alpha: 0.1)
-                  : colorScheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-          border:
-              isToday
-                  ? Border.all(
-                    color: colorScheme.primary.withValues(alpha: 0.5),
-                    width: 1.5,
-                  )
-                  : null,
-        ),
-        child: ClipRect(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Day number
-                Text(
-                  dayNumber.toString(),
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
-                    color:
-                        isCurrentMonth
-                            ? (isToday
-                                ? colorScheme.primary
-                                : colorScheme.onSurface)
-                            : colorScheme.onSurface.withValues(alpha: 0.3),
-                    fontFamily: AppTheme.defaultFontFamilyName,
-                  ),
-                ),
-
-                const SizedBox(height: 2),
-
-                // Event indicators
-                if (events.isNotEmpty)
-                  Flexible(
-                    child: _buildEventIndicators(context, events, colorScheme),
-                  ),
-              ],
-            ),
-          ),
+    return TableCalendar<CalendarEvent>(
+      firstDay: DateTime.utc(2020, 1, 1),
+      lastDay: DateTime.utc(2030, 12, 31),
+      focusedDay: _focusedDay,
+      selectedDayPredicate:
+          (day) =>
+              _selectedDay != null &&
+              CalendarUtils.isSameDay(day, _selectedDay!),
+      eventLoader: _getEventsForDay,
+      startingDayOfWeek: StartingDayOfWeek.monday,
+      calendarFormat: CalendarFormat.month,
+      availableCalendarFormats: const {CalendarFormat.month: 'Month'},
+      headerVisible: false,
+      rowHeight: _rowHeight,
+      onDaySelected: _onDaySelected,
+      onPageChanged: (focusedDay) {
+        _focusedDay = focusedDay;
+      },
+      calendarStyle: CalendarStyle(
+        // Cell decorations - simplified as we use custom builders mostly
+        outsideDaysVisible: false,
+        tableBorder: TableBorder.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.2),
+          width: 0.5,
         ),
       ),
-    );
-  }
-
-  Widget _buildEventIndicators(
-    BuildContext context,
-    List<CalendarEvent> events,
-    ColorScheme colorScheme,
-  ) {
-    const maxDots = 3;
-    final visibleEvents = events.take(maxDots).toList();
-    final remainingCount = events.length - visibleEvents.length;
-
-    return Column(
-      children: [
-        // Event dots
-        Wrap(
-          spacing: 2,
-          runSpacing: 2,
-          alignment: WrapAlignment.center,
-          children:
-              visibleEvents.map((event) {
-                return EventIndicatorDot(color: colorScheme.primary);
-              }).toList(),
+      daysOfWeekStyle: DaysOfWeekStyle(
+        weekdayStyle: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: colorScheme.onSurface.withValues(alpha: 0.7),
+          fontFamily: AppTheme.defaultFontFamilyName,
         ),
+        weekendStyle: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: colorScheme.onSurface.withValues(alpha: 0.5),
+          fontFamily: AppTheme.defaultFontFamilyName,
+        ),
+      ),
+      calendarBuilders: CalendarBuilders(
+        prioritizedBuilder: (context, day, focusedDay) {
+          final isToday = CalendarUtils.isSameDay(day, DateTime.now());
+          final isSelected =
+              _selectedDay != null &&
+              CalendarUtils.isSameDay(day, _selectedDay!);
+          final events = _getEventsForDay(day);
 
-        // "+N more" indicator
-        if (remainingCount > 0) ...[
-          const SizedBox(height: 2),
-          Text(
-            '+$remainingCount',
-            style: TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w600,
-              color: colorScheme.onSurface.withValues(alpha: 0.5),
-              fontFamily: AppTheme.defaultFontFamilyName,
-            ),
-          ),
-        ],
-      ],
+          return MonthDayCell(
+            day: day,
+            events: events,
+            isToday: isToday,
+            isSelected: isSelected,
+            // We don't pass onTap here, letting TableCalendar handle the tap
+            // via onDaySelected.
+          );
+        },
+      ),
     );
   }
 }

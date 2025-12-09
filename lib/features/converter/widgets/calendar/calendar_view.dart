@@ -2,105 +2,103 @@ import 'package:flutter/material.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/features/converter/models/calendar_event.dart';
 import 'package:zadiag/features/converter/utils/calendar_utils.dart';
-import 'package:zadiag/features/converter/widgets/event_card.dart';
 import 'calendar_header.dart';
 import 'day_view.dart';
 import 'month_view.dart';
 import 'week_view.dart';
 
 /// Main calendar view widget with view mode switching.
-class CalendarView extends StatefulWidget {
+/// Main calendar view widget with view mode switching.
+class CalendarView extends StatelessWidget {
   /// Events to display in the calendar
   final List<CalendarEvent> events;
 
-  const CalendarView({super.key, required this.events});
+  /// Current view mode
+  final CalendarViewMode viewMode;
 
-  @override
-  State<CalendarView> createState() => _CalendarViewState();
-}
+  /// Currently focused date
+  final DateTime focusedDate;
 
-class _CalendarViewState extends State<CalendarView> {
-  CalendarViewMode _viewMode = CalendarViewMode.month;
-  DateTime _currentDate = DateTime.now();
-  DateTime? _selectedDate;
+  /// Currently selected date (for filtering)
+  final DateTime? selectedDate;
 
-  void _handleViewModeChanged(CalendarViewMode mode) {
-    setState(() {
-      _viewMode = mode;
-    });
-  }
+  /// Callback when view mode changes
+  final ValueChanged<CalendarViewMode> onViewModeChanged;
+
+  /// Callback when focused date changes
+  final ValueChanged<DateTime> onFocusedDateChanged;
+
+  /// Callback when a day is selected
+  final ValueChanged<DateTime?> onSelectedDateChanged;
+
+  const CalendarView({
+    super.key,
+    required this.events,
+    required this.viewMode,
+    required this.focusedDate,
+    required this.selectedDate,
+    required this.onViewModeChanged,
+    required this.onFocusedDateChanged,
+    required this.onSelectedDateChanged,
+  });
 
   void _handlePrevious() {
-    setState(() {
-      switch (_viewMode) {
-        case CalendarViewMode.month:
-          _currentDate = CalendarUtils.previousMonth(_currentDate);
-          break;
-        case CalendarViewMode.week:
-          _currentDate = CalendarUtils.previousWeek(_currentDate);
-          break;
-        case CalendarViewMode.day:
-          _currentDate = CalendarUtils.previousDay(_currentDate);
-          break;
-      }
-    });
+    switch (viewMode) {
+      case CalendarViewMode.month:
+        onFocusedDateChanged(CalendarUtils.previousMonth(focusedDate));
+        break;
+      case CalendarViewMode.week:
+        onFocusedDateChanged(CalendarUtils.previousWeek(focusedDate));
+        break;
+      case CalendarViewMode.day:
+        onFocusedDateChanged(CalendarUtils.previousDay(focusedDate));
+        break;
+    }
   }
 
   void _handleNext() {
-    setState(() {
-      switch (_viewMode) {
-        case CalendarViewMode.month:
-          _currentDate = CalendarUtils.nextMonth(_currentDate);
-          break;
-        case CalendarViewMode.week:
-          _currentDate = CalendarUtils.nextWeek(_currentDate);
-          break;
-        case CalendarViewMode.day:
-          _currentDate = CalendarUtils.nextDay(_currentDate);
-          break;
-      }
-    });
+    switch (viewMode) {
+      case CalendarViewMode.month:
+        onFocusedDateChanged(CalendarUtils.nextMonth(focusedDate));
+        break;
+      case CalendarViewMode.week:
+        onFocusedDateChanged(CalendarUtils.nextWeek(focusedDate));
+        break;
+      case CalendarViewMode.day:
+        onFocusedDateChanged(CalendarUtils.nextDay(focusedDate));
+        break;
+    }
   }
 
   void _handleToday() {
-    setState(() {
-      _currentDate = DateTime.now();
-    });
+    onFocusedDateChanged(DateTime.now());
   }
 
   void _handleDayTapped(DateTime date) {
-    setState(() {
-      // Toggle selection - if same date is tapped, deselect it
-      if (_selectedDate != null &&
-          CalendarUtils.isSameDay(_selectedDate!, date)) {
-        _selectedDate = null;
-      } else {
-        _selectedDate = date;
-      }
-    });
+    // Toggle selection - if same date is tapped, deselect it
+    if (selectedDate != null && CalendarUtils.isSameDay(selectedDate!, date)) {
+      onSelectedDateChanged(null);
+    } else {
+      onSelectedDateChanged(date);
+    }
   }
 
-  void _handleEventTapped(CalendarEvent event) {
+  void _handleEventTapped(BuildContext context, CalendarEvent event) {
     showDialog(
       context: context,
-      builder: (context) => _buildEventDialog(event),
+      builder: (context) => _buildEventDialog(context, event),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final selectedDayEvents =
-        _selectedDate != null
-            ? CalendarUtils.getEventsForDate(widget.events, _selectedDate!)
-            : <CalendarEvent>[];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         CalendarHeader(
-          currentDate: _currentDate,
-          viewMode: _viewMode,
-          onViewModeChanged: _handleViewModeChanged,
+          currentDate: focusedDate,
+          viewMode: viewMode,
+          onViewModeChanged: onViewModeChanged,
           onPrevious: _handlePrevious,
           onNext: _handleNext,
           onToday: _handleToday,
@@ -111,110 +109,43 @@ class _CalendarViewState extends State<CalendarView> {
         // Calendar content
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
-          child: _buildCurrentView(),
+          child: _buildCurrentView(context),
         ),
-
-        // Selected day events (month view only)
-        if (_viewMode == CalendarViewMode.month && _selectedDate != null) ...[
-          const SizedBox(height: AppTheme.spacingLg),
-          _buildSelectedDayEvents(selectedDayEvents, _selectedDate!),
-        ],
       ],
     );
   }
 
-  Widget _buildCurrentView() {
-    switch (_viewMode) {
+  Widget _buildCurrentView(BuildContext context) {
+    switch (viewMode) {
       case CalendarViewMode.month:
         return MonthView(
-          key: ValueKey('month_${_currentDate.month}_${_currentDate.year}'),
-          displayMonth: _currentDate,
-          events: widget.events,
+          key: ValueKey('month_${focusedDate.month}_${focusedDate.year}'),
+          displayMonth: focusedDate,
+          events: events,
           onDayTapped: _handleDayTapped,
         );
       case CalendarViewMode.week:
         return WeekView(
           key: ValueKey(
-            'week_${_currentDate.day}_${_currentDate.month}_${_currentDate.year}',
+            'week_${focusedDate.day}_${focusedDate.month}_${focusedDate.year}',
           ),
-          displayWeek: _currentDate,
-          events: widget.events,
-          onEventTapped: _handleEventTapped,
+          displayWeek: focusedDate,
+          events: events,
+          onEventTapped: (event) => _handleEventTapped(context, event),
         );
       case CalendarViewMode.day:
         return DayView(
           key: ValueKey(
-            'day_${_currentDate.day}_${_currentDate.month}_${_currentDate.year}',
+            'day_${focusedDate.day}_${focusedDate.month}_${focusedDate.year}',
           ),
-          displayDay: _currentDate,
-          events: widget.events,
-          onEventTapped: _handleEventTapped,
+          displayDay: focusedDate,
+          events: events,
+          onEventTapped: (event) => _handleEventTapped(context, event),
         );
     }
   }
 
-  Widget _buildSelectedDayEvents(List<CalendarEvent> dayEvents, DateTime date) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.all(AppTheme.spacingMd),
-            child: Row(
-              children: [
-                Icon(Icons.event_rounded, color: colorScheme.primary, size: 20),
-                const SizedBox(width: AppTheme.spacingSm),
-                Expanded(
-                  child: Text(
-                    '${date.day}/${date.month}/${date.year} - ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: colorScheme.onSurface,
-                      fontFamily: AppTheme.defaultFontFamilyName,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 20),
-                  onPressed: () => setState(() => _selectedDate = null),
-                  color: colorScheme.onSurface,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
-            ),
-          ),
-
-          // Event list
-          if (dayEvents.isNotEmpty)
-            ...dayEvents.map((event) {
-              return Padding(
-                padding: const EdgeInsets.only(
-                  left: AppTheme.spacingMd,
-                  right: AppTheme.spacingMd,
-                  bottom: AppTheme.spacingSm,
-                ),
-                child: EventCard(event: event),
-              );
-            }),
-
-          const SizedBox(height: AppTheme.spacingSm),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEventDialog(CalendarEvent event) {
+  Widget _buildEventDialog(BuildContext context, CalendarEvent event) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return AlertDialog(
