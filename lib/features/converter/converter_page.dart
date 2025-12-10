@@ -413,14 +413,14 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
   }
 
   Widget _buildErrorMessage(BuildContext context, String errorMessage) {
-    return Container(
+    return GlassContainer(
       padding: const EdgeInsets.all(AppTheme.spacingMd),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
-        ),
+      borderRadius: AppTheme.radiusMd,
+      opacity: 0.9,
+      color: Theme.of(context).colorScheme.error.withValues(alpha: 0.15),
+      border: Border.all(
+        color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
+        width: 1.5,
       ),
       child: Row(
         children: [
@@ -448,13 +448,10 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
   Widget _buildEventsSection(BuildContext context, ConverterState state) {
     final filteredEvents = _getFilteredEvents(state.extractedEvents);
 
-    return Container(
+    return GlassContainer(
       padding: EdgeInsets.all(AppTheme.spacingMd),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        boxShadow: AppTheme.cardShadow,
-      ),
+      borderRadius: AppTheme.radiusXl,
+      opacity: 0.9,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

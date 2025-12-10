@@ -147,13 +147,10 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen>
     BuildContext context,
     Map<DateTime, int> heatMapDatasets,
   ) {
-    return Container(
+    return GlassContainer(
       padding: EdgeInsets.all(AppTheme.spacingMd),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        boxShadow: AppTheme.cardShadow,
-      ),
+      borderRadius: AppTheme.radiusXl,
+      opacity: 0.9,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         child: HeatMap(
@@ -194,13 +191,10 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen>
   }
 
   Widget _legendCard(BuildContext context) {
-    return Container(
+    return GlassContainer(
       padding: EdgeInsets.all(AppTheme.spacingMd),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        boxShadow: AppTheme.cardShadow,
-      ),
+      borderRadius: AppTheme.radiusLg,
+      opacity: 0.7,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -248,25 +242,22 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen>
   }
 
   Widget _buildLoadingCard(BuildContext context) {
-    return Container(
+    return GlassContainer(
       padding: const EdgeInsets.all(AppTheme.spacingXl),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        boxShadow: AppTheme.cardShadow,
-      ),
+      borderRadius: AppTheme.radiusXl,
+      opacity: 0.9,
       child: const Center(child: CircularProgressIndicator()),
     );
   }
 
   Widget _buildErrorCard(BuildContext context, Object error) {
-    return Container(
+    return GlassContainer(
       padding: const EdgeInsets.all(AppTheme.spacingLg),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.errorContainer,
-        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        boxShadow: AppTheme.cardShadow,
-      ),
+      borderRadius: AppTheme.radiusXl,
+      opacity: 0.9,
+      color: Theme.of(
+        context,
+      ).colorScheme.errorContainer.withValues(alpha: 0.3),
       child: Column(
         children: [
           Icon(

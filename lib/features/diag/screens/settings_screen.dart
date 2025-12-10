@@ -12,6 +12,7 @@ import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/core/utils/language_manager.dart';
 import 'package:zadiag/core/utils/navigation_helper.dart';
 import 'package:zadiag/shared/components/glass_scaffold.dart';
+import 'package:zadiag/shared/components/glass_container.dart';
 import 'package:intl/intl.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -514,12 +515,9 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Widget _deleteAccountCard(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        boxShadow: AppTheme.cardShadow,
-      ),
+    return GlassContainer(
+      borderRadius: AppTheme.radiusXl,
+      opacity: 0.9,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -626,13 +624,10 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Widget _settingsCard(BuildContext context) {
-    return Container(
+    return GlassContainer(
       padding: EdgeInsets.all(AppTheme.spacingMd),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        boxShadow: AppTheme.cardShadow,
-      ),
+      borderRadius: AppTheme.radiusXl,
+      opacity: 0.9,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -782,12 +777,9 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Widget _logoutCard(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        boxShadow: AppTheme.cardShadow,
-      ),
+    return GlassContainer(
+      borderRadius: AppTheme.radiusXl,
+      opacity: 0.9,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -892,13 +884,10 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Widget _notificationCard(BuildContext context) {
-    return Container(
+    return GlassContainer(
       padding: EdgeInsets.all(AppTheme.spacingMd),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        boxShadow: AppTheme.cardShadow,
-      ),
+      borderRadius: AppTheme.radiusXl,
+      opacity: 0.9,
       child: Row(
         children: [
           Container(
