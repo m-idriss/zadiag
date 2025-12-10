@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:isar/isar.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:zadiag/core/services/isar_service.dart';
 import '../models/conversion_history.dart';
 import '../models/calendar_event.dart';
@@ -15,9 +17,36 @@ class ConversionHistoryService {
   Future<void> saveConversion({
     required List<CalendarEvent> events,
     required String icsContent,
+    List<String> originalFilePaths = const [],
   }) async {
     if (_userId == null) {
       throw Exception('User must be authenticated to save conversions');
+    }
+
+    // Copy files to permanent storage
+    final List<String> savedPaths = [];
+    if (originalFilePaths.isNotEmpty) {
+      try {
+        final appDir = await getApplicationDocumentsDirectory();
+        final conversionsDir = Directory('${appDir.path}/conversions');
+        if (!await conversionsDir.exists()) {
+          await conversionsDir.create(recursive: true);
+        }
+
+        for (final path in originalFilePaths) {
+          final file = File(path);
+          if (await file.exists()) {
+            final fileName =
+                '${DateTime.now().millisecondsSinceEpoch}_${path.split('/').last}';
+            final newPath = '${conversionsDir.path}/$fileName';
+            await file.copy(newPath);
+            savedPaths.add(newPath);
+          }
+        }
+      } catch (e) {
+        print('Error saving original files: $e');
+        // Continue even if file saving fails
+      }
     }
 
     final isar = await _isarService.db;
@@ -27,6 +56,7 @@ class ConversionHistoryService {
       eventCount: events.length,
       icsContent: icsContent,
       userId: _userId!,
+      originalFilePaths: savedPaths,
     );
 
     await isar.writeTxn(() async {

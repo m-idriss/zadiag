@@ -38,13 +38,18 @@ const ConversionHistorySchema = CollectionSchema(
       name: r'icsContent',
       type: IsarType.string,
     ),
-    r'timestamp': PropertySchema(
+    r'originalFilePaths': PropertySchema(
       id: 4,
+      name: r'originalFilePaths',
+      type: IsarType.stringList,
+    ),
+    r'timestamp': PropertySchema(
+      id: 5,
       name: r'timestamp',
       type: IsarType.dateTime,
     ),
     r'userId': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'userId',
       type: IsarType.string,
     )
@@ -93,6 +98,13 @@ int _conversionHistoryEstimateSize(
     }
   }
   bytesCount += 3 + object.icsContent.length * 3;
+  bytesCount += 3 + object.originalFilePaths.length * 3;
+  {
+    for (var i = 0; i < object.originalFilePaths.length; i++) {
+      final value = object.originalFilePaths[i];
+      bytesCount += value.length * 3;
+    }
+  }
   bytesCount += 3 + object.userId.length * 3;
   return bytesCount;
 }
@@ -112,8 +124,9 @@ void _conversionHistorySerialize(
   );
   writer.writeLong(offsets[2], object.hashCode);
   writer.writeString(offsets[3], object.icsContent);
-  writer.writeDateTime(offsets[4], object.timestamp);
-  writer.writeString(offsets[5], object.userId);
+  writer.writeStringList(offsets[4], object.originalFilePaths);
+  writer.writeDateTime(offsets[5], object.timestamp);
+  writer.writeString(offsets[6], object.userId);
 }
 
 ConversionHistory _conversionHistoryDeserialize(
@@ -133,8 +146,9 @@ ConversionHistory _conversionHistoryDeserialize(
         [],
     icsContent: reader.readString(offsets[3]),
     id: id,
-    timestamp: reader.readDateTime(offsets[4]),
-    userId: reader.readString(offsets[5]),
+    originalFilePaths: reader.readStringList(offsets[4]) ?? const [],
+    timestamp: reader.readDateTime(offsets[5]),
+    userId: reader.readString(offsets[6]),
   );
   return object;
 }
@@ -161,8 +175,10 @@ P _conversionHistoryDeserializeProp<P>(
     case 3:
       return (reader.readString(offset)) as P;
     case 4:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringList(offset) ?? const []) as P;
     case 5:
+      return (reader.readDateTime(offset)) as P;
+    case 6:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -808,6 +824,233 @@ extension ConversionHistoryQueryFilter
   }
 
   QueryBuilder<ConversionHistory, ConversionHistory, QAfterFilterCondition>
+      originalFilePathsElementEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'originalFilePaths',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ConversionHistory, ConversionHistory, QAfterFilterCondition>
+      originalFilePathsElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'originalFilePaths',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ConversionHistory, ConversionHistory, QAfterFilterCondition>
+      originalFilePathsElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'originalFilePaths',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ConversionHistory, ConversionHistory, QAfterFilterCondition>
+      originalFilePathsElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'originalFilePaths',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ConversionHistory, ConversionHistory, QAfterFilterCondition>
+      originalFilePathsElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'originalFilePaths',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ConversionHistory, ConversionHistory, QAfterFilterCondition>
+      originalFilePathsElementEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'originalFilePaths',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ConversionHistory, ConversionHistory, QAfterFilterCondition>
+      originalFilePathsElementContains(String value,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'originalFilePaths',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ConversionHistory, ConversionHistory, QAfterFilterCondition>
+      originalFilePathsElementMatches(String pattern,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'originalFilePaths',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ConversionHistory, ConversionHistory, QAfterFilterCondition>
+      originalFilePathsElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'originalFilePaths',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ConversionHistory, ConversionHistory, QAfterFilterCondition>
+      originalFilePathsElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'originalFilePaths',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ConversionHistory, ConversionHistory, QAfterFilterCondition>
+      originalFilePathsLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'originalFilePaths',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<ConversionHistory, ConversionHistory, QAfterFilterCondition>
+      originalFilePathsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'originalFilePaths',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<ConversionHistory, ConversionHistory, QAfterFilterCondition>
+      originalFilePathsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'originalFilePaths',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<ConversionHistory, ConversionHistory, QAfterFilterCondition>
+      originalFilePathsLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'originalFilePaths',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<ConversionHistory, ConversionHistory, QAfterFilterCondition>
+      originalFilePathsLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'originalFilePaths',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<ConversionHistory, ConversionHistory, QAfterFilterCondition>
+      originalFilePathsLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'originalFilePaths',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<ConversionHistory, ConversionHistory, QAfterFilterCondition>
       timestampEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1196,6 +1439,13 @@ extension ConversionHistoryQueryWhereDistinct
   }
 
   QueryBuilder<ConversionHistory, ConversionHistory, QDistinct>
+      distinctByOriginalFilePaths() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'originalFilePaths');
+    });
+  }
+
+  QueryBuilder<ConversionHistory, ConversionHistory, QDistinct>
       distinctByTimestamp() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'timestamp');
@@ -1241,6 +1491,13 @@ extension ConversionHistoryQueryProperty
       icsContentProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'icsContent');
+    });
+  }
+
+  QueryBuilder<ConversionHistory, List<String>, QQueryOperations>
+      originalFilePathsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'originalFilePaths');
     });
   }
 

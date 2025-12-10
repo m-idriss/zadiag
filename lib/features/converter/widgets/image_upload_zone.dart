@@ -17,10 +17,14 @@ class UploadedImage {
   /// MIME type of the file
   final String mimeType;
 
+  /// File path (optional, as it might be from memory)
+  final String? path;
+
   UploadedImage({
     required this.bytes,
     required this.name,
     required this.mimeType,
+    this.path,
   });
 
   /// Returns true if this is a PDF file
@@ -435,7 +439,12 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
           final mimeType = _getMimeType(file.name);
 
           newImages.add(
-            UploadedImage(bytes: bytes, name: file.name, mimeType: mimeType),
+            UploadedImage(
+              bytes: bytes,
+              name: file.name,
+              mimeType: mimeType,
+              path: file.path,
+            ),
           );
         } catch (e, stack) {
           Log.e(
@@ -546,6 +555,7 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
                 bytes: file.bytes!,
                 name: file.name,
                 mimeType: 'application/pdf',
+                path: file.path,
               ),
             );
           }
@@ -632,6 +642,7 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
         bytes: bytes,
         name: pickedFile.name,
         mimeType: mimeType,
+        path: pickedFile.path,
       );
 
       if (mounted) {

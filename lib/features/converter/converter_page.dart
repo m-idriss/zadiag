@@ -142,6 +142,29 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
           events: result.events,
           icsContent: result.icsContent,
         );
+
+        // Auto-save to history
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          try {
+            // Collect paths from uploaded images
+            final filePaths =
+                state.uploadedImages
+                    .map((img) => img.path)
+                    .where((path) => path != null)
+                    .cast<String>()
+                    .toList();
+
+            await _historyService.saveConversion(
+              events: result.events,
+              icsContent: result.icsContent ?? '',
+              originalFilePaths: filePaths,
+            );
+          } catch (e) {
+            Log.e('ConverterPage: Error auto-saving to history', e);
+            // Silently fail - don't interrupt the user flow
+          }
+        }
       } else {
         Log.w(
           'ConverterPage: Processing returned no events or failed. Error: ${result.errorMessage}',
@@ -207,22 +230,6 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
       // Export/share the ICS file
       final fileName = _icsExportService.getUniqueFileName();
       await _icsExportService.exportIcs(icsContent, fileName: fileName);
-
-      if (!mounted) return;
-
-      // Save conversion to history if user is authenticated (silently)
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        try {
-          await _historyService.saveConversion(
-            events: state.extractedEvents,
-            icsContent: icsContent,
-          );
-        } catch (e, stack) {
-          Log.e('ConverterPage: Error saving to history', e, stack);
-          // Silently fail - don't interrupt the user's flow
-        }
-      }
     } catch (e, stack) {
       Log.e('ConverterPage: Error exporting ICS', e, stack);
       if (!mounted) return;

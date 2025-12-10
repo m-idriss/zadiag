@@ -116,10 +116,7 @@ class ConverterNotifier extends Notifier<ConverterState> {
 
   /// Sets an error message.
   void setError(String errorMessage) {
-    state = state.copyWith(
-      errorMessage: errorMessage,
-      isProcessing: false,
-    );
+    state = state.copyWith(errorMessage: errorMessage, isProcessing: false);
   }
 
   /// Removes an event at the given index.
@@ -127,16 +124,28 @@ class ConverterNotifier extends Notifier<ConverterState> {
     final newEvents = List<CalendarEvent>.from(state.extractedEvents);
     if (index >= 0 && index < newEvents.length) {
       newEvents.removeAt(index);
-      state = state.copyWith(
-        extractedEvents: newEvents,
-        clearIcs: true,
-      );
+      state = state.copyWith(extractedEvents: newEvents, clearIcs: true);
     }
   }
 
   /// Sets the generated ICS content.
   void setGeneratedIcs(String icsContent) {
     state = state.copyWith(generatedIcs: icsContent);
+  }
+
+  /// Restores a full conversion state from history
+  void restoreConversion({
+    required List<CalendarEvent> events,
+    required String icsContent,
+    List<UploadedImage> images = const [],
+  }) {
+    state = state.copyWith(
+      extractedEvents: events,
+      generatedIcs: icsContent,
+      uploadedImages: images,
+      isProcessing: false,
+      clearError: true,
+    );
   }
 
   /// Clears all state (uploaded images, events, errors).
@@ -146,5 +155,6 @@ class ConverterNotifier extends Notifier<ConverterState> {
 }
 
 /// Provider for the converter state.
-final converterProvider =
-    NotifierProvider<ConverterNotifier, ConverterState>(ConverterNotifier.new);
+final converterProvider = NotifierProvider<ConverterNotifier, ConverterState>(
+  ConverterNotifier.new,
+);

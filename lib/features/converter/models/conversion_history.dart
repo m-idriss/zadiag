@@ -28,6 +28,9 @@ class ConversionHistory {
   @Index(type: IndexType.value)
   final String userId;
 
+  /// Paths to the original files (images/PDFs) saved locally
+  final List<String> originalFilePaths;
+
   ConversionHistory({
     this.id = Isar.autoIncrement,
     required this.timestamp,
@@ -35,6 +38,7 @@ class ConversionHistory {
     required this.eventCount,
     required this.icsContent,
     required this.userId,
+    this.originalFilePaths = const [],
   });
 
   /// Creates a copy with modified fields
@@ -45,6 +49,7 @@ class ConversionHistory {
     int? eventCount,
     String? icsContent,
     String? userId,
+    List<String>? originalFilePaths,
   }) {
     return ConversionHistory(
       id: id ?? this.id,
@@ -53,6 +58,10 @@ class ConversionHistory {
       eventCount: eventCount ?? this.eventCount,
       icsContent: icsContent ?? this.icsContent,
       userId: userId ?? this.userId,
+      originalFilePaths:
+          originalFilePaths != null
+              ? List<String>.from(originalFilePaths)
+              : this.originalFilePaths,
     );
   }
 

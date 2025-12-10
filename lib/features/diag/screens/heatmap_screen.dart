@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_heatmap_calendar/flutter_heatmap_calendar.dart';
@@ -11,6 +12,7 @@ import 'package:zadiag/features/converter/providers/converter_state.dart';
 import 'package:zadiag/features/converter/models/conversion_history.dart';
 import 'package:zadiag/shared/components/glass_container.dart';
 import 'package:zadiag/features/diag/providers/bottom_nav_provider.dart';
+import 'package:zadiag/features/converter/widgets/image_upload_zone.dart';
 
 class HeatMapScreen extends ConsumerStatefulWidget {
   const HeatMapScreen({super.key});
@@ -421,13 +423,24 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen> {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: colorScheme.primary.withValues(alpha: 0.1),
+                        color:
+                            conversion.originalFilePaths.isNotEmpty
+                                ? Colors.transparent
+                                : colorScheme.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                        border:
+                            conversion.originalFilePaths.isNotEmpty
+                                ? Border.all(
+                                  color: colorScheme.outline.withValues(
+                                    alpha: 0.5,
+                                  ),
+                                  width: 0.5,
+                                )
+                                : null,
                       ),
-                      child: Icon(
-                        Icons.event_available_rounded,
-                        color: colorScheme.primary,
-                        size: 24,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                        child: _buildConversionIcon(context, conversion),
                       ),
                     ),
                     const SizedBox(width: AppTheme.spacingMd),
@@ -604,13 +617,96 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen> {
     );
   }
 
-  void _loadInConverter(BuildContext context, ConversionHistory conversion) {
-    // Load events into converter state
+  Widget _buildConversionIcon(
+    BuildContext context,
+    ConversionHistory conversion,
+  ) {
+    if (conversion.originalFilePaths.isEmpty) {
+      return Icon(
+        Icons.event_available_rounded,
+        color: Theme.of(context).colorScheme.primary,
+        size: 24,
+      );
+    }
+
+    final path = conversion.originalFilePaths.first;
+    final isPdf = path.toLowerCase().endsWith('.pdf');
+
+    if (isPdf) {
+      return Container(
+        color: Theme.of(context).colorScheme.surfaceContainerHigh,
+        child: Center(
+          child: Icon(
+            Icons.picture_as_pdf,
+            size: 24,
+            color: Colors.red.shade400,
+          ),
+        ),
+      );
+    }
+
+    return Image.file(
+      File(path),
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          color: Theme.of(context).colorScheme.surfaceContainerHigh,
+          child: Icon(
+            Icons.image_not_supported_outlined,
+            size: 20,
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.5),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _loadInConverter(
+    BuildContext context,
+    ConversionHistory conversion,
+  ) async {
+    // Show loading indicator if needed, but for local files it should be fast.
+    // We'll read files in the background before navigating.
+
+    final List<UploadedImage> images = [];
+
+    if (conversion.originalFilePaths.isNotEmpty) {
+      for (final path in conversion.originalFilePaths) {
+        final file = File(path);
+        if (await file.exists()) {
+          try {
+            final bytes = await file.readAsBytes();
+            final name = path.split('/').last;
+            final isPdf = name.toLowerCase().endsWith('.pdf');
+            final mimeType = isPdf ? 'application/pdf' : 'image/jpeg';
+
+            images.add(
+              UploadedImage(
+                bytes: bytes,
+                name: name,
+                mimeType: mimeType,
+                path: path,
+              ),
+            );
+          } catch (e) {
+            // fast fail for this file, continue
+            debugPrint('Error reading archived file: $e');
+          }
+        }
+      }
+    }
+
+    if (!mounted) return;
+
+    // Load events and images into converter state
     ref
         .read(converterProvider.notifier)
-        .setConversionResult(
+        .restoreConversion(
           events: conversion.events,
           icsContent: conversion.icsContent,
+          images: images,
         );
 
     // Switch to the Converter page using the bottom navigation provider
