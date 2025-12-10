@@ -181,26 +181,10 @@ class _SettingsScreenState extends State<SettingsScreen>
     final user = FirebaseAuth.instance.currentUser;
     final colorScheme = Theme.of(context).colorScheme;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
+    return GlassContainer(
       padding: EdgeInsets.all(AppTheme.spacingMd),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            colorScheme.primary.withValues(alpha: 0.1),
-            colorScheme.secondary.withValues(alpha: 0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        border: Border.all(
-          color: colorScheme.primary.withValues(alpha: 0.2),
-          width: 1,
-        ),
-        boxShadow: AppTheme.cardShadow,
-      ),
+      borderRadius: AppTheme.radiusXl,
+      opacity: 0.9,
       child: Column(
         children: [
           GestureDetector(

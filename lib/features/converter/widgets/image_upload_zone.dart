@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:zadiag/shared/components/glass_container.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/core/utils/translate.dart';
 import 'package:zadiag/core/services/log_service.dart';
@@ -103,27 +104,15 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Upload zone
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
+        GlassContainer(
+          borderRadius: AppTheme.radiusXl,
+          opacity: _isDragging ? 0.95 : 0.85,
+          border: Border.all(
+            color:
                 _isDragging
-                    ? colorScheme.primary.withValues(alpha: 0.15)
-                    : colorScheme.primary.withValues(alpha: 0.05),
-                _isDragging
-                    ? colorScheme.secondary.withValues(alpha: 0.15)
-                    : colorScheme.secondary.withValues(alpha: 0.05),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-            border: Border.all(
-              color: _isDragging ? colorScheme.primary : colorScheme.outline,
-              width: _isDragging ? 2 : 1,
-              strokeAlign: BorderSide.strokeAlignCenter,
-            ),
+                    ? colorScheme.primary
+                    : colorScheme.outline.withValues(alpha: 0.5),
+            width: _isDragging ? 2 : 1,
           ),
           child: Material(
             color: Colors.transparent,

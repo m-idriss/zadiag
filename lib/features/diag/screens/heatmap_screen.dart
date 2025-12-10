@@ -453,6 +453,7 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen>
 
     return GlassContainer(
       borderRadius: AppTheme.radiusXl,
+      opacity: 0.9,
       margin: const EdgeInsets.only(bottom: AppTheme.spacingMd),
       child: Material(
         color: Colors.transparent,
