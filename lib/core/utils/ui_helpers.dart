@@ -3,6 +3,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:zadiag/core/utils/translate.dart';
 import 'dart:math';
 import 'package:zadiag/core/constants/app_theme.dart';
+import 'package:zadiag/shared/components/app_buttons.dart';
 
 /// Common UI helper functions used across the application.
 ///
@@ -134,7 +135,12 @@ Widget buildSettingsButton(
   IconData icon,
   VoidCallback onPressed,
 ) {
-  return _buildButton(context, action, icon, onPressed, 16, false);
+  return PrimaryButton(
+    label: action,
+    icon: icon,
+    onPressed: onPressed,
+    isLarge: false,
+  );
 }
 
 /// Builds a large connect-style gradient button for auth screens.
@@ -144,72 +150,11 @@ Widget buildConnectButton(
   IconData icon,
   VoidCallback onPressed,
 ) {
-  return _buildButton(context, action, icon, onPressed, 20, true);
-}
-
-/// Internal helper to build gradient action buttons.
-Widget _buildButton(
-  BuildContext context,
-  String action,
-  IconData icon,
-  VoidCallback onPressed,
-  double padding,
-  bool isLarge,
-) {
-  return Container(
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-      gradient: LinearGradient(
-        colors: [
-          Theme.of(context).colorScheme.primary,
-          Theme.of(context).colorScheme.secondary,
-        ],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      boxShadow: [
-        BoxShadow(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-          blurRadius: 12,
-          offset: const Offset(0, 6),
-        ),
-      ],
-    ),
-    child: Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: padding + 8,
-            vertical: padding / 2 + 4,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: Colors.white, size: isLarge ? 22 : 18),
-              SizedBox(width: isLarge ? 12 : 8),
-              Flexible(
-                child: Text(
-                  action,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                  softWrap: false,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: isLarge ? 16 : 14,
-                    fontFamily: AppTheme.defaultFontFamilyName,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
+  return PrimaryButton(
+    label: action,
+    icon: icon,
+    onPressed: onPressed,
+    isLarge: true,
   );
 }
 

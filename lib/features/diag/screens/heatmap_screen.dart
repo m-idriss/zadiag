@@ -10,6 +10,7 @@ import 'package:zadiag/features/converter/providers/conversion_history_provider.
 import 'package:zadiag/features/converter/providers/converter_state.dart';
 import 'package:zadiag/features/converter/models/conversion_history.dart';
 import 'package:zadiag/shared/components/glass_container.dart';
+import 'package:zadiag/shared/components/app_buttons.dart';
 import 'package:zadiag/shared/components/glass_scaffold.dart';
 import 'package:zadiag/features/diag/providers/bottom_nav_provider.dart';
 import 'package:zadiag/features/converter/widgets/image_upload_zone.dart';
@@ -619,56 +620,12 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen>
   ) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return _buildActionButton(
-      context,
-      icon: Icons.visibility_rounded,
+    return SecondaryButton(
       label: trad(context)!.preview,
-      onTap: () => _loadInConverter(context, conversion),
+      icon: Icons.visibility_rounded,
+      onPressed: () => _loadInConverter(context, conversion),
       color: colorScheme.secondary,
-    );
-  }
-
-  Widget _buildActionButton(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    required Color color,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppTheme.spacingMd,
-              vertical: AppTheme.spacingSm,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, color: color, size: 18),
-                const SizedBox(width: AppTheme.spacingSm),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: color,
-                    fontFamily: AppTheme.defaultFontFamilyName,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      isFullWidth: true,
     );
   }
 

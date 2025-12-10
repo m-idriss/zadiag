@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:zadiag/core/utils/translate.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/shared/components/glass_scaffold.dart';
+import 'package:zadiag/shared/components/app_buttons.dart';
 
 class CaptureScreen extends StatelessWidget {
   const CaptureScreen({super.key});
@@ -153,65 +154,14 @@ class CaptureScreen extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Expanded(
-          child: _buildGradientButton(
-            context,
-            trad(context)!.take_photo,
-            Icons.camera_alt_rounded,
-            () {},
+          child: PrimaryButton(
+            label: trad(context)!.take_photo,
+            icon: Icons.camera_alt_rounded,
+            onPressed: () {},
+            isFullWidth: true,
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildGradientButton(
-    BuildContext context,
-    String label,
-    IconData icon,
-    VoidCallback onTap,
-  ) {
-    return Container(
-      height: 56,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        gradient: LinearGradient(
-          colors: [
-            Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.secondary,
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
-          child: Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, color: Colors.white, size: 22),
-                SizedBox(width: AppTheme.spacingSm),
-                Text(
-                  label,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
