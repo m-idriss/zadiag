@@ -1,48 +1,68 @@
 import 'package:flutter/material.dart';
-import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/core/utils/translate.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
+import 'package:zadiag/shared/components/glass_scaffold.dart';
 
 class CaptureScreen extends StatelessWidget {
   const CaptureScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Scaffold(
-      body: Container(
-        decoration: _background(colorScheme),
-        child: SafeArea(
-          child: ListView(
-            padding: EdgeInsets.all(AppTheme.spacingLg),
-            physics: const BouncingScrollPhysics(),
-            children: [
-              _header(context),
-              const SizedBox(height: AppTheme.spacingLg),
-              _cameraView(context, colorScheme),
-              const SizedBox(height: AppTheme.spacingXl),
-              _actionButtons(context),
-            ],
-          ),
+    return GlassScaffold(
+      body: SafeArea(
+        child: ListView(
+          padding: EdgeInsets.all(AppTheme.spacingLg),
+          physics: const BouncingScrollPhysics(),
+          children: [
+            _header(context),
+            const SizedBox(height: AppTheme.spacingLg),
+            _cameraView(context),
+            const SizedBox(height: AppTheme.spacingXl),
+            _actionButtons(context),
+          ],
         ),
       ),
     );
   }
 
-  BoxDecoration _background(ColorScheme colorScheme) {
-    return buildBackground(colorScheme);
-  }
-
-  Column _header(BuildContext context) {
-    return buildHeader(
-      context,
-      trad(context)!.capture_title,
-      trad(context)!.capture_subtitle,
+  Widget _header(BuildContext context) {
+    return Column(
+      children: [
+        const SizedBox(height: AppTheme.spacingMd),
+        Text(
+          trad(context)!.capture_title,
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontFamily: AppTheme.defaultFontFamilyName,
+            fontSize: 32,
+            shadows: [
+              Shadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                offset: const Offset(0, 2),
+                blurRadius: 4,
+              ),
+            ],
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: AppTheme.spacingSm),
+        Text(
+          trad(context)!.capture_subtitle,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.9),
+            fontSize: 16,
+            height: 1.5,
+            fontFamily: AppTheme.defaultFontFamilyName,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 
-  Widget _cameraView(BuildContext context, ColorScheme colorScheme) {
+  Widget _cameraView(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       height: 240,
       decoration: BoxDecoration(

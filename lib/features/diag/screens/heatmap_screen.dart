@@ -4,13 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_heatmap_calendar/flutter_heatmap_calendar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/core/utils/translate.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/features/converter/providers/conversion_history_provider.dart';
 import 'package:zadiag/features/converter/providers/converter_state.dart';
 import 'package:zadiag/features/converter/models/conversion_history.dart';
 import 'package:zadiag/shared/components/glass_container.dart';
+import 'package:zadiag/shared/components/glass_scaffold.dart';
 import 'package:zadiag/features/diag/providers/bottom_nav_provider.dart';
 import 'package:zadiag/features/converter/widgets/image_upload_zone.dart';
 
@@ -21,47 +21,86 @@ class HeatMapScreen extends ConsumerStatefulWidget {
   ConsumerState<HeatMapScreen> createState() => _HeatMapScreenState();
 }
 
-class _HeatMapScreenState extends ConsumerState<HeatMapScreen> {
+class _HeatMapScreenState extends ConsumerState<HeatMapScreen>
+    with SingleTickerProviderStateMixin {
   static const int _initialItemsCount = 10;
   String _expandedConversionId = '';
   DateTime? _selectedDate;
   int _visibleConversionsCount = _initialItemsCount;
 
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
+      ),
+    );
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final defaultColorScheme = Theme.of(context).colorScheme;
     final heatmapDataAsync = ref.watch(conversionHeatmapDataProvider);
     final conversionsAsync = ref.watch(conversionHistoryStreamProvider);
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Container(
-        decoration: _background(defaultColorScheme),
-        child: SafeArea(
-          bottom: false,
-          child: ListView(
-            padding: const EdgeInsets.all(AppTheme.spacingLg),
-            physics: const BouncingScrollPhysics(),
-            children: [
-              _header(context),
-              const SizedBox(height: AppTheme.spacingLg),
-              heatmapDataAsync.when(
-                data:
-                    (heatMapDatasets) => _heatMapCard(context, heatMapDatasets),
-                loading: () => _buildLoadingCard(context),
-                error: (error, stack) => _buildErrorCard(context, error),
-              ),
-              const SizedBox(height: AppTheme.spacingMd),
-              _legendCard(context),
-              const SizedBox(height: AppTheme.spacingXl),
-              conversionsAsync.when(
-                data:
-                    (conversions) => _buildArchiveSection(context, conversions),
-                loading: () => const SizedBox.shrink(),
-                error: (error, stack) => const SizedBox.shrink(),
-              ),
-              const SizedBox(height: AppTheme.spacingXxl * 2),
-            ],
+    return GlassScaffold(
+      body: SafeArea(
+        bottom: false,
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: ListView(
+              padding: const EdgeInsets.all(AppTheme.spacingLg),
+              physics: const BouncingScrollPhysics(),
+              children: [
+                _header(context),
+                const SizedBox(height: AppTheme.spacingLg),
+                heatmapDataAsync.when(
+                  data:
+                      (heatMapDatasets) =>
+                          _heatMapCard(context, heatMapDatasets),
+                  loading: () => _buildLoadingCard(context),
+                  error: (error, stack) => _buildErrorCard(context, error),
+                ),
+                const SizedBox(height: AppTheme.spacingMd),
+                _legendCard(context),
+                const SizedBox(height: AppTheme.spacingXl),
+                conversionsAsync.when(
+                  data:
+                      (conversions) =>
+                          _buildArchiveSection(context, conversions),
+                  loading: () => const SizedBox.shrink(),
+                  error: (error, stack) => const SizedBox.shrink(),
+                ),
+                const SizedBox(height: AppTheme.spacingXxl * 2),
+              ],
+            ),
           ),
         ),
       ),
@@ -69,15 +108,39 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen> {
   }
 
   Widget _header(BuildContext context) {
-    return buildHeader(
-      context,
-      trad(context)!.activity_tracking,
-      trad(context)!.activity_tracking_subtitle,
+    return Column(
+      children: [
+        const SizedBox(height: AppTheme.spacingMd),
+        Text(
+          trad(context)!.activity_tracking,
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontFamily: AppTheme.defaultFontFamilyName,
+            fontSize: 32,
+            shadows: [
+              Shadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                offset: const Offset(0, 2),
+                blurRadius: 4,
+              ),
+            ],
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: AppTheme.spacingSm),
+        Text(
+          trad(context)!.activity_tracking_subtitle,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.9),
+            fontSize: 16,
+            height: 1.5,
+            fontFamily: AppTheme.defaultFontFamilyName,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
-  }
-
-  BoxDecoration _background(ColorScheme colorScheme) {
-    return buildBackground(colorScheme);
   }
 
   Widget _heatMapCard(

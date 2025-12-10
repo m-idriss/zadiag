@@ -8,6 +8,7 @@ import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/core/utils/translate.dart';
 import 'package:zadiag/shared/components/glass_container.dart';
+import 'package:zadiag/shared/components/glass_scaffold.dart';
 import 'package:zadiag/core/services/log_service.dart';
 
 import 'providers/converter_state.dart';
@@ -30,11 +31,16 @@ class ConverterPage extends ConsumerStatefulWidget {
   ConsumerState<ConverterPage> createState() => _ConverterPageState();
 }
 
-class _ConverterPageState extends ConsumerState<ConverterPage> {
+class _ConverterPageState extends ConsumerState<ConverterPage>
+    with SingleTickerProviderStateMixin {
   final ConverterService _converterService = ConverterService();
   final IcsGenerator _icsGenerator = IcsGenerator();
   final IcsExportService _icsExportService = IcsExportService();
   final ConversionHistoryService _historyService = ConversionHistoryService();
+
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
 
   int _eventsGenerated = 28453;
   int _imagesProcessed = 2112;
@@ -73,6 +79,27 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
+      ),
+    );
+    _animationController.forward();
+
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
         setState(() {
@@ -87,6 +114,7 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
 
   @override
   void dispose() {
+    _animationController.dispose();
     _converterService.dispose();
     super.dispose();
   }
@@ -239,53 +267,54 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final state = ref.watch(converterProvider);
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Container(
-        decoration: buildBackground(colorScheme),
-        child: SafeArea(
-          bottom: false,
-          child: ListView(
-            padding: const EdgeInsets.all(AppTheme.spacingLg),
-            physics: const BouncingScrollPhysics(),
-            children: [
-              _buildHeader(context),
-              if (state.extractedEvents.isEmpty) ...[
+    return GlassScaffold(
+      body: SafeArea(
+        bottom: false,
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: ListView(
+              padding: const EdgeInsets.all(AppTheme.spacingLg),
+              physics: const BouncingScrollPhysics(),
+              children: [
+                _buildHeader(context),
+                if (state.extractedEvents.isEmpty) ...[
+                  const SizedBox(height: AppTheme.spacingLg),
+                  _brandingCard(context, AppTheme.radiusSm),
+                ],
+                if (state.errorMessage != null) ...[
+                  const SizedBox(height: AppTheme.spacingMd),
+                  _buildErrorMessage(context, state.errorMessage!),
+                ],
+                if (state.extractedEvents.isNotEmpty) ...[
+                  const SizedBox(height: AppTheme.spacingXl),
+                  _buildEventsSection(context, state),
+                ],
                 const SizedBox(height: AppTheme.spacingLg),
-                _brandingCard(context, AppTheme.radiusSm),
+                ImageUploadZone(
+                  onImagesUploaded: _onImagesUploaded,
+                  isLoading: state.isProcessing,
+                  maxImages: 5,
+                  initialImages: state.uploadedImages,
+                ),
+                if (state.extractedEvents.isNotEmpty) ...[
+                  const SizedBox(height: AppTheme.spacingLg),
+                  _buildExportButton(context, state),
+                ],
+                if (state.uploadedImages.isNotEmpty && !state.isProcessing) ...[
+                  const SizedBox(height: AppTheme.spacingLg),
+                  _buildConvertButton(context),
+                ],
+                if (state.extractedEvents.isEmpty) ...[
+                  const SizedBox(height: AppTheme.spacingLg),
+                  _buildStatsSection(context),
+                ],
+                const SizedBox(height: 3 * AppTheme.spacingXxl),
               ],
-              if (state.errorMessage != null) ...[
-                const SizedBox(height: AppTheme.spacingMd),
-                _buildErrorMessage(context, state.errorMessage!),
-              ],
-              if (state.extractedEvents.isNotEmpty) ...[
-                const SizedBox(height: AppTheme.spacingXl),
-                _buildEventsSection(context, state),
-              ],
-              const SizedBox(height: AppTheme.spacingLg),
-              ImageUploadZone(
-                onImagesUploaded: _onImagesUploaded,
-                isLoading: state.isProcessing,
-                maxImages: 5,
-                initialImages: state.uploadedImages,
-              ),
-              if (state.extractedEvents.isNotEmpty) ...[
-                const SizedBox(height: AppTheme.spacingLg),
-                _buildExportButton(context, state),
-              ],
-              if (state.uploadedImages.isNotEmpty && !state.isProcessing) ...[
-                const SizedBox(height: AppTheme.spacingLg),
-                _buildConvertButton(context),
-              ],
-              if (state.extractedEvents.isEmpty) ...[
-                const SizedBox(height: AppTheme.spacingLg),
-                _buildStatsSection(context),
-              ],
-              const SizedBox(height: 3 * AppTheme.spacingXxl),
-            ],
+            ),
           ),
         ),
       ),
@@ -293,10 +322,38 @@ class _ConverterPageState extends ConsumerState<ConverterPage> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return buildHeader(
-      context,
-      trad(context)!.converter_title,
-      trad(context)!.converter_subtitle,
+    return Column(
+      children: [
+        const SizedBox(height: AppTheme.spacingMd),
+        Text(
+          trad(context)!.converter_title,
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontFamily: AppTheme.defaultFontFamilyName,
+            fontSize: 32,
+            shadows: [
+              Shadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                offset: const Offset(0, 2),
+                blurRadius: 4,
+              ),
+            ],
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: AppTheme.spacingSm),
+        Text(
+          trad(context)!.converter_subtitle,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.9),
+            fontSize: 16,
+            height: 1.5,
+            fontFamily: AppTheme.defaultFontFamilyName,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 

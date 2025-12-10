@@ -11,6 +11,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/core/utils/language_manager.dart';
 import 'package:zadiag/core/utils/navigation_helper.dart';
+import 'package:zadiag/shared/components/glass_scaffold.dart';
 import 'package:intl/intl.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -20,7 +21,8 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _profileFormKey = GlobalKey<FormState>();
   final _userService = UserService();
@@ -36,16 +38,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _selectedLanguage = LanguageManager.defaultLanguage;
   bool _obscurePassword = true;
 
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
   static const String _notificationsKey = 'notificationsEnabled';
 
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
+      ),
+    );
+    _animationController.forward();
+
     _loadNotificationsSetting();
     _selectedLanguage = LanguageManager.getLanguageName(
       localeNotifier.value?.languageCode ?? 'en',
     );
     _loadUserData();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadUserData() async {
@@ -84,32 +120,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final defaultColorScheme = Theme.of(context).colorScheme;
+    return GlassScaffold(
+      body: SafeArea(
+        bottom: false,
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                padding: EdgeInsets.all(AppTheme.spacingLg),
+                physics: const BouncingScrollPhysics(),
+                children: [
+                  _header(context),
+                  const SizedBox(height: AppTheme.spacingMd),
+                  _profileCard(context),
+                  const SizedBox(height: AppTheme.spacingMd),
+                  _settingsCard(context),
+                  const SizedBox(height: AppTheme.spacingMd),
+                  _notificationCard(context),
+                  const SizedBox(height: AppTheme.spacingMd),
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Container(
-        decoration: _background(defaultColorScheme),
-        child: SafeArea(
-          bottom: false,
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              padding: EdgeInsets.all(AppTheme.spacingLg),
-              physics: const BouncingScrollPhysics(),
-              children: [
-                _header(context),
-                const SizedBox(height: AppTheme.spacingMd),
-                _profileCard(context),
-                const SizedBox(height: AppTheme.spacingMd),
-                _settingsCard(context),
-                const SizedBox(height: AppTheme.spacingMd),
-                _notificationCard(context),
-                const SizedBox(height: AppTheme.spacingMd),
-
-                _logoutCard(context),
-                const SizedBox(height: 2 * AppTheme.spacingXxl),
-              ],
+                  _logoutCard(context),
+                  const SizedBox(height: 2 * AppTheme.spacingXxl),
+                ],
+              ),
             ),
           ),
         ),
@@ -819,15 +855,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  BoxDecoration _background(ColorScheme colorScheme) {
-    return buildBackground(colorScheme);
-  }
-
-  Column _header(BuildContext context) {
-    return buildHeader(
-      context,
-      trad(context)!.settings,
-      trad(context)!.settings_subtitle,
+  Widget _header(BuildContext context) {
+    return Column(
+      children: [
+        const SizedBox(height: AppTheme.spacingMd),
+        Text(
+          trad(context)!.settings,
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontFamily: AppTheme.defaultFontFamilyName,
+            fontSize: 32,
+            shadows: [
+              Shadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                offset: const Offset(0, 2),
+                blurRadius: 4,
+              ),
+            ],
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: AppTheme.spacingSm),
+        Text(
+          trad(context)!.settings_subtitle,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.9),
+            fontSize: 16,
+            height: 1.5,
+            fontFamily: AppTheme.defaultFontFamilyName,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 
