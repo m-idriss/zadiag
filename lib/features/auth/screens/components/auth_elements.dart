@@ -131,15 +131,7 @@ Widget _socialIcon(BuildContext context, String iconName) {
             colorScheme,
             color: colorScheme.surface,
             borderColor: colorScheme.outline,
-            borderWidth: 1.5,
-          ).copyWith(
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            borderWidth: 1,
           ),
           child: Center(
             child: SvgPicture.asset(

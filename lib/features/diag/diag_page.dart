@@ -104,42 +104,25 @@ class _HomePageState extends ConsumerState<HomePage>
             ),
           ),
 
-          // Gradient and Blur behind bottom menu
+          // Solid background behind bottom menu
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
             height: 120,
             child: IgnorePointer(
-              child: Stack(
-                children: [
-                  // Blur effect
-                  ClipRect(
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 3.0, sigmaY: 3.0),
-                      child: Container(color: Colors.transparent),
-                    ),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.0),
+                      Theme.of(context).colorScheme.tertiary,
+                    ],
+                    stops: const [0.0, 0.5],
                   ),
-                  // Gradient effect
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Theme.of(
-                            context,
-                          ).colorScheme.surface.withValues(alpha: 0.0),
-                          Theme.of(
-                            context,
-                          ).colorScheme.surface.withValues(alpha: 0.8),
-                          Theme.of(context).colorScheme.surface,
-                        ],
-                        stops: const [0.0, 0.6, 1.0],
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
