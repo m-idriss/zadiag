@@ -212,6 +212,30 @@ abstract class AppLocalizations {
   /// **'Auto'**
   String get theme_auto;
 
+  /// No description provided for @text_size.
+  ///
+  /// In en, this message translates to:
+  /// **'Text Size'**
+  String get text_size;
+
+  /// No description provided for @text_size_small.
+  ///
+  /// In en, this message translates to:
+  /// **'Small'**
+  String get text_size_small;
+
+  /// No description provided for @text_size_normal.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get text_size_normal;
+
+  /// No description provided for @text_size_large.
+  ///
+  /// In en, this message translates to:
+  /// **'Large'**
+  String get text_size_large;
+
   /// No description provided for @email_hint.
   ///
   /// In en, this message translates to:

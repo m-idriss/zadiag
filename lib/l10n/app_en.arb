@@ -19,6 +19,22 @@
   "theme_light": "Light",
   "theme_dark": "Dark",
   "theme_auto": "Auto",
+  "text_size": "Text Size",
+  "@text_size": {
+    "description": "Label for the setting that allows the user to choose the size of the text in the app."
+  },
+  "text_size_small": "Small",
+  "@text_size_small": {
+    "description": "Option label for selecting a small text size."
+  },
+  "text_size_normal": "Normal",
+  "@text_size_normal": {
+    "description": "Option label for selecting the normal (default) text size."
+  },
+  "text_size_large": "Large",
+  "@text_size_large": {
+    "description": "Option label for selecting a large text size."
+  },
   "email_hint": "john.doe@email.com",
   "forgot_password": "Forgot password?",
   "login_button": "Sign In",

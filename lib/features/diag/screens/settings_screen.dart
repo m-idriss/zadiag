@@ -18,6 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zadiag/features/converter/providers/conversion_history_provider.dart';
 import 'package:zadiag/features/converter/providers/converter_settings_provider.dart';
 import 'package:zadiag/shared/components/slide_action_button.dart';
+import 'package:zadiag/core/providers/text_size_provider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -33,6 +34,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   final _userService = UserService();
   bool _notificationsEnabled = true;
   bool _isProfileExpanded = false;
+  bool _isAppearanceExpanded = false;
   bool _isConverterExpanded = false;
 
   // Profile State
@@ -604,6 +606,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
   Widget _settingsCard(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final currentTextSize = ref.watch(textSizeProvider);
+    final textSizeNotifier = ref.read(textSizeProvider.notifier);
+
     return GlassContainer(
       padding: EdgeInsets.all(AppTheme.spacingMd),
       borderRadius: AppTheme.radiusXl,
@@ -612,59 +617,149 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: AppTheme.iconContainerDecoration(colorScheme),
-                child: Icon(
-                  Icons.brightness_6_rounded,
-                  color: colorScheme.primary,
-                  size: 22,
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _isAppearanceExpanded = !_isAppearanceExpanded;
+              });
+            },
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: AppTheme.iconContainerDecoration(colorScheme),
+                  child: Icon(
+                    Icons.brightness_6_rounded,
+                    color: colorScheme.primary,
+                    size: 22,
+                  ),
                 ),
-              ),
-              const SizedBox(width: AppTheme.spacingMd),
-              Text(
-                trad(context)!.appearance,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.onSurface,
+                const SizedBox(width: AppTheme.spacingMd),
+                Expanded(
+                  child: Text(
+                    trad(context)!.appearance,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
                 ),
-              ),
-            ],
+                AnimatedRotation(
+                  turns: _isAppearanceExpanded ? 0.25 : 0,
+                  duration: const Duration(milliseconds: 300),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: AppTheme.iconContainerDecoration(
+                      colorScheme,
+                      borderRadius: AppTheme.radiusFull,
+                      color: colorScheme.surface.withValues(alpha: 0.5),
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: colorScheme.primary,
+                      size: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: AppTheme.spacingMd),
-          // Theme options
-          Row(
-            children: [
-              Expanded(
-                child: _themeOptionCard(
-                  context,
-                  mode: ThemeMode.light,
-                  icon: Icons.wb_sunny_rounded,
-                  label: trad(context)!.theme_light,
+
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: AppTheme.spacingMd),
+                Divider(color: colorScheme.outline.withValues(alpha: 0.2)),
+                const SizedBox(height: AppTheme.spacingMd),
+                // Theme options
+                Row(
+                  children: [
+                    Expanded(
+                      child: _themeOptionCard(
+                        context,
+                        mode: ThemeMode.light,
+                        icon: Icons.wb_sunny_rounded,
+                        label: trad(context)!.theme_light,
+                      ),
+                    ),
+                    const SizedBox(width: AppTheme.spacingSm),
+                    Expanded(
+                      child: _themeOptionCard(
+                        context,
+                        mode: ThemeMode.dark,
+                        icon: Icons.nightlight_round,
+                        label: trad(context)!.theme_dark,
+                      ),
+                    ),
+                    const SizedBox(width: AppTheme.spacingSm),
+                    Expanded(
+                      child: _themeOptionCard(
+                        context,
+                        mode: ThemeMode.system,
+                        icon: Icons.brightness_auto_rounded,
+                        label: trad(context)!.theme_auto,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: AppTheme.spacingSm),
-              Expanded(
-                child: _themeOptionCard(
-                  context,
-                  mode: ThemeMode.dark,
-                  icon: Icons.nightlight_round,
-                  label: trad(context)!.theme_dark,
+                const SizedBox(height: AppTheme.spacingLg),
+                // Text Size Section
+                Text(
+                  trad(context)!.text_size,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
-              ),
-              const SizedBox(width: AppTheme.spacingSm),
-              Expanded(
-                child: _themeOptionCard(
-                  context,
-                  mode: ThemeMode.system,
-                  icon: Icons.brightness_auto_rounded,
-                  label: trad(context)!.theme_auto,
+                const SizedBox(height: AppTheme.spacingMd),
+                // Text Size options
+                Row(
+                  children: [
+                    Expanded(
+                      child: _textSizeOptionCard(
+                        context,
+                        size: TextSize.small,
+                        icon: Icons.text_decrease,
+                        label: trad(context)!.text_size_small,
+                        isSelected: currentTextSize == TextSize.small,
+                        onTap: () => textSizeNotifier.setTextSize(TextSize.small),
+                      ),
+                    ),
+                    const SizedBox(width: AppTheme.spacingSm),
+                    Expanded(
+                      child: _textSizeOptionCard(
+                        context,
+                        size: TextSize.normal,
+                        icon: Icons.text_fields,
+                        label: trad(context)!.text_size_normal,
+                        isSelected: currentTextSize == TextSize.normal,
+                        onTap: () => textSizeNotifier.setTextSize(TextSize.normal),
+                      ),
+                    ),
+                    const SizedBox(width: AppTheme.spacingSm),
+                    Expanded(
+                      child: _textSizeOptionCard(
+                        context,
+                        size: TextSize.large,
+                        icon: Icons.text_increase,
+                        label: trad(context)!.text_size_large,
+                        isSelected: currentTextSize == TextSize.large,
+                        onTap: () => textSizeNotifier.setTextSize(TextSize.large),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+              ],
+            ),
+            crossFadeState:
+                _isAppearanceExpanded
+                    ? CrossFadeState.showSecond
+                    : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 300),
           ),
         ],
       ),
@@ -703,6 +798,72 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                       ? Colors.white
                       : colorScheme.onSurface.withValues(alpha: 0.7),
               size: 28,
+            ),
+            const SizedBox(height: AppTheme.spacingXs),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: AppTheme.defaultFontFamilyName,
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color:
+                    isSelected
+                        ? Colors.white
+                        : colorScheme.onSurface.withValues(alpha: 0.8),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _textSizeOptionCard(
+    BuildContext context, {
+    required TextSize size,
+    required IconData icon,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    double iconSize;
+    switch (size) {
+      case TextSize.small:
+        iconSize = 20.0;
+        break;
+      case TextSize.normal:
+        iconSize = 24.0;
+        break;
+      case TextSize.large:
+        iconSize = 28.0;
+        break;
+    }
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        padding: EdgeInsets.symmetric(
+          vertical: AppTheme.spacingMd,
+          horizontal: AppTheme.spacingSm,
+        ),
+        decoration: AppTheme.themeOptionDecoration(
+          colorScheme,
+          isSelected: isSelected,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color:
+                  isSelected
+                      ? Colors.white
+                      : colorScheme.onSurface.withValues(alpha: 0.7),
+              size: iconSize,
             ),
             const SizedBox(height: AppTheme.spacingXs),
             Text(

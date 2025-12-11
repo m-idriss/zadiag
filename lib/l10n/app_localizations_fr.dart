@@ -68,6 +68,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get theme_auto => 'Auto';
 
   @override
+  String get text_size => 'Taille du texte';
+
+  @override
+  String get text_size_small => 'Petit';
+
+  @override
+  String get text_size_normal => 'Normal';
+
+  @override
+  String get text_size_large => 'Grand';
+
+  @override
   String get email_hint => 'jean.dupont@email.com';
 
   @override
