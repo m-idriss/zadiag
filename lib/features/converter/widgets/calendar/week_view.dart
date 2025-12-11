@@ -127,9 +127,11 @@ class _WeekViewState extends State<WeekView> {
           borderRadius: BorderRadius.circular(16),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
+            decoration: AppTheme.cardDecoration(
+              colorScheme,
+              borderRadius: 16,
               color: colorScheme.secondaryContainer.withValues(alpha: 0.9),
-              borderRadius: BorderRadius.circular(16),
+            ).copyWith(
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.1),
