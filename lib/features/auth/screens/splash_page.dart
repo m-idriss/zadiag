@@ -5,6 +5,7 @@ import 'package:zadiag/core/utils/navigation_helper.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/shared/components/glass_scaffold.dart';
 import 'package:zadiag/shared/components/zadiag_logo.dart';
+import 'package:zadiag/core/utils/translate.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -123,7 +124,7 @@ class _SplashPageState extends State<SplashPage>
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          'Your Health Companion',
+                          trad(context)!.app_tagline,
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,

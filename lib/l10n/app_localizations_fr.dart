@@ -172,7 +172,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get error_occurred => 'Une erreur est survenue';
 
   @override
-  String get app_tagline => 'Votre compagnon santé';
+  String get app_tagline => 'Votre compagnon d\'organisation';
 
   @override
   String get enabled => 'Activé';

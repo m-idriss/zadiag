@@ -171,7 +171,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get error_occurred => 'An error occurred';
 
   @override
-  String get app_tagline => 'Your Health Companion';
+  String get app_tagline => 'Your Organizer companion';
 
   @override
   String get enabled => 'Enabled';

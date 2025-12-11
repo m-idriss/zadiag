@@ -413,7 +413,7 @@ abstract class AppLocalizations {
   /// No description provided for @app_tagline.
   ///
   /// In en, this message translates to:
-  /// **'Your Health Companion'**
+  /// **'Your Organizer companion'**
   String get app_tagline;
 
   /// No description provided for @enabled.
