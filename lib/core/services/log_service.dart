@@ -15,7 +15,7 @@ class Log {
   Log._();
 
   static void v(dynamic message, [dynamic error, StackTrace? stackTrace]) {
-    _logger.v(message, error: error, stackTrace: stackTrace);
+    _logger.t(message, error: error, stackTrace: stackTrace);
   }
 
   static void d(dynamic message, [dynamic error, StackTrace? stackTrace]) {

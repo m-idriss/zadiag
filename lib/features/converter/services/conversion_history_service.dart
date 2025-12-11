@@ -5,6 +5,7 @@ import 'package:zadiag/core/services/isar_service.dart';
 import '../models/conversion_history.dart';
 import '../models/calendar_event.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:zadiag/core/services/log_service.dart';
 
 /// Service for managing conversion history in Isar.
 class ConversionHistoryService {
@@ -44,7 +45,7 @@ class ConversionHistoryService {
           }
         }
       } catch (e) {
-        print('Error saving original files: $e');
+        Log.e('Error saving original files: $e');
         // Continue even if file saving fails
       }
     }

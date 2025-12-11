@@ -851,68 +851,60 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppTheme.spacingMd,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                  Text(
-                    trad(context)!.files_selected(images.length),
+                Text(
+                  trad(context)!.files_selected(images.length),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontFamily: AppTheme.defaultFontFamilyName,
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    ref.read(converterProvider.notifier).setUploadedImages([]);
+                  },
+                  icon: Icon(
+                    Icons.clear_all_rounded,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  label: Text(
+                    trad(context)!.clear_all,
                     style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
+                      color: Theme.of(context).colorScheme.error,
+                      fontSize: 12,
                       fontFamily: AppTheme.defaultFontFamilyName,
                     ),
                   ),
-                  TextButton.icon(
-                    onPressed: () {
-                      ref
-                          .read(converterProvider.notifier)
-                          .setUploadedImages([]);
-                    },
-                    icon: Icon(
-                      Icons.clear_all_rounded,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                    label: Text(
-                      trad(context)!.clear_all,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                        fontSize: 12,
-                        fontFamily: AppTheme.defaultFontFamilyName,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppTheme.spacingSm),
-            SizedBox(
-              height: 80,
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.spacingMd,
                 ),
-                scrollDirection: Axis.horizontal,
-                itemCount: images.length,
-                separatorBuilder:
-                    (_, _) => const SizedBox(width: AppTheme.spacingSm),
-                itemBuilder: (context, index) {
-                  return _buildPageImageThumbnail(
-                    context,
-                    images[index],
-                    index,
-                  );
-                },
-              ),
+              ],
             ),
-            const SizedBox(height: AppTheme.spacingMd),
-          ],
-        ),
-      );
+          ),
+          const SizedBox(height: AppTheme.spacingSm),
+          SizedBox(
+            height: 80,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTheme.spacingMd,
+              ),
+              scrollDirection: Axis.horizontal,
+              itemCount: images.length,
+              separatorBuilder:
+                  (_, _) => const SizedBox(width: AppTheme.spacingSm),
+              itemBuilder: (context, index) {
+                return _buildPageImageThumbnail(context, images[index], index);
+              },
+            ),
+          ),
+          const SizedBox(height: AppTheme.spacingMd),
+        ],
+      ),
+    );
   }
 
   Widget _buildPageImageThumbnail(
@@ -950,7 +942,7 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
                         file.bytes,
                         fit: BoxFit.cover,
                         errorBuilder:
-                            (_, __, _) => Container(
+                            (context, error, stackTrace) => Container(
                               color: colorScheme.surfaceContainerHigh,
                               child: Icon(
                                 Icons.image_outlined,

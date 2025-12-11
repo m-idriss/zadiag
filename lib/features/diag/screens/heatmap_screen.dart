@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -349,64 +348,13 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen>
 
   Color _getCellColor(BuildContext context, int value) {
     if (value == 0) {
-      return Theme.of(context).colorScheme.secondary.withValues(alpha: 0.05);
+      return Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1);
     }
 
     // Adapted from original logic
     final opacity =
         value <= 1 ? 0.3 : (value <= 3 ? 0.5 : (value <= 5 ? 0.7 : 1.0));
     return Theme.of(context).colorScheme.secondary.withValues(alpha: opacity);
-  }
-
-  Widget _legendCard(BuildContext context) {
-    return GlassContainer(
-      padding: EdgeInsets.all(AppTheme.spacingMd),
-      borderRadius: AppTheme.radiusLg,
-      opacity: 0.7,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            trad(context)!.less,
-            style: TextStyle(
-              fontSize: 12,
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.6),
-              fontFamily: AppTheme.defaultFontFamilyName,
-            ),
-          ),
-          const SizedBox(width: AppTheme.spacingSm),
-          ...List.generate(5, (index) {
-            return Container(
-              width: 16,
-              height: 16,
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              decoration: BoxDecoration(
-                color:
-                    index == 0
-                        ? Theme.of(context).colorScheme.surfaceContainerHigh
-                        : Theme.of(context).colorScheme.secondary.withValues(
-                          alpha: 0.25 + (index * 0.2),
-                        ),
-                borderRadius: BorderRadius.circular(AppTheme.radiusXs),
-              ),
-            );
-          }),
-          const SizedBox(width: AppTheme.spacingSm),
-          Text(
-            trad(context)!.more,
-            style: TextStyle(
-              fontSize: 12,
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.6),
-              fontFamily: AppTheme.defaultFontFamilyName,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildLoadingCard(BuildContext context) {

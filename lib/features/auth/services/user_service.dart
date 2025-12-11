@@ -5,6 +5,7 @@ import 'package:zadiag/features/converter/models/conversion_history.dart';
 
 import 'package:zadiag/core/services/isar_service.dart';
 import 'package:zadiag/features/auth/models/user_profile.dart';
+import 'package:zadiag/core/services/log_service.dart';
 
 class UserService {
   final IsarService _isarService = IsarService();
@@ -22,7 +23,7 @@ class UserService {
       }
       return null;
     } catch (e) {
-      print('Error getting user profile: $e');
+      Log.e('Error getting user profile: $e');
       return null;
     }
   }
@@ -49,7 +50,7 @@ class UserService {
     try {
       await userRef.set(data, SetOptions(merge: true));
     } catch (e) {
-      print('Error updating user profile: $e');
+      Log.e('Error updating user profile: $e');
     }
   }
 
@@ -73,7 +74,7 @@ class UserService {
       // Delete Firebase Auth user
       await user.delete();
     } catch (e) {
-      print('Error deleting user account: $e');
+      Log.e('Error deleting user account: $e');
       rethrow;
     }
   }

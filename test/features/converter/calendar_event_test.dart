@@ -7,8 +7,8 @@ void main() {
       final event = CalendarEvent(
         id: '1',
         title: 'Test Event',
-        startDateTime: DateTime(2024, 1, 15, 10, 0),
-        endDateTime: DateTime(2024, 1, 15, 11, 0),
+        start: DateTime(2024, 1, 15, 10, 0),
+        end: DateTime(2024, 1, 15, 11, 0),
       );
 
       expect(event.id, '1');
@@ -26,8 +26,8 @@ void main() {
         id: '2',
         title: 'Meeting',
         description: 'Weekly sync',
-        startDateTime: DateTime(2024, 1, 15, 14, 0),
-        endDateTime: DateTime(2024, 1, 15, 15, 0),
+        start: DateTime(2024, 1, 15, 14, 0),
+        end: DateTime(2024, 1, 15, 15, 0),
         location: 'Conference Room A',
         isAllDay: false,
         reminders: [15, 30],
@@ -78,8 +78,8 @@ void main() {
         id: '4',
         title: 'Test',
         description: 'Description',
-        startDateTime: DateTime.utc(2024, 1, 15, 10, 0),
-        endDateTime: DateTime.utc(2024, 1, 15, 11, 0),
+        start: DateTime.utc(2024, 1, 15, 10, 0),
+        end: DateTime.utc(2024, 1, 15, 11, 0),
         location: 'Location',
         reminders: [15],
       );
@@ -97,8 +97,8 @@ void main() {
       final original = CalendarEvent(
         id: '5',
         title: 'Original',
-        startDateTime: DateTime(2024, 1, 15, 10, 0),
-        endDateTime: DateTime(2024, 1, 15, 11, 0),
+        start: DateTime(2024, 1, 15, 10, 0),
+        end: DateTime(2024, 1, 15, 11, 0),
       );
 
       final modified = original.copyWith(
@@ -128,15 +128,15 @@ void main() {
       final event1 = CalendarEvent(
         id: '7',
         title: 'Event 1',
-        startDateTime: DateTime(2024, 1, 15, 10, 0),
-        endDateTime: DateTime(2024, 1, 15, 11, 0),
+        start: DateTime(2024, 1, 15, 10, 0),
+        end: DateTime(2024, 1, 15, 11, 0),
       );
 
       final event2 = CalendarEvent(
         id: '7',
         title: 'Event 2', // Different title
-        startDateTime: DateTime(2024, 1, 16, 10, 0), // Different date
-        endDateTime: DateTime(2024, 1, 16, 11, 0),
+        start: DateTime(2024, 1, 16, 10, 0), // Different date
+        end: DateTime(2024, 1, 16, 11, 0),
       );
 
       expect(event1, equals(event2)); // Same ID = equal

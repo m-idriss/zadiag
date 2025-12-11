@@ -95,11 +95,15 @@ class _SettingsScreenState extends State<SettingsScreen>
     final userProfile = await _userService.getUserProfile();
     if (userProfile != null && mounted) {
       setState(() {
-        if (userProfile.username != null)
+        if (userProfile.username != null) {
           _nameController.text = userProfile.username!;
-        if (userProfile.language != null)
+        }
+        if (userProfile.language != null) {
           _selectedLanguage = userProfile.language!;
-        if (userProfile.birthDate != null) _birthDate = userProfile.birthDate!;
+        }
+        if (userProfile.birthDate != null) {
+          _birthDate = userProfile.birthDate!;
+        }
       });
     }
   }
@@ -834,7 +838,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   Widget _header(BuildContext context) {
     return Column(
       children: [
-       // const SizedBox(height: AppTheme.spacingMd),
+        // const SizedBox(height: AppTheme.spacingMd),
         Text(
           trad(context)!.settings,
           style: TextStyle(

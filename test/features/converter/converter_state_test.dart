@@ -25,8 +25,8 @@ void main() {
         CalendarEvent(
           id: '1',
           title: 'Test Event',
-          startDateTime: DateTime(2024, 1, 15, 10),
-          endDateTime: DateTime(2024, 1, 15, 11),
+          start: DateTime(2024, 1, 15, 10),
+          end: DateTime(2024, 1, 15, 11),
         ),
       ];
 
@@ -62,8 +62,8 @@ void main() {
           CalendarEvent(
             id: '1',
             title: 'Test Event',
-            startDateTime: DateTime(2024, 1, 15, 10),
-            endDateTime: DateTime(2024, 1, 15, 11),
+            start: DateTime(2024, 1, 15, 10),
+            end: DateTime(2024, 1, 15, 11),
           ),
         ],
       );
@@ -108,8 +108,8 @@ void main() {
           CalendarEvent(
             id: '1',
             title: 'Test Event',
-            startDateTime: DateTime(2024, 1, 15, 10),
-            endDateTime: DateTime(2024, 1, 15, 11),
+            start: DateTime(2024, 1, 15, 10),
+            end: DateTime(2024, 1, 15, 11),
           ),
         ],
         icsContent: 'BEGIN:VCALENDAR...',
@@ -163,8 +163,8 @@ void main() {
         CalendarEvent(
           id: '1',
           title: 'Test Event',
-          startDateTime: DateTime(2024, 1, 15, 10),
-          endDateTime: DateTime(2024, 1, 15, 11),
+          start: DateTime(2024, 1, 15, 10),
+          end: DateTime(2024, 1, 15, 11),
         ),
       ];
 
@@ -193,14 +193,14 @@ void main() {
         CalendarEvent(
           id: '1',
           title: 'Event 1',
-          startDateTime: DateTime(2024, 1, 15, 10),
-          endDateTime: DateTime(2024, 1, 15, 11),
+          start: DateTime(2024, 1, 15, 10),
+          end: DateTime(2024, 1, 15, 11),
         ),
         CalendarEvent(
           id: '2',
           title: 'Event 2',
-          startDateTime: DateTime(2024, 1, 16, 10),
-          endDateTime: DateTime(2024, 1, 16, 11),
+          start: DateTime(2024, 1, 16, 10),
+          end: DateTime(2024, 1, 16, 11),
         ),
       ];
 
@@ -222,8 +222,8 @@ void main() {
         CalendarEvent(
           id: '1',
           title: 'Event 1',
-          startDateTime: DateTime(2024, 1, 15, 10),
-          endDateTime: DateTime(2024, 1, 15, 11),
+          start: DateTime(2024, 1, 15, 10),
+          end: DateTime(2024, 1, 15, 11),
         ),
       ];
 
@@ -296,8 +296,8 @@ void main() {
         CalendarEvent(
           id: '1',
           title: 'Test Event',
-          startDateTime: DateTime(2024, 1, 15, 10),
-          endDateTime: DateTime(2024, 1, 15, 11),
+          start: DateTime(2024, 1, 15, 10),
+          end: DateTime(2024, 1, 15, 11),
         ),
       ];
       notifier.setConversionResult(
