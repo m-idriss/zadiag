@@ -486,59 +486,68 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(Icons.history_rounded, color: colorScheme.primary, size: 24),
-            const SizedBox(width: AppTheme.spacingSm),
-            Expanded(
-              child: Text(
-                trad(context)!.conversion_archive,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: colorScheme.onInverseSurface,
-                  fontFamily: AppTheme.defaultFontFamilyName,
-                ),
-              ),
-            ),
-            if (_selectedDate != null)
-              GestureDetector(
-                onTap:
-                    () => setState(() {
-                      _selectedDate = null;
-                      _visibleConversionsCount = _initialItemsCount;
-                    }),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        DateFormat('MMM d').format(_selectedDate!),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onPrimaryContainer,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.close,
-                        size: 14,
-                        color: colorScheme.onPrimaryContainer,
+        SizedBox(
+          height: 48,
+          child: Row(
+            children: [
+              Icon(Icons.history_rounded, color: colorScheme.primary, size: 24),
+              const SizedBox(width: AppTheme.spacingSm),
+              Expanded(
+                child: Text(
+                  trad(context)!.conversion_archive,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.onInverseSurface,
+                    fontFamily: AppTheme.defaultFontFamilyName,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        offset: const Offset(0, 2),
+                        blurRadius: 4,
                       ),
                     ],
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-          ],
+              if (_selectedDate != null)
+                TextButton.icon(
+                  onPressed:
+                      () => setState(() {
+                        _selectedDate = null;
+                        _visibleConversionsCount = _initialItemsCount;
+                      }),
+                  icon: Icon(
+                    Icons.filter_list_off_rounded,
+                    size: 16,
+                    color: colorScheme.secondary,
+                  ),
+                  label: Text(
+                    'Show all',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.secondary,
+                      fontFamily: AppTheme.defaultFontFamilyName,
+                    ),
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    backgroundColor: colorScheme.secondary.withValues(
+                      alpha: 0.1,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
         const SizedBox(height: AppTheme.spacingMd),
         if (filtered.isEmpty)
