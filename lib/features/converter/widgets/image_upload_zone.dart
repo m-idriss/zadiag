@@ -215,14 +215,11 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
                             Container(
                               width: 48,
                               height: 48,
-                              decoration: AppTheme.iconContainerDecoration(
-                                colorScheme,
-                                borderRadius: AppTheme.radiusFull,
-                              ),
+                              decoration: AppTheme.avatarDecoration(colorScheme),
                               child: Icon(
                                 Icons.cloud_upload_outlined,
                                 size: 24,
-                                color: colorScheme.primary,
+                                color: Colors.white,
                               ),
                             ),
                             const SizedBox(width: AppTheme.spacingMd),

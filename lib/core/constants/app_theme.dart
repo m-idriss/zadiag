@@ -117,7 +117,8 @@ class AppTheme {
             )
           : null,
       color: useGradient ? null : (color ?? colorScheme.primary.withValues(alpha: 0.1)),
-      borderRadius: BorderRadius.circular(borderRadius),
+      shape: borderRadius == radiusFull ? BoxShape.circle : BoxShape.rectangle,
+      borderRadius: borderRadius == radiusFull ? null : BorderRadius.circular(borderRadius),
     );
   }
 
