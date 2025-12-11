@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -54,6 +53,9 @@ class ImageUploadZone extends StatefulWidget {
   /// Whether to show in read-only mode (hide upload zone, show only files)
   final bool readOnly;
 
+  /// Whether to show validation/thumbnail section
+  final bool showThumbnails;
+
   const ImageUploadZone({
     super.key,
     required this.onImagesUploaded,
@@ -61,6 +63,7 @@ class ImageUploadZone extends StatefulWidget {
     this.isLoading = false,
     this.initialImages = const [],
     this.readOnly = false,
+    this.showThumbnails = true,
   });
 
   @override
@@ -109,7 +112,55 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Upload zone - only show if not readOnly
+        // File preview grid - show first
+        if (widget.showThumbnails && _uploadedImages.isNotEmpty) ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                trad(context)!.files_selected(_uploadedImages.length),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: colorScheme.onSurface,
+                  fontFamily: AppTheme.defaultFontFamilyName,
+                ),
+              ),
+              TextButton.icon(
+                onPressed: _clearAllImages,
+                icon: Icon(
+                  Icons.clear_all_rounded,
+                  size: 16,
+                  color: colorScheme.error,
+                ),
+                label: Text(
+                  trad(context)!.clear_all,
+                  style: TextStyle(
+                    color: colorScheme.error,
+                    fontSize: 12,
+                    fontFamily: AppTheme.defaultFontFamilyName,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppTheme.spacingXs),
+          SizedBox(
+            height: 60,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _uploadedImages.length,
+              separatorBuilder:
+                  (_, _) => const SizedBox(width: AppTheme.spacingSm),
+              itemBuilder: (context, index) {
+                return _buildImageThumbnail(index, colorScheme);
+              },
+            ),
+          ),
+          const SizedBox(height: AppTheme.spacingSm),
+        ],
+
+        // Upload zone - show below thumbnails, only if not readOnly
         if (!widget.readOnly)
           GlassContainer(
             borderRadius: AppTheme.radiusXl,
@@ -215,54 +266,6 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
               ),
             ),
           ),
-
-        // File preview grid
-        if (_uploadedImages.isNotEmpty) ...[
-          const SizedBox(height: AppTheme.spacingSm),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                trad(context)!.files_selected(_uploadedImages.length),
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: colorScheme.onSurface,
-                  fontFamily: AppTheme.defaultFontFamilyName,
-                ),
-              ),
-              TextButton.icon(
-                onPressed: _clearAllImages,
-                icon: Icon(
-                  Icons.clear_all_rounded,
-                  size: 16,
-                  color: colorScheme.error,
-                ),
-                label: Text(
-                  trad(context)!.clear_all,
-                  style: TextStyle(
-                    color: colorScheme.error,
-                    fontSize: 12,
-                    fontFamily: AppTheme.defaultFontFamilyName,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppTheme.spacingXs),
-          SizedBox(
-            height: 60,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: _uploadedImages.length,
-              separatorBuilder:
-                  (_, _) => const SizedBox(width: AppTheme.spacingSm),
-              itemBuilder: (context, index) {
-                return _buildImageThumbnail(index, colorScheme);
-              },
-            ),
-          ),
-        ],
       ],
     );
   }

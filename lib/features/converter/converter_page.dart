@@ -23,6 +23,7 @@ import 'widgets/calendar/calendar_view.dart';
 import 'widgets/calendar/calendar_header.dart'; // For CalendarViewMode
 import 'utils/calendar_utils.dart';
 import 'models/calendar_event.dart'; // For CalendarEvent
+import '../diag/widgets/document_viewer_screen.dart';
 
 /// Main page for the Image to ICS Converter feature.
 class ConverterPage extends ConsumerStatefulWidget {
@@ -282,40 +283,64 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
               physics: const BouncingScrollPhysics(),
               children: [
                 _buildHeader(context),
-                if (state.extractedEvents.isEmpty) ...[
-                  const SizedBox(height: AppTheme.spacingLg),
-                  _brandingCard(context, AppTheme.radiusSm),
-                ],
+                const SizedBox(height: AppTheme.spacingLg),
+
+                // Branding or Thumbnails Area (Reserved Height 240)
+                if (state.extractedEvents.isEmpty)
+                  state.uploadedImages.isEmpty
+                      ? _brandingCard(context, AppTheme.radiusSm)
+                      : _buildThumbnailArea(context, state.uploadedImages),
+
                 if (state.errorMessage != null) ...[
                   const SizedBox(height: AppTheme.spacingMd),
                   _buildErrorMessage(context, state.errorMessage!),
                 ],
 
+                // Upload zone appears in same position regardless of state
                 if (state.extractedEvents.isEmpty) ...[
                   const SizedBox(height: AppTheme.spacingLg),
+                  ImageUploadZone(
+                    onImagesUploaded: _onImagesUploaded,
+                    isLoading: state.isProcessing,
+                    maxImages: 5,
+                    initialImages: state.uploadedImages,
+                    readOnly: false,
+                    showThumbnails:
+                        false, // Don't show thumbnails here, handled above
+                  ),
                 ],
-                ImageUploadZone(
-                  onImagesUploaded: _onImagesUploaded,
-                  isLoading: state.isProcessing,
-                  maxImages: 5,
-                  initialImages: state.uploadedImages,
-                  readOnly: state.extractedEvents.isNotEmpty,
-                ),
+
+                // Convert button
+                if (state.uploadedImages.isNotEmpty &&
+                    !state.isProcessing &&
+                    state.extractedEvents.isEmpty) ...[
+                  const SizedBox(height: AppTheme.spacingLg),
+                  _buildConvertButton(context),
+                ],
+
+                // Events section (after conversion)
                 if (state.extractedEvents.isNotEmpty) ...[
+                  const SizedBox(height: AppTheme.spacingLg),
+                  ImageUploadZone(
+                    onImagesUploaded: _onImagesUploaded,
+                    isLoading: state.isProcessing,
+                    maxImages: 5,
+                    initialImages: state.uploadedImages,
+                    readOnly: true,
+                  ),
                   const SizedBox(height: AppTheme.spacingXl),
                   _buildEventsSection(context, state),
                 ],
+
+                // Action buttons after conversion
                 if (state.extractedEvents.isNotEmpty) ...[
                   const SizedBox(height: AppTheme.spacingLg),
                   _buildActionButtons(context, state),
-                ] else ...[
-                  if (state.uploadedImages.isNotEmpty &&
-                      !state.isProcessing) ...[
-                    const SizedBox(height: AppTheme.spacingLg),
-                    _buildConvertButton(context),
-                  ],
                 ],
-                if (state.extractedEvents.isEmpty) ...[
+
+                // Stats section
+                if (state.extractedEvents.isEmpty &&
+                    state.uploadedImages.isEmpty) ...[
                   const SizedBox(height: AppTheme.spacingLg),
                   _buildStatsSection(context),
                 ],
@@ -798,21 +823,208 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
   }
 
   Widget _buildAnimatedCounter(int targetValue, Color accentColor) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0, end: targetValue.toDouble()),
-      duration: const Duration(seconds: 1),
+    return TweenAnimationBuilder<int>(
+      tween: IntTween(begin: 0, end: targetValue),
+      duration: const Duration(milliseconds: 1500),
+      curve: Curves.easeOutExpo,
       builder: (context, value, child) {
-        final formatter = NumberFormat('#,###', 'fr_FR');
         return Text(
-          formatter.format(value.toInt()),
+          NumberFormat('#,###').format(value),
           style: TextStyle(
             color: accentColor,
-            fontSize: 20,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0.5,
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            fontFamily: AppTheme.defaultFontFamilyName,
           ),
         );
       },
+    );
+  }
+
+  Widget _buildThumbnailArea(BuildContext context, List<UploadedImage> images) {
+    // Return just the SizedBox to maintain height/layout stability, but without background
+    return SizedBox(
+      width: double.infinity,
+      height: 240, // Same height as branding card
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppTheme.spacingMd,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                  Text(
+                    trad(context)!.files_selected(images.length),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontFamily: AppTheme.defaultFontFamilyName,
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () {
+                      ref
+                          .read(converterProvider.notifier)
+                          .setUploadedImages([]);
+                    },
+                    icon: Icon(
+                      Icons.clear_all_rounded,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    label: Text(
+                      trad(context)!.clear_all,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                        fontSize: 12,
+                        fontFamily: AppTheme.defaultFontFamilyName,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppTheme.spacingSm),
+            SizedBox(
+              height: 80,
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppTheme.spacingMd,
+                ),
+                scrollDirection: Axis.horizontal,
+                itemCount: images.length,
+                separatorBuilder:
+                    (_, _) => const SizedBox(width: AppTheme.spacingSm),
+                itemBuilder: (context, index) {
+                  return _buildPageImageThumbnail(
+                    context,
+                    images[index],
+                    index,
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: AppTheme.spacingMd),
+          ],
+        ),
+      );
+  }
+
+  Widget _buildPageImageThumbnail(
+    BuildContext context,
+    UploadedImage file,
+    int index,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Stack(
+      children: [
+        GestureDetector(
+          onTap: () => _openPageDocumentViewer(index),
+          child: Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              border: Border.all(color: colorScheme.outline),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm - 1),
+              child:
+                  file.isPdf
+                      ? Container(
+                        color: colorScheme.surfaceContainerHigh,
+                        child: Center(
+                          child: Icon(
+                            Icons.picture_as_pdf,
+                            size: 32,
+                            color: Colors.red.shade400,
+                          ),
+                        ),
+                      )
+                      : Image.memory(
+                        file.bytes,
+                        fit: BoxFit.cover,
+                        errorBuilder:
+                            (_, __, _) => Container(
+                              color: colorScheme.surfaceContainerHigh,
+                              child: Icon(
+                                Icons.image_outlined,
+                                size: 24,
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.3,
+                                ),
+                              ),
+                            ),
+                      ),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 4,
+          right: 4,
+          child: GestureDetector(
+            onTap: () {
+              final images = List<UploadedImage>.from(
+                ref.read(converterProvider).uploadedImages,
+              );
+              images.removeAt(index);
+              ref.read(converterProvider.notifier).setUploadedImages(images);
+            },
+            child: Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                color: colorScheme.error,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.close_rounded,
+                size: 14,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _openPageDocumentViewer(int initialIndex) {
+    final state = ref.read(converterProvider);
+    final filePaths =
+        state.uploadedImages
+            .where((img) => img.path != null)
+            .map((img) => img.path!)
+            .toList();
+
+    if (filePaths.isEmpty) return;
+
+    // Adjust index
+    int adjustedIndex = 0;
+    int currentIndex = 0;
+    for (int i = 0; i < state.uploadedImages.length; i++) {
+      if (state.uploadedImages[i].path != null) {
+        if (i == initialIndex) {
+          adjustedIndex = currentIndex;
+          break;
+        }
+        currentIndex++;
+      }
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (context) => DocumentViewerScreen(
+              filePaths: filePaths,
+              initialIndex: adjustedIndex,
+            ),
+      ),
     );
   }
 }
