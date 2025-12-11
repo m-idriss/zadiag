@@ -20,9 +20,21 @@
   "theme_dark": "Sombre",
   "theme_auto": "Auto",
   "text_size": "Taille du texte",
+  "@text_size": {
+    "description": "Label for the setting that allows the user to choose the size of the text in the app."
+  },
   "text_size_small": "Petit",
+  "@text_size_small": {
+    "description": "Option label for selecting a small text size."
+  },
   "text_size_normal": "Normal",
+  "@text_size_normal": {
+    "description": "Option label for selecting the normal (default) text size."
+  },
   "text_size_large": "Grand",
+  "@text_size_large": {
+    "description": "Option label for selecting a large text size."
+  },
   "email_hint": "jean.dupont@email.com",
   "forgot_password": "Mot de passe oublié ?",
   "login_button": "Se connecter",
