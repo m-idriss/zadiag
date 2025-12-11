@@ -493,6 +493,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   }
 
   Widget _deleteAccountCard(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return GlassContainer(
       borderRadius: AppTheme.radiusXl,
       opacity: 0.9,
@@ -602,6 +603,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   }
 
   Widget _settingsCard(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return GlassContainer(
       padding: EdgeInsets.all(AppTheme.spacingMd),
       borderRadius: AppTheme.radiusXl,
@@ -915,6 +917,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   }
 
   Widget _logoutCard(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return GlassContainer(
       borderRadius: AppTheme.radiusXl,
       opacity: 0.9,
