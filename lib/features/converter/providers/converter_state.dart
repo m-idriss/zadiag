@@ -152,6 +152,11 @@ class ConverterNotifier extends Notifier<ConverterState> {
   void clear() {
     state = const ConverterState();
   }
+
+  /// Resets the converter to initial state (alias for clear).
+  void resetState() {
+    clear();
+  }
 }
 
 /// Provider for the converter state.

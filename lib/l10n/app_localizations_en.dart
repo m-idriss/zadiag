@@ -223,6 +223,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get convert_button => 'Convert to Calendar Events';
 
   @override
+  String get convert_another => 'Convert Another';
+
+  @override
   String get extracted_events => 'Extracted Events';
 
   @override

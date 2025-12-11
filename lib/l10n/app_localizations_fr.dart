@@ -224,6 +224,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get convert_button => 'Convertir en événements';
 
   @override
+  String get convert_another => 'Convertir un autre';
+
+  @override
   String get extracted_events => 'Événements extraits';
 
   @override

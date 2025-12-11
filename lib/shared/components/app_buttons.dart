@@ -24,7 +24,7 @@ class PrimaryButton extends StatelessWidget {
 
     return SizedBox(
       width: isFullWidth ? double.infinity : null,
-      height: isLarge ? 56 : null,
+      height: isLarge ? 48 : null,
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
@@ -64,8 +64,8 @@ class PrimaryButton extends StatelessWidget {
                       maxLines: 1,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: isLarge ? 17 : 16,
-                        fontWeight: FontWeight.w700,
+                        fontSize: isLarge ? 15 : 14,
+                        fontWeight: FontWeight.w600,
                         fontFamily: AppTheme.defaultFontFamilyName,
                       ),
                     ),
@@ -104,10 +104,11 @@ class SecondaryButton extends StatelessWidget {
 
     return SizedBox(
       width: isFullWidth ? double.infinity : null,
+      height: 48,
       child: Container(
-        decoration: BoxDecoration(
-          color: buttonColor.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      decoration: BoxDecoration(
+        color: buttonColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         ),
         child: Material(
           color: Colors.transparent,
@@ -127,13 +128,17 @@ class SecondaryButton extends StatelessWidget {
                     Icon(icon, color: buttonColor, size: 18),
                     const SizedBox(width: AppTheme.spacingSm),
                   ],
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: buttonColor,
-                      fontFamily: AppTheme.defaultFontFamilyName,
+                  Flexible(
+                    child: Text(
+                      label,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: buttonColor,
+                        fontFamily: AppTheme.defaultFontFamilyName,
+                      ),
                     ),
                   ),
                 ],

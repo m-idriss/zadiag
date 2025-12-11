@@ -49,12 +49,16 @@ class ImageUploadZone extends StatefulWidget {
   /// Initial list of uploaded images (for state restoration)
   final List<UploadedImage> initialImages;
 
+  /// Whether to show in read-only mode (hide upload zone, show only files)
+  final bool readOnly;
+
   const ImageUploadZone({
     super.key,
     required this.onImagesUploaded,
     this.maxImages = 5,
     this.isLoading = false,
     this.initialImages = const [],
+    this.readOnly = false,
   });
 
   @override
@@ -103,107 +107,112 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Upload zone
-        GlassContainer(
-          borderRadius: AppTheme.radiusXl,
-          opacity: _isDragging ? 0.95 : 0.85,
-          border: Border.all(
-            color:
-                _isDragging
-                    ? colorScheme.primary
-                    : colorScheme.outline.withValues(alpha: 0.5),
-            width: _isDragging ? 2 : 1,
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap:
-                  widget.isLoading || _isPickerActive
-                      ? null
-                      : _showImageSourceSelection,
-              borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.spacingLg,
-                  vertical: AppTheme.spacingMd,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (widget.isLoading) ...[
-                      SizedBox(
-                        width: 36,
-                        height: 36,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 3,
-                          color: colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(height: AppTheme.spacingSm),
-                      Text(
-                        trad(context)!.processing_images,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: colorScheme.onSurface,
-                          fontFamily: AppTheme.defaultFontFamilyName,
-                        ),
-                      ),
-                    ] else ...[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: colorScheme.primary.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.cloud_upload_outlined,
-                              size: 24,
-                              color: colorScheme.primary,
-                            ),
+        // Upload zone - only show if not readOnly
+        if (!widget.readOnly)
+          GlassContainer(
+            borderRadius: AppTheme.radiusXl,
+            opacity: _isDragging ? 0.95 : 0.85,
+            border: Border.all(
+              color:
+                  _isDragging
+                      ? colorScheme.primary
+                      : colorScheme.outline.withValues(alpha: 0.5),
+              width: _isDragging ? 2 : 1,
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap:
+                    widget.isLoading || _isPickerActive
+                        ? null
+                        : _showImageSourceSelection,
+                borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTheme.spacingLg,
+                    vertical: AppTheme.spacingMd,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (widget.isLoading) ...[
+                        SizedBox(
+                          width: 36,
+                          height: 36,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 3,
+                            color: colorScheme.primary,
                           ),
-                          const SizedBox(width: AppTheme.spacingMd),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  trad(context)!.upload_files,
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                    color: colorScheme.onSurface,
-                                    fontFamily: AppTheme.defaultFontFamilyName,
-                                  ),
+                        ),
+                        const SizedBox(height: AppTheme.spacingSm),
+                        Text(
+                          trad(context)!.processing_images,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: colorScheme.onSurface,
+                            fontFamily: AppTheme.defaultFontFamilyName,
+                          ),
+                        ),
+                      ] else ...[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: colorScheme.primary.withValues(
+                                  alpha: 0.1,
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '${trad(context)!.supported_formats} (Max ${widget.maxImages})',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: colorScheme.onSurface.withValues(
-                                      alpha: 0.5,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.cloud_upload_outlined,
+                                size: 24,
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(width: AppTheme.spacingMd),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    trad(context)!.upload_files,
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: colorScheme.onSurface,
+                                      fontFamily:
+                                          AppTheme.defaultFontFamilyName,
                                     ),
-                                    fontFamily: AppTheme.defaultFontFamilyName,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${trad(context)!.supported_formats} (Max ${widget.maxImages})',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: colorScheme.onSurface.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                      fontFamily:
+                                          AppTheme.defaultFontFamilyName,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
 
         // File preview grid
         if (_uploadedImages.isNotEmpty) ...[

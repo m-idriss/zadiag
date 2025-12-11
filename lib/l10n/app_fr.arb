@@ -69,6 +69,7 @@
   "converter_title": "Convertir des fichiers",
   "converter_subtitle": "Téléchargez des photos ou des PDF de rendez-vous et d'agendas pour extraire les événements du calendrier.",
   "convert_button": "Convertir en événements",
+  "convert_another": "Convertir un autre",
   "extracted_events": "Événements extraits",
   "download_ics": "Télécharger le fichier ICS",
   "no_events_found": "Aucun événement trouvé dans les fichiers",

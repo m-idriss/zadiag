@@ -512,6 +512,12 @@ abstract class AppLocalizations {
   /// **'Convert to Calendar Events'**
   String get convert_button;
 
+  /// No description provided for @convert_another.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert Another'**
+  String get convert_another;
+
   /// No description provided for @extracted_events.
   ///
   /// In en, this message translates to:

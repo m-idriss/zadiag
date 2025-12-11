@@ -69,6 +69,7 @@
   "converter_title": "Convert Files",
   "converter_subtitle": "Upload photos or PDFs of appointments and schedules to extract calendar events.",
   "convert_button": "Convert to Calendar Events",
+  "convert_another": "Convert Another",
   "extracted_events": "Extracted Events",
   "download_ics": "Download ICS File",
   "no_events_found": "No events found in files",

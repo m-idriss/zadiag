@@ -9,6 +9,7 @@ import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/core/utils/translate.dart';
 import 'package:zadiag/shared/components/glass_container.dart';
 import 'package:zadiag/shared/components/glass_scaffold.dart';
+import 'package:zadiag/shared/components/app_buttons.dart';
 import 'package:zadiag/core/services/log_service.dart';
 
 import 'providers/converter_state.dart';
@@ -289,24 +290,30 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
                   const SizedBox(height: AppTheme.spacingMd),
                   _buildErrorMessage(context, state.errorMessage!),
                 ],
-                if (state.extractedEvents.isNotEmpty) ...[
-                  const SizedBox(height: AppTheme.spacingXl),
-                  _buildEventsSection(context, state),
+
+                if (state.extractedEvents.isEmpty) ...[
+                  const SizedBox(height: AppTheme.spacingLg),
                 ],
-                const SizedBox(height: AppTheme.spacingLg),
                 ImageUploadZone(
                   onImagesUploaded: _onImagesUploaded,
                   isLoading: state.isProcessing,
                   maxImages: 5,
                   initialImages: state.uploadedImages,
+                  readOnly: state.extractedEvents.isNotEmpty,
                 ),
                 if (state.extractedEvents.isNotEmpty) ...[
-                  const SizedBox(height: AppTheme.spacingLg),
-                  _buildExportButton(context, state),
+                  const SizedBox(height: AppTheme.spacingXl),
+                  _buildEventsSection(context, state),
                 ],
-                if (state.uploadedImages.isNotEmpty && !state.isProcessing) ...[
+                if (state.extractedEvents.isNotEmpty) ...[
                   const SizedBox(height: AppTheme.spacingLg),
-                  _buildConvertButton(context),
+                  _buildActionButtons(context, state),
+                ] else ...[
+                  if (state.uploadedImages.isNotEmpty &&
+                      !state.isProcessing) ...[
+                    const SizedBox(height: AppTheme.spacingLg),
+                    _buildConvertButton(context),
+                  ],
                 ],
                 if (state.extractedEvents.isEmpty) ...[
                   const SizedBox(height: AppTheme.spacingLg),
@@ -601,66 +608,59 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
     );
   }
 
-  Widget _buildExportButton(BuildContext context, ConverterState state) {
-    return Container(
-      height: 56,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        color: Theme.of(context).colorScheme.secondary,
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(
-              context,
-            ).colorScheme.secondary.withValues(alpha: 0.4),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: state.isExporting ? null : _downloadIcs,
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          child: Center(
-            child:
-                state.isExporting
-                    ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
+  Widget _buildActionButtons(BuildContext context, ConverterState state) {
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child:
+              state.isExporting
+                  ? Container(
+                    height: 48,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Theme.of(context).colorScheme.primary,
+                          Theme.of(context).colorScheme.secondary,
+                        ],
                       ),
-                    )
-                    : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.download_rounded,
-                          color: Colors.white,
-                          size: 22,
-                        ),
-                        const SizedBox(width: AppTheme.spacingSm),
-                        Flexible(
-                          child: Text(
-                            trad(context)!.download_ics,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 17,
-                              fontWeight: FontWeight.w700,
-                              fontFamily: AppTheme.defaultFontFamilyName,
-                            ),
-                          ),
-                        ),
-                      ],
+                      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                     ),
+                    child: Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  )
+                  : PrimaryButton(
+                    label: trad(context)!.download_ics,
+                    icon: Icons.download_rounded,
+                    onPressed: _downloadIcs,
+                    isFullWidth: true,
+                    isLarge: true,
+                  ),
+        ),
+        const SizedBox(height: AppTheme.spacingSm),
+        SizedBox(
+          width: double.infinity,
+          child: SecondaryButton(
+            label: trad(context)!.convert_another,
+            icon: Icons.refresh_rounded,
+            onPressed: _resetConverter,
+            isFullWidth: true,
           ),
         ),
-      ),
+      ],
     );
+  }
+
+  void _resetConverter() {
+    ref.read(converterProvider.notifier).resetState();
   }
 
   Widget _brandingCard(BuildContext context, double radiusLg) {
