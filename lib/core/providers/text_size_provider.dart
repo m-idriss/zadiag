@@ -6,17 +6,6 @@ enum TextSize {
   normal,
   large;
 
-  String get displayName {
-    switch (this) {
-      case TextSize.small:
-        return 'Small';
-      case TextSize.normal:
-        return 'Normal';
-      case TextSize.large:
-        return 'Large';
-    }
-  }
-
   double get scaleFactor {
     switch (this) {
       case TextSize.small:
@@ -41,14 +30,10 @@ class TextSizeNotifier extends StateNotifier<TextSize> {
     final textSizeString = prefs.getString(_textSizeKey);
     
     if (textSizeString != null) {
-      try {
-        state = TextSize.values.firstWhere(
-          (e) => e.name == textSizeString,
-          orElse: () => TextSize.normal,
-        );
-      } catch (e) {
-        state = TextSize.normal;
-      }
+      state = TextSize.values.firstWhere(
+        (e) => e.name == textSizeString,
+        orElse: () => TextSize.normal,
+      );
     }
   }
 

@@ -687,7 +687,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 child: _textSizeOptionCard(
                   context,
                   size: TextSize.small,
-                  icon: Icons.text_fields,
+                  icon: Icons.text_decrease,
                   label: trad(context)!.text_size_small,
                   isSelected: currentTextSize == TextSize.small,
                   onTap: () => textSizeNotifier.setTextSize(TextSize.small),
@@ -709,7 +709,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 child: _textSizeOptionCard(
                   context,
                   size: TextSize.large,
-                  icon: Icons.text_fields,
+                  icon: Icons.text_increase,
                   label: trad(context)!.text_size_large,
                   isSelected: currentTextSize == TextSize.large,
                   onTap: () => textSizeNotifier.setTextSize(TextSize.large),
@@ -784,7 +784,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     required VoidCallback onTap,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    final iconSize = size == TextSize.small ? 20.0 : size == TextSize.normal ? 24.0 : 28.0;
+    double iconSize;
+    switch (size) {
+      case TextSize.small:
+        iconSize = 20.0;
+        break;
+      case TextSize.normal:
+        iconSize = 24.0;
+        break;
+      case TextSize.large:
+        iconSize = 28.0;
+        break;
+    }
 
     return GestureDetector(
       onTap: onTap,
