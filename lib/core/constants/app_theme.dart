@@ -46,62 +46,48 @@ class AppTheme {
   static const double spacingXl = 32.0;
   static const double spacingXxl = 48.0;
 
-  // Border radius constants
-  static const double radiusXs = 4.0;
-  static const double radiusSm = 8.0;
-  static const double radiusMd = 12.0;
-  static const double radiusLg = 16.0;
-  static const double radiusXl = 24.0;
-  static const double radiusXxl = 32.0;
+  // Border radius constants - Minimal values for flat design
+  static const double radiusXs = 2.0;
+  static const double radiusSm = 4.0;
+  static const double radiusMd = 6.0;
+  static const double radiusLg = 8.0;
+  static const double radiusXl = 8.0;
+  static const double radiusXxl = 8.0;
   static const double radiusFull = 9999.0;
 
-  // Shadow definitions
-  static List<BoxShadow> get cardShadow => [
-    BoxShadow(
-      color: Colors.black.withValues(alpha: 0.05),
-      blurRadius: 10,
-      offset: const Offset(0, 4),
-    ),
-  ];
+  // Shadow definitions - Minimal for flat design
+  static List<BoxShadow> get cardShadow => [];
 
   static List<BoxShadow> get elevatedShadow => [
     BoxShadow(
-      color: Colors.black.withValues(alpha: 0.1),
-      blurRadius: 20,
-      offset: const Offset(0, 8),
+      color: Colors.black.withValues(alpha: 0.04),
+      blurRadius: 4,
+      offset: const Offset(0, 1),
     ),
   ];
 
-  static List<Shadow> get textShadow => [
-    Shadow(
-      color: Colors.black.withValues(alpha: 0.2),
-      offset: const Offset(0, 2),
-      blurRadius: 4,
-    ),
-  ];
+  static List<Shadow> get textShadow => [];
 
   // Centralized Decoration Factories
-  /// Creates a standard card decoration with consistent styling
+  /// Creates a standard card decoration with consistent styling - Flat design
   static BoxDecoration cardDecoration(
     ColorScheme colorScheme, {
     double borderRadius = radiusMd,
     Color? color,
     Color? borderColor,
-    double borderWidth = 0,
+    double borderWidth = 1,
   }) {
     return BoxDecoration(
       color: color ?? colorScheme.surfaceContainerHigh,
       borderRadius: BorderRadius.circular(borderRadius),
-      border: borderWidth > 0
-          ? Border.all(
-              color: borderColor ?? Colors.transparent,
-              width: borderWidth,
-            )
-          : null,
+      border: Border.all(
+        color: borderColor ?? colorScheme.outline,
+        width: borderWidth,
+      ),
     );
   }
 
-  /// Creates an icon container decoration with consistent styling
+  /// Creates an icon container decoration with consistent styling - Flat design
   static BoxDecoration iconContainerDecoration(
     ColorScheme colorScheme, {
     double borderRadius = radiusMd,
@@ -109,120 +95,69 @@ class AppTheme {
     bool useGradient = false,
   }) {
     return BoxDecoration(
-      gradient: useGradient
-          ? LinearGradient(
-              colors: [colorScheme.primary, colorScheme.secondary],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            )
-          : null,
-      color: useGradient ? null : (color ?? colorScheme.primary.withValues(alpha: 0.1)),
+      color: color ?? colorScheme.primary.withValues(alpha: 0.1),
       shape: borderRadius == radiusFull ? BoxShape.circle : BoxShape.rectangle,
       borderRadius: borderRadius == radiusFull ? null : BorderRadius.circular(borderRadius),
     );
   }
 
-  /// Creates a glass/elevated container decoration with shadow
+  /// Creates a glass/elevated container decoration - Flat design with subtle shadow
   static BoxDecoration glassDecoration(
     ColorScheme colorScheme, {
-    double borderRadius = radiusXl,
+    double borderRadius = radiusMd,
     Color? color,
     Color? borderColor,
     double borderWidth = 1,
-    double borderAlpha = 0.5,
+    double borderAlpha = 1.0,
     bool isDarkMode = false,
   }) {
     return BoxDecoration(
       color: color ?? colorScheme.surface,
       borderRadius: BorderRadius.circular(borderRadius),
       border: Border.all(
-        color: borderColor ?? colorScheme.outline.withValues(alpha: borderAlpha),
+        color: borderColor ?? colorScheme.outline,
         width: borderWidth,
       ),
-      boxShadow: [
-        BoxShadow(
-          color: colorScheme.shadow.withValues(alpha: isDarkMode ? 0.3 : 0.15),
-          offset: const Offset(0, 4),
-          blurRadius: 20,
-        ),
-      ],
+      boxShadow: elevatedShadow,
     );
   }
 
-  /// Creates a theme option card decoration
+  /// Creates a theme option card decoration - Flat design
   static BoxDecoration themeOptionDecoration(
     ColorScheme colorScheme, {
     required bool isSelected,
     double borderRadius = radiusMd,
   }) {
     return BoxDecoration(
-      gradient: isSelected
-          ? LinearGradient(
-              colors: [colorScheme.primary, colorScheme.secondary],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            )
-          : null,
-      color: isSelected ? null : colorScheme.surfaceContainerHighest,
+      color: isSelected ? colorScheme.primary : colorScheme.surfaceContainerHighest,
       borderRadius: BorderRadius.circular(borderRadius),
       border: Border.all(
-        color: isSelected
-            ? colorScheme.primary.withValues(alpha: 0.3)
-            : Colors.transparent,
-        width: 2,
+        color: isSelected ? colorScheme.primary : colorScheme.outline,
+        width: isSelected ? 2 : 1,
       ),
-      boxShadow: isSelected
-          ? [
-              BoxShadow(
-                color: colorScheme.primary.withValues(alpha: 0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ]
-          : null,
     );
   }
 
-  /// Creates a button decoration with gradient
+  /// Creates a button decoration - Flat design with solid color
   static BoxDecoration buttonDecoration(
     ColorScheme colorScheme, {
-    double borderRadius = radiusLg,
+    double borderRadius = radiusMd,
   }) {
     return BoxDecoration(
       borderRadius: BorderRadius.circular(borderRadius),
-      gradient: LinearGradient(
-        colors: [colorScheme.primary, colorScheme.secondary],
-      ),
-      boxShadow: [
-        BoxShadow(
-          color: colorScheme.primary.withValues(alpha: 0.3),
-          blurRadius: 12,
-          offset: const Offset(0, 6),
-        ),
-      ],
+      color: colorScheme.primary,
     );
   }
 
-  /// Creates an avatar decoration with gradient
+  /// Creates an avatar decoration - Flat design
   static BoxDecoration avatarDecoration(
     ColorScheme colorScheme, {
     double borderRadius = radiusFull,
   }) {
     return BoxDecoration(
-      gradient: LinearGradient(
-        colors: [colorScheme.primary, colorScheme.secondary],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
+      color: colorScheme.primary,
       shape: borderRadius == radiusFull ? BoxShape.circle : BoxShape.rectangle,
       borderRadius: borderRadius == radiusFull ? null : BorderRadius.circular(borderRadius),
-      boxShadow: [
-        BoxShadow(
-          color: colorScheme.primary.withValues(alpha: 0.3),
-          blurRadius: 12,
-          offset: const Offset(0, 4),
-        ),
-      ],
     );
   }
 
@@ -290,7 +225,7 @@ class AppTheme {
             vertical: spacingMd,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radiusLg),
+            borderRadius: BorderRadius.circular(radiusMd),
           ),
         ),
       ),
@@ -371,7 +306,7 @@ class AppTheme {
             vertical: spacingMd,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radiusLg),
+            borderRadius: BorderRadius.circular(radiusMd),
           ),
         ),
       ),
