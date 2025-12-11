@@ -495,4 +495,19 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get error_occurred_please_try_again =>
       'An error occurred, please try again.';
+
+  @override
+  String get view_documents => 'View Documents';
+
+  @override
+  String document_of(int current, int total) {
+    return '$current of $total';
+  }
+
+  @override
+  String get file_not_found => 'File not found';
+
+  @override
+  String get pdf_preview_not_available =>
+      'PDF preview not available. Tap Preview to view in converter.';
 }

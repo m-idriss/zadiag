@@ -208,5 +208,19 @@
   "history_save_failed": "Failed to save conversion history",
   "show_more": "Show More",
   "show_less": "Show Less",
-  "error_occurred_please_try_again": "An error occurred, please try again."
+  "error_occurred_please_try_again": "An error occurred, please try again.",
+  "view_documents": "View Documents",
+  "document_of": "{current} of {total}",
+  "@document_of": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "file_not_found": "File not found",
+  "pdf_preview_not_available": "PDF preview not available. Tap Preview to view in converter."
 }

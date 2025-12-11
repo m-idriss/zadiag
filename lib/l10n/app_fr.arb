@@ -207,6 +207,20 @@
   "history_save_failed": "Échec de l'enregistrement de l'historique de conversion",
   "show_more": "Voir plus",
   "show_less": "Voir moins",
-  "error_occurred_please_try_again": "Une erreur est survenue, veuillez réessayer."
+  "error_occurred_please_try_again": "Une erreur est survenue, veuillez réessayer.",
+  "view_documents": "Voir les documents",
+  "document_of": "{current} sur {total}",
+  "@document_of": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "file_not_found": "Fichier introuvable",
+  "pdf_preview_not_available": "Aperçu PDF non disponible. Appuyez sur Aperçu pour voir dans le convertisseur."
 
 }

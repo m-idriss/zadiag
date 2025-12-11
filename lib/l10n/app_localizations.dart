@@ -1009,6 +1009,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'An error occurred, please try again.'**
   String get error_occurred_please_try_again;
+
+  /// No description provided for @view_documents.
+  ///
+  /// In en, this message translates to:
+  /// **'View Documents'**
+  String get view_documents;
+
+  /// No description provided for @document_of.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} of {total}'**
+  String document_of(int current, int total);
+
+  /// No description provided for @file_not_found.
+  ///
+  /// In en, this message translates to:
+  /// **'File not found'**
+  String get file_not_found;
+
+  /// No description provided for @pdf_preview_not_available.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF preview not available. Tap Preview to view in converter.'**
+  String get pdf_preview_not_available;
 }
 
 class _AppLocalizationsDelegate

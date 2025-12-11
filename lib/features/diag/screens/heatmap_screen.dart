@@ -14,6 +14,7 @@ import 'package:zadiag/shared/components/app_buttons.dart';
 import 'package:zadiag/shared/components/glass_scaffold.dart';
 import 'package:zadiag/features/diag/providers/bottom_nav_provider.dart';
 import 'package:zadiag/features/converter/widgets/image_upload_zone.dart';
+import 'package:zadiag/features/diag/widgets/document_viewer_screen.dart';
 
 class HeatMapScreen extends ConsumerStatefulWidget {
   const HeatMapScreen({super.key});
@@ -111,7 +112,7 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen>
   Widget _header(BuildContext context) {
     return Column(
       children: [
-       // const SizedBox(height: AppTheme.spacingMd),
+        // const SizedBox(height: AppTheme.spacingMd),
         Text(
           trad(context)!.activity_tracking,
           style: TextStyle(
@@ -501,7 +502,13 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen>
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                        child: _buildConversionIcon(context, conversion),
+                        child: GestureDetector(
+                          onTap:
+                              conversion.originalFilePaths.isNotEmpty
+                                  ? () => _openDocumentViewer(conversion)
+                                  : null,
+                          child: _buildConversionIcon(context, conversion),
+                        ),
                       ),
                     ),
                     const SizedBox(width: AppTheme.spacingMd),
@@ -639,10 +646,15 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen>
     ConversionHistory conversion,
   ) {
     if (conversion.originalFilePaths.isEmpty) {
-      return Icon(
-        Icons.event_available_rounded,
-        color: Theme.of(context).colorScheme.primary,
-        size: 24,
+      return Container(
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+        child: Center(
+          child: Icon(
+            Icons.event_available_rounded,
+            color: Theme.of(context).colorScheme.primary,
+            size: 24,
+          ),
+        ),
       );
     }
 
@@ -651,7 +663,7 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen>
 
     if (isPdf) {
       return Container(
-        color: Theme.of(context).colorScheme.surfaceContainerHigh,
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
         child: Center(
           child: Icon(
             Icons.picture_as_pdf,
@@ -667,16 +679,31 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen>
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) {
         return Container(
-          color: Theme.of(context).colorScheme.surfaceContainerHigh,
-          child: Icon(
-            Icons.image_not_supported_outlined,
-            size: 20,
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.5),
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+          child: Center(
+            child: Icon(
+              Icons.event_available_rounded,
+              color: Theme.of(context).colorScheme.primary,
+              size: 24,
+            ),
           ),
         );
       },
+    );
+  }
+
+  /// Opens the document viewer to display original files
+  void _openDocumentViewer(ConversionHistory conversion) {
+    if (conversion.originalFilePaths.isEmpty) return;
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (context) => DocumentViewerScreen(
+              filePaths: conversion.originalFilePaths,
+              initialIndex: 0,
+            ),
+      ),
     );
   }
 

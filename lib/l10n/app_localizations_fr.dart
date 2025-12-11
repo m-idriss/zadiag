@@ -502,4 +502,19 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get error_occurred_please_try_again =>
       'Une erreur est survenue, veuillez réessayer.';
+
+  @override
+  String get view_documents => 'Voir les documents';
+
+  @override
+  String document_of(int current, int total) {
+    return '$current sur $total';
+  }
+
+  @override
+  String get file_not_found => 'Fichier introuvable';
+
+  @override
+  String get pdf_preview_not_available =>
+      'Aperçu PDF non disponible. Appuyez sur Aperçu pour voir dans le convertisseur.';
 }

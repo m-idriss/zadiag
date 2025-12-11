@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -6,6 +7,7 @@ import 'package:zadiag/shared/components/glass_container.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/core/utils/translate.dart';
 import 'package:zadiag/core/services/log_service.dart';
+import 'package:zadiag/features/diag/widgets/document_viewer_screen.dart';
 
 /// Model representing an uploaded file (image or PDF).
 class UploadedImage {
@@ -269,42 +271,45 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
     final file = _uploadedImages[index];
     return Stack(
       children: [
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-            border: Border.all(color: colorScheme.outline),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppTheme.radiusSm - 1),
-            child:
-                file.isPdf
-                    ? Container(
-                      color: colorScheme.surfaceContainerHigh,
-                      child: Center(
-                        child: Icon(
-                          Icons.picture_as_pdf,
-                          size: 28,
-                          color: Colors.red.shade400,
+        GestureDetector(
+          onTap: () => _openDocumentViewer(index),
+          child: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              border: Border.all(color: colorScheme.outline),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm - 1),
+              child:
+                  file.isPdf
+                      ? Container(
+                        color: colorScheme.surfaceContainerHigh,
+                        child: Center(
+                          child: Icon(
+                            Icons.picture_as_pdf,
+                            size: 28,
+                            color: Colors.red.shade400,
+                          ),
                         ),
-                      ),
-                    )
-                    : Image.memory(
-                      file.bytes,
-                      fit: BoxFit.cover,
-                      errorBuilder:
-                          (_, _, _) => Container(
-                            color: colorScheme.surfaceContainerHigh,
-                            child: Icon(
-                              Icons.image_outlined,
-                              size: 20,
-                              color: colorScheme.onSurface.withValues(
-                                alpha: 0.3,
+                      )
+                      : Image.memory(
+                        file.bytes,
+                        fit: BoxFit.cover,
+                        errorBuilder:
+                            (_, _, _) => Container(
+                              color: colorScheme.surfaceContainerHigh,
+                              child: Icon(
+                                Icons.image_outlined,
+                                size: 20,
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.3,
+                                ),
                               ),
                             ),
-                          ),
-                    ),
+                      ),
+            ),
           ),
         ),
         Positioned(
@@ -328,6 +333,40 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
           ),
         ),
       ],
+    );
+  }
+
+  /// Opens the document viewer to display the uploaded files
+  void _openDocumentViewer(int initialIndex) {
+    // Filter to get only files with paths (saved files)
+    final filesWithPaths =
+        _uploadedImages
+            .asMap()
+            .entries
+            .where((entry) => entry.value.path != null)
+            .toList();
+
+    if (filesWithPaths.isEmpty) return;
+
+    // Find the adjusted index in the filtered list
+    int adjustedIndex = 0;
+    for (int i = 0; i < filesWithPaths.length; i++) {
+      if (filesWithPaths[i].key == initialIndex) {
+        adjustedIndex = i;
+        break;
+      }
+    }
+
+    final filePaths = filesWithPaths.map((entry) => entry.value.path!).toList();
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (context) => DocumentViewerScreen(
+              filePaths: filePaths,
+              initialIndex: adjustedIndex,
+            ),
+      ),
     );
   }
 
