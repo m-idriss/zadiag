@@ -112,10 +112,19 @@ class MyApp extends ConsumerWidget {
               locale: currentLocale,
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
-              theme: AppTheme.getLight(textScaleFactor: textScaleFactor),
-              darkTheme: AppTheme.getDark(textScaleFactor: textScaleFactor),
+              theme: AppTheme.getLight(),
+              darkTheme: AppTheme.getDark(),
               themeMode: currentTheme,
               home: const SplashPage(),
+              builder: (context, child) {
+                // Apply text scaling globally using MediaQuery
+                return MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    textScaler: TextScaler.linear(textScaleFactor),
+                  ),
+                  child: child!,
+                );
+              },
             );
           },
         );
