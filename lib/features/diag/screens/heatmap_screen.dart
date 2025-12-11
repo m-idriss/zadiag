@@ -89,9 +89,9 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen>
                   loading: () => _buildLoadingCard(context),
                   error: (error, stack) => _buildErrorCard(context, error),
                 ),
-                const SizedBox(height: AppTheme.spacingMd),
-                _legendCard(context),
-                const SizedBox(height: AppTheme.spacingXl),
+                //const SizedBox(height: AppTheme.spacingMd),
+                //_legendCard(context),
+                const SizedBox(height: AppTheme.spacingLg),
                 conversionsAsync.when(
                   data:
                       (conversions) =>
@@ -111,11 +111,11 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen>
   Widget _header(BuildContext context) {
     return Column(
       children: [
-        const SizedBox(height: AppTheme.spacingMd),
+       // const SizedBox(height: AppTheme.spacingMd),
         Text(
           trad(context)!.activity_tracking,
           style: TextStyle(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.onInverseSurface,
             fontWeight: FontWeight.bold,
             fontFamily: AppTheme.defaultFontFamilyName,
             fontSize: 32,
@@ -129,17 +129,22 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen>
           ),
           textAlign: TextAlign.center,
         ),
+        /*
         const SizedBox(height: AppTheme.spacingSm),
         Text(
           trad(context)!.activity_tracking_subtitle,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.9),
+            color: Theme.of(
+              context,
+            ).colorScheme.onInverseSurface.withValues(alpha: 0.9),
             fontSize: 16,
             height: 1.5,
             fontFamily: AppTheme.defaultFontFamilyName,
           ),
           textAlign: TextAlign.center,
         ),
+
+         */
       ],
     );
   }
@@ -329,7 +334,7 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen>
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
-                  color: colorScheme.onSurface,
+                  color: colorScheme.onInverseSurface,
                   fontFamily: AppTheme.defaultFontFamilyName,
                 ),
               ),

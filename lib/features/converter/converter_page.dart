@@ -331,11 +331,11 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
   Widget _buildHeader(BuildContext context) {
     return Column(
       children: [
-        const SizedBox(height: AppTheme.spacingMd),
+        //const SizedBox(height: AppTheme.spacingMd),
         Text(
           trad(context)!.converter_title,
           style: TextStyle(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.onInverseSurface,
             fontWeight: FontWeight.bold,
             fontFamily: AppTheme.defaultFontFamilyName,
             fontSize: 32,
@@ -349,17 +349,22 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
           ),
           textAlign: TextAlign.center,
         ),
+        /*
         const SizedBox(height: AppTheme.spacingSm),
         Text(
           trad(context)!.converter_subtitle,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.9),
+            color: Theme.of(
+              context,
+            ).colorScheme.onInverseSurface.withValues(alpha: 0.9),
             fontSize: 16,
             height: 1.5,
             fontFamily: AppTheme.defaultFontFamilyName,
           ),
           textAlign: TextAlign.center,
         ),
+
+         */
       ],
     );
   }

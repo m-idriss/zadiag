@@ -834,11 +834,11 @@ class _SettingsScreenState extends State<SettingsScreen>
   Widget _header(BuildContext context) {
     return Column(
       children: [
-        const SizedBox(height: AppTheme.spacingMd),
+       // const SizedBox(height: AppTheme.spacingMd),
         Text(
           trad(context)!.settings,
           style: TextStyle(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.onInverseSurface,
             fontWeight: FontWeight.bold,
             fontFamily: AppTheme.defaultFontFamilyName,
             fontSize: 32,
@@ -852,17 +852,22 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
           textAlign: TextAlign.center,
         ),
+        /*
         const SizedBox(height: AppTheme.spacingSm),
         Text(
           trad(context)!.settings_subtitle,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.9),
+            color: Theme.of(
+              context,
+            ).colorScheme.onInverseSurface.withValues(alpha: 0.9),
             fontSize: 16,
             height: 1.5,
             fontFamily: AppTheme.defaultFontFamilyName,
           ),
           textAlign: TextAlign.center,
         ),
+
+         */
       ],
     );
   }

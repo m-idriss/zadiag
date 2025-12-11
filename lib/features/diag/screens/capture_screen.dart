@@ -33,7 +33,7 @@ class CaptureScreen extends StatelessWidget {
         Text(
           trad(context)!.capture_title,
           style: TextStyle(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.onInverseSurface,
             fontWeight: FontWeight.bold,
             fontFamily: AppTheme.defaultFontFamilyName,
             fontSize: 32,
@@ -51,7 +51,9 @@ class CaptureScreen extends StatelessWidget {
         Text(
           trad(context)!.capture_subtitle,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.9),
+            color: Theme.of(
+              context,
+            ).colorScheme.onInverseSurface.withValues(alpha: 0.9),
             fontSize: 16,
             height: 1.5,
             fontFamily: AppTheme.defaultFontFamilyName,
