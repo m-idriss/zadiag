@@ -785,7 +785,7 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
             style: TextStyle(
               color: Theme.of(
                 context,
-              ).colorScheme.onSurface.withValues(alpha: 0.85),
+              ).colorScheme.onInverseSurface.withValues(alpha: 0.85),
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
@@ -797,7 +797,7 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
             style: TextStyle(
               color: Theme.of(
                 context,
-              ).colorScheme.onSurface.withValues(alpha: 0.85),
+              ).colorScheme.onInverseSurface.withValues(alpha: 0.85),
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
@@ -811,7 +811,7 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
               style: TextStyle(
                 color: Theme.of(
                   context,
-                ).colorScheme.onSurface.withValues(alpha: 0.85),
+                ).colorScheme.onInverseSurface.withValues(alpha: 0.85),
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
               ),
