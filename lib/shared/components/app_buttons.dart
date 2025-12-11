@@ -26,19 +26,7 @@ class PrimaryButton extends StatelessWidget {
       width: isFullWidth ? double.infinity : null,
       height: isLarge ? 48 : null,
       child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          gradient: LinearGradient(
-            colors: [colorScheme.primary, colorScheme.secondary],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: colorScheme.primary.withValues(alpha: 0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
+        decoration: AppTheme.buttonDecoration(colorScheme),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -105,9 +93,9 @@ class SecondaryButton extends StatelessWidget {
       width: isFullWidth ? double.infinity : null,
       height: 48,
       child: Container(
-        decoration: BoxDecoration(
+        decoration: AppTheme.cardDecoration(
+          colorScheme,
           color: buttonColor.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         ),
         child: Material(
           color: Colors.transparent,

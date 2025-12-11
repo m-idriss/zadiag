@@ -215,11 +215,9 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
                             Container(
                               width: 48,
                               height: 48,
-                              decoration: BoxDecoration(
-                                color: colorScheme.primary.withValues(
-                                  alpha: 0.1,
-                                ),
-                                shape: BoxShape.circle,
+                              decoration: AppTheme.iconContainerDecoration(
+                                colorScheme,
+                                borderRadius: AppTheme.radiusFull,
                               ),
                               child: Icon(
                                 Icons.cloud_upload_outlined,
@@ -279,9 +277,10 @@ class _ImageUploadZoneState extends State<ImageUploadZone> {
           child: Container(
             width: 60,
             height: 60,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-              border: Border.all(color: colorScheme.outline),
+            decoration: AppTheme.cardDecoration(
+              colorScheme,
+              borderColor: colorScheme.outline,
+              borderWidth: 1,
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(AppTheme.radiusSm - 1),

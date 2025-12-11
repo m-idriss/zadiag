@@ -80,6 +80,178 @@ class AppTheme {
     ),
   ];
 
+  // Centralized Decoration Factories
+  /// Creates a standard card decoration with consistent styling
+  static BoxDecoration cardDecoration(
+    ColorScheme colorScheme, {
+    double borderRadius = radiusMd,
+    Color? color,
+    Color? borderColor,
+    double borderWidth = 0,
+  }) {
+    return BoxDecoration(
+      color: color ?? colorScheme.surfaceContainerHigh,
+      borderRadius: BorderRadius.circular(borderRadius),
+      border: borderWidth > 0
+          ? Border.all(
+              color: borderColor ?? Colors.transparent,
+              width: borderWidth,
+            )
+          : null,
+    );
+  }
+
+  /// Creates an icon container decoration with consistent styling
+  static BoxDecoration iconContainerDecoration(
+    ColorScheme colorScheme, {
+    double borderRadius = radiusMd,
+    Color? color,
+    bool useGradient = false,
+  }) {
+    return BoxDecoration(
+      gradient: useGradient
+          ? LinearGradient(
+              colors: [colorScheme.primary, colorScheme.secondary],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            )
+          : null,
+      color: useGradient ? null : (color ?? colorScheme.primary.withValues(alpha: 0.1)),
+      borderRadius: BorderRadius.circular(borderRadius),
+    );
+  }
+
+  /// Creates a glass/elevated container decoration with shadow
+  static BoxDecoration glassDecoration(
+    ColorScheme colorScheme, {
+    double borderRadius = radiusXl,
+    Color? color,
+    Color? borderColor,
+    double borderWidth = 1,
+    double borderAlpha = 0.5,
+    bool isDarkMode = false,
+  }) {
+    return BoxDecoration(
+      color: color ?? colorScheme.surface,
+      borderRadius: BorderRadius.circular(borderRadius),
+      border: Border.all(
+        color: borderColor ?? colorScheme.outline.withValues(alpha: borderAlpha),
+        width: borderWidth,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: colorScheme.shadow.withValues(alpha: isDarkMode ? 0.3 : 0.15),
+          offset: const Offset(0, 4),
+          blurRadius: 20,
+        ),
+      ],
+    );
+  }
+
+  /// Creates a theme option card decoration
+  static BoxDecoration themeOptionDecoration(
+    ColorScheme colorScheme, {
+    required bool isSelected,
+    double borderRadius = radiusMd,
+  }) {
+    return BoxDecoration(
+      gradient: isSelected
+          ? LinearGradient(
+              colors: [colorScheme.primary, colorScheme.secondary],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            )
+          : null,
+      color: isSelected ? null : colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(borderRadius),
+      border: Border.all(
+        color: isSelected
+            ? colorScheme.primary.withValues(alpha: 0.3)
+            : Colors.transparent,
+        width: 2,
+      ),
+      boxShadow: isSelected
+          ? [
+              BoxShadow(
+                color: colorScheme.primary.withValues(alpha: 0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ]
+          : null,
+    );
+  }
+
+  /// Creates a button decoration with gradient
+  static BoxDecoration buttonDecoration(
+    ColorScheme colorScheme, {
+    double borderRadius = radiusLg,
+  }) {
+    return BoxDecoration(
+      borderRadius: BorderRadius.circular(borderRadius),
+      gradient: LinearGradient(
+        colors: [colorScheme.primary, colorScheme.secondary],
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: colorScheme.primary.withValues(alpha: 0.3),
+          blurRadius: 12,
+          offset: const Offset(0, 6),
+        ),
+      ],
+    );
+  }
+
+  /// Creates an avatar decoration with gradient
+  static BoxDecoration avatarDecoration(
+    ColorScheme colorScheme, {
+    double borderRadius = radiusFull,
+  }) {
+    return BoxDecoration(
+      gradient: LinearGradient(
+        colors: [colorScheme.primary, colorScheme.secondary],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      shape: borderRadius == radiusFull ? BoxShape.circle : BoxShape.rectangle,
+      borderRadius: borderRadius == radiusFull ? null : BorderRadius.circular(borderRadius),
+      boxShadow: [
+        BoxShadow(
+          color: colorScheme.primary.withValues(alpha: 0.3),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    );
+  }
+
+  /// Creates a date badge decoration
+  static BoxDecoration dateBadgeDecoration(
+    ColorScheme colorScheme, {
+    double borderRadius = radiusMd,
+  }) {
+    return BoxDecoration(
+      color: colorScheme.surface,
+      borderRadius: BorderRadius.circular(borderRadius),
+    );
+  }
+
+  /// Creates an event card decoration
+  static BoxDecoration eventCardDecoration(
+    ColorScheme colorScheme, {
+    double borderRadius = radiusMd,
+    double alpha = 0.15,
+  }) {
+    return BoxDecoration(
+      color: colorScheme.primary.withValues(alpha: alpha),
+      borderRadius: BorderRadius.circular(borderRadius),
+      border: Border.all(
+        color: colorScheme.primary.withValues(alpha: alpha * 2.5),
+        width: 1.0,
+      ),
+    );
+  }
+
   // Private constructor to prevent instantiation
   const AppTheme._();
 

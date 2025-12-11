@@ -211,21 +211,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 Container(
                   width: 60,
                   height: 60,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [colorScheme.primary, colorScheme.secondary],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: colorScheme.primary.withValues(alpha: 0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
+                  decoration: AppTheme.avatarDecoration(colorScheme),
                   child: Center(
                     child: Text(
                       user?.email?.substring(0, 1).toUpperCase() ?? "U",
@@ -521,9 +507,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 Container(
                   width: 44,
                   height: 44,
-                  decoration: BoxDecoration(
+                  decoration: AppTheme.iconContainerDecoration(
+                    colorScheme,
                     color: Colors.red.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                   ),
                   child: Icon(
                     Icons.delete_forever_rounded,
@@ -628,15 +614,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               Container(
                 width: 44,
                 height: 44,
-                decoration: BoxDecoration(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                ),
+                decoration: AppTheme.iconContainerDecoration(colorScheme),
                 child: Icon(
                   Icons.brightness_6_rounded,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: colorScheme.primary,
                   size: 22,
                 ),
               ),
@@ -705,34 +686,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           vertical: AppTheme.spacingMd,
           horizontal: AppTheme.spacingSm,
         ),
-        decoration: BoxDecoration(
-          gradient:
-              isSelected
-                  ? LinearGradient(
-                    colors: [colorScheme.primary, colorScheme.secondary],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  )
-                  : null,
-          color: isSelected ? null : colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-          border: Border.all(
-            color:
-                isSelected
-                    ? colorScheme.primary.withValues(alpha: 0.3)
-                    : Colors.transparent,
-            width: 2,
-          ),
-          boxShadow:
-              isSelected
-                  ? [
-                    BoxShadow(
-                      color: colorScheme.primary.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                  : null,
+        decoration: AppTheme.themeOptionDecoration(
+          colorScheme,
+          isSelected: isSelected,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -788,9 +744,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 Container(
                   width: 44,
                   height: 44,
-                  decoration: BoxDecoration(
+                  decoration: AppTheme.iconContainerDecoration(
+                    colorScheme,
                     color: colorScheme.secondary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                   ),
                   child: Icon(
                     Icons.settings_applications_rounded,
@@ -990,15 +946,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 Container(
                   width: 44,
                   height: 44,
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  decoration: AppTheme.iconContainerDecoration(
+                    colorScheme,
+                    color: colorScheme.error.withValues(alpha: 0.1),
                   ),
                   child: Icon(
                     Icons.logout_rounded,
-                    color: Theme.of(context).colorScheme.error,
+                    color: colorScheme.error,
                     size: 22,
                   ),
                 ),
@@ -1069,6 +1023,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   }
 
   Widget _notificationCard(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return GlassContainer(
       padding: EdgeInsets.all(AppTheme.spacingMd),
       borderRadius: AppTheme.radiusXl,
@@ -1078,14 +1034,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           Container(
             width: 48,
             height: 48,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Theme.of(context).colorScheme.primary,
-                  Theme.of(context).colorScheme.secondary,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            decoration: AppTheme.iconContainerDecoration(
+              colorScheme,
+              useGradient: true,
             ),
             child: Icon(
               Icons.notifications_rounded,

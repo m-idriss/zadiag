@@ -57,9 +57,9 @@ class EventCard extends StatelessWidget {
     return Container(
       alignment: Alignment.centerRight,
       padding: const EdgeInsets.only(right: AppTheme.spacingLg),
-      decoration: BoxDecoration(
+      decoration: AppTheme.cardDecoration(
+        colorScheme,
         color: colorScheme.error,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
       ),
       child: const Icon(Icons.delete_rounded, color: Colors.white, size: 24),
     );
@@ -72,12 +72,10 @@ class EventCard extends StatelessWidget {
     final timeFormat = DateFormat.Hm();
 
     return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-        border: Border.all(
-          color: Colors.transparent,
-        ),
+      decoration: AppTheme.cardDecoration(
+        colorScheme,
+        borderColor: Colors.transparent,
+        borderWidth: 1,
       ),
       child: Material(
         color: Colors.transparent,
@@ -114,10 +112,7 @@ class EventCard extends StatelessWidget {
     return Container(
       width: 48,
       height: 48,
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-      ),
+      decoration: AppTheme.dateBadgeDecoration(colorScheme),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

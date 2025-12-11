@@ -113,6 +113,8 @@ Container socialButtons(BuildContext context) {
 
 /// Builds a single social login icon button.
 Widget _socialIcon(BuildContext context, String iconName) {
+  final colorScheme = Theme.of(context).colorScheme;
+  
   return Container(
     margin: EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
     child: Material(
@@ -125,13 +127,12 @@ Widget _socialIcon(BuildContext context, String iconName) {
         child: Container(
           width: 56,
           height: 56,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outline,
-              width: 1.5,
-            ),
+          decoration: AppTheme.cardDecoration(
+            colorScheme,
+            color: colorScheme.surface,
+            borderColor: colorScheme.outline,
+            borderWidth: 1.5,
+          ).copyWith(
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.05),
@@ -146,7 +147,7 @@ Widget _socialIcon(BuildContext context, String iconName) {
               width: 24,
               height: 24,
               colorFilter: ColorFilter.mode(
-                Theme.of(context).colorScheme.primary,
+                colorScheme.primary,
                 BlendMode.srcIn,
               ),
             ),
