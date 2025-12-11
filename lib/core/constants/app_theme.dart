@@ -256,7 +256,7 @@ class AppTheme {
   // Private constructor to prevent instantiation
   const AppTheme._();
 
-  static ThemeData getLight() {
+  static ThemeData getLight({double textScaleFactor = 1.0}) {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
@@ -280,8 +280,8 @@ class AppTheme {
           backgroundColor: lightPrimary,
           foregroundColor: lightOnPrimary,
           elevation: 0,
-          textStyle: const TextStyle(
-            fontSize: 16,
+          textStyle: TextStyle(
+            fontSize: 16 * textScaleFactor,
             fontWeight: FontWeight.w600,
             fontFamily: defaultFontFamilyName,
           ),
@@ -298,8 +298,8 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: lightPrimary,
           side: const BorderSide(color: lightOutlineVariant),
-          textStyle: const TextStyle(
-            fontSize: 14,
+          textStyle: TextStyle(
+            fontSize: 14 * textScaleFactor,
             fontWeight: FontWeight.w600,
             fontFamily: defaultFontFamilyName,
           ),
@@ -333,11 +333,11 @@ class AppTheme {
           borderSide: const BorderSide(color: lightError),
         ),
       ),
-      textTheme: _textTheme(lightOnSurface),
+      textTheme: _textTheme(lightOnSurface, textScaleFactor),
     );
   }
 
-  static ThemeData getDark() {
+  static ThemeData getDark({double textScaleFactor = 1.0}) {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
@@ -361,8 +361,8 @@ class AppTheme {
           backgroundColor: darkPrimary,
           foregroundColor: darkOnPrimary,
           elevation: 0,
-          textStyle: const TextStyle(
-            fontSize: 16,
+          textStyle: TextStyle(
+            fontSize: 16 * textScaleFactor,
             fontWeight: FontWeight.w600,
             fontFamily: defaultFontFamilyName,
           ),
@@ -379,8 +379,8 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: darkPrimary,
           side: const BorderSide(color: darkOutlineVariant),
-          textStyle: const TextStyle(
-            fontSize: 14,
+          textStyle: TextStyle(
+            fontSize: 14 * textScaleFactor,
             fontWeight: FontWeight.w600,
             fontFamily: defaultFontFamilyName,
           ),
@@ -414,105 +414,105 @@ class AppTheme {
           borderSide: const BorderSide(color: darkError),
         ),
       ),
-      textTheme: _textTheme(darkOnSurface),
+      textTheme: _textTheme(darkOnSurface, textScaleFactor),
     );
   }
 
-  static TextTheme _textTheme(Color color) {
+  static TextTheme _textTheme(Color color, [double scaleFactor = 1.0]) {
     return TextTheme(
       displayLarge: TextStyle(
-        fontSize: 57,
+        fontSize: 57 * scaleFactor,
         fontWeight: FontWeight.w400,
         fontFamily: defaultFontFamilyName,
         color: color,
       ),
       displayMedium: TextStyle(
-        fontSize: 45,
+        fontSize: 45 * scaleFactor,
         fontWeight: FontWeight.w400,
         fontFamily: defaultFontFamilyName,
         color: color,
       ),
       displaySmall: TextStyle(
-        fontSize: 36,
+        fontSize: 36 * scaleFactor,
         fontWeight: FontWeight.w400,
         fontFamily: defaultFontFamilyName,
         color: color,
       ),
       headlineLarge: TextStyle(
-        fontSize: 32,
+        fontSize: 32 * scaleFactor,
         fontWeight: FontWeight.w400,
         fontFamily: defaultFontFamilyName,
         color: color,
       ),
       headlineMedium: TextStyle(
-        fontSize: 28,
+        fontSize: 28 * scaleFactor,
         fontWeight: FontWeight.w400,
         fontFamily: defaultFontFamilyName,
         color: color,
       ),
       headlineSmall: TextStyle(
-        fontSize: 24,
+        fontSize: 24 * scaleFactor,
         fontWeight: FontWeight.w400,
         fontFamily: defaultFontFamilyName,
         color: color,
       ),
       titleLarge: TextStyle(
-        fontSize: 22,
+        fontSize: 22 * scaleFactor,
         fontWeight: FontWeight.w500,
         fontFamily: defaultFontFamilyName,
         color: color,
       ),
       titleMedium: TextStyle(
-        fontSize: 16,
+        fontSize: 16 * scaleFactor,
         fontWeight: FontWeight.w500,
         fontFamily: defaultFontFamilyName,
         color: color,
         letterSpacing: 0.15,
       ),
       titleSmall: TextStyle(
-        fontSize: 14,
+        fontSize: 14 * scaleFactor,
         fontWeight: FontWeight.w500,
         fontFamily: defaultFontFamilyName,
         color: color,
         letterSpacing: 0.1,
       ),
       bodyLarge: TextStyle(
-        fontSize: 16,
+        fontSize: 16 * scaleFactor,
         fontWeight: FontWeight.w400,
         fontFamily: defaultFontFamilyName,
         color: color,
         letterSpacing: 0.5,
       ),
       bodyMedium: TextStyle(
-        fontSize: 14,
+        fontSize: 14 * scaleFactor,
         fontWeight: FontWeight.w400,
         fontFamily: defaultFontFamilyName,
         color: color,
         letterSpacing: 0.25,
       ),
       bodySmall: TextStyle(
-        fontSize: 12,
+        fontSize: 12 * scaleFactor,
         fontWeight: FontWeight.w400,
         fontFamily: defaultFontFamilyName,
         color: color.withValues(alpha: 0.7),
         letterSpacing: 0.4,
       ),
       labelLarge: TextStyle(
-        fontSize: 14,
+        fontSize: 14 * scaleFactor,
         fontWeight: FontWeight.w500,
         fontFamily: defaultFontFamilyName,
         color: color,
         letterSpacing: 0.1,
       ),
       labelMedium: TextStyle(
-        fontSize: 12,
+        fontSize: 12 * scaleFactor,
         fontWeight: FontWeight.w500,
         fontFamily: defaultFontFamilyName,
         color: color,
         letterSpacing: 0.5,
       ),
       labelSmall: TextStyle(
-        fontSize: 11,
+        fontSize: 11 * scaleFactor,
         fontWeight: FontWeight.w500,
         fontFamily: defaultFontFamilyName,
         color: color,

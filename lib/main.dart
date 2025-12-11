@@ -11,6 +11,7 @@ import 'package:zadiag/features/auth/screens/splash_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:zadiag/firebase_options.dart';
 import 'package:zadiag/l10n/app_localizations.dart';
+import 'package:zadiag/core/providers/text_size_provider.dart';
 
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.system);
 final ValueNotifier<Locale?> localeNotifier = ValueNotifier(null);
@@ -88,14 +89,17 @@ Future<void> setLocale(BuildContext context, Locale newLocale) async {
   await prefs.setString('languageCode', newLocale.languageCode);
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   static Future<void> changeLanguage(BuildContext context, Locale newLocale) =>
       setLocale(context, newLocale);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final textSize = ref.watch(textSizeProvider);
+    final textScaleFactor = textSize.scaleFactor;
+
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
       builder: (context, currentTheme, _) {
@@ -108,8 +112,8 @@ class MyApp extends StatelessWidget {
               locale: currentLocale,
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
-              theme: AppTheme.getLight(),
-              darkTheme: AppTheme.getDark(),
+              theme: AppTheme.getLight(textScaleFactor: textScaleFactor),
+              darkTheme: AppTheme.getDark(textScaleFactor: textScaleFactor),
               themeMode: currentTheme,
               home: const SplashPage(),
             );

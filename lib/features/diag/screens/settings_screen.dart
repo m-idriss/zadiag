@@ -18,6 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zadiag/features/converter/providers/conversion_history_provider.dart';
 import 'package:zadiag/features/converter/providers/converter_settings_provider.dart';
 import 'package:zadiag/shared/components/slide_action_button.dart';
+import 'package:zadiag/core/providers/text_size_provider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -604,6 +605,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
   Widget _settingsCard(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final currentTextSize = ref.watch(textSizeProvider);
+    final textSizeNotifier = ref.read(textSizeProvider.notifier);
+
     return GlassContainer(
       padding: EdgeInsets.all(AppTheme.spacingMd),
       borderRadius: AppTheme.radiusXl,
@@ -666,6 +670,53 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               ),
             ],
           ),
+          const SizedBox(height: AppTheme.spacingLg),
+          // Text Size Section
+          Text(
+            trad(context)!.text_size,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: AppTheme.spacingMd),
+          // Text Size options
+          Row(
+            children: [
+              Expanded(
+                child: _textSizeOptionCard(
+                  context,
+                  size: TextSize.small,
+                  icon: Icons.text_fields,
+                  label: trad(context)!.text_size_small,
+                  isSelected: currentTextSize == TextSize.small,
+                  onTap: () => textSizeNotifier.setTextSize(TextSize.small),
+                ),
+              ),
+              const SizedBox(width: AppTheme.spacingSm),
+              Expanded(
+                child: _textSizeOptionCard(
+                  context,
+                  size: TextSize.normal,
+                  icon: Icons.text_fields,
+                  label: trad(context)!.text_size_normal,
+                  isSelected: currentTextSize == TextSize.normal,
+                  onTap: () => textSizeNotifier.setTextSize(TextSize.normal),
+                ),
+              ),
+              const SizedBox(width: AppTheme.spacingSm),
+              Expanded(
+                child: _textSizeOptionCard(
+                  context,
+                  size: TextSize.large,
+                  icon: Icons.text_fields,
+                  label: trad(context)!.text_size_large,
+                  isSelected: currentTextSize == TextSize.large,
+                  onTap: () => textSizeNotifier.setTextSize(TextSize.large),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -703,6 +754,61 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                       ? Colors.white
                       : colorScheme.onSurface.withValues(alpha: 0.7),
               size: 28,
+            ),
+            const SizedBox(height: AppTheme.spacingXs),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: AppTheme.defaultFontFamilyName,
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color:
+                    isSelected
+                        ? Colors.white
+                        : colorScheme.onSurface.withValues(alpha: 0.8),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _textSizeOptionCard(
+    BuildContext context, {
+    required TextSize size,
+    required IconData icon,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final iconSize = size == TextSize.small ? 20.0 : size == TextSize.normal ? 24.0 : 28.0;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        padding: EdgeInsets.symmetric(
+          vertical: AppTheme.spacingMd,
+          horizontal: AppTheme.spacingSm,
+        ),
+        decoration: AppTheme.themeOptionDecoration(
+          colorScheme,
+          isSelected: isSelected,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color:
+                  isSelected
+                      ? Colors.white
+                      : colorScheme.onSurface.withValues(alpha: 0.7),
+              size: iconSize,
             ),
             const SizedBox(height: AppTheme.spacingXs),
             Text(
