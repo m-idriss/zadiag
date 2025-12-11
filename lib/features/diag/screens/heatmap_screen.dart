@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_heatmap_calendar/flutter_heatmap_calendar.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:zadiag/core/utils/translate.dart';
@@ -154,47 +154,208 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen>
     BuildContext context,
     Map<DateTime, int> heatMapDatasets,
   ) {
+    // Generate dates for the last ~100 days (similar to previous view)
+    // We want to end on today or end of this week
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    // Ensure we start on a Sunday to align columns correctly
+    // Calculate end date (Saturday of this week)
+    final daysUntilSaturday = 6 - today.weekday % 7;
+    final endDate = today.add(Duration(days: daysUntilSaturday));
+
+    // We want roughly 14 weeks visible
+    const numberOfWeeks = 14;
+    final startDate = endDate.subtract(
+      const Duration(days: numberOfWeeks * 7 - 1),
+    );
+
     return GlassContainer(
       padding: EdgeInsets.all(AppTheme.spacingMd),
       borderRadius: AppTheme.radiusXl,
       opacity: 0.9,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        child: HeatMap(
-          scrollable: true,
-          colorMode: ColorMode.opacity,
-          defaultColor: Theme.of(context).colorScheme.surfaceContainerHigh,
-          textColor: Theme.of(context).colorScheme.onSurface,
-          datasets: heatMapDatasets,
-          size: 20,
-          colorTipCount: 5,
-          colorTipSize: 12,
-          showColorTip: false,
-          colorsets: {
-            1: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
-            2: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.5),
-            3: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.7),
-            4: Theme.of(context).colorScheme.secondary,
-          },
-          onClick: (value) {
-            final clickedDate = DateTime.parse(value.toString());
-            final normalizedDate = DateTime(
-              clickedDate.year,
-              clickedDate.month,
-              clickedDate.day,
-            );
-            setState(() {
-              if (_selectedDate == normalizedDate) {
-                _selectedDate = null;
-              } else {
-                _selectedDate = normalizedDate;
-              }
-              _visibleConversionsCount = _initialItemsCount;
-            });
-          },
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          // Day Labels Column
+          Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              // Empty space to align with month labels row
+              const SizedBox(height: 20),
+              _buildDayLabel(context, ''),
+              _buildDayLabel(context, 'Mon'),
+              _buildDayLabel(context, ''),
+              _buildDayLabel(context, 'Wed'),
+              _buildDayLabel(context, ''),
+              _buildDayLabel(context, 'Fri'),
+              _buildDayLabel(context, ''),
+            ],
+          ),
+          const SizedBox(width: AppTheme.spacingSm),
+
+          // Heatmap Grid with Month Labels
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              reverse: true, // Scroll to end (today)
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: List.generate(numberOfWeeks, (weekIndex) {
+                  final weekStartDate = startDate.add(
+                    Duration(days: weekIndex * 7),
+                  );
+
+                  // Check if we should show month label
+                  // Show if it's the first visible week, or if the month changed from previous week
+                  bool showMonth = false;
+                  if (weekIndex == 0) {
+                    showMonth = true;
+                  } else {
+                    final prevWeekStartDate = startDate.add(
+                      Duration(days: (weekIndex - 1) * 7),
+                    );
+                    if (prevWeekStartDate.month != weekStartDate.month) {
+                      showMonth = true;
+                    }
+                  }
+
+                  return Column(
+                    children: [
+                      // Month Label
+                      Container(
+                        height: 20,
+                        width: 20, // Match cell width
+                        alignment: Alignment.bottomLeft,
+                        child:
+                            showMonth
+                                ? Text(
+                                  DateFormat.MMM().format(weekStartDate),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.7),
+                                    fontFamily: AppTheme.defaultFontFamilyName,
+                                  ),
+                                  overflow: TextOverflow.visible,
+                                  softWrap: false,
+                                )
+                                : null,
+                      ),
+
+                      // Days
+                      ...List.generate(7, (dayIndex) {
+                        // Calculate date for this cell
+                        final cellDate = weekStartDate.add(
+                          Duration(days: dayIndex),
+                        );
+
+                        // Normalize date for comparison
+                        final normalizedDate = DateTime(
+                          cellDate.year,
+                          cellDate.month,
+                          cellDate.day,
+                        );
+
+                        // Check if it's in the future (optional, depending on desired behavior)
+                        if (normalizedDate.isAfter(today)) {
+                          return _buildEmptyFutureCell(context);
+                        }
+
+                        final value = heatMapDatasets[normalizedDate] ?? 0;
+                        final isToday = normalizedDate == today;
+                        final isSelected = _selectedDate == normalizedDate;
+
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              if (_selectedDate == normalizedDate) {
+                                _selectedDate = null;
+                              } else {
+                                _selectedDate = normalizedDate;
+                              }
+                              _visibleConversionsCount = _initialItemsCount;
+                            });
+                          },
+                          child: Container(
+                            width: 20,
+                            height: 20,
+                            margin: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: _getCellColor(context, value),
+                              borderRadius: BorderRadius.circular(4),
+                              border:
+                                  isToday
+                                      ? Border.all(
+                                        color:
+                                            Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
+                                        width: 2,
+                                      )
+                                      : isSelected
+                                      ? Border.all(
+                                        color:
+                                            Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
+                                        width: 1,
+                                      )
+                                      : null,
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
+                  );
+                }),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDayLabel(BuildContext context, String text) {
+    return Container(
+      height: 20,
+      margin: const EdgeInsets.symmetric(vertical: 2),
+      alignment: Alignment.center,
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 10,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+          fontFamily: AppTheme.defaultFontFamilyName,
         ),
       ),
     );
+  }
+
+  Widget _buildEmptyFutureCell(BuildContext context) {
+    return Container(
+      width: 20,
+      height: 20,
+      margin: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(4),
+      ),
+    );
+  }
+
+  Color _getCellColor(BuildContext context, int value) {
+    if (value == 0) {
+      return Theme.of(context).colorScheme.surfaceContainerHigh;
+    }
+
+    // Adapted from original logic
+    final opacity =
+        value <= 1 ? 0.3 : (value <= 3 ? 0.5 : (value <= 5 ? 0.7 : 1.0));
+    return Theme.of(context).colorScheme.secondary.withValues(alpha: opacity);
   }
 
   Widget _legendCard(BuildContext context) {
