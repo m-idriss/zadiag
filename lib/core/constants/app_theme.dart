@@ -72,57 +72,330 @@ class AppTheme {
     ),
   ];
 
+  static List<Shadow> get textShadow => [
+    Shadow(
+      color: Colors.black.withValues(alpha: 0.2),
+      offset: const Offset(0, 2),
+      blurRadius: 4,
+    ),
+  ];
+
   // Private constructor to prevent instantiation
   const AppTheme._();
 
-  /// Creates a heading text style (large, bold titles).
-  static TextStyle headingStyle(Color color) => TextStyle(
+  static ThemeData getLight() {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      colorScheme: lightColorScheme,
+      fontFamily: defaultFontFamilyName,
+      scaffoldBackgroundColor: lightTertiary,
+      /*
+      // TODO: Fix CardTheme type error
+      cardTheme: CardTheme(
+        color: lightSurface,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusMd),
+          side: const BorderSide(color: lightOutline, width: 1),
+        ),
+        margin: EdgeInsets.zero,
+      ),
+      */
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: lightPrimary,
+          foregroundColor: lightOnPrimary,
+          elevation: 0,
+          textStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            fontFamily: defaultFontFamilyName,
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: spacingLg,
+            vertical: spacingMd,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(radiusLg),
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: lightPrimary,
+          side: const BorderSide(color: lightOutlineVariant),
+          textStyle: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            fontFamily: defaultFontFamilyName,
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: spacingMd,
+            vertical: spacingMd,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(radiusMd),
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: lightSurface,
+        contentPadding: const EdgeInsets.all(spacingMd),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(radiusMd),
+          borderSide: const BorderSide(color: lightOutline),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(radiusMd),
+          borderSide: const BorderSide(color: lightOutline),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(radiusMd),
+          borderSide: const BorderSide(color: lightPrimary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(radiusMd),
+          borderSide: const BorderSide(color: lightError),
+        ),
+      ),
+      textTheme: _textTheme(lightOnSurface),
+    );
+  }
+
+  static ThemeData getDark() {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: darkColorScheme,
+      fontFamily: defaultFontFamilyName,
+      scaffoldBackgroundColor: darkTertiary,
+      /*
+      // TODO: Fix CardTheme type error
+      cardTheme: CardTheme(
+        color: darkSurface,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusMd),
+          side: const BorderSide(color: darkOutline, width: 1),
+        ),
+        margin: EdgeInsets.zero,
+      ),
+      */
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: darkPrimary,
+          foregroundColor: darkOnPrimary,
+          elevation: 0,
+          textStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            fontFamily: defaultFontFamilyName,
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: spacingLg,
+            vertical: spacingMd,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(radiusLg),
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: darkPrimary,
+          side: const BorderSide(color: darkOutlineVariant),
+          textStyle: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            fontFamily: defaultFontFamilyName,
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: spacingMd,
+            vertical: spacingMd,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(radiusMd),
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: darkSurface,
+        contentPadding: const EdgeInsets.all(spacingMd),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(radiusMd),
+          borderSide: const BorderSide(color: darkOutline),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(radiusMd),
+          borderSide: const BorderSide(color: darkOutline),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(radiusMd),
+          borderSide: const BorderSide(color: darkPrimary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(radiusMd),
+          borderSide: const BorderSide(color: darkError),
+        ),
+      ),
+      textTheme: _textTheme(darkOnSurface),
+    );
+  }
+
+  static TextTheme _textTheme(Color color) {
+    return TextTheme(
+      displayLarge: TextStyle(
+        fontSize: 57,
+        fontWeight: FontWeight.w400,
+        fontFamily: defaultFontFamilyName,
+        color: color,
+      ),
+      displayMedium: TextStyle(
+        fontSize: 45,
+        fontWeight: FontWeight.w400,
+        fontFamily: defaultFontFamilyName,
+        color: color,
+      ),
+      displaySmall: TextStyle(
+        fontSize: 36,
+        fontWeight: FontWeight.w400,
+        fontFamily: defaultFontFamilyName,
+        color: color,
+      ),
+      headlineLarge: TextStyle(
+        fontSize: 32,
+        fontWeight: FontWeight.w400,
+        fontFamily: defaultFontFamilyName,
+        color: color,
+      ),
+      headlineMedium: TextStyle(
         fontSize: 28,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w400,
         fontFamily: defaultFontFamilyName,
         color: color,
-        letterSpacing: -0.5,
-      );
-
-  /// Creates a title text style (section headers).
-  static TextStyle titleStyle(Color color) => TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.w700,
+      ),
+      headlineSmall: TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.w400,
         fontFamily: defaultFontFamilyName,
         color: color,
-      );
-
-  /// Creates a body text style (regular content).
-  static TextStyle bodyStyle(Color color, {double alpha = 1.0}) => TextStyle(
-        fontSize: 14,
+      ),
+      titleLarge: TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w500,
         fontFamily: defaultFontFamilyName,
-        color: color.withValues(alpha: alpha),
-        height: 1.5,
-      );
-
-  /// Creates a label text style (small, secondary text).
-  static TextStyle labelStyle(Color color, {double alpha = 0.6}) => TextStyle(
-        fontSize: 12,
+        color: color,
+      ),
+      titleMedium: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
         fontFamily: defaultFontFamilyName,
-        color: color.withValues(alpha: alpha),
-      );
-
-  /// Creates a button text style.
-  static TextStyle buttonStyle({Color color = Colors.white}) => TextStyle(
+        color: color,
+        letterSpacing: 0.15,
+      ),
+      titleSmall: TextStyle(
         fontSize: 14,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w500,
+        fontFamily: defaultFontFamilyName,
+        color: color,
+        letterSpacing: 0.1,
+      ),
+      bodyLarge: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w400,
         fontFamily: defaultFontFamilyName,
         color: color,
         letterSpacing: 0.5,
-      );
+      ),
+      bodyMedium: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        fontFamily: defaultFontFamilyName,
+        color: color,
+        letterSpacing: 0.25,
+      ),
+      bodySmall: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w400,
+        fontFamily: defaultFontFamilyName,
+        color: color.withValues(alpha: 0.7),
+        letterSpacing: 0.4,
+      ),
+      labelLarge: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        fontFamily: defaultFontFamilyName,
+        color: color,
+        letterSpacing: 0.1,
+      ),
+      labelMedium: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        fontFamily: defaultFontFamilyName,
+        color: color,
+        letterSpacing: 0.5,
+      ),
+      labelSmall: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w500,
+        fontFamily: defaultFontFamilyName,
+        color: color,
+        letterSpacing: 0.5,
+      ),
+    );
+  }
+
+  /// Creates a heading text style (large, bold titles).
+  static TextStyle headingStyle(Color color) => TextStyle(
+    fontSize: 28,
+    fontWeight: FontWeight.w700,
+    fontFamily: defaultFontFamilyName,
+    color: color,
+    letterSpacing: -0.5,
+  );
+
+  /// Creates a title text style (section headers).
+  static TextStyle titleStyle(Color color) => TextStyle(
+    fontSize: 18,
+    fontWeight: FontWeight.w700,
+    fontFamily: defaultFontFamilyName,
+    color: color,
+  );
+
+  /// Creates a body text style (regular content).
+  static TextStyle bodyStyle(Color color, {double alpha = 1.0}) => TextStyle(
+    fontSize: 14,
+    fontFamily: defaultFontFamilyName,
+    color: color.withValues(alpha: alpha),
+    height: 1.5,
+  );
+
+  /// Creates a label text style (small, secondary text).
+  static TextStyle labelStyle(Color color, {double alpha = 0.6}) => TextStyle(
+    fontSize: 12,
+    fontFamily: defaultFontFamilyName,
+    color: color.withValues(alpha: alpha),
+  );
+
+  /// Creates a button text style.
+  static TextStyle buttonStyle({Color color = Colors.white}) => TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    fontFamily: defaultFontFamilyName,
+    color: color,
+    letterSpacing: 0.5,
+  );
 
   /// Creates a large button text style.
   static TextStyle buttonStyleLarge({Color color = Colors.white}) => TextStyle(
-        fontSize: 17,
-        fontWeight: FontWeight.w700,
-        fontFamily: defaultFontFamilyName,
-        color: color,
-      );
+    fontSize: 17,
+    fontWeight: FontWeight.w700,
+    fontFamily: defaultFontFamilyName,
+    color: color,
+  );
 }
 
 const lightColorScheme = ColorScheme(

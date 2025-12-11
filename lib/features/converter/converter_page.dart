@@ -23,7 +23,9 @@ import 'widgets/calendar/calendar_view.dart';
 import 'widgets/calendar/calendar_header.dart'; // For CalendarViewMode
 import 'utils/calendar_utils.dart';
 import 'models/calendar_event.dart'; // For CalendarEvent
-import '../diag/widgets/document_viewer_screen.dart';
+import 'package:zadiag/features/diag/widgets/document_viewer_screen.dart';
+import 'package:zadiag/features/diag/widgets/activity_dashboard.dart';
+import 'package:zadiag/features/converter/providers/converter_settings_provider.dart';
 
 /// Main page for the Image to ICS Converter feature.
 class ConverterPage extends ConsumerStatefulWidget {
@@ -39,6 +41,8 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
   final IcsGenerator _icsGenerator = IcsGenerator();
   final IcsExportService _icsExportService = IcsExportService();
   final ConversionHistoryService _historyService = ConversionHistoryService();
+
+  final ScrollController _scrollController = ScrollController();
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -101,7 +105,16 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
   void dispose() {
     _animationController.dispose();
     _converterService.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _scrollToTop() {
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOut,
+    );
   }
 
   void _onImagesUploaded(List<UploadedImage> images) {
@@ -157,16 +170,22 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
         );
 
         // Auto-save to history
+        final settings = ref.read(converterSettingsProvider);
         final user = FirebaseAuth.instance.currentUser;
         if (user != null) {
           try {
             // Collect paths from uploaded images
-            final filePaths =
-                state.uploadedImages
-                    .map((img) => img.path)
-                    .where((path) => path != null)
-                    .cast<String>()
-                    .toList();
+            List<String> filePaths = [];
+
+            // Only save paths if storage is enabled
+            if (settings.enableStorage) {
+              filePaths =
+                  state.uploadedImages
+                      .map((img) => img.path)
+                      .where((path) => path != null)
+                      .cast<String>()
+                      .toList();
+            }
 
             await _historyService.saveConversion(
               events: result.events,
@@ -262,6 +281,7 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
           child: SlideTransition(
             position: _slideAnimation,
             child: ListView(
+              controller: _scrollController,
               padding: const EdgeInsets.all(AppTheme.spacingLg),
               physics: const BouncingScrollPhysics(),
               children: [
@@ -320,6 +340,21 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
                   const SizedBox(height: AppTheme.spacingLg),
                   _buildActionButtons(context, state),
                 ],
+
+                const SizedBox(height: AppTheme.spacingXxl),
+                const Divider(),
+                const SizedBox(height: AppTheme.spacingXxl),
+
+                // Activity Dashboard
+                if (ref
+                    .watch(converterSettingsProvider)
+                    .showActivityDashboard) ...[
+                  ActivityDashboard(onConversionRestored: _scrollToTop),
+                ],
+
+                const SizedBox(
+                  height: 120,
+                ), // Bottom spacer for better accessibility
               ],
             ),
           ),
@@ -334,18 +369,10 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
         //const SizedBox(height: AppTheme.spacingMd),
         Text(
           trad(context)!.converter_title,
-          style: TextStyle(
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             color: Theme.of(context).colorScheme.onInverseSurface,
             fontWeight: FontWeight.bold,
-            fontFamily: AppTheme.defaultFontFamilyName,
-            fontSize: 32,
-            shadows: [
-              Shadow(
-                color: Colors.black.withValues(alpha: 0.2),
-                offset: const Offset(0, 2),
-                blurRadius: 4,
-              ),
-            ],
+            shadows: AppTheme.textShadow,
           ),
           textAlign: TextAlign.center,
         ),
@@ -370,57 +397,12 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
   }
 
   Widget _buildConvertButton(BuildContext context) {
-    return Container(
-      height: 56,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        gradient: LinearGradient(
-          colors: [
-            Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.secondary,
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: _processImages,
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          child: Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.auto_awesome_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
-                const SizedBox(width: AppTheme.spacingSm),
-                Flexible(
-                  child: Text(
-                    trad(context)!.convert_button,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: AppTheme.defaultFontFamilyName,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return PrimaryButton(
+      label: trad(context)!.convert_button,
+      icon: Icons.auto_awesome_rounded,
+      onPressed: _processImages,
+      isFullWidth: true,
+      isLarge: true,
     );
   }
 

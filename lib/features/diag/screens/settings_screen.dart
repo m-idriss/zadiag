@@ -16,22 +16,24 @@ import 'package:zadiag/shared/components/glass_container.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zadiag/features/converter/providers/conversion_history_provider.dart';
+import 'package:zadiag/features/converter/providers/converter_settings_provider.dart';
 import 'package:zadiag/shared/components/slide_action_button.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen>
+class _SettingsScreenState extends ConsumerState<SettingsScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _profileFormKey = GlobalKey<FormState>();
   final _userService = UserService();
   bool _notificationsEnabled = true;
   bool _isProfileExpanded = false;
+  bool _isConverterExpanded = false;
 
   // Profile State
   final _nameController = TextEditingController();
@@ -147,7 +149,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   const SizedBox(height: AppTheme.spacingMd),
                   _settingsCard(context),
                   const SizedBox(height: AppTheme.spacingMd),
-                  _storageCard(context),
+                  _converterSettingsCard(context),
                   const SizedBox(height: AppTheme.spacingMd),
                   _notificationCard(context),
                   const SizedBox(height: AppTheme.spacingMd),
@@ -245,9 +247,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                         _nameController.text.isNotEmpty
                             ? _nameController.text
                             : (trad(context)!.profile),
-                        style: TextStyle(
-                          fontFamily: AppTheme.defaultFontFamilyName,
-                          fontSize: 18,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: colorScheme.onSurface,
                         ),
@@ -369,10 +369,8 @@ class _SettingsScreenState extends State<SettingsScreen>
       onTap: () => _selectBirthDate(context),
       child: AbsorbPointer(
         child: TextFormField(
-          style: TextStyle(
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: Theme.of(context).colorScheme.onSurface,
-            fontSize: 14,
-            fontFamily: AppTheme.defaultFontFamilyName,
           ),
           decoration: inputDecoration(
             context,
@@ -645,9 +643,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               const SizedBox(width: AppTheme.spacingMd),
               Text(
                 trad(context)!.appearance,
-                style: TextStyle(
-                  fontFamily: AppTheme.defaultFontFamilyName,
-                  fontSize: 16,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
@@ -769,75 +765,191 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  Widget _storageCard(BuildContext context) {
+  Widget _converterSettingsCard(BuildContext context) {
+    final settings = ref.watch(converterSettingsProvider);
+    final notifier = ref.read(converterSettingsProvider.notifier);
+    final colorScheme = Theme.of(context).colorScheme;
+
     return GlassContainer(
       padding: EdgeInsets.all(AppTheme.spacingMd),
       borderRadius: AppTheme.radiusXl,
       opacity: 0.9,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: Colors.orange.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                ),
-                child: const Icon(
-                  Icons.sd_storage_rounded,
-                  color: Colors.orange,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: AppTheme.spacingMd),
-              Text(
-                // Fallback if translations not regenerated yet
-                trad(context)?.clean_storage ?? 'Storage',
-                style: TextStyle(
-                  fontFamily: AppTheme.defaultFontFamilyName,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppTheme.spacingLg),
-
-          Consumer(
-            builder: (context, ref, child) {
-              return SlideActionBtn(
-                text: trad(context)?.clean_all_archives ?? 'Clean all archives',
-                onConfirmation: () async {
-                  await ref
-                      .read(conversionHistoryServiceProvider)
-                      .clearAllHistory();
-
-                  if (context.mounted) {
-                    showSnackBar(
-                      context,
-                      trad(context)?.archives_cleaned ?? 'All archives cleaned',
-                    );
-                  }
-                },
-                backgroundColor: Theme.of(
-                  context,
-                ).colorScheme.error.withValues(alpha: 0.1),
-                sliderButtonColor: Theme.of(context).colorScheme.error,
-                sliderButtonIcon: Icons.delete_forever_rounded,
-                sliderButtonIconColor: Colors.white,
-                textStyle: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                  fontFamily: AppTheme.defaultFontFamilyName,
-                ),
-              );
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _isConverterExpanded = !_isConverterExpanded;
+              });
             },
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: colorScheme.secondary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  ),
+                  child: Icon(
+                    Icons.settings_applications_rounded,
+                    color: colorScheme.secondary,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: AppTheme.spacingMd),
+                Expanded(
+                  child: Text(
+                    'Converter', // TODO: Add translation
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                AnimatedRotation(
+                  turns: _isConverterExpanded ? 0.25 : 0,
+                  duration: const Duration(milliseconds: 300),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface.withValues(alpha: 0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: colorScheme.primary,
+                      size: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: Column(
+              children: [
+                const SizedBox(height: AppTheme.spacingMd),
+                Divider(color: colorScheme.outline.withValues(alpha: 0.2)),
+                const SizedBox(height: AppTheme.spacingXs),
+
+                _buildSwitchRow(
+                  context,
+                  title: 'Show Activity Dashboard', // TODO: Add translation
+                  value: settings.showActivityDashboard,
+                  onChanged: (val) => notifier.toggleActivityDashboard(val),
+                ),
+
+                Divider(color: colorScheme.outline.withValues(alpha: 0.2)),
+
+                _buildSwitchRow(
+                  context,
+                  title: 'Save Converted Files', // TODO: Add translation
+                  subtitle:
+                      'Save original files to local storage', // TODO: Add translation
+                  value: settings.enableStorage,
+                  onChanged: (val) => notifier.toggleStorage(val),
+                ),
+
+                if (settings.enableStorage) ...[
+                  Divider(color: colorScheme.outline.withValues(alpha: 0.2)),
+                  const SizedBox(height: AppTheme.spacingSm),
+                  Consumer(
+                    builder: (context, ref, child) {
+                      return SlideActionBtn(
+                        text:
+                            trad(context)?.clean_all_archives ??
+                            'Clean all archives',
+                        onConfirmation: () async {
+                          await ref
+                              .read(conversionHistoryServiceProvider)
+                              .clearAllHistory();
+
+                          if (context.mounted) {
+                            showSnackBar(
+                              context,
+                              trad(context)?.archives_cleaned ??
+                                  'All archives cleaned',
+                            );
+                          }
+                        },
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.error.withValues(alpha: 0.1),
+                        sliderButtonColor: Theme.of(context).colorScheme.error,
+                        sliderButtonIcon: Icons.delete_forever_rounded,
+                        sliderButtonIconColor: Colors.white,
+                        textStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          fontFamily: AppTheme.defaultFontFamilyName,
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: AppTheme.spacingSm),
+                ],
+              ],
+            ),
+            crossFadeState:
+                _isConverterExpanded
+                    ? CrossFadeState.showSecond
+                    : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 300),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSwitchRow(
+    BuildContext context, {
+    required String title,
+    String? subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontFamily: AppTheme.defaultFontFamilyName,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontFamily: AppTheme.defaultFontFamilyName,
+                      fontSize: 12,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          CupertinoSwitch(
+            activeTrackColor: Theme.of(context).colorScheme.primary,
+            value: value,
+            onChanged: onChanged,
           ),
         ],
       ),

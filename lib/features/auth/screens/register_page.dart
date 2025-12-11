@@ -149,18 +149,10 @@ class _RegisterPageState extends State<RegisterPage>
       child: Text(
         trad(context)!.create_account,
         textAlign: TextAlign.center,
-        style: TextStyle(
-          color: Colors.white,
+        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
           fontWeight: FontWeight.bold,
-          fontFamily: AppTheme.defaultFontFamilyName,
-          fontSize: 32,
-          shadows: [
-            Shadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              offset: const Offset(0, 2),
-              blurRadius: 4,
-            ),
-          ],
+          color: Colors.white,
+          shadows: AppTheme.textShadow,
         ),
       ),
     );
@@ -172,11 +164,9 @@ class _RegisterPageState extends State<RegisterPage>
       child: Text(
         trad(context)!.register_subtitle,
         textAlign: TextAlign.center,
-        style: TextStyle(
+        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
           color: Colors.white.withValues(alpha: 0.9),
-          fontSize: 16,
           height: 1.5,
-          fontFamily: AppTheme.defaultFontFamilyName,
         ),
       ),
     );
@@ -299,10 +289,8 @@ class _RegisterPageState extends State<RegisterPage>
             padding: EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
             child: Text(
               trad(context)!.or_connect_with,
-              style: TextStyle(
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: Colors.white.withValues(alpha: 0.8),
-                fontSize: 12,
-                fontFamily: AppTheme.defaultFontFamilyName,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -341,9 +329,8 @@ class _RegisterPageState extends State<RegisterPage>
         ),
         child: Text(
           trad(context)!.already_have_account,
-          style: TextStyle(
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
             color: Theme.of(context).colorScheme.primary,
-            fontFamily: AppTheme.defaultFontFamilyName,
             fontWeight: FontWeight.w600,
             fontSize: 14,
           ),

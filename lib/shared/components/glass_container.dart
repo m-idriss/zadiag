@@ -33,10 +33,9 @@ class GlassContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     // Get theme-aware base color
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final baseColor =
-        isDarkMode
-            ? Colors.black.withValues(alpha: opacity)
-            : Colors.white.withValues(alpha: opacity);
+    final themeSurface = Theme.of(context).colorScheme.surface;
+    // Use theme surface color but with opacity for glass effect
+    final baseColor = color ?? themeSurface.withValues(alpha: opacity);
 
     return Container(
       width: width,

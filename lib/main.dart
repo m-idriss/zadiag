@@ -108,14 +108,8 @@ class MyApp extends StatelessWidget {
               locale: currentLocale,
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
-              theme: ThemeData(
-                useMaterial3: true,
-                colorScheme: lightColorScheme,
-              ),
-              darkTheme: ThemeData(
-                useMaterial3: true,
-                colorScheme: darkColorScheme,
-              ),
+              theme: AppTheme.getLight(),
+              darkTheme: AppTheme.getDark(),
               themeMode: currentTheme,
               home: const SplashPage(),
             );

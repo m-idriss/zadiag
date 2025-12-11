@@ -16,8 +16,8 @@ class BottomNavNotifier extends StateNotifier<Menu> {
   }
 
   void selectConverterPage() {
-    // Index 1 is the Converter page in the bottom navigation
-    selectPageByIndex(1);
+    // Index 0 is the Converter/Home page in the bottom navigation
+    selectPageByIndex(0);
   }
 }
 

@@ -117,18 +117,10 @@ class _LoginPageState extends State<LoginPage>
       child: Text(
         trad(context)!.welcome,
         textAlign: TextAlign.center,
-        style: TextStyle(
-          color: Colors.white,
+        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
           fontWeight: FontWeight.bold,
-          fontFamily: AppTheme.defaultFontFamilyName,
-          fontSize: 32,
-          shadows: [
-            Shadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              offset: const Offset(0, 2),
-              blurRadius: 4,
-            ),
-          ],
+          color: Colors.white, // Keep white for GlassScaffold context
+          shadows: AppTheme.textShadow,
         ),
       ),
     );
@@ -140,11 +132,9 @@ class _LoginPageState extends State<LoginPage>
       child: Text(
         trad(context)!.login_subtitle,
         textAlign: TextAlign.center,
-        style: TextStyle(
+        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
           color: Colors.white.withValues(alpha: 0.9),
-          fontSize: 16,
           height: 1.5,
-          fontFamily: AppTheme.defaultFontFamilyName,
         ),
       ),
     );
@@ -236,11 +226,9 @@ class _LoginPageState extends State<LoginPage>
         ),
         child: Text(
           trad(context)!.forgot_password,
-          style: TextStyle(
-            fontSize: 13,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
             color: Theme.of(context).colorScheme.primary,
             fontWeight: FontWeight.w600,
-            fontFamily: AppTheme.defaultFontFamilyName,
           ),
         ),
       ),
@@ -265,10 +253,8 @@ class _LoginPageState extends State<LoginPage>
             padding: EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
             child: Text(
               trad(context)!.or_connect_with,
-              style: TextStyle(
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: Colors.white.withValues(alpha: 0.8),
-                fontSize: 12,
-                fontFamily: AppTheme.defaultFontFamilyName,
                 fontWeight: FontWeight.w500,
               ),
             ),

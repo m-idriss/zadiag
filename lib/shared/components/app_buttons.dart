@@ -47,7 +47,7 @@ class PrimaryButton extends StatelessWidget {
             child: Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: isLarge ? AppTheme.spacingLg : AppTheme.spacingMd,
-                vertical: isLarge ? AppTheme.spacingMd : AppTheme.spacingSm,
+                vertical: isLarge ? 12.0 : AppTheme.spacingSm,
               ),
               child: Row(
                 mainAxisSize: isFullWidth ? MainAxisSize.max : MainAxisSize.min,
@@ -62,11 +62,10 @@ class PrimaryButton extends StatelessWidget {
                       label,
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
-                      style: TextStyle(
-                        color: Colors.white,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: colorScheme.onPrimary,
                         fontSize: isLarge ? 15 : 14,
                         fontWeight: FontWeight.w600,
-                        fontFamily: AppTheme.defaultFontFamilyName,
                       ),
                     ),
                   ),
@@ -106,9 +105,9 @@ class SecondaryButton extends StatelessWidget {
       width: isFullWidth ? double.infinity : null,
       height: 48,
       child: Container(
-      decoration: BoxDecoration(
-        color: buttonColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        decoration: BoxDecoration(
+          color: buttonColor.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         ),
         child: Material(
           color: Colors.transparent,
@@ -133,11 +132,10 @@ class SecondaryButton extends StatelessWidget {
                       label,
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
-                      style: TextStyle(
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: buttonColor,
-                        fontFamily: AppTheme.defaultFontFamilyName,
                       ),
                     ),
                   ),

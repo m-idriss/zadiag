@@ -90,15 +90,14 @@ Column buildHeader(BuildContext context, String title, String subtitle) {
       const SizedBox(height: AppTheme.spacingMd),
       Text(
         title,
-        style: AppTheme.headingStyle(Theme.of(context).colorScheme.onSurface),
+        style: Theme.of(context).textTheme.headlineMedium,
         textAlign: TextAlign.center,
       ),
       const SizedBox(height: AppTheme.spacingSm),
       Text(
         subtitle,
-        style: AppTheme.bodyStyle(
-          Theme.of(context).colorScheme.onSurface,
-          alpha: 0.7,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
         ),
         textAlign: TextAlign.center,
       ),
@@ -171,11 +170,6 @@ InputDecoration inputDecoration(
 ]) {
   return InputDecoration(
     hintText: hintText,
-    hintStyle: TextStyle(
-      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-      fontSize: 14,
-      fontFamily: AppTheme.defaultFontFamilyName,
-    ),
     prefixIcon: Padding(
       padding: const EdgeInsets.all(14),
       child: SvgPicture.asset(
@@ -189,37 +183,6 @@ InputDecoration inputDecoration(
       ),
     ),
     suffixIcon: suffixIcon,
-    contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-    enabledBorder: OutlineInputBorder(
-      borderSide: BorderSide(
-        color: Theme.of(context).colorScheme.outline,
-        width: 1.5,
-      ),
-      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderSide: BorderSide(
-        color: Theme.of(context).colorScheme.primary,
-        width: 2,
-      ),
-      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-    ),
-    errorBorder: OutlineInputBorder(
-      borderSide: BorderSide(
-        color: Theme.of(context).colorScheme.error,
-        width: 1.5,
-      ),
-      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-    ),
-    focusedErrorBorder: OutlineInputBorder(
-      borderSide: BorderSide(
-        color: Theme.of(context).colorScheme.error,
-        width: 2,
-      ),
-      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-    ),
-    filled: true,
-    fillColor: Theme.of(context).colorScheme.surface,
   );
 }
 
