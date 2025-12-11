@@ -9,7 +9,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Style: Lint](https://img.shields.io/badge/style-lint-4BC0F5.svg)](https://pub.dev/packages/flutter_lints)
 
-<p align="center">
+<p>
   <a href="#features">Features</a> •
   <a href="#screenshots">Screenshots</a> •
   <a href="#getting-started">Getting Started</a> •
@@ -23,20 +23,24 @@
 
 ## 🚀 About
 
-**Zadiag** is a cutting-edge Flutter application designed to provide users with powerful diagnostic and tracking tools wrapped in a premium, animated user interface. Leveraging the power of Rive animations and modern design principles, Zadiag offers a seamless experience for tracking activities, managing appointments, and visualizing data.
+**Zadiag** is a cutting-edge Flutter application designed to provide users with powerful diagnostic and tracking tools wrapped in a premium, animated user interface. Leveraging the power of Rive animations and modern design principles like Glassmorphism, Zadiag offers a seamless experience for tracking activities, managing appointments, and converting external schedules into digital formats.
 
+<a id="features"></a>
 ## ✨ Features
 
 | Feature | Description |
 | :--- | :--- |
 | **📊 Interactive Dashboard** | A dynamic home screen featuring smooth transitions and engaging animations that bring your data to life. |
 | **🔥 Activity Heatmap** | Visualize your daily activity intensity over time with an intuitive and beautiful heatmap calendar. |
+| **📅 AI Calendar Converter** | **(Core)** Convert images of physical appointments or PDF schedules directly into ICS calendar events using smart recognition. |
+| **💾 Offline History** | Automatically save and browse your conversion history locally with persistent storage. |
+| **🌍 Multi-language Support** | Fully localized interface available in English and French. |
 | **📸 Capture Tool** | Integrated camera and screen capture functionality for quick documentation and logging. |
-| **📅 AI Calendar Converter** | **(New!)** Convert images of appointments directly into ICS calendar events using smart text recognition. |
 | **🎨 Branding Studio** | Customize the look and feel of the application with a dedicated branding management suite. |
 | **👤 Profile Management** | Comprehensive user profile settings to tailor the application to your preferences. |
 | **🎬 Rive Animations** | High-quality, interactive animations that respond to user input for a delightful UX. |
 
+<a id="screenshots"></a>
 ## 📱 Screenshots
 
 <div align="center">
@@ -46,14 +50,17 @@
   <img src="https://via.placeholder.com/250x500?text=Converter" alt="Converter" width="200" />
 </div>
 
+<a id="tech-stack"></a>
 ## 🛠 Tech Stack
 
 -   **Framework**: [Flutter](https://flutter.dev/)
 -   **Language**: [Dart](https://dart.dev/)
 -   **Animations**: [Rive](https://rive.app/)
 -   **Backend**: [Firebase](https://firebase.google.com/) (Auth, Firestore)
--   **Visualization**: [flutter_heatmap_calendar](https://pub.dev/packages/flutter_heatmap_calendar)
+-   **Local Database**: [Isar](https://isar.dev/) (High-performance NoSQL)
 -   **State Management**: [Riverpod](https://riverpod.dev/) (Modern & Reactive)
+-   **Visualization**: [flutter_heatmap_calendar](https://pub.dev/packages/flutter_heatmap_calendar), [table_calendar](https://pub.dev/packages/table_calendar)
+-   **Utilities**: [Logger](https://pub.dev/packages/logger) (Structured logging), [Share Plus](https://pub.dev/packages/share_plus)
 
 ## 📂 Project Structure
 
@@ -65,21 +72,22 @@ lib/
 │   └── utils/              # Helper functions (UI, Translation, Navigation)
 ├── features/               # Feature-based modules
 │   ├── auth/               # Authentication screens and logic
-│   ├── converter/          # Image to ICS converter feature
-│   │   ├── models/         # CalendarEvent, ConversionResult
+│   ├── converter/          # Image to ICS converter feature (Core)
+│   │   ├── models/         # CalendarEvent, ConversionResult, UploadedImage
 │   │   ├── providers/      # Riverpod state management
-│   │   ├── services/       # API, ICS generation, export
+│   │   ├── services/       # API, ICS generation, Isar storage
 │   │   └── widgets/        # EventCard, ImageUploadZone
 │   └── diag/               # Main diagnostic screens (Dashboard, Heatmap)
 │       └── screens/        # Profile, Settings, Heatmap, Capture
 ├── shared/                 # Shared widgets and models
-│   ├── components/         # Reusable UI components
+│   ├── components/         # Reusable UI components (StandardCard, Buttons)
 │   ├── models/             # Data models
 │   └── shared.dart         # Barrel export for shared module
 ├── l10n/                   # Localization files (EN, FR)
 └── main.dart               # Application entry point
 ```
 
+<a id="getting-started"></a>
 ## 🏁 Getting Started
 
 Follow these steps to get a local copy up and running.
@@ -103,11 +111,17 @@ Follow these steps to get a local copy up and running.
     flutter pub get
     ```
 
-3.  **Run the application**
+3.  **Generate code (Required for Isar & Riverpod)**
+    ```bash
+    dart run build_runner build --delete-conflicting-outputs
+    ```
+
+4.  **Run the application**
     ```bash
     flutter run
     ```
 
+<a id="roadmap"></a>
 ## 🗺 Roadmap
 
 See our [Image to ICS Roadmap](docs/ROADMAP_IMAGE_TO_ICS.md) for upcoming features in the converter module.
