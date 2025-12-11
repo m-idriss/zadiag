@@ -576,106 +576,129 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen>
     final colorScheme = Theme.of(context).colorScheme;
     final dateFormat = DateFormat('MMM d, yyyy • HH:mm');
 
-    return GlassContainer(
-      borderRadius: AppTheme.radiusXl,
-      opacity: 0.9,
-      margin: const EdgeInsets.only(bottom: AppTheme.spacingMd),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            setState(() {
-              _expandedConversionId =
-                  _expandedConversionId == conversion.id.toString()
-                      ? ''
-                      : conversion.id.toString();
-            });
-          },
+    return Dismissible(
+      key: Key(conversion.id.toString()),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        margin: const EdgeInsets.only(bottom: AppTheme.spacingMd),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: AppTheme.spacingLg),
+        decoration: BoxDecoration(
+          color: colorScheme.error,
           borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-          child: Padding(
-            padding: const EdgeInsets.all(AppTheme.spacingMd),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color:
-                            conversion.originalFilePaths.isNotEmpty
-                                ? Colors.transparent
-                                : colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                        border:
-                            conversion.originalFilePaths.isNotEmpty
-                                ? Border.all(
-                                  color: colorScheme.outline.withValues(
-                                    alpha: 0.5,
-                                  ),
-                                  width: 0.5,
-                                )
-                                : null,
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                        child: GestureDetector(
-                          onTap:
+        ),
+        child: const Icon(Icons.delete_rounded, color: Colors.white, size: 24),
+      ),
+      onDismissed: (direction) {
+        ref
+            .read(conversionHistoryServiceProvider)
+            .deleteConversion(conversion.id);
+      },
+      child: GlassContainer(
+        borderRadius: AppTheme.radiusXl,
+        opacity: 0.9,
+        margin: const EdgeInsets.only(bottom: AppTheme.spacingMd),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              setState(() {
+                _expandedConversionId =
+                    _expandedConversionId == conversion.id.toString()
+                        ? ''
+                        : conversion.id.toString();
+              });
+            },
+            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+            child: Padding(
+              padding: const EdgeInsets.all(AppTheme.spacingMd),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color:
                               conversion.originalFilePaths.isNotEmpty
-                                  ? () => _openDocumentViewer(conversion)
+                                  ? Colors.transparent
+                                  : colorScheme.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.radiusMd,
+                          ),
+                          border:
+                              conversion.originalFilePaths.isNotEmpty
+                                  ? Border.all(
+                                    color: colorScheme.outline.withValues(
+                                      alpha: 0.5,
+                                    ),
+                                    width: 0.5,
+                                  )
                                   : null,
-                          child: _buildConversionIcon(context, conversion),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.radiusMd,
+                          ),
+                          child: GestureDetector(
+                            onTap:
+                                conversion.originalFilePaths.isNotEmpty
+                                    ? () => _openDocumentViewer(conversion)
+                                    : null,
+                            child: _buildConversionIcon(context, conversion),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: AppTheme.spacingMd),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            trad(context)!.events_converted(
-                              conversion.eventCount.toString(),
-                            ),
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: colorScheme.onSurface,
-                              fontFamily: AppTheme.defaultFontFamilyName,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            dateFormat.format(conversion.timestamp),
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: colorScheme.onSurface.withValues(
-                                alpha: 0.6,
+                      const SizedBox(width: AppTheme.spacingMd),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              trad(context)!.events_converted(
+                                conversion.eventCount.toString(),
                               ),
-                              fontFamily: AppTheme.defaultFontFamilyName,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.onSurface,
+                                fontFamily: AppTheme.defaultFontFamilyName,
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 2),
+                            Text(
+                              dateFormat.format(conversion.timestamp),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
+                                ),
+                                fontFamily: AppTheme.defaultFontFamilyName,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    Icon(
-                      _expandedConversionId == conversion.id.toString()
-                          ? Icons.expand_less_rounded
-                          : Icons.expand_more_rounded,
-                      color: colorScheme.onSurface.withValues(alpha: 0.5),
-                    ),
+                      Icon(
+                        _expandedConversionId == conversion.id.toString()
+                            ? Icons.expand_less_rounded
+                            : Icons.expand_more_rounded,
+                        color: colorScheme.onSurface.withValues(alpha: 0.5),
+                      ),
+                    ],
+                  ),
+                  if (_expandedConversionId == conversion.id.toString()) ...[
+                    const SizedBox(height: AppTheme.spacingMd),
+                    const Divider(),
+                    const SizedBox(height: AppTheme.spacingSm),
+                    _buildEventsList(context, conversion),
+                    const SizedBox(height: AppTheme.spacingMd),
+                    _buildActionButtons(context, conversion),
                   ],
-                ),
-                if (_expandedConversionId == conversion.id.toString()) ...[
-                  const SizedBox(height: AppTheme.spacingMd),
-                  const Divider(),
-                  const SizedBox(height: AppTheme.spacingSm),
-                  _buildEventsList(context, conversion),
-                  const SizedBox(height: AppTheme.spacingMd),
-                  _buildActionButtons(context, conversion),
                 ],
-              ],
+              ),
             ),
           ),
         ),

@@ -221,6 +221,8 @@
     }
   },
   "file_not_found": "Fichier introuvable",
-  "pdf_preview_not_available": "Aperçu PDF non disponible. Appuyez sur Aperçu pour voir dans le convertisseur."
-
+  "pdf_preview_not_available": "Aperçu PDF non disponible. Appuyez sur Aperçu pour voir dans le convertisseur.",
+  "clean_storage": "Stockage",
+  "clean_all_archives": "Nettoyer tout l'historique",
+  "archives_cleaned": "Historique nettoyé"
 }

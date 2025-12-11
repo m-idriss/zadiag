@@ -222,5 +222,8 @@
     }
   },
   "file_not_found": "File not found",
-  "pdf_preview_not_available": "PDF preview not available. Tap Preview to view in converter."
+  "pdf_preview_not_available": "PDF preview not available. Tap Preview to view in converter.",
+  "clean_storage": "Storage",
+  "clean_all_archives": "Clean all archives",
+  "archives_cleaned": "All archives cleaned"
 }

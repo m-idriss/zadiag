@@ -14,6 +14,9 @@ import 'package:zadiag/core/utils/navigation_helper.dart';
 import 'package:zadiag/shared/components/glass_scaffold.dart';
 import 'package:zadiag/shared/components/glass_container.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:zadiag/features/converter/providers/conversion_history_provider.dart';
+import 'package:zadiag/shared/components/slide_action_button.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -143,6 +146,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                   _profileCard(context),
                   const SizedBox(height: AppTheme.spacingMd),
                   _settingsCard(context),
+                  const SizedBox(height: AppTheme.spacingMd),
+                  _storageCard(context),
                   const SizedBox(height: AppTheme.spacingMd),
                   _notificationCard(context),
                   const SizedBox(height: AppTheme.spacingMd),
@@ -760,6 +765,81 @@ class _SettingsScreenState extends State<SettingsScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _storageCard(BuildContext context) {
+    return GlassContainer(
+      padding: EdgeInsets.all(AppTheme.spacingMd),
+      borderRadius: AppTheme.radiusXl,
+      opacity: 0.9,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                ),
+                child: const Icon(
+                  Icons.sd_storage_rounded,
+                  color: Colors.orange,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: AppTheme.spacingMd),
+              Text(
+                // Fallback if translations not regenerated yet
+                trad(context)?.clean_storage ?? 'Storage',
+                style: TextStyle(
+                  fontFamily: AppTheme.defaultFontFamilyName,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppTheme.spacingLg),
+
+          Consumer(
+            builder: (context, ref, child) {
+              return SlideActionBtn(
+                text: trad(context)?.clean_all_archives ?? 'Clean all archives',
+                onConfirmation: () async {
+                  await ref
+                      .read(conversionHistoryServiceProvider)
+                      .clearAllHistory();
+
+                  if (context.mounted) {
+                    showSnackBar(
+                      context,
+                      trad(context)?.archives_cleaned ?? 'All archives cleaned',
+                    );
+                  }
+                },
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.error.withValues(alpha: 0.1),
+                sliderButtonColor: Theme.of(context).colorScheme.error,
+                sliderButtonIcon: Icons.delete_forever_rounded,
+                sliderButtonIconColor: Colors.white,
+                textStyle: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                  fontFamily: AppTheme.defaultFontFamilyName,
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }

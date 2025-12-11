@@ -133,9 +133,27 @@ class ConversionHistoryService {
     return counts;
   }
 
-  /// Deletes a conversion record
+  /// Deletes a conversion record and its associated files
   Future<void> deleteConversion(int conversionId) async {
     final isar = await _isarService.db;
+
+    // Get conversion to find file paths
+    final conversion = await isar.conversionHistorys.get(conversionId);
+    if (conversion != null) {
+      // Delete physical files
+      for (final path in conversion.originalFilePaths) {
+        try {
+          final file = File(path);
+          if (await file.exists()) {
+            await file.delete();
+          }
+        } catch (e) {
+          Log.e('Error deleting file $path: $e');
+        }
+      }
+    }
+
+    // Delete record
     await isar.writeTxn(() async {
       await isar.conversionHistorys.delete(conversionId);
     });
@@ -158,5 +176,38 @@ class ConversionHistoryService {
     );
 
     return {'totalConversions': totalConversions, 'totalEvents': totalEvents};
+  }
+
+  /// Clears all conversion history and deletes files
+  Future<void> clearAllHistory() async {
+    if (_userId == null) {
+      throw Exception('User must be authenticated to clear history');
+    }
+
+    final isar = await _isarService.db;
+    final conversions =
+        await isar.conversionHistorys.where().userIdEqualTo(_userId!).findAll();
+
+    // 1. Delete physical files
+    for (final conversion in conversions) {
+      for (final path in conversion.originalFilePaths) {
+        try {
+          final file = File(path);
+          if (await file.exists()) {
+            await file.delete();
+          }
+        } catch (e) {
+          Log.e('Error deleting file $path: $e');
+          // Continue deleting other files even if one fails
+        }
+      }
+    }
+
+    // 2. Delete database records
+    await isar.writeTxn(() async {
+      await isar.conversionHistorys.where().userIdEqualTo(_userId!).deleteAll();
+    });
+
+    Log.d('Cleared all history for user $_userId');
   }
 }

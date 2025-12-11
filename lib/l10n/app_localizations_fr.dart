@@ -517,4 +517,13 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get pdf_preview_not_available =>
       'Aperçu PDF non disponible. Appuyez sur Aperçu pour voir dans le convertisseur.';
+
+  @override
+  String get clean_storage => 'Stockage';
+
+  @override
+  String get clean_all_archives => 'Nettoyer tout l\'historique';
+
+  @override
+  String get archives_cleaned => 'Historique nettoyé';
 }

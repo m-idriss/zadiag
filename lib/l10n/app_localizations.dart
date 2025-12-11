@@ -1033,6 +1033,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'PDF preview not available. Tap Preview to view in converter.'**
   String get pdf_preview_not_available;
+
+  /// No description provided for @clean_storage.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage'**
+  String get clean_storage;
+
+  /// No description provided for @clean_all_archives.
+  ///
+  /// In en, this message translates to:
+  /// **'Clean all archives'**
+  String get clean_all_archives;
+
+  /// No description provided for @archives_cleaned.
+  ///
+  /// In en, this message translates to:
+  /// **'All archives cleaned'**
+  String get archives_cleaned;
 }
 
 class _AppLocalizationsDelegate

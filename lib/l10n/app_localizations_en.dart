@@ -510,4 +510,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pdf_preview_not_available =>
       'PDF preview not available. Tap Preview to view in converter.';
+
+  @override
+  String get clean_storage => 'Storage';
+
+  @override
+  String get clean_all_archives => 'Clean all archives';
+
+  @override
+  String get archives_cleaned => 'All archives cleaned';
 }

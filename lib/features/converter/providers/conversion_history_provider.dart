@@ -21,16 +21,26 @@ final conversionHistoryStreamProvider = StreamProvider<List<ConversionHistory>>(
 final conversionHeatmapDataProvider = FutureProvider<Map<DateTime, int>>((
   ref,
 ) async {
-  final service = ref.watch(conversionHistoryServiceProvider);
+  // Watch the stream provider to automatically update when data changes
+  final conversionsAsync = ref.watch(conversionHistoryStreamProvider);
+  final conversions = conversionsAsync.value ?? [];
 
   // Get data for the last 365 days
   final endDate = DateTime.now();
   final startDate = endDate.subtract(const Duration(days: 365));
 
-  final counts = await service.getConversionCountsForRange(
-    startDate: startDate,
-    endDate: endDate,
-  );
+  final Map<DateTime, int> counts = {};
+
+  for (final conversion in conversions) {
+    if (conversion.timestamp.isAfter(startDate)) {
+      final date = DateTime(
+        conversion.timestamp.year,
+        conversion.timestamp.month,
+        conversion.timestamp.day,
+      );
+      counts[date] = (counts[date] ?? 0) + 1;
+    }
+  }
 
   // Normalize counts to 0-4 scale for heatmap
   if (counts.isEmpty) {
@@ -56,6 +66,15 @@ final conversionHeatmapDataProvider = FutureProvider<Map<DateTime, int>>((
 final conversionStatisticsProvider = FutureProvider<Map<String, int>>((
   ref,
 ) async {
-  final service = ref.watch(conversionHistoryServiceProvider);
-  return service.getStatistics();
+  // Watch the stream to allow automatic updates
+  final conversionsAsync = ref.watch(conversionHistoryStreamProvider);
+  final conversions = conversionsAsync.value ?? [];
+
+  final totalConversions = conversions.length;
+  final totalEvents = conversions.fold<int>(
+    0,
+    (sum, item) => sum + item.eventCount,
+  );
+
+  return {'totalConversions': totalConversions, 'totalEvents': totalEvents};
 });
