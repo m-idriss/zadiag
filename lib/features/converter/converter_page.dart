@@ -341,9 +341,7 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
                   _buildActionButtons(context, state),
                 ],
 
-                const SizedBox(height: AppTheme.spacingXxl),
-                const Divider(),
-                const SizedBox(height: AppTheme.spacingXxl),
+                const SizedBox(height: AppTheme.spacingLg),
 
                 // Activity Dashboard
                 if (ref
