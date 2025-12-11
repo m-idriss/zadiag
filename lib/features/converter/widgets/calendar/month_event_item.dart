@@ -23,11 +23,12 @@ class MonthEventItem extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 1),
         padding: const EdgeInsets.symmetric(horizontal: 1.5, vertical: 0.5),
-        decoration: BoxDecoration(
+        decoration: AppTheme.cardDecoration(
+          colorScheme,
+          borderRadius: 2,
           color: colorScheme.primaryContainer.withValues(
             alpha: isSelected ? 0.8 : 0.6,
           ),
-          borderRadius: BorderRadius.circular(2),
         ),
         child: Text(
           event.title,

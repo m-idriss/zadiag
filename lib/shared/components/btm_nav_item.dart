@@ -38,11 +38,11 @@ class BtmNavItem extends StatelessWidget {
               curve: Curves.easeOutCubic,
               height:  36,
               width:  36,
-              decoration: BoxDecoration(
+              decoration: AppTheme.cardDecoration(
+                Theme.of(context).colorScheme,
                 color: isSelected
                     ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
                     : Colors.transparent,
-                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
               ),
               child: AnimatedOpacity(
                 duration: const Duration(milliseconds: 200),

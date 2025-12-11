@@ -131,10 +131,7 @@ class CalendarHeader extends StatelessWidget {
     return Container(
       width: 36,
       height: 36,
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-      ),
+      decoration: AppTheme.cardDecoration(colorScheme, borderRadius: AppTheme.radiusSm),
       child: IconButton(
         icon: Icon(icon, size: 20),
         onPressed: onPressed,
@@ -147,10 +144,7 @@ class CalendarHeader extends StatelessWidget {
   Widget _buildViewModeSwitcher(BuildContext context, ColorScheme colorScheme) {
     return Container(
       padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-      ),
+      decoration: AppTheme.cardDecoration(colorScheme, borderRadius: AppTheme.radiusSm),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

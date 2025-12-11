@@ -249,16 +249,17 @@ Widget buildTextField({
 
 /// Creates a decoration for the bottom navigation menu.
 BoxDecoration bottomMenu(BuildContext context) {
-  return BoxDecoration(
-    color: Theme.of(context).colorScheme.surfaceDim,
-    borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-    border: Border.all(
-      color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
-      width: 1,
-    ),
+  final colorScheme = Theme.of(context).colorScheme;
+  final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+  
+  return AppTheme.glassDecoration(
+    colorScheme,
+    color: colorScheme.surfaceDim,
+    isDarkMode: isDarkMode,
+  ).copyWith(
     boxShadow: [
       BoxShadow(
-        color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.15),
+        color: colorScheme.shadow.withValues(alpha: 0.15),
         offset: const Offset(0, -4),
         blurRadius: 20,
       ),

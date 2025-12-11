@@ -47,9 +47,12 @@ class CalendarEventCell extends StatelessWidget {
         child: Container(
           margin: const EdgeInsets.only(right: 2, bottom: 2),
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-          decoration: BoxDecoration(
+          decoration: AppTheme.eventCardDecoration(
+            colorScheme,
+            borderRadius: 4,
+            alpha: 0.15,
+          ).copyWith(
             color: eventColor.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(4),
             border: Border.all(
               color: eventColor.withValues(alpha: 0.4),
               width: 1,

@@ -18,13 +18,9 @@ class DayEventCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(left: 4, right: 4, bottom: 1),
         padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: colorScheme.primary.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(
-            color: colorScheme.primary.withValues(alpha: 0.4),
-            width: 1.0,
-          ),
+        decoration: AppTheme.eventCardDecoration(
+          colorScheme,
+          borderRadius: 4,
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
