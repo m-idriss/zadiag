@@ -258,9 +258,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   duration: const Duration(milliseconds: 300),
                   child: Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
+                    decoration: AppTheme.iconContainerDecoration(
+                      colorScheme,
+                      borderRadius: AppTheme.radiusFull,
                       color: colorScheme.surface.withValues(alpha: 0.5),
-                      shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.arrow_forward_ios_rounded,
@@ -769,9 +770,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   duration: const Duration(milliseconds: 300),
                   child: Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
+                    decoration: AppTheme.iconContainerDecoration(
+                      colorScheme,
+                      borderRadius: AppTheme.radiusFull,
                       color: colorScheme.surface.withValues(alpha: 0.5),
-                      shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.arrow_forward_ios_rounded,
