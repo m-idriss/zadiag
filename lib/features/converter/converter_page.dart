@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:intl/intl.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
@@ -44,13 +44,7 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  int _eventsGenerated = 28453;
-  int _imagesProcessed = 2112;
-  int _hoursSaved = 198;
-  int _workdaysSaved = 25;
-
   bool _showCalendarView = false;
-
   // Calendar state
   CalendarViewMode _calendarMode = CalendarViewMode.month;
   DateTime _calendarFocusedDate = DateTime.now();
@@ -101,17 +95,6 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
       ),
     );
     _animationController.forward();
-
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        setState(() {
-          _eventsGenerated = 28453;
-          _imagesProcessed = 2112;
-          _hoursSaved = 198;
-          _workdaysSaved = 25;
-        });
-      }
-    });
   }
 
   @override
@@ -337,14 +320,6 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
                   const SizedBox(height: AppTheme.spacingLg),
                   _buildActionButtons(context, state),
                 ],
-
-                // Stats section
-                if (state.extractedEvents.isEmpty &&
-                    state.uploadedImages.isEmpty) ...[
-                  const SizedBox(height: AppTheme.spacingLg),
-                  _buildStatsSection(context),
-                ],
-                const SizedBox(height: 3 * AppTheme.spacingXxl),
               ],
             ),
           ),
@@ -714,130 +689,6 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildStatsSection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(
-              Icons.bar_chart_rounded,
-              color: Theme.of(context).colorScheme.primary,
-              size: 28,
-            ),
-            SizedBox(width: AppTheme.spacingSm),
-            Text(
-              trad(context)!.powering_productivity,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.secondary,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: AppTheme.spacingMd),
-
-        _buildStatLine(
-          context,
-          trad(context)!.pre_events_generated,
-          _eventsGenerated,
-          trad(context)!.events_generated,
-          _imagesProcessed,
-          trad(context)!.images,
-          Theme.of(context).colorScheme.secondary,
-        ),
-        SizedBox(height: AppTheme.spacingSm),
-
-        _buildStatLine(
-          context,
-          trad(context)!.pre_hours_saved,
-          _hoursSaved,
-          trad(context)!.hours_saved,
-          _workdaysSaved,
-          trad(context)!.workdays_saved,
-          Theme.of(context).colorScheme.secondary,
-        ),
-        SizedBox(height: AppTheme.spacingSm),
-      ],
-    );
-  }
-
-  Widget _buildStatLine(
-    BuildContext context,
-    String pretext,
-    int value1,
-    String text1,
-    int? value2,
-    String? text2,
-    Color accentColor,
-  ) {
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Text(
-            "$pretext ",
-            style: TextStyle(
-              color: Theme.of(
-                context,
-              ).colorScheme.onInverseSurface.withValues(alpha: 0.85),
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          _buildAnimatedCounter(value1, accentColor),
-          SizedBox(width: AppTheme.spacingSm / 2),
-          Text(
-            text1,
-            style: TextStyle(
-              color: Theme.of(
-                context,
-              ).colorScheme.onInverseSurface.withValues(alpha: 0.85),
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          if (value2 != null) ...[
-            SizedBox(width: AppTheme.spacingMd),
-            _buildAnimatedCounter(value2, accentColor),
-            SizedBox(width: AppTheme.spacingSm / 2),
-            Text(
-              text2!,
-              style: TextStyle(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onInverseSurface.withValues(alpha: 0.85),
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAnimatedCounter(int targetValue, Color accentColor) {
-    return TweenAnimationBuilder<int>(
-      tween: IntTween(begin: 0, end: targetValue),
-      duration: const Duration(milliseconds: 1500),
-      curve: Curves.easeOutExpo,
-      builder: (context, value, child) {
-        return Text(
-          NumberFormat('#,###').format(value),
-          style: TextStyle(
-            color: accentColor,
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            fontFamily: AppTheme.defaultFontFamilyName,
-          ),
-        );
-      },
     );
   }
 
