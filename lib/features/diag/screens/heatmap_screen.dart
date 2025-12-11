@@ -349,7 +349,7 @@ class _HeatMapScreenState extends ConsumerState<HeatMapScreen>
 
   Color _getCellColor(BuildContext context, int value) {
     if (value == 0) {
-      return Theme.of(context).colorScheme.surfaceContainerHigh;
+      return Theme.of(context).colorScheme.secondary.withValues(alpha: 0.05);
     }
 
     // Adapted from original logic
