@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/core/services/log_service.dart';
 import 'package:zadiag/core/services/isar_service.dart';
@@ -18,6 +19,9 @@ void main() async {
   runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+      ]);
 
       // Log app startup
       Log.i('Starting Zadiag App...');
