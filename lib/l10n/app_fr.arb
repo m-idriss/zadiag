@@ -240,5 +240,25 @@
   "pdf_preview_not_available": "Aperçu PDF non disponible. Appuyez sur Aperçu pour voir dans le convertisseur.",
   "clean_storage": "Stockage",
   "clean_all_archives": "Nettoyer tout l'historique",
-  "archives_cleaned": "Historique nettoyé"
+  "archives_cleaned": "Historique nettoyé",
+  "continue_with_google": "Continuer avec Google",
+  "@continue_with_google": {
+    "description": "Button text to sign in with Google"
+  },
+  "continue_with_email": "Continuer avec Email",
+  "@continue_with_email": {
+    "description": "Button text to sign in with email"
+  },
+  "welcome_back": "Bon retour",
+  "@welcome_back": {
+    "description": "Welcome message on login screen"
+  },
+  "choose_login_method": "Choisissez votre méthode de connexion préférée",
+  "@choose_login_method": {
+    "description": "Subtitle on login screen"
+  },
+  "terms_privacy_notice": "En continuant, vous acceptez nos Conditions d'utilisation et notre Politique de confidentialité",
+  "@terms_privacy_notice": {
+    "description": "Legal notice text on login screen"
+  }
 }

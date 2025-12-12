@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:zadiag/core/services/log_service.dart';
-import 'package:zadiag/features/auth/screens/login_page.dart';
+import 'package:zadiag/features/auth/screens/login_screen.dart';
 import 'package:zadiag/core/utils/navigation_helper.dart';
 import 'package:zadiag/core/constants/app_theme.dart';
 import 'package:zadiag/shared/components/glass_scaffold.dart';
@@ -59,10 +59,10 @@ class _SplashPageState extends State<SplashPage>
 
     Future.delayed(const Duration(milliseconds: 2500), () {
       if (mounted) {
-        Log.i('SplashPage: Navigating to LoginPage');
+        Log.i('SplashPage: Navigating to LoginScreen');
         NavigationHelper.navigateWithFade(
           context,
-          const LoginPage(),
+          const LoginScreen(),
           duration: const Duration(milliseconds: 800),
         );
       }
