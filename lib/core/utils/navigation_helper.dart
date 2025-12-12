@@ -2,6 +2,45 @@ import 'package:flutter/material.dart';
 
 /// Centralized navigation helper for consistent navigation patterns.
 class NavigationHelper {
+  /// Creates a PageRouteBuilder with a right-to-left slide transition.
+  static PageRouteBuilder _createSlideRoute(
+    Widget destination,
+    Duration duration,
+  ) {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => destination,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(1.0, 0.0),
+            end: Offset.zero,
+          ).animate(
+            CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+            ),
+          ),
+          child: child,
+        );
+      },
+      transitionDuration: duration,
+    );
+  }
+
+  /// Creates a PageRouteBuilder with a fade transition.
+  static PageRouteBuilder _createFadeRoute(
+    Widget destination,
+    Duration duration,
+  ) {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => destination,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(opacity: animation, child: child);
+      },
+      transitionDuration: duration,
+    );
+  }
+
   /// Navigates to a new page with a right-to-left slide transition, replacing the current route.
   static void navigateWithSlide(
     BuildContext context,
@@ -10,24 +49,7 @@ class NavigationHelper {
   }) {
     Navigator.pushReplacement(
       context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => destination,
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(1.0, 0.0),
-              end: Offset.zero,
-            ).animate(
-              CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOutCubic,
-              ),
-            ),
-            child: child,
-          );
-        },
-        transitionDuration: duration,
-      ),
+      _createSlideRoute(destination, duration),
     );
   }
 
@@ -39,24 +61,7 @@ class NavigationHelper {
   }) {
     Navigator.push(
       context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => destination,
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(1.0, 0.0),
-              end: Offset.zero,
-            ).animate(
-              CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOutCubic,
-              ),
-            ),
-            child: child,
-          );
-        },
-        transitionDuration: duration,
-      ),
+      _createSlideRoute(destination, duration),
     );
   }
 
@@ -68,13 +73,7 @@ class NavigationHelper {
   }) {
     Navigator.pushReplacement(
       context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => destination,
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        transitionDuration: duration,
-      ),
+      _createFadeRoute(destination, duration),
     );
   }
 
@@ -86,13 +85,7 @@ class NavigationHelper {
   }) {
     Navigator.push(
       context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => destination,
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        transitionDuration: duration,
-      ),
+      _createFadeRoute(destination, duration),
     );
   }
 
