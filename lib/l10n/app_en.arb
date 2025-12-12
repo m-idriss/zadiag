@@ -257,5 +257,9 @@
   "choose_login_method": "Choose your preferred login method",
   "@choose_login_method": {
     "description": "Subtitle on login screen"
+  },
+  "terms_privacy_notice": "By continuing, you agree to our Terms of Service and Privacy Policy",
+  "@terms_privacy_notice": {
+    "description": "Legal notice text on login screen"
   }
 }

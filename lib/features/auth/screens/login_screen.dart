@@ -143,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen>
 
   Widget _buildTermsText(BuildContext context) {
     return Text(
-      'By continuing, you agree to our Terms of Service and Privacy Policy',
+      trad(context)!.terms_privacy_notice,
       textAlign: TextAlign.center,
       style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Colors.white.withValues(alpha: 0.6),
