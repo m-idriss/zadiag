@@ -596,7 +596,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       await _userService.deleteUserAccount();
 
       if (mounted) {
-        NavigationHelper.navigateWithFade(context, const LoginPage());
+        NavigationHelper.navigateWithSlide(context, const LoginPage());
       }
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
@@ -1086,22 +1086,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
-            Navigator.pushReplacement(
+            NavigationHelper.navigateWithSlide(
               context,
-              PageRouteBuilder(
-                pageBuilder:
-                    (context, animation, secondaryAnimation) =>
-                        const LoginPage(),
-                transitionsBuilder: (
-                  context,
-                  animation,
-                  secondaryAnimation,
-                  child,
-                ) {
-                  return FadeTransition(opacity: animation, child: child);
-                },
-                transitionDuration: const Duration(milliseconds: 300),
-              ),
+              const LoginPage(),
             );
           },
           borderRadius: BorderRadius.circular(AppTheme.radiusXl),
