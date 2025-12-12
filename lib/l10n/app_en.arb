@@ -241,5 +241,21 @@
   "pdf_preview_not_available": "PDF preview not available. Tap Preview to view in converter.",
   "clean_storage": "Storage",
   "clean_all_archives": "Clean all archives",
-  "archives_cleaned": "All archives cleaned"
+  "archives_cleaned": "All archives cleaned",
+  "continue_with_google": "Continue with Google",
+  "@continue_with_google": {
+    "description": "Button text to sign in with Google"
+  },
+  "continue_with_email": "Continue with Email",
+  "@continue_with_email": {
+    "description": "Button text to sign in with email"
+  },
+  "welcome_back": "Welcome Back",
+  "@welcome_back": {
+    "description": "Welcome message on login screen"
+  },
+  "choose_login_method": "Choose your preferred login method",
+  "@choose_login_method": {
+    "description": "Subtitle on login screen"
+  }
 }
