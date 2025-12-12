@@ -27,8 +27,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends ConsumerState<SettingsScreen>
-    with SingleTickerProviderStateMixin {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _formKey = GlobalKey<FormState>();
   final _profileFormKey = GlobalKey<FormState>();
   final _userService = UserService();
@@ -46,35 +45,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   String _selectedLanguage = LanguageManager.defaultLanguage;
   bool _obscurePassword = true;
 
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
-
   static const String _notificationsKey = 'notificationsEnabled';
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
-      ),
-    );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
-      ),
-    );
-    _animationController.forward();
 
     _loadNotificationsSetting();
     _selectedLanguage = LanguageManager.getLanguageName(
@@ -85,7 +60,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
   @override
   void dispose() {
-    _animationController.dispose();
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -135,32 +109,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     return GlassScaffold(
       body: SafeArea(
         bottom: false,
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: SlideTransition(
-            position: _slideAnimation,
-            child: Form(
-              key: _formKey,
-              child: ListView(
-                padding: EdgeInsets.all(AppTheme.spacingLg),
-                physics: const BouncingScrollPhysics(),
-                children: [
-                  _header(context),
-                  const SizedBox(height: AppTheme.spacingMd),
-                  _profileCard(context),
-                  const SizedBox(height: AppTheme.spacingMd),
-                  _settingsCard(context),
-                  const SizedBox(height: AppTheme.spacingMd),
-                  _converterSettingsCard(context),
-                  const SizedBox(height: AppTheme.spacingMd),
-                  _notificationCard(context),
-                  const SizedBox(height: AppTheme.spacingMd),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: EdgeInsets.all(AppTheme.spacingLg),
+            physics: const BouncingScrollPhysics(),
+            children: [
+              _header(context),
+              const SizedBox(height: AppTheme.spacingMd),
+              _profileCard(context),
+              const SizedBox(height: AppTheme.spacingMd),
+              _settingsCard(context),
+              const SizedBox(height: AppTheme.spacingMd),
+              _converterSettingsCard(context),
+              const SizedBox(height: AppTheme.spacingMd),
+              _notificationCard(context),
+              const SizedBox(height: AppTheme.spacingMd),
 
-                  _logoutCard(context),
-                  const SizedBox(height: 2 * AppTheme.spacingXxl),
-                ],
-              ),
-            ),
+              _logoutCard(context),
+              const SizedBox(height: 2 * AppTheme.spacingXxl),
+            ],
           ),
         ),
       ),
