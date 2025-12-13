@@ -35,18 +35,13 @@ class ConverterPage extends ConsumerStatefulWidget {
   ConsumerState<ConverterPage> createState() => _ConverterPageState();
 }
 
-class _ConverterPageState extends ConsumerState<ConverterPage>
-    with SingleTickerProviderStateMixin {
+class _ConverterPageState extends ConsumerState<ConverterPage> {
   final ConverterService _converterService = ConverterService();
   final IcsGenerator _icsGenerator = IcsGenerator();
   final IcsExportService _icsExportService = IcsExportService();
   final ConversionHistoryService _historyService = ConversionHistoryService();
 
   final ScrollController _scrollController = ScrollController();
-
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
 
   bool _showCalendarView = false;
   // Calendar state
@@ -79,31 +74,10 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
-      ),
-    );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
-      ),
-    );
-    _animationController.forward();
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
     _converterService.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -276,86 +250,80 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
     return GlassScaffold(
       body: SafeArea(
         bottom: false,
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: SlideTransition(
-            position: _slideAnimation,
-            child: ListView(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(AppTheme.spacingLg),
-              physics: const BouncingScrollPhysics(),
-              children: [
-                _buildHeader(context),
-                const SizedBox(height: AppTheme.spacingLg),
+        child: ListView(
+          controller: _scrollController,
+          padding: const EdgeInsets.all(AppTheme.spacingLg),
+          physics: const BouncingScrollPhysics(),
+          children: [
+            _buildHeader(context),
+            const SizedBox(height: AppTheme.spacingLg),
 
-                // Branding or Thumbnails Area (Reserved Height 240)
-                if (state.extractedEvents.isEmpty)
-                  state.uploadedImages.isEmpty
-                      ? _brandingCard(context, AppTheme.radiusSm)
-                      : _buildThumbnailArea(context, state.uploadedImages),
+            // Branding or Thumbnails Area (Reserved Height 240)
+            if (state.extractedEvents.isEmpty)
+              state.uploadedImages.isEmpty
+                  ? _brandingCard(context, AppTheme.radiusSm)
+                  : _buildThumbnailArea(context, state.uploadedImages),
 
-                if (state.errorMessage != null) ...[
-                  const SizedBox(height: AppTheme.spacingMd),
-                  _buildErrorMessage(context, state.errorMessage!),
-                ],
+            if (state.errorMessage != null) ...[
+              const SizedBox(height: AppTheme.spacingMd),
+              _buildErrorMessage(context, state.errorMessage!),
+            ],
 
-                // Upload zone appears in same position regardless of state
-                if (state.extractedEvents.isEmpty) ...[
-                  const SizedBox(height: AppTheme.spacingLg),
-                  ImageUploadZone(
-                    onImagesUploaded: _onImagesUploaded,
-                    isLoading: state.isProcessing,
-                    maxImages: 5,
-                    initialImages: state.uploadedImages,
-                    readOnly: false,
-                    showThumbnails:
-                        false, // Don't show thumbnails here, handled above
-                  ),
-                ],
+            // Upload zone appears in same position regardless of state
+            if (state.extractedEvents.isEmpty) ...[
+              const SizedBox(height: AppTheme.spacingLg),
+              ImageUploadZone(
+                onImagesUploaded: _onImagesUploaded,
+                isLoading: state.isProcessing,
+                maxImages: 5,
+                initialImages: state.uploadedImages,
+                readOnly: false,
+                showThumbnails:
+                    false, // Don't show thumbnails here, handled above
+              ),
+            ],
 
-                // Convert button
-                if (state.uploadedImages.isNotEmpty &&
-                    !state.isProcessing &&
-                    state.extractedEvents.isEmpty) ...[
-                  const SizedBox(height: AppTheme.spacingLg),
-                  _buildConvertButton(context),
-                ],
+            // Convert button
+            if (state.uploadedImages.isNotEmpty &&
+                !state.isProcessing &&
+                state.extractedEvents.isEmpty) ...[
+              const SizedBox(height: AppTheme.spacingLg),
+              _buildConvertButton(context),
+            ],
 
-                // Events section (after conversion)
-                if (state.extractedEvents.isNotEmpty) ...[
-                  const SizedBox(height: AppTheme.spacingLg),
-                  ImageUploadZone(
-                    onImagesUploaded: _onImagesUploaded,
-                    isLoading: state.isProcessing,
-                    maxImages: 5,
-                    initialImages: state.uploadedImages,
-                    readOnly: true,
-                  ),
-                  const SizedBox(height: AppTheme.spacingXl),
-                  _buildEventsSection(context, state),
-                ],
+            // Events section (after conversion)
+            if (state.extractedEvents.isNotEmpty) ...[
+              const SizedBox(height: AppTheme.spacingLg),
+              ImageUploadZone(
+                onImagesUploaded: _onImagesUploaded,
+                isLoading: state.isProcessing,
+                maxImages: 5,
+                initialImages: state.uploadedImages,
+                readOnly: true,
+              ),
+              const SizedBox(height: AppTheme.spacingXl),
+              _buildEventsSection(context, state),
+            ],
 
-                // Action buttons after conversion
-                if (state.extractedEvents.isNotEmpty) ...[
-                  const SizedBox(height: AppTheme.spacingLg),
-                  _buildActionButtons(context, state),
-                ],
+            // Action buttons after conversion
+            if (state.extractedEvents.isNotEmpty) ...[
+              const SizedBox(height: AppTheme.spacingLg),
+              _buildActionButtons(context, state),
+            ],
 
-                const SizedBox(height: AppTheme.spacingLg),
+            const SizedBox(height: AppTheme.spacingLg),
 
-                // Activity Dashboard
-                if (ref
-                    .watch(converterSettingsProvider)
-                    .showActivityDashboard) ...[
-                  ActivityDashboard(onConversionRestored: _scrollToTop),
-                ],
+            // Activity Dashboard
+            if (ref
+                .watch(converterSettingsProvider)
+                .showActivityDashboard) ...[
+              ActivityDashboard(onConversionRestored: _scrollToTop),
+            ],
 
-                const SizedBox(
-                  height: 120,
-                ), // Bottom spacer for better accessibility
-              ],
-            ),
-          ),
+            const SizedBox(
+              height: 120,
+            ), // Bottom spacer for better accessibility
+          ],
         ),
       ),
     );

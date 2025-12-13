@@ -87,7 +87,7 @@ class _HomePageState extends ConsumerState<HomePage>
               final slideDirection = currentIndex > _previousIndex ? 1.0 : -1.0;
               return SlideTransition(
                 position: Tween<Offset>(
-                  begin: Offset(slideDirection * 0.1, 0),
+                  begin: Offset(slideDirection, 0),
                   end: Offset.zero,
                 ).animate(
                   CurvedAnimation(
@@ -95,7 +95,7 @@ class _HomePageState extends ConsumerState<HomePage>
                     curve: Curves.easeOutCubic,
                   ),
                 ),
-                child: FadeTransition(opacity: animation, child: child),
+                child: child,
               );
             },
             child: KeyedSubtree(
