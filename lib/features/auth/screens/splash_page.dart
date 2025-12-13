@@ -121,7 +121,7 @@ class _SplashPageState extends State<SplashPage>
                         ),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           trad(context)!.app_tagline,

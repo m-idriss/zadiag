@@ -15,24 +15,8 @@ class AnimatedBar extends StatelessWidget {
       height: 4,
       width: isActive ? 24 : 0,
       decoration: BoxDecoration(
-        gradient: isActive
-            ? LinearGradient(
-                colors: [
-                  Theme.of(context).colorScheme.primary,
-                  Theme.of(context).colorScheme.secondary,
-                ],
-              )
-            : null,
+        color: isActive ? Theme.of(context).colorScheme.primary : null,
         borderRadius: BorderRadius.circular(AppTheme.radiusFull),
-        boxShadow: isActive
-            ? [
-                BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ]
-            : null,
       ),
     );
   }

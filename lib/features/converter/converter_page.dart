@@ -603,13 +603,8 @@ class _ConverterPageState extends ConsumerState<ConverterPage>
                   ? Container(
                     height: 48,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Theme.of(context).colorScheme.primary,
-                          Theme.of(context).colorScheme.secondary,
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                      color: Theme.of(context).colorScheme.primary,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                     ),
                     child: Center(
                       child: SizedBox(

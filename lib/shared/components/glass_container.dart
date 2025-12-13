@@ -1,4 +1,3 @@
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 class GlassContainer extends StatelessWidget {
@@ -21,7 +20,7 @@ class GlassContainer extends StatelessWidget {
     this.height,
     this.padding,
     this.margin,
-    this.borderRadius = 20,
+    this.borderRadius = 8,
     this.blur = 10,
     this.opacity = 0.1,
     this.color,
@@ -34,42 +33,36 @@ class GlassContainer extends StatelessWidget {
     // Get theme-aware base color
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final themeSurface = Theme.of(context).colorScheme.surface;
-    // Use theme surface color but with opacity for glass effect
-    final baseColor = color ?? themeSurface.withValues(alpha: opacity);
+    final themeOutline = Theme.of(context).colorScheme.outline;
+    
+    // Use theme surface color for flat design
+    final baseColor = color ?? themeSurface;
 
     return Container(
       width: width,
       height: height,
       margin: margin,
+      padding: padding ?? EdgeInsets.zero,
       decoration: BoxDecoration(
-        color: color ?? baseColor,
+        color: baseColor,
         borderRadius: BorderRadius.circular(borderRadius),
         border:
             border ??
             Border.all(
-              color:
-                  isDarkMode
-                      ? Colors.white.withValues(alpha: 0.1)
-                      : Colors.white.withValues(alpha: 0.2),
-              width: 1.5,
+              color: themeOutline,
+              width: 1,
             ),
         boxShadow:
             boxShadow ??
             [
               BoxShadow(
-                color: Colors.black.withValues(alpha: isDarkMode ? 0.3 : 0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+                color: Colors.black.withValues(alpha: isDarkMode ? 0.04 : 0.02),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
               ),
             ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(borderRadius),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-          child: Padding(padding: padding ?? EdgeInsets.zero, child: child),
-        ),
-      ),
+      child: child,
     );
   }
 }
