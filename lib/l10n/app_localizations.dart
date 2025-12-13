@@ -212,25 +212,25 @@ abstract class AppLocalizations {
   /// **'Auto'**
   String get theme_auto;
 
-  /// No description provided for @text_size.
+  /// Label for the setting that allows the user to choose the size of the text in the app.
   ///
   /// In en, this message translates to:
   /// **'Text Size'**
   String get text_size;
 
-  /// No description provided for @text_size_small.
+  /// Option label for selecting a small text size.
   ///
   /// In en, this message translates to:
   /// **'Small'**
   String get text_size_small;
 
-  /// No description provided for @text_size_normal.
+  /// Option label for selecting the normal (default) text size.
   ///
   /// In en, this message translates to:
   /// **'Normal'**
   String get text_size_normal;
 
-  /// No description provided for @text_size_large.
+  /// Option label for selecting a large text size.
   ///
   /// In en, this message translates to:
   /// **'Large'**

@@ -97,7 +97,6 @@ firestore.indexes.json
 .DS_Store
 .AppleDouble
 .LSOverride
-Icon?
 ._*
 
 # Windows
