@@ -136,3 +136,133 @@ class SecondaryButton extends StatelessWidget {
     );
   }
 }
+
+/// Danger button for destructive actions (delete, logout, etc.)
+class DangerButton extends StatelessWidget {
+  final String label;
+  final IconData? icon;
+  final VoidCallback onPressed;
+  final bool isFullWidth;
+  final bool isOutlined;
+
+  const DangerButton({
+    super.key,
+    required this.label,
+    this.icon,
+    required this.onPressed,
+    this.isFullWidth = false,
+    this.isOutlined = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return SizedBox(
+      width: isFullWidth ? double.infinity : null,
+      height: 48,
+      child: Container(
+        decoration: isOutlined
+            ? AppTheme.cardDecoration(
+                colorScheme,
+                color: Colors.transparent,
+                borderColor: colorScheme.error,
+                borderWidth: 2,
+              )
+            : AppTheme.cardDecoration(
+                colorScheme,
+                color: colorScheme.error,
+              ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onPressed,
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTheme.spacingMd,
+                vertical: AppTheme.spacingSm,
+              ),
+              child: Row(
+                mainAxisSize: isFullWidth ? MainAxisSize.max : MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (icon != null) ...[
+                    Icon(
+                      icon,
+                      color: isOutlined ? colorScheme.error : colorScheme.onError,
+                      size: 18,
+                    ),
+                    const SizedBox(width: AppTheme.spacingSm),
+                  ],
+                  Flexible(
+                    child: Text(
+                      label,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: isOutlined ? colorScheme.error : colorScheme.onError,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Text button for tertiary actions
+class TextButton extends StatelessWidget {
+  final String label;
+  final IconData? icon;
+  final VoidCallback onPressed;
+  final Color? color;
+
+  const TextButton({
+    super.key,
+    required this.label,
+    this.icon,
+    required this.onPressed,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final buttonColor = color ?? colorScheme.primary;
+
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.spacingSm,
+          vertical: AppTheme.spacingSm,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, color: buttonColor, size: 18),
+              const SizedBox(width: AppTheme.spacingSm),
+            ],
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: buttonColor,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
