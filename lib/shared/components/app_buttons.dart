@@ -271,7 +271,7 @@ class DangerButton extends StatelessWidget {
 class TextButton extends StatelessWidget {
   final String label;
   final IconData? icon;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final Color? color;
 
   const TextButton({
@@ -286,31 +286,35 @@ class TextButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final buttonColor = color ?? colorScheme.primary;
+    final isDisabled = onPressed == null;
 
-    return InkWell(
-      onTap: onPressed,
-      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppTheme.spacingSm,
-          vertical: AppTheme.spacingSm,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, color: buttonColor, size: 18),
-              const SizedBox(width: AppTheme.spacingSm),
+    return Opacity(
+      opacity: isDisabled ? 0.5 : 1.0,
+      child: InkWell(
+        onTap: isDisabled ? null : onPressed,
+        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.spacingSm,
+            vertical: AppTheme.spacingSm,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, color: buttonColor, size: 18),
+                const SizedBox(width: AppTheme.spacingSm),
+              ],
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: buttonColor,
+                    ),
+              ),
             ],
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: buttonColor,
-                  ),
-            ),
-          ],
+          ),
         ),
       ),
     );
