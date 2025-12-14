@@ -19,10 +19,6 @@ import 'package:zadiag/features/converter/providers/conversion_history_provider.
 import 'package:zadiag/features/converter/providers/converter_settings_provider.dart';
 import 'package:zadiag/shared/components/slide_action_button.dart';
 import 'package:zadiag/core/providers/text_size_provider.dart';
-import 'package:zadiag/shared/components/app_list_tile.dart';
-import 'package:zadiag/shared/components/app_section.dart';
-import 'package:zadiag/shared/components/app_switch.dart';
-import 'package:zadiag/shared/components/app_divider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -503,17 +499,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     return GlassContainer(
       borderRadius: AppTheme.radiusXl,
       opacity: 0.9,
-      padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingSm),
-      child: AppListTile(
-        leadingIcon: Icons.delete_forever_rounded,
-        iconColor: Colors.red,
-        title: trad(context)!.delete_account,
-        trailing: Icon(
-          Icons.arrow_forward_ios_rounded,
-          color: Colors.red,
-          size: 18,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _deleteAccount,
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+          child: Padding(
+            padding: EdgeInsets.all(AppTheme.spacingMd),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: AppTheme.iconContainerDecoration(
+                    colorScheme,
+                    color: Colors.red.withValues(alpha: 0.1),
+                  ),
+                  child: Icon(
+                    Icons.delete_forever_rounded,
+                    color: Colors.red,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: AppTheme.spacingMd),
+                Expanded(
+                  child: Text(
+                    trad(context)!.delete_account,
+                    style: TextStyle(
+                      fontFamily: AppTheme.defaultFontFamilyName,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: Colors.red,
+                  size: 18,
+                ),
+              ],
+            ),
+          ),
         ),
-        onTap: _deleteAccount,
       ),
     );
   }
@@ -1006,12 +1034,45 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
-    return AppListTile(
-      title: title,
-      subtitle: subtitle,
-      trailing: AppSwitch(
-        value: value,
-        onChanged: onChanged,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontFamily: AppTheme.defaultFontFamilyName,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontFamily: AppTheme.defaultFontFamilyName,
+                      fontSize: 12,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          CupertinoSwitch(
+            activeTrackColor: Theme.of(context).colorScheme.primary,
+            value: value,
+            onChanged: onChanged,
+          ),
+        ],
       ),
     );
   }
@@ -1021,35 +1082,67 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     return GlassContainer(
       borderRadius: AppTheme.radiusXl,
       opacity: 0.9,
-      padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingSm),
-      child: AppListTile(
-        leadingIcon: Icons.logout_rounded,
-        iconColor: colorScheme.error,
-        title: trad(context)!.logout,
-        trailing: Icon(
-          Icons.arrow_forward_ios_rounded,
-          color: colorScheme.error,
-          size: 18,
-        ),
-        onTap: () {
-          Navigator.pushReplacement(
-            context,
-            PageRouteBuilder(
-              pageBuilder:
-                  (context, animation, secondaryAnimation) =>
-                      const LoginPage(),
-              transitionsBuilder: (
-                context,
-                animation,
-                secondaryAnimation,
-                child,
-              ) {
-                return FadeTransition(opacity: animation, child: child);
-              },
-              transitionDuration: const Duration(milliseconds: 300),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.pushReplacement(
+              context,
+              PageRouteBuilder(
+                pageBuilder:
+                    (context, animation, secondaryAnimation) =>
+                        const LoginPage(),
+                transitionsBuilder: (
+                  context,
+                  animation,
+                  secondaryAnimation,
+                  child,
+                ) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
+                transitionDuration: const Duration(milliseconds: 300),
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+          child: Padding(
+            padding: EdgeInsets.all(AppTheme.spacingMd),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: AppTheme.iconContainerDecoration(
+                    colorScheme,
+                    color: colorScheme.error.withValues(alpha: 0.1),
+                  ),
+                  child: Icon(
+                    Icons.logout_rounded,
+                    color: colorScheme.error,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: AppTheme.spacingMd),
+                Expanded(
+                  child: Text(
+                    trad(context)!.logout,
+                    style: TextStyle(
+                      fontFamily: AppTheme.defaultFontFamilyName,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: Theme.of(context).colorScheme.error,
+                  size: 18,
+                ),
+              ],
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }
@@ -1099,19 +1192,60 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     final colorScheme = Theme.of(context).colorScheme;
     
     return GlassContainer(
-      padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingSm),
+      padding: EdgeInsets.all(AppTheme.spacingMd),
       borderRadius: AppTheme.radiusXl,
       opacity: 0.9,
-      child: AppListTile(
-        leadingIcon: Icons.notifications_rounded,
-        title: trad(context)!.notifications,
-        subtitle: _notificationsEnabled
-            ? trad(context)!.enabled
-            : trad(context)!.disabled,
-        trailing: AppSwitch(
-          value: _notificationsEnabled,
-          onChanged: _saveNotificationsSetting,
-        ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: AppTheme.iconContainerDecoration(
+              colorScheme,
+              useGradient: true,
+            ),
+            child: Icon(
+              Icons.notifications_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: AppTheme.spacingMd),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  trad(context)!.notifications,
+                  style: TextStyle(
+                    fontFamily: AppTheme.defaultFontFamilyName,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _notificationsEnabled
+                      ? trad(context)!.enabled
+                      : trad(context)!.disabled,
+                  style: TextStyle(
+                    fontFamily: AppTheme.defaultFontFamilyName,
+                    fontSize: 12,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          CupertinoSwitch(
+            activeTrackColor: Theme.of(context).colorScheme.primary,
+            value: _notificationsEnabled,
+            onChanged: _saveNotificationsSetting,
+          ),
+        ],
       ),
     );
   }
