@@ -9,7 +9,7 @@ import 'package:zadiag/features/converter/providers/conversion_history_provider.
 import 'package:zadiag/features/converter/providers/converter_state.dart';
 import 'package:zadiag/features/converter/models/conversion_history.dart';
 import 'package:zadiag/shared/components/glass_container.dart';
-import 'package:zadiag/shared/components/app_buttons.dart';
+import 'package:zadiag/shared/components/app_buttons.dart' hide TextButton;
 import 'package:zadiag/shared/components/glass_scaffold.dart';
 import 'package:zadiag/features/diag/providers/bottom_nav_provider.dart';
 import 'package:zadiag/features/converter/widgets/image_upload_zone.dart';

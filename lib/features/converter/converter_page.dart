@@ -9,7 +9,7 @@ import 'package:zadiag/core/utils/ui_helpers.dart';
 import 'package:zadiag/core/utils/translate.dart';
 import 'package:zadiag/shared/components/glass_container.dart';
 import 'package:zadiag/shared/components/glass_scaffold.dart';
-import 'package:zadiag/shared/components/app_buttons.dart';
+import 'package:zadiag/shared/components/app_buttons.dart' hide TextButton;
 import 'package:zadiag/core/services/log_service.dart';
 
 import 'providers/converter_state.dart';
