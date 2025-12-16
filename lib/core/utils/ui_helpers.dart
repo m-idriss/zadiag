@@ -10,14 +10,10 @@ import 'package:zadiag/shared/components/app_buttons.dart';
 /// This file contains reusable utility functions for building
 /// consistent UI elements throughout the app.
 
-/// Builds a gradient background decoration using theme colors.
+/// Builds a flat background decoration using theme colors.
 BoxDecoration buildBackground(ColorScheme colorScheme) {
   return BoxDecoration(
-    gradient: LinearGradient(
-      colors: [colorScheme.surface, colorScheme.surfaceContainerHigh],
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-    ),
+    color: colorScheme.tertiary,
   );
 }
 
@@ -64,7 +60,7 @@ void showSnackBar(
       behavior: SnackBarBehavior.floating,
       margin: const EdgeInsets.all(AppTheme.spacingMd),
       duration: const Duration(seconds: 2),
-      elevation: 8,
+      elevation: 2,
     ),
   );
 }
@@ -247,7 +243,7 @@ Widget buildTextField({
   );
 }
 
-/// Creates a decoration for the bottom navigation menu.
+/// Creates a decoration for the bottom navigation menu - Flat design.
 BoxDecoration bottomMenu(BuildContext context) {
   final colorScheme = Theme.of(context).colorScheme;
   final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -256,13 +252,5 @@ BoxDecoration bottomMenu(BuildContext context) {
     colorScheme,
     color: colorScheme.surfaceDim,
     isDarkMode: isDarkMode,
-  ).copyWith(
-    boxShadow: [
-      BoxShadow(
-        color: colorScheme.shadow.withValues(alpha: 0.15),
-        offset: const Offset(0, -4),
-        blurRadius: 20,
-      ),
-    ],
   );
 }

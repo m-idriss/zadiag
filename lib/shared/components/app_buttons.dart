@@ -31,7 +31,7 @@ class PrimaryButton extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             onTap: onPressed,
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
             child: Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: isLarge ? AppTheme.spacingLg : AppTheme.spacingMd,

@@ -124,21 +124,13 @@ class _WeekViewState extends State<WeekView> {
       child: Center(
         child: InkWell(
           onTap: isUp ? _scrollToTop : _scrollToBottom,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(8),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: AppTheme.cardDecoration(
               colorScheme,
-              borderRadius: 16,
+              borderRadius: 8,
               color: colorScheme.secondaryContainer.withValues(alpha: 0.9),
-            ).copyWith(
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
