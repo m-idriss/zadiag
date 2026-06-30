@@ -7,6 +7,7 @@ import type {
 } from '../domain/models';
 import { defaultPlan } from '../domain/models';
 import { isFreshCapture } from '../domain/adherence';
+import type { AppRepository } from './contracts';
 
 const STORAGE_KEY = 'zadiag.demo.v1';
 
@@ -69,9 +70,10 @@ function initialState(): AppState {
   };
 }
 
-export class DemoRepository {
+export class DemoRepository implements AppRepository {
   private state: AppState;
   private consumedSessions = new Set<string>();
+  private listeners = new Set<() => void>();
 
   constructor() {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -83,17 +85,24 @@ export class DemoRepository {
     return structuredClone(this.state);
   }
 
-  selectRole(role: Role) {
+  async initialize() {}
+
+  subscribe(listener: () => void) {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  async selectRole(role: Role) {
     this.state.role = role;
     this.persist();
   }
 
-  setLocale(locale: AppState['locale']) {
+  async setLocale(locale: AppState['locale']) {
     this.state.locale = locale;
     this.persist();
   }
 
-  linkParent(childName: string) {
+  async linkParent(childName: string) {
     this.state.family = {
       ...this.state.family,
       childName,
@@ -103,7 +112,7 @@ export class DemoRepository {
     this.persist();
   }
 
-  linkChild(code: string) {
+  async linkChild(code: string) {
     if (code.trim().toUpperCase() !== this.state.family.linkingCode) {
       throw new Error('invalid_code');
     }
@@ -111,7 +120,7 @@ export class DemoRepository {
     this.persist();
   }
 
-  savePlan(plan: MonitoringPlan) {
+  async savePlan(plan: MonitoringPlan) {
     this.state.plan = structuredClone(plan);
     this.persist();
   }
@@ -143,7 +152,7 @@ export class DemoRepository {
     return structuredClone(event);
   }
 
-  reset() {
+  async reset() {
     this.state = initialState();
     this.consumedSessions.clear();
     this.persist();
@@ -164,5 +173,6 @@ export class DemoRepository {
 
   private persist() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+    this.listeners.forEach((listener) => listener());
   }
 }

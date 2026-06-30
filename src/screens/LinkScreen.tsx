@@ -16,8 +16,8 @@ export function LinkScreen({
   role: Role;
   code: string;
   childName: string;
-  onParentLink: (name: string) => void;
-  onChildLink: (code: string) => void;
+  onParentLink: (name: string) => void | Promise<void>;
+  onChildLink: (code: string) => void | Promise<void>;
   back: () => void;
   t: (key: MessageKey) => string;
 }) {
@@ -25,13 +25,17 @@ export function LinkScreen({
   const [value, setValue] = useState(parent ? childName : code);
   const [consent, setConsent] = useState(false);
   const [error, setError] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  const submit = () => {
+  const submit = async () => {
     setError(false);
+    setBusy(true);
     try {
-      parent ? onParentLink(value.trim()) : onChildLink(value.trim());
+      await (parent ? onParentLink(value.trim()) : onChildLink(value.trim()));
     } catch {
       setError(true);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -51,7 +55,7 @@ export function LinkScreen({
         />
         {parent && (
           <>
-            <div className="code-box"><small>{t('linkingCode')}</small><strong>{code}</strong><span>{t('shareCodeHint')}</span></div>
+            {code && <div className="code-box"><small>{t('linkingCode')}</small><strong>{code}</strong><span>{t('shareCodeHint')}</span></div>}
             <label className="consent-row">
               <IonCheckbox checked={consent} onIonChange={(event) => setConsent(event.detail.checked)} />
               <span>{t('consent')}</span>
@@ -61,7 +65,7 @@ export function LinkScreen({
         {error && <p className="form-error">{t('invalidCode')}</p>}
       </section>
       <Disclaimer t={t} />
-      <IonButton expand="block" disabled={!value.trim() || (parent && !consent)} onClick={submit}>
+      <IonButton expand="block" disabled={busy || !value.trim() || (parent && !consent)} onClick={submit}>
         {parent ? t('createContinue') : t('linkContinue')}
       </IonButton>
     </main>

@@ -23,6 +23,13 @@ export function ParentDashboard({ state, t }: { state: AppState; t: (key: Messag
         <p><b>{state.plan.checksPerDay}</b> {t('checksDay')} · <b>{state.plan.expiryMinutes}</b> {t('minutesRespond')}</p>
         <div className="chips">{state.plan.windows.map((window) => <span key={window.id}>◷ {window.start}–{window.end}</span>)}</div>
       </section>
+      {state.family.linkingCode && (
+        <section className="card code-box">
+          <small>{t('childLinkCode')}</small>
+          <strong>{state.family.linkingCode}</strong>
+          <span>{t('childLinkCodeHint')}</span>
+        </section>
+      )}
       <div className="section-heading"><h2>{t('attention')}</h2><span>{attention.length}</span></div>
       {attention.map((event) => (
         <section className="card history-row" key={event.id}>
