@@ -1,0 +1,53 @@
+import type { Locale } from '../domain/models';
+
+const messages = {
+  en: {
+    tagline: 'Intelligent support for your treatment routine',
+    disclaimer: 'Adherence support only. Zadiag does not replace advice from your healthcare professional.',
+    parent: 'Parent', child: 'Child', continueAs: 'Continue as',
+    createLink: 'Create your family link', joinFamily: 'Join your family',
+    childNickname: 'Child nickname', linkingCode: 'Linking code',
+    consent: 'I am the parent or legal guardian and consent to processing mouth photos for adherence checks.',
+    createContinue: 'Create and continue', linkContinue: 'Link and continue',
+    invalidCode: 'That linking code is not valid.', overview: 'Overview', history: 'History', settings: 'Settings',
+    routine: 'routine', lastSeven: 'Last 7 days', monitoringPlan: 'Monitoring plan', edit: 'Edit',
+    attention: 'Needs attention', checksDay: 'checks each day', minutesRespond: 'minutes to respond',
+    hi: 'Hi', smallCheck: 'One small check at a time.', checkReady: 'CHECK READY',
+    quickPhoto: 'Ready for a quick photo?', cameraHint: 'Good light and a clear view—that’s all you need.',
+    startCheck: 'Start check', progress: 'My progress', today: 'Today', thisWeek: 'This week',
+    guidedPhoto: 'Guided photo', centerMouth: 'Center your mouth in the guide', openCamera: 'Open camera',
+    usePhoto: 'Use photo', retake: 'Retake', goodLight: 'Good light', mouthOpen: 'Mouth open', stayStill: 'Stay still',
+    cameraOnly: 'Live camera only · old photos cannot be selected', analyzing: 'Checking the photo…',
+    allSet: 'All set!', visibleMessage: 'Your elastics are visible. Thanks for taking a moment to check in.',
+    backToday: 'Back to today', elasticsVisible: 'Elastics visible', uncertain: 'Needs review', missed: 'Missed',
+    requestCamera: 'Camera access is needed for a live verification photo.', installTitle: 'Install on iPhone',
+    installBody: 'In Safari, tap Share then Add to Home Screen.', enableReminders: 'Enable reminders',
+    reminderHelp: 'Install to the Home Screen first, then enable notifications.', demo: 'Private demo · photos stay on this device',
+  },
+  fr: {
+    tagline: 'Le suivi intelligent de votre traitement',
+    disclaimer: 'Aide à l’observance uniquement. Zadiag ne remplace pas les conseils de votre professionnel de santé.',
+    parent: 'Parent', child: 'Enfant', continueAs: 'Continuer en tant que',
+    createLink: 'Créez votre lien familial', joinFamily: 'Rejoins ta famille',
+    childNickname: 'Prénom de l’enfant', linkingCode: 'Code de liaison',
+    consent: 'Je suis le parent ou représentant légal et je consens au traitement des photos de la bouche.',
+    createContinue: 'Créer et continuer', linkContinue: 'Lier et continuer',
+    invalidCode: 'Ce code de liaison n’est pas valide.', overview: 'Aperçu', history: 'Historique', settings: 'Réglages',
+    routine: 'routine', lastSeven: '7 derniers jours', monitoringPlan: 'Planning de suivi', edit: 'Modifier',
+    attention: 'À vérifier', checksDay: 'contrôles par jour', minutesRespond: 'minutes pour répondre',
+    hi: 'Salut', smallCheck: 'Un petit contrôle à la fois.', checkReady: 'CONTRÔLE DISPONIBLE',
+    quickPhoto: 'Prêt·e pour une photo rapide ?', cameraHint: 'Une bonne lumière et une vue nette, c’est tout.',
+    startCheck: 'Commencer', progress: 'Mes progrès', today: 'Aujourd’hui', thisWeek: 'Cette semaine',
+    guidedPhoto: 'Photo guidée', centerMouth: 'Centre ta bouche dans le guide', openCamera: 'Ouvrir la caméra',
+    usePhoto: 'Utiliser la photo', retake: 'Reprendre', goodLight: 'Bonne lumière', mouthOpen: 'Bouche ouverte', stayStill: 'Reste stable',
+    cameraOnly: 'Caméra en direct · aucune ancienne photo', analyzing: 'Vérification de la photo…',
+    allSet: 'C’est bon !', visibleMessage: 'Tes élastiques sont visibles. Merci d’avoir pris un moment.',
+    backToday: 'Retour à aujourd’hui', elasticsVisible: 'Élastiques visibles', uncertain: 'À vérifier', missed: 'Manquée',
+    requestCamera: 'L’accès à la caméra est nécessaire pour une photo en direct.', installTitle: 'Installer sur iPhone',
+    installBody: 'Dans Safari, touche Partager puis Sur l’écran d’accueil.', enableReminders: 'Activer les rappels',
+    reminderHelp: 'Installe d’abord l’app sur l’écran d’accueil, puis active les notifications.', demo: 'Démo privée · les photos restent sur cet appareil',
+  },
+} as const;
+
+export type MessageKey = keyof typeof messages.en;
+export const translate = (locale: Locale, key: MessageKey) => messages[locale][key];
