@@ -10,3 +10,5 @@ functions/lib/
 .firebase/
 .pnpm-store/
 *-debug.log
+.vercel
+.env*
