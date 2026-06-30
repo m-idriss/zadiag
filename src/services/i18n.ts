@@ -33,6 +33,7 @@ const messages = {
     pushDemoHint: 'Demo note: production Web Push will be connected with the backend.', privacyDefaults: 'Privacy defaults',
     noFaceRecognition: 'No facial recognition', noModelTraining: 'No model training', noPhotoUpload: 'No photo upload in demo mode',
     immediateDeletion: 'Immediate deletion by default', resetDemo: 'Reset demo data', unclearResult: 'We could not get a clear result. Better light and a steady photo may help.',
+    childLinkCode: 'Child linking code', childLinkCodeHint: 'Enter this code on the child’s phone. It expires after 24 hours.',
   },
   fr: {
     tagline: 'Le suivi intelligent de votre traitement',
@@ -66,6 +67,7 @@ const messages = {
     pushDemoHint: 'Note de démo : les notifications Web seront connectées avec le backend.', privacyDefaults: 'Confidentialité par défaut',
     noFaceRecognition: 'Aucune reconnaissance faciale', noModelTraining: 'Aucun entraînement de modèle', noPhotoUpload: 'Aucun envoi de photo en mode démo',
     immediateDeletion: 'Suppression immédiate par défaut', resetDemo: 'Réinitialiser la démo', unclearResult: 'Le résultat n’est pas assez clair. Une meilleure lumière et une photo stable peuvent aider.',
+    childLinkCode: 'Code de liaison enfant', childLinkCodeHint: 'Saisis ce code sur le téléphone de l’enfant. Il expire après 24 heures.',
   },
 } as const;
 

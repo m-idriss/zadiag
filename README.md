@@ -46,3 +46,32 @@ Firebase Rules, enable App Check, and configure lifecycle deletion.
 The web camera removes the gallery control but cannot offer native anti-tamper
 guarantees. Treat a server nonce, capture timestamp, digest, and random visual
 challenge as risk reduction—not proof of identity or medical compliance.
+
+## Firebase backend
+
+The app keeps its local demo behavior until every `VITE_FIREBASE_*` value in
+`.env.example` is configured. Once configured, it uses anonymous Firebase Auth,
+callable Cloud Functions, App Check, and real-time Firestore listeners to link the
+parent and child devices.
+
+Setup requirements:
+
+1. Create a Firebase project and enable the Blaze plan (required for Cloud Functions).
+2. Enable Anonymous Authentication and create a Firestore database in a European region.
+3. Register the web app and a reCAPTCHA Enterprise App Check key for the Vercel domains.
+4. Copy `.firebaserc.example` to `.firebaserc` and set the Firebase project ID.
+5. Add the public Firebase web values from `.env.example` to the Vercel project.
+6. Deploy the backend with `firebase deploy --only firestore,functions`.
+
+The callable functions run in `europe-west1`, enforce App Check, create single-use
+24-hour linking codes, and keep code hashes private. Photos are not uploaded or
+stored by this implementation; only structured check metadata is synchronized.
+
+Local verification:
+
+```sh
+npm test
+npm run test:rules
+npm run build
+npm --prefix functions test
+```

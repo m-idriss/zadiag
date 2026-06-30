@@ -20,6 +20,15 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
+      - run: pnpm test:rules
       - run: pnpm build
+      - run: npm ci
+        working-directory: functions
+      - run: npm test
+        working-directory: functions

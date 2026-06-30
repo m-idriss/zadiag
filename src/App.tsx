@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { IonApp } from '@ionic/react';
 import type { Role, VerificationEvent } from './domain/models';
-import { DemoRepository } from './services/demoRepository';
+import { createRepository } from './services/repositoryFactory';
 import { translate, type MessageKey } from './services/i18n';
 import { WelcomeScreen } from './screens/WelcomeScreen';
 import { LinkScreen } from './screens/LinkScreen';
@@ -16,7 +16,7 @@ import { BottomNav, type Tab } from './components/BottomNav';
 type Route = 'welcome' | 'link' | 'app' | 'camera' | 'result';
 
 export function App() {
-  const repository = useMemo(() => new DemoRepository(), []);
+  const repository = useMemo(createRepository, []);
   const [state, setState] = useState(repository.snapshot());
   const [route, setRoute] = useState<Route>(state.role ? (state.family.linked ? 'app' : 'link') : 'welcome');
   const [tab, setTab] = useState<Tab>('home');
@@ -24,9 +24,19 @@ export function App() {
   const [result, setResult] = useState<VerificationEvent>();
   const t = (key: MessageKey) => translate(state.locale, key);
 
+  useEffect(() => {
+    const unsubscribe = repository.subscribe(() => setState(repository.snapshot()));
+    repository.initialize().then(() => {
+      const restored = repository.snapshot();
+      setState(restored);
+      setRoute(restored.role ? (restored.family.linked ? 'app' : 'link') : 'welcome');
+    }).catch(console.error);
+    return unsubscribe;
+  }, [repository]);
+
   const sync = () => setState(repository.snapshot());
-  const selectRole = (role: Role) => {
-    repository.selectRole(role);
+  const selectRole = async (role: Role) => {
+    await repository.selectRole(role);
     sync();
     setRoute('link');
   };
@@ -45,8 +55,8 @@ export function App() {
     }
   };
 
-  const reset = () => {
-    repository.reset();
+  const reset = async () => {
+    await repository.reset();
     sync();
     setRoute('welcome');
     setTab('home');
@@ -57,7 +67,7 @@ export function App() {
     content = (
       <WelcomeScreen
         locale={state.locale}
-        setLocale={(locale) => { repository.setLocale(locale); sync(); }}
+        setLocale={(locale) => { void repository.setLocale(locale).then(sync); }}
         chooseRole={selectRole}
         t={t}
       />
@@ -69,8 +79,8 @@ export function App() {
         code={state.family.linkingCode}
         childName={state.family.childName}
         back={() => setRoute('welcome')}
-        onParentLink={(name) => { repository.linkParent(name); sync(); setRoute('app'); }}
-        onChildLink={(code) => { repository.linkChild(code); sync(); setRoute('app'); }}
+        onParentLink={async (name) => { await repository.linkParent(name); sync(); setRoute('app'); }}
+        onChildLink={async (code) => { await repository.linkChild(code); sync(); setRoute('app'); }}
         t={t}
       />
     );
@@ -83,7 +93,7 @@ export function App() {
     const screen = tab === 'history'
       ? <HistoryScreen events={state.events} t={t} />
       : tab === 'settings'
-        ? <SettingsScreen reset={reset} t={t} />
+        ? <SettingsScreen reset={() => { void reset(); }} t={t} />
         : role === 'parent'
           ? <ParentDashboard state={state} t={t} />
           : <ChildDashboard state={state} active={repository.activeSession()} start={() => setRoute('camera')} t={t} />;

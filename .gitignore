@@ -6,3 +6,7 @@ vite.config.d.ts
 .env
 .firebaserc
 .vercel/
+functions/lib/
+.firebase/
+.pnpm-store/
+*-debug.log

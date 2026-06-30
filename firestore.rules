@@ -1,0 +1,41 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function familyMember(familyId) {
+      return signedIn()
+        && get(/databases/$(database)/documents/families/$(familyId)).data.members[request.auth.uid] in ['parent', 'child'];
+    }
+
+    function childMember(familyId) {
+      return signedIn()
+        && get(/databases/$(database)/documents/families/$(familyId)).data.members[request.auth.uid] == 'child';
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    match /families/{familyId} {
+      allow read: if signedIn() && resource.data.members[request.auth.uid] in ['parent', 'child'];
+      allow write: if false;
+
+      match /checks/{checkId} {
+        allow read: if familyMember(familyId);
+        allow create, delete: if false;
+        allow update: if childMember(familyId)
+          && resource.data.status == 'pending'
+          && request.resource.data.status == 'analyzing'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'capturedAt']);
+      }
+    }
+
+    match /linkCodes/{codeHash} {
+      allow read, write: if false;
+    }
+  }
+}

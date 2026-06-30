@@ -1,10 +1,17 @@
-import type { AnalysisResult, MonitoringPlan, VerificationEvent } from '../domain/models';
+import type { AnalysisResult, AppState, Locale, MonitoringPlan, Role, VerificationEvent } from '../domain/models';
 
-export interface FamilyRepository {
-  createLink(childName: string): Promise<{ code: string; expiresAt: string }>;
-  redeemLink(code: string): Promise<void>;
+export interface AppRepository {
+  initialize(): Promise<void>;
+  snapshot(): AppState;
+  subscribe(listener: () => void): () => void;
+  selectRole(role: Role): Promise<void>;
+  setLocale(locale: Locale): Promise<void>;
+  linkParent(childName: string): Promise<void>;
+  linkChild(code: string): Promise<void>;
   savePlan(plan: MonitoringPlan): Promise<void>;
-  listEvents(): Promise<VerificationEvent[]>;
+  activeSession(): VerificationEvent | undefined;
+  submitCapture(sessionId: string, capturedAt: Date): Promise<VerificationEvent>;
+  reset(): Promise<void>;
 }
 
 export interface VerificationGateway {

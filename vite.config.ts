@@ -42,5 +42,6 @@ export default defineConfig({
   ],
   test: {
     environment: 'jsdom',
+    exclude: ['functions/**', 'rules-tests/**', 'node_modules/**', 'dist/**'],
   },
 });

@@ -36,6 +36,7 @@ export interface VerificationEvent {
 }
 
 export interface FamilyState {
+  id?: string;
   linked: boolean;
   childName: string;
   linkingCode: string;
