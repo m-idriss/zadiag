@@ -18,7 +18,7 @@ export function ResultScreen({
     <main className="page result-page">
       <div className={`result-icon ${success ? 'success' : ''}`}>{success ? '✓' : '↻'}</div>
       <h1>{success ? t('allSet') : t('uncertain')}</h1>
-      <p className="hero-copy">{success ? t('visibleMessage') : 'We could not get a clear result. Better light and a steady photo may help.'}</p>
+      <p className="hero-copy">{success ? t('visibleMessage') : t('unclearResult')}</p>
       <StatusPill status={event.status} t={t} />
       <Disclaimer t={t} />
       <IonButton expand="block" onClick={done}>{t('backToday')}</IonButton>

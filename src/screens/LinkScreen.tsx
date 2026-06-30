@@ -40,7 +40,7 @@ export function LinkScreen({
       <button className="back-button" onClick={back}>‹</button>
       <div className="section-icon">{parent ? '⌂' : '⌁'}</div>
       <h1>{parent ? t('createLink') : t('joinFamily')}</h1>
-      <p>{parent ? 'One parent · one child · one private routine.' : 'Use the private code shown on your parent’s phone.'}</p>
+      <p>{parent ? t('parentLinkHint') : t('childLinkHint')}</p>
       <section className="card link-card">
         <IonInput
           label={parent ? t('childNickname') : t('linkingCode')}
@@ -51,7 +51,7 @@ export function LinkScreen({
         />
         {parent && (
           <>
-            <div className="code-box"><small>{t('linkingCode')}</small><strong>{code}</strong><span>Share privately · expires after linking</span></div>
+            <div className="code-box"><small>{t('linkingCode')}</small><strong>{code}</strong><span>{t('shareCodeHint')}</span></div>
             <label className="consent-row">
               <IonCheckbox checked={consent} onIonChange={(event) => setConsent(event.detail.checked)} />
               <span>{t('consent')}</span>

@@ -9,14 +9,14 @@ export function ParentDashboard({ state, t }: { state: AppState; t: (key: Messag
   return (
     <div className="content-screen">
       <header className="screen-header">
-        <div><small>{t('overview')}</small><h1>{state.family.childName}’s {t('routine')}</h1></div>
+        <div><small>{t('overview')}</small><h1>{state.family.childName} · {t('routine')}</h1></div>
         <div className="avatar">{state.family.childName.charAt(0)}</div>
       </header>
       <section className="card summary-card">
         <div className="progress-ring" style={{ '--progress': `${summary.rate * 360}deg` } as React.CSSProperties}>
           <span>{Math.round(summary.rate * 100)}%</span>
         </div>
-        <div><h2>{t('lastSeven')}</h2><p>{summary.successful} clear checks out of {summary.completed}</p><strong>Progress, not perfection.</strong></div>
+        <div><h2>{t('lastSeven')}</h2><p>{summary.successful} {t('clearChecks')} {summary.completed}</p><strong>{t('progressEncouragement')}</strong></div>
       </section>
       <section className="card plan-card">
         <div className="card-title"><h2>▣ {t('monitoringPlan')}</h2><button>{t('edit')}</button></div>

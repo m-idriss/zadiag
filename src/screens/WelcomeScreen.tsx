@@ -27,12 +27,12 @@ export function WelcomeScreen({
       <div className="role-grid">
         <IonButton className="role-button" fill="clear" onClick={() => chooseRole('parent')}>
           <span className="role-symbol">⌂</span>
-          <span><strong>{t('parent')}</strong><small>Plan, alerts &amp; privacy</small></span>
+          <span><strong>{t('parent')}</strong><small>{t('parentRoleHint')}</small></span>
           <b>›</b>
         </IonButton>
         <IonButton className="role-button" fill="clear" onClick={() => chooseRole('child')}>
           <span className="role-symbol">☺</span>
-          <span><strong>{t('child')}</strong><small>Quick checks &amp; progress</small></span>
+          <span><strong>{t('child')}</strong><small>{t('childRoleHint')}</small></span>
           <b>›</b>
         </IonButton>
       </div>

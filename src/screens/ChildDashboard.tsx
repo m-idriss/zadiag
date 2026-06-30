@@ -20,13 +20,13 @@ export function ChildDashboard({
     <div className="content-screen child-home">
       <header className="screen-header"><div><h1>{t('hi')} {state.family.childName} 👋</h1><p>{t('smallCheck')}</p></div></header>
       <section className="check-card">
-        <span className="eyebrow">{active ? t('checkReady') : 'ALL DONE FOR NOW'}</span>
-        <h2>{active ? t('quickPhoto') : 'Nice work!'}</h2>
-        <p>{active ? t('cameraHint') : 'We’ll let you know when it is time for the next check.'}</p>
+        <span className="eyebrow">{active ? t('checkReady') : t('allDone')}</span>
+        <h2>{active ? t('quickPhoto') : t('niceWork')}</h2>
+        <p>{active ? t('cameraHint') : t('nextCheckHint')}</p>
         {active && <IonButton expand="block" color="light" onClick={start}>◉&nbsp; {t('startCheck')}</IonButton>}
-        {active && <small>About 18 minutes left</small>}
+        {active && <small>{t('minutesLeft')}</small>}
       </section>
-      <section className="card week-card"><h2>{t('thisWeek')}</h2><progress max="1" value={summary.rate} /><p>{summary.successful} clear checks so far. Every check helps build the routine.</p></section>
+      <section className="card week-card"><h2>{t('thisWeek')}</h2><progress max="1" value={summary.rate} /><p>{summary.successful} {t('weekProgress')}</p></section>
       <Disclaimer t={t} />
     </div>
   );
