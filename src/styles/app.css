@@ -21,7 +21,13 @@
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--cream); color: var(--navy); }
 button, input { font: inherit; }
-ion-app { background: var(--cream); }
+ion-app {
+  background: var(--cream);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
 ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-transform: none; letter-spacing: 0; }
 
 .page, .content-screen { min-height: 100dvh; max-width: 640px; margin: 0 auto; padding: calc(20px + env(safe-area-inset-top)) 22px calc(100px + env(safe-area-inset-bottom)); background: var(--cream); }
