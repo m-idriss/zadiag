@@ -39,6 +39,10 @@ const messages = {
     regenerateCode: 'Generate a new code', regeneratingCode: 'Generating…',
     regenerateCodeConfirm: 'Generate a new code? The current code and the previously linked child device will stop working. Family history and settings will be kept.',
     regenerateCodeError: 'The new code could not be generated. Please try again.',
+    requestCheckNow: 'Request a check now', requestingCheck: 'Sending request…',
+    requestCheckSent: 'The check is ready on the child’s phone.',
+    requestCheckActive: 'A check is already waiting for a response.',
+    requestCheckError: 'The request could not be sent. Please try again.',
   },
   fr: {
     tagline: 'Le suivi intelligent de votre traitement',
@@ -78,6 +82,10 @@ const messages = {
     regenerateCode: 'Générer un nouveau code', regeneratingCode: 'Génération…',
     regenerateCodeConfirm: 'Générer un nouveau code ? Le code actuel et l’ancien appareil Enfant ne fonctionneront plus. L’historique et les réglages seront conservés.',
     regenerateCodeError: 'Le nouveau code n’a pas pu être généré. Réessaie.',
+    requestCheckNow: 'Demander un contrôle maintenant', requestingCheck: 'Envoi de la demande…',
+    requestCheckSent: 'Le contrôle est disponible sur le téléphone de l’enfant.',
+    requestCheckActive: 'Un contrôle attend déjà une réponse.',
+    requestCheckError: 'La demande n’a pas pu être envoyée. Réessaie.',
   },
 } as const;
 

@@ -4,11 +4,13 @@ import type { AppState } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { StatusPill } from '../components/StatusPill';
 
-export function ParentDashboard({ state, regenerateCode, t }: { state: AppState; regenerateCode: () => Promise<void>; t: (key: MessageKey) => string }) {
+export function ParentDashboard({ state, regenerateCode, requestCheck, t }: { state: AppState; regenerateCode: () => Promise<void>; requestCheck: () => Promise<void>; t: (key: MessageKey) => string }) {
   const summary = adherenceSummary(state.events);
   const attention = state.events.filter((event) => ['uncertain', 'missed', 'expired', 'not_detected'].includes(event.status));
   const [regenerating, setRegenerating] = useState(false);
   const [codeError, setCodeError] = useState(false);
+  const [requesting, setRequesting] = useState(false);
+  const [requestStatus, setRequestStatus] = useState<'idle' | 'sent' | 'active' | 'error'>('idle');
 
   const regenerate = async () => {
     if (!window.confirm(t('regenerateCodeConfirm'))) return;
@@ -17,6 +19,15 @@ export function ParentDashboard({ state, regenerateCode, t }: { state: AppState;
     try { await regenerateCode(); }
     catch { setCodeError(true); }
     finally { setRegenerating(false); }
+  };
+
+  const requestNow = async () => {
+    setRequesting(true);
+    setRequestStatus('idle');
+    try { await requestCheck(); setRequestStatus('sent'); }
+    catch (error) {
+      setRequestStatus(String(error).includes('already-exists') ? 'active' : 'error');
+    } finally { setRequesting(false); }
   };
   return (
     <div className="content-screen">
@@ -34,6 +45,12 @@ export function ParentDashboard({ state, regenerateCode, t }: { state: AppState;
         <div className="card-title"><h2>▣ {t('monitoringPlan')}</h2><button>{t('edit')}</button></div>
         <p><b>{state.plan.checksPerDay}</b> {t('checksDay')} · <b>{state.plan.expiryMinutes}</b> {t('minutesRespond')}</p>
         <div className="chips">{state.plan.windows.map((window) => <span key={window.id}>◷ {window.start}–{window.end}</span>)}</div>
+        <button className="request-check" disabled={requesting} onClick={() => { void requestNow(); }}>
+          {requesting ? t('requestingCheck') : t('requestCheckNow')}
+        </button>
+        {requestStatus === 'sent' && <p role="status" aria-live="polite" className="request-feedback success">{t('requestCheckSent')}</p>}
+        {requestStatus === 'active' && <p role="status" aria-live="polite" className="request-feedback">{t('requestCheckActive')}</p>}
+        {requestStatus === 'error' && <p role="status" aria-live="polite" className="request-feedback error">{t('requestCheckError')}</p>}
       </section>
       {state.family.linkingCode && (
         <section className="card code-box">

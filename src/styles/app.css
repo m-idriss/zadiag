@@ -80,6 +80,11 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .progress-ring::after { content: ''; width: 74px; height: 74px; border-radius: 50%; background: white; position: absolute; }
 .progress-ring span { z-index: 1; font-weight: 900; font-size: 19px; }
 .plan-card { margin-top: 14px; }
+.request-check { width: 100%; margin-top: 16px; padding: 13px; border: 0; border-radius: 14px; background: var(--teal); color: white; font-weight: 900; }
+.request-check:disabled { opacity: .55; }
+.request-feedback { margin: 9px 2px 0 !important; font-size: 12px; font-weight: 800; }
+.request-feedback.success { color: var(--teal) !important; }
+.request-feedback.error { color: var(--coral) !important; }
 .card-title, .section-heading { display: flex; justify-content: space-between; align-items: center; }
 .card-title button { border: 0; color: var(--teal); background: transparent; font-weight: 900; }
 .chips { display: flex; flex-wrap: wrap; gap: 7px; }

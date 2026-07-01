@@ -53,6 +53,8 @@ export const createFamily = onCall({ region, cors, enforceAppCheck: true }, asyn
       childName,
       members: { [uid]: 'parent' },
       plan: defaultPlan,
+      activeCheckId: checkRef.id,
+      activeCheckExpiresAt: checkExpiresAt.toISOString(),
       createdAt: now.toISOString(),
     });
     transaction.create(userRef, {
@@ -152,6 +154,58 @@ export const regenerateLinkCode = onCall({ region, cors, enforceAppCheck: true }
   return { code, expiresAt: expiresAt.toISOString() };
 });
 
+export const requestCheckNow = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = requireUid(request.auth);
+  const familyId = String(request.data?.familyId ?? '');
+  const familyRef = db.collection('families').doc(familyId);
+  const userRef = db.collection('users').doc(uid);
+  const checkRef = familyRef.collection('checks').doc();
+  const pendingChecks = familyRef.collection('checks').where('status', '==', 'pending').limit(10);
+
+  return db.runTransaction(async (transaction) => {
+    const [profile, family, pending] = await Promise.all([
+      transaction.get(userRef),
+      transaction.get(familyRef),
+      transaction.get(pendingChecks),
+    ]);
+    if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'parent') {
+      throw new HttpsError('permission-denied', 'Only the parent can request a check.');
+    }
+    if (!family.exists || family.data()?.members?.[uid] !== 'parent') {
+      throw new HttpsError('not-found', 'The family could not be found.');
+    }
+
+    const familyData = family.data();
+    const activeExpiry = Date.parse(String(familyData?.activeCheckExpiresAt ?? ''));
+    const hasActivePendingCheck = pending.docs.some((check) => Date.parse(String(check.data().expiresAt)) > Date.now());
+    if ((Number.isFinite(activeExpiry) && activeExpiry > Date.now()) || hasActivePendingCheck) {
+      throw new HttpsError('already-exists', 'A check is already waiting for a response.');
+    }
+
+    const configuredMinutes = Number(familyData?.plan?.expiryMinutes);
+    const expiryMinutes = Number.isFinite(configuredMinutes)
+      ? Math.min(120, Math.max(1, configuredMinutes))
+      : defaultPlan.expiryMinutes;
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + expiryMinutes * 60 * 1000);
+    const check = {
+      sessionId: crypto.randomUUID(),
+      requestedAt: now.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+      status: 'pending',
+      requestedBy: uid,
+    };
+
+    transaction.create(checkRef, check);
+    transaction.update(familyRef, {
+      activeCheckId: checkRef.id,
+      activeCheckExpiresAt: expiresAt.toISOString(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    return { id: checkRef.id, ...check };
+  });
+});
+
 export const updatePlan = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
   const familyId = String(request.data?.familyId ?? '');
@@ -176,7 +230,14 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
     throw new HttpsError('failed-precondition', 'This check cannot be analyzed.');
   }
   const result = { status: 'detected', confidence: 0.94, imageQuality: 0.91 };
-  await checkRef.update(result);
+  const batch = db.batch();
+  batch.update(checkRef, result);
+  batch.update(db.collection('families').doc(familyId), {
+    activeCheckId: FieldValue.delete(),
+    activeCheckExpiresAt: FieldValue.delete(),
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+  await batch.commit();
   return { id: check.id, ...check.data(), ...result };
 });
 

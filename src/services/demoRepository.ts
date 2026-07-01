@@ -125,6 +125,19 @@ export class DemoRepository implements AppRepository {
     this.persist();
   }
 
+  async requestCheckNow() {
+    if (this.activeSession()) throw new Error('active_check_exists');
+    const now = new Date();
+    this.state.events.unshift({
+      id: crypto.randomUUID(),
+      sessionId: crypto.randomUUID(),
+      requestedAt: now.toISOString(),
+      expiresAt: new Date(now.getTime() + this.state.plan.expiryMinutes * 60_000).toISOString(),
+      status: 'pending',
+    });
+    this.persist();
+  }
+
   async savePlan(plan: MonitoringPlan) {
     this.state.plan = structuredClone(plan);
     this.persist();
