@@ -1,11 +1,23 @@
+import { useState } from 'react';
 import { adherenceSummary } from '../domain/adherence';
 import type { AppState } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { StatusPill } from '../components/StatusPill';
 
-export function ParentDashboard({ state, t }: { state: AppState; t: (key: MessageKey) => string }) {
+export function ParentDashboard({ state, regenerateCode, t }: { state: AppState; regenerateCode: () => Promise<void>; t: (key: MessageKey) => string }) {
   const summary = adherenceSummary(state.events);
   const attention = state.events.filter((event) => ['uncertain', 'missed', 'expired', 'not_detected'].includes(event.status));
+  const [regenerating, setRegenerating] = useState(false);
+  const [codeError, setCodeError] = useState(false);
+
+  const regenerate = async () => {
+    if (!window.confirm(t('regenerateCodeConfirm'))) return;
+    setCodeError(false);
+    setRegenerating(true);
+    try { await regenerateCode(); }
+    catch { setCodeError(true); }
+    finally { setRegenerating(false); }
+  };
   return (
     <div className="content-screen">
       <header className="screen-header">
@@ -28,6 +40,10 @@ export function ParentDashboard({ state, t }: { state: AppState; t: (key: Messag
           <small>{t('childLinkCode')}</small>
           <strong>{state.family.linkingCode}</strong>
           <span>{t('childLinkCodeHint')}</span>
+          <button className="regenerate-code" disabled={regenerating} onClick={() => { void regenerate(); }}>
+            {regenerating ? t('regeneratingCode') : t('regenerateCode')}
+          </button>
+          {codeError && <span className="form-error">{t('regenerateCodeError')}</span>}
         </section>
       )}
       <div className="section-heading"><h2>{t('attention')}</h2><span>{attention.length}</span></div>

@@ -36,6 +36,9 @@ const messages = {
     resetConfirm: 'Reset this account? A parent reset also deletes the current family and its links.',
     unclearResult: 'We could not get a clear result. Better light and a steady photo may help.',
     childLinkCode: 'Child linking code', childLinkCodeHint: 'Enter this code on the child’s phone. It expires after 24 hours.',
+    regenerateCode: 'Generate a new code', regeneratingCode: 'Generating…',
+    regenerateCodeConfirm: 'Generate a new code? The current code and the previously linked child device will stop working. Family history and settings will be kept.',
+    regenerateCodeError: 'The new code could not be generated. Please try again.',
   },
   fr: {
     tagline: 'Le suivi intelligent de votre traitement',
@@ -72,6 +75,9 @@ const messages = {
     resetConfirm: 'Réinitialiser ce compte ? Pour un parent, cela supprime aussi la famille actuelle et ses liaisons.',
     unclearResult: 'Le résultat n’est pas assez clair. Une meilleure lumière et une photo stable peuvent aider.',
     childLinkCode: 'Code de liaison enfant', childLinkCodeHint: 'Saisis ce code sur le téléphone de l’enfant. Il expire après 24 heures.',
+    regenerateCode: 'Générer un nouveau code', regeneratingCode: 'Génération…',
+    regenerateCodeConfirm: 'Générer un nouveau code ? Le code actuel et l’ancien appareil Enfant ne fonctionneront plus. L’historique et les réglages seront conservés.',
+    regenerateCodeError: 'Le nouveau code n’a pas pu être généré. Réessaie.',
   },
 } as const;
 

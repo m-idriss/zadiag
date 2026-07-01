@@ -8,6 +8,7 @@ export interface AppRepository {
   setLocale(locale: Locale): Promise<void>;
   linkParent(childName: string): Promise<void>;
   linkChild(code: string): Promise<void>;
+  regenerateLinkCode(): Promise<void>;
   savePlan(plan: MonitoringPlan): Promise<void>;
   activeSession(): VerificationEvent | undefined;
   submitCapture(sessionId: string, capturedAt: Date): Promise<VerificationEvent>;

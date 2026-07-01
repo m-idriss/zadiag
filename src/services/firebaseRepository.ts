@@ -105,6 +105,14 @@ export class FirebaseRepository implements AppRepository {
     await this.attachFamily(result.data.familyId, 'child');
   }
 
+  async regenerateLinkCode() {
+    if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
+    const regenerateLinkCode = httpsCallable<{ familyId: string }, { code: string }>(this.services.functions, 'regenerateLinkCode');
+    const result = await regenerateLinkCode({ familyId: this.state.family.id });
+    this.state.family.linkingCode = result.data.code;
+    this.emit();
+  }
+
   async savePlan(plan: MonitoringPlan) {
     if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
     const updatePlan = httpsCallable<{ familyId: string; plan: MonitoringPlan }, void>(this.services.functions, 'updatePlan');

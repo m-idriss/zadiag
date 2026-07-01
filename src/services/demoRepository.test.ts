@@ -20,4 +20,14 @@ describe('DemoRepository compatibility', () => {
     const repository = new DemoRepository();
     await expect(repository.linkChild('ZD-0000')).rejects.toThrow('invalid_code');
   });
+
+  test('generates a fresh six-digit child linking code', async () => {
+    const repository = new DemoRepository();
+    const previousCode = repository.snapshot().family.linkingCode;
+
+    await repository.regenerateLinkCode();
+
+    expect(repository.snapshot().family.linkingCode).toMatch(/^ZD-\d{6}$/);
+    expect(repository.snapshot().family.linkingCode).not.toBe(previousCode);
+  });
 });
