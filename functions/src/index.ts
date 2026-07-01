@@ -104,6 +104,54 @@ export const joinFamily = onCall({ region, cors, enforceAppCheck: true }, async 
   return { familyId };
 });
 
+export const regenerateLinkCode = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = requireUid(request.auth);
+  const familyId = String(request.data?.familyId ?? '');
+  const userRef = db.collection('users').doc(uid);
+  const familyRef = db.collection('families').doc(familyId);
+  const [profile, family, links] = await Promise.all([
+    userRef.get(),
+    familyRef.get(),
+    db.collection('linkCodes').where('familyId', '==', familyId).get(),
+  ]);
+
+  if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'parent') {
+    throw new HttpsError('permission-denied', 'Only the parent can generate a new linking code.');
+  }
+  if (!family.exists || family.data()?.members?.[uid] !== 'parent') {
+    throw new HttpsError('not-found', 'The family could not be found.');
+  }
+
+  const childIds = Object.entries((family.data()?.members ?? {}) as Record<string, string>)
+    .filter(([, role]) => role === 'child')
+    .map(([memberId]) => memberId);
+  const code = createLinkCode();
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const linkRef = db.collection('linkCodes').doc(hashLinkCode(code));
+  const familyUpdate: Record<string, unknown> = { updatedAt: FieldValue.serverTimestamp() };
+  childIds.forEach((childId) => { familyUpdate[`members.${childId}`] = FieldValue.delete(); });
+
+  const batch = db.batch();
+  links.docs.forEach((link) => batch.delete(link.ref));
+  childIds.forEach((childId) => batch.delete(db.collection('users').doc(childId)));
+  batch.update(familyRef, familyUpdate);
+  batch.update(userRef, {
+    linkingCode: code,
+    linkingCodeExpiresAt: expiresAt.toISOString(),
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+  batch.create(linkRef, {
+    familyId,
+    createdBy: uid,
+    expiresAt: expiresAt.toISOString(),
+    consumedAt: null,
+  });
+  await batch.commit();
+
+  return { code, expiresAt: expiresAt.toISOString() };
+});
+
 export const updatePlan = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
   const familyId = String(request.data?.familyId ?? '');

@@ -120,6 +120,11 @@ export class DemoRepository implements AppRepository {
     this.persist();
   }
 
+  async regenerateLinkCode() {
+    this.state.family.linkingCode = `ZD-${Math.floor(100000 + Math.random() * 900000)}`;
+    this.persist();
+  }
+
   async savePlan(plan: MonitoringPlan) {
     this.state.plan = structuredClone(plan);
     this.persist();
