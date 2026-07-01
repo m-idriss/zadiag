@@ -16,6 +16,17 @@ export function SettingsScreen({
     await Notification.requestPermission();
   };
 
+  const switchUser = () => {
+    const otherOrigin = window.location.hostname === 'zadiag.vercel.app'
+      ? 'https://www.zadiag.com'
+      : 'https://zadiag.vercel.app';
+    window.location.assign(otherOrigin);
+  };
+
+  const confirmReset = () => {
+    if (window.confirm(t('resetConfirm'))) reset();
+  };
+
   return (
     <div className="content-screen settings-screen">
       <header className="screen-header"><div><small>Zadiag</small><h1>{t('settings')}</h1><p>{t('settingsHint')}</p></div></header>
@@ -33,8 +44,13 @@ export function SettingsScreen({
         <h2>{t('privacyDefaults')}</h2>
         <ul><li>{t('noFaceRecognition')}</li><li>{t('noModelTraining')}</li><li>{t('noPhotoUpload')}</li><li>{t('immediateDeletion')}</li></ul>
       </section>
+      <section className="card">
+        <h2>{t('switchUser')}</h2>
+        <p>{t('switchUserHint')}</p>
+        <IonButton expand="block" fill="outline" onClick={switchUser}>{t('switchUser')}</IonButton>
+      </section>
       <Disclaimer t={t} />
-      <IonButton expand="block" fill="outline" color="danger" onClick={reset}>{t('resetDemo')}</IonButton>
+      <IonButton expand="block" fill="outline" color="danger" onClick={confirmReset}>{t('resetDemo')}</IonButton>
     </div>
   );
 }
