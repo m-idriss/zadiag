@@ -30,4 +30,10 @@ describe('DemoRepository compatibility', () => {
     expect(repository.snapshot().family.linkingCode).toMatch(/^ZD-\d{6}$/);
     expect(repository.snapshot().family.linkingCode).not.toBe(previousCode);
   });
+
+  test('does not create a duplicate immediate check', async () => {
+    const repository = new DemoRepository();
+
+    await expect(repository.requestCheckNow()).rejects.toThrow('active_check_exists');
+  });
 });
