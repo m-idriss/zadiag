@@ -6,7 +6,13 @@ import { assertChildName, createLinkCode, hashLinkCode, normalizeLinkCode } from
 initializeApp();
 const db = getFirestore();
 const region = 'europe-west1';
-const cors = ['https://zadiag.vercel.app', /^https:\/\/zadiag-.*\.vercel\.app$/, 'http://localhost:5173'];
+const cors = [
+  'https://zadiag.vercel.app',
+  'https://zadiag.com',
+  'https://www.zadiag.com',
+  /^https:\/\/zadiag-.*\.vercel\.app$/,
+  'http://localhost:5173',
+];
 
 const requireUid = (auth: { uid: string } | undefined) => {
   if (!auth) throw new HttpsError('unauthenticated', 'Authentication is required.');
