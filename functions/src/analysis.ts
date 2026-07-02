@@ -93,7 +93,7 @@ type GeminiGenerateContentResponse = {
   error?: unknown;
 };
 
-type AnalysisLocale = 'en' | 'fr';
+export type AnalysisLocale = 'en' | 'fr';
 
 const buildPrompt = (locale: AnalysisLocale, retry: boolean) => [
   'Check whether the treatment aid is clearly visible in the photo.',
@@ -160,6 +160,62 @@ const requestGeminiAnalysis = async (
   return analyzeGeminiResponse(payload);
 };
 
+const requestGeminiTranslation = async (
+  text: string,
+  options: {
+    model: string;
+    getAccessToken: () => Promise<string | null | undefined>;
+    fetchImpl?: typeof fetch;
+    locale: AnalysisLocale;
+  },
+): Promise<string> => {
+  const token = await options.getAccessToken();
+  if (!token) {
+    throw new Error('Missing Google access token.');
+  }
+  const response = await (options.fetchImpl ?? fetch)(`https://generativelanguage.googleapis.com/v1beta/models/${options.model}:generateContent`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            {
+              text: [
+                options.locale === 'fr'
+                  ? 'Translate the following text to French. Return only the translated text.'
+                  : 'Translate the following text to English. Return only the translated text.',
+                text,
+              ].join('\n\n'),
+            },
+          ],
+        },
+      ],
+      generationConfig: {
+        temperature: 0,
+        maxOutputTokens: 512,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Gemini translation request failed with status ${response.status}: ${errorText}`);
+  }
+
+  const payload = await response.json() as GeminiGenerateContentResponse;
+  const candidate = payload.candidates?.[0];
+  const translated = candidate?.content?.parts?.map((part) => part.text ?? '').join('').trim();
+  if (!translated) {
+    throw new Error('Gemini translation did not contain text.');
+  }
+  return translated;
+};
+
 export const analyzeGeminiResponse = (payload: GeminiGenerateContentResponse) => {
   if (payload.error) {
     throw new Error(`Gemini API returned an error: ${JSON.stringify(payload.error)}`);
@@ -191,5 +247,24 @@ export const analyzeWithGemini = async (
   } catch (error) {
     console.warn('Gemini retry failed, keeping first result', error);
     return initialResult;
+  }
+};
+
+export const localizeAnalysisReason = async (
+  reason: string,
+  options: {
+    model: string;
+    getAccessToken: () => Promise<string | null | undefined>;
+    fetchImpl?: typeof fetch;
+    locale: AnalysisLocale;
+  },
+): Promise<string> => {
+  if (!reason || reason === 'analysis_unavailable') return reason;
+  if (options.locale === 'en') return reason;
+  try {
+    return await requestGeminiTranslation(reason, options);
+  } catch (error) {
+    console.warn('Gemini translation failed, keeping original reason', error);
+    return reason;
   }
 };

@@ -6,7 +6,7 @@ import { GoogleAuth } from 'google-auth-library';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, normalizeLinkCode } from './helpers.js';
-import { analyzeWithGemini, type AnalysisResult } from './analysis.js';
+import { analyzeWithGemini, localizeAnalysisReason, type AnalysisResult } from './analysis.js';
 import { getLocalDateKey, getWindowForDate, shouldAutoDispatchCheck } from './planning.js';
 
 initializeApp();
@@ -539,6 +539,16 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
       getAccessToken: () => geminiAuth.getAccessToken(),
       locale,
     });
+    if (locale === 'fr' && result.reason && result.reason !== 'analysis_unavailable') {
+      result = {
+        ...result,
+        reason: await localizeAnalysisReason(result.reason, {
+          model: geminiModel,
+          getAccessToken: () => geminiAuth.getAccessToken(),
+          locale,
+        }),
+      };
+    }
   } catch (error) {
     console.error('AI analysis failed, returning fallback result', error);
   }
