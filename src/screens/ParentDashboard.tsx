@@ -84,7 +84,10 @@ export function ParentDashboard({
       <div className="section-heading"><h2>{t('attention')}</h2><span>{attention.length}</span></div>
       {attention.map((event) => (
         <section className="card history-row" key={event.id}>
-          <div><strong>{new Date(event.requestedAt).toLocaleDateString()}</strong><small>{event.reason?.replace('_', ' ')}</small></div>
+          <div>
+            <strong>{new Intl.DateTimeFormat(state.locale === 'fr' ? 'fr-FR' : 'en-US', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(event.requestedAt))}</strong>
+            <small>{event.reason}</small>
+          </div>
           <StatusPill status={event.status} t={t} />
         </section>
       ))}

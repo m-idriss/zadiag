@@ -176,7 +176,7 @@ export class DemoRepository implements AppRepository {
     );
   }
 
-  async submitCapture(sessionId: string, capturedAt: Date): Promise<VerificationEvent> {
+  async submitCapture(sessionId: string, capturedAt: Date, _imageDataUrl: string): Promise<VerificationEvent> {
     const event = this.state.events.find((item) => item.sessionId === sessionId);
     if (!event) throw new Error('unknown_session');
     if (this.consumedSessions.has(sessionId) || !isFreshCapture(event, capturedAt)) {

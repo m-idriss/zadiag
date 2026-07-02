@@ -2,12 +2,15 @@ import { initializeApp } from 'firebase-admin/app';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
+import { gateway, generateText, Output } from 'ai';
+import { z } from 'zod';
 import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, normalizeLinkCode } from './helpers.js';
 
 initializeApp();
 const db = getFirestore();
 const region = 'europe-west1';
+const aiGatewayApiKey = defineSecret('AI_GATEWAY_API_KEY');
 const vapidPrivateKey = defineSecret('WEB_PUSH_VAPID_PRIVATE_KEY');
 const vapidPublicKey = defineSecret('WEB_PUSH_VAPID_PUBLIC_KEY');
 const cors = [
@@ -35,6 +38,12 @@ const defaultPlan = {
   timeZone: 'Europe/Paris',
 };
 const recoveryLifetimeMs = 90 * 24 * 60 * 60 * 1000;
+const analysisSchema = z.object({
+  status: z.enum(['detected', 'not_detected', 'uncertain']),
+  confidence: z.number().min(0).max(1),
+  imageQuality: z.number().min(0).max(1),
+  reason: z.string().min(1).max(220),
+});
 
 const createRecoveryRecord = (familyId: string, expiresAt: Date) => ({
   familyId,
@@ -409,17 +418,52 @@ export const updatePlan = onCall({ region, cors, enforceAppCheck: true }, async 
   await db.collection('families').doc(familyId).update({ plan: request.data.plan, updatedAt: FieldValue.serverTimestamp() });
 });
 
-export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true, secrets: [aiGatewayApiKey] }, async (request) => {
   const uid = requireUid(request.auth);
   const familyId = String(request.data?.familyId ?? '');
   const checkId = String(request.data?.checkId ?? '');
   const capturedAt = String(request.data?.capturedAt ?? '');
+  const imageDataUrl = String(request.data?.imageDataUrl ?? '');
   const profile = await db.collection('users').doc(uid).get();
   if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'child') {
     throw new HttpsError('permission-denied', 'Only the linked child can submit this check.');
   }
+  if (!imageDataUrl.startsWith('data:image/')) {
+    throw new HttpsError('invalid-argument', 'A valid image is required.');
+  }
   const checkRef = db.collection('families').doc(familyId).collection('checks').doc(checkId);
-  const result = { status: 'detected', confidence: 0.94, imageQuality: 0.91 };
+  const aiResult = await generateText({
+    model: gateway('google/gemini-3.1-flash-image-preview'),
+    output: Output.object({ schema: analysisSchema }),
+    messages: [
+      {
+        role: 'system',
+        content: 'You are a visual checker for treatment adherence. Judge only what is visible in the photo. Do not diagnose. If the image is unclear, mark it as uncertain.',
+      },
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: [
+              'Review this child treatment check photo.',
+              'Decide whether the required treatment aid is clearly visible and being worn as expected.',
+              'Return JSON only through the structured output.',
+              'Use status "detected" when visible, "not_detected" when clearly absent, and "uncertain" when the image is too unclear.',
+              'Explain the result briefly in one sentence.',
+            ].join(' '),
+          },
+          {
+            type: 'file',
+            mediaType: 'image/jpeg',
+            data: imageDataUrl,
+          },
+        ],
+      },
+    ],
+    maxOutputTokens: 220,
+  });
+  const result = aiResult.output;
   const response = await db.runTransaction(async (transaction) => {
     const check = await transaction.get(checkRef);
     const checkData = check.data();

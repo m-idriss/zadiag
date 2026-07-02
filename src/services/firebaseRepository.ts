@@ -161,7 +161,7 @@ export class FirebaseRepository implements AppRepository {
     return this.state.events.find((event) => event.status === 'pending' && Date.parse(event.expiresAt) > now);
   }
 
-  async submitCapture(sessionId: string, capturedAt: Date) {
+  async submitCapture(sessionId: string, capturedAt: Date, imageDataUrl: string) {
     const familyId = this.state.family.id;
     const event = this.state.events.find((item) => item.sessionId === sessionId);
     if (!familyId || !event || !isFreshCapture(event, capturedAt)) throw new Error('invalid_or_replayed_capture');
@@ -169,8 +169,14 @@ export class FirebaseRepository implements AppRepository {
       familyId: string;
       checkId: string;
       capturedAt: string;
+      imageDataUrl: string;
     }, VerificationEvent>(this.services.functions, 'analyzeCheck');
-    const result = await analyzeCheck({ familyId, checkId: event.id, capturedAt: capturedAt.toISOString() });
+    const result = await analyzeCheck({
+      familyId,
+      checkId: event.id,
+      capturedAt: capturedAt.toISOString(),
+      imageDataUrl,
+    });
     return result.data;
   }
 

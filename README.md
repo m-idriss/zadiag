@@ -69,6 +69,10 @@ enabled:
 If those values are missing, the app falls back to its local demo repository so
 you can still test the UI without Firebase.
 
+For the AI-powered verification flow, set the Firebase Functions secret:
+
+- `AI_GATEWAY_API_KEY`
+
 ## Firebase setup
 
 To enable the full family-link flow:
@@ -79,7 +83,8 @@ To enable the full family-link flow:
 4. Register the web app.
 5. Create a reCAPTCHA Enterprise App Check key for the deployed domains.
 6. Add the public Firebase values to your Vercel environment.
-7. Deploy Firestore rules and Cloud Functions.
+7. Add the `AI_GATEWAY_API_KEY` secret to Firebase Functions.
+8. Deploy Firestore rules and Cloud Functions.
 
 The backend uses callable functions, App Check, and Firestore listeners to keep
 the parent and child devices in sync. Linking codes are one-time and expire,

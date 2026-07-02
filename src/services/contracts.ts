@@ -14,7 +14,7 @@ export interface AppRepository {
   savePushSubscription(subscription: PushSubscriptionJSON): Promise<void>;
   savePlan(plan: MonitoringPlan): Promise<void>;
   activeSession(): VerificationEvent | undefined;
-  submitCapture(sessionId: string, capturedAt: Date): Promise<VerificationEvent>;
+  submitCapture(sessionId: string, capturedAt: Date, imageDataUrl: string): Promise<VerificationEvent>;
   reset(): Promise<void>;
 }
 

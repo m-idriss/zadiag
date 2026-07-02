@@ -87,12 +87,12 @@ export function App() {
     setRoute('link');
   };
 
-  const submit = async (capturedAt: Date) => {
+  const submit = async (capturedAt: Date, imageDataUrl: string) => {
     const session = repository.activeSession();
     if (!session) return;
     setBusy(true);
     try {
-      const event = await repository.submitCapture(session.sessionId, capturedAt);
+      const event = await repository.submitCapture(session.sessionId, capturedAt, imageDataUrl);
       sync();
       setResult(event);
       setRoute('result');

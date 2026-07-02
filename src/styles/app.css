@@ -243,6 +243,9 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .result-icon { width: 116px; height: 116px; border-radius: 50%; display: grid; place-items: center; background: #fff0d9; color: #b87218; font-size: 62px; font-weight: 900; }
 .result-icon.success { background: var(--mint); color: var(--teal); }
 .result-page .status-pill { margin: 10px 0; }
+.result-reason { margin: 8px 0 0; max-width: 24ch; color: var(--ink); line-height: 1.45; }
+.result-metrics { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 12px; }
+.result-metrics span { padding: 8px 12px; border-radius: 999px; background: #eef2f4; color: var(--navy); font-size: 12px; font-weight: 800; }
 .result-page ion-button { width: 100%; }
 
 @media (min-width: 700px) {

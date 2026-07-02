@@ -9,7 +9,7 @@ export function CameraScreen({
 }: {
   busy: boolean;
   back: () => void;
-  submit: (capturedAt: Date) => Promise<void>;
+  submit: (capturedAt: Date, imageDataUrl: string) => Promise<void>;
   t: (key: MessageKey) => string;
 }) {
   return (

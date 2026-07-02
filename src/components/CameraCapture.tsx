@@ -6,7 +6,7 @@ import type { MessageKey } from '../services/i18n';
 interface CameraCaptureProps {
   t: (key: MessageKey) => string;
   busy: boolean;
-  onSubmit: (capturedAt: Date) => Promise<void>;
+  onSubmit: (capturedAt: Date, imageDataUrl: string) => Promise<void>;
 }
 
 export function CameraCapture({ t, busy, onSubmit }: CameraCaptureProps) {
@@ -105,7 +105,7 @@ export function CameraCapture({ t, busy, onSubmit }: CameraCaptureProps) {
           <IonButton fill="outline" color="light" disabled={busy} onClick={openCamera}>
             <IonIcon icon={refresh} slot="start" />{t('retake')}
           </IonButton>
-          <IonButton disabled={busy} onClick={() => onSubmit(capturedAt)}>
+          <IonButton disabled={busy} onClick={() => onSubmit(capturedAt, preview)}>
             {busy ? <IonSpinner name="crescent" /> : <IonIcon icon={checkmark} slot="start" />}
             {busy ? t('analyzing') : t('usePhoto')}
           </IonButton>
