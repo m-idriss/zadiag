@@ -51,6 +51,7 @@ export function App() {
   const [tab, setTab] = useState<Tab>('home');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<VerificationEvent>();
+  const [submitError, setSubmitError] = useState<string>();
   const t = (key: MessageKey) => translate(state.locale, key);
 
   useEffect(() => {
@@ -90,12 +91,16 @@ export function App() {
   const submit = async (capturedAt: Date, imageDataUrl: string) => {
     const session = repository.activeSession();
     if (!session) return;
+    setSubmitError(undefined);
     setBusy(true);
     try {
       const event = await repository.submitCapture(session.sessionId, capturedAt, imageDataUrl);
       sync();
       setResult(event);
       setRoute('result');
+    } catch (error) {
+      console.error(error);
+      setSubmitError(t('requestCheckError'));
     } finally {
       setBusy(false);
     }
@@ -160,7 +165,7 @@ export function App() {
       />
     );
   } else if (route === 'camera') {
-    content = <CameraScreen busy={busy} back={() => setRoute('app')} submit={submit} t={t} />;
+    content = <CameraScreen busy={busy} submitError={submitError} back={() => setRoute('app')} submit={submit} t={t} />;
   } else if (route === 'result' && result) {
     content = <ResultScreen event={result} done={() => { setResult(undefined); setRoute('app'); }} t={t} />;
   } else {

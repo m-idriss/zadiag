@@ -6,10 +6,11 @@ import type { MessageKey } from '../services/i18n';
 interface CameraCaptureProps {
   t: (key: MessageKey) => string;
   busy: boolean;
+  submitError?: string;
   onSubmit: (capturedAt: Date, imageDataUrl: string) => Promise<void>;
 }
 
-export function CameraCapture({ t, busy, onSubmit }: CameraCaptureProps) {
+export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | undefined>(undefined);
   const [preview, setPreview] = useState<string>();
@@ -54,12 +55,14 @@ export function CameraCapture({ t, busy, onSubmit }: CameraCaptureProps) {
     const video = videoRef.current;
     if (!video || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    const maxSide = 960;
+    const scale = Math.min(1, maxSide / Math.max(video.videoWidth, video.videoHeight));
+    canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+    canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
     canvas.getContext('2d')?.drawImage(video, 0, 0);
     const timestamp = new Date();
     setCapturedAt(timestamp);
-    setPreview(canvas.toDataURL('image/jpeg', 0.86));
+    setPreview(canvas.toDataURL('image/jpeg', 0.72));
     stopCamera();
   };
 
@@ -105,12 +108,13 @@ export function CameraCapture({ t, busy, onSubmit }: CameraCaptureProps) {
           <IonButton fill="outline" color="light" disabled={busy} onClick={openCamera}>
             <IonIcon icon={refresh} slot="start" />{t('retake')}
           </IonButton>
-          <IonButton disabled={busy} onClick={() => onSubmit(capturedAt, preview)}>
+          <IonButton disabled={busy} onClick={() => void onSubmit(capturedAt, preview)}>
             {busy ? <IonSpinner name="crescent" /> : <IonIcon icon={checkmark} slot="start" />}
             {busy ? t('analyzing') : t('usePhoto')}
           </IonButton>
         </div>
       )}
+      {submitError ? <p className="form-error" role="alert">{submitError}</p> : null}
       <small className="camera-only">{t('cameraOnly')}</small>
     </div>
   );
