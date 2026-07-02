@@ -25,6 +25,23 @@ ion-app {
   background: var(--cream);
   overflow: hidden;
 }
+.app-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  background: var(--cream);
+}
+.app-splash-card {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px 28px;
+}
+.app-splash-card img { width: 92px; height: 92px; }
+.app-splash-card strong { font-size: 24px; font-weight: 900; color: var(--navy); }
+.app-splash-card span { color: var(--muted); font-size: 13px; font-weight: 700; }
 ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-transform: none; letter-spacing: 0; }
 
 .page, .content-screen { min-height: 100dvh; max-width: 640px; margin: 0 auto; padding: calc(20px + env(safe-area-inset-top)) 22px calc(100px + env(safe-area-inset-bottom)); background: var(--cream); }

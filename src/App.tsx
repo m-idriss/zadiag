@@ -12,6 +12,7 @@ import { SettingsScreen } from './screens/SettingsScreen';
 import { CameraScreen } from './screens/CameraScreen';
 import { ResultScreen } from './screens/ResultScreen';
 import { BottomNav, type Tab } from './components/BottomNav';
+import { SplashScreen } from './components/SplashScreen';
 import { WebPushGateway } from './services/webPush';
 import { firebaseEnabled } from './services/firebaseClient';
 import { InstallScreen } from './screens/InstallScreen';
@@ -42,19 +43,31 @@ export function App() {
   const repository = useMemo(createRepository, []);
   const [state, setState] = useState(repository.snapshot());
   const [route, setRoute] = useState<Route>(() => routeForState(state));
+  const [ready, setReady] = useState(false);
   const [tab, setTab] = useState<Tab>('home');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<VerificationEvent>();
   const t = (key: MessageKey) => translate(state.locale, key);
 
   useEffect(() => {
+    let alive = true;
+    const startedAt = Date.now();
     const unsubscribe = repository.subscribe(() => setState(repository.snapshot()));
     repository.initialize().then(() => {
+      if (!alive) return;
       const restored = repository.snapshot();
       setState(restored);
       setRoute(routeForState(restored));
-    }).catch(console.error);
-    return unsubscribe;
+      const elapsed = Date.now() - startedAt;
+      window.setTimeout(() => { if (alive) setReady(true); }, Math.max(150, 700 - elapsed));
+    }).catch((error) => {
+      console.error(error);
+      if (alive) setReady(true);
+    });
+    return () => {
+      alive = false;
+      unsubscribe();
+    };
   }, [repository]);
 
   const sync = () => setState(repository.snapshot());
@@ -167,5 +180,5 @@ export function App() {
     content = <div className="app-shell">{screen}<BottomNav tab={tab} role={role} onChange={setTab} t={t} /></div>;
   }
 
-  return <IonApp>{content}</IonApp>;
+  return <IonApp>{content}{!ready ? <SplashScreen /> : null}</IonApp>;
 }
