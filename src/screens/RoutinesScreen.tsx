@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import type { AppState, RoutineAssignment, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
+import { RoutineDetailScreen } from './RoutineDetailScreen';
 
 const completionRate = (assignment: RoutineAssignment, events: VerificationEvent[]) => {
   const completed = events.filter((event) => event.routineId === assignment.routineId && !['pending', 'analyzing'].includes(event.status));
@@ -8,6 +10,10 @@ const completionRate = (assignment: RoutineAssignment, events: VerificationEvent
 };
 
 export function RoutinesScreen({ state, t }: { state: AppState; t: (key: MessageKey) => string }) {
+  const [selectedId, setSelectedId] = useState<string>();
+  const selected = state.routineAssignments.find((assignment) => assignment.id === selectedId);
+  if (selected) return <RoutineDetailScreen assignment={selected} state={state} back={() => setSelectedId(undefined)} t={t} />;
+
   return (
     <div className="content-screen routines-screen">
       <header className="screen-header">
@@ -28,6 +34,7 @@ export function RoutinesScreen({ state, t }: { state: AppState; t: (key: Message
                 <span><b>{Math.round(rate * 100)}%</b> {t('completion')}</span>
               </div>
               <p className="routine-next">{next ? `${t('nextTask')} ${new Intl.DateTimeFormat(state.locale === 'fr' ? 'fr-FR' : 'en-US', { timeStyle: 'short' }).format(new Date(next.expiresAt))}` : t('noPendingTask')}</p>
+              <button type="button" className="routine-details-button" onClick={() => setSelectedId(assignment.id)}>{t('viewDetails')} →</button>
             </section>
           );
         })}

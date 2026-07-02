@@ -168,7 +168,18 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .routine-metrics span { padding: 11px; border-radius: 14px; background: #f5f8f7; color: var(--muted); font-size: 12px; }
 .routine-metrics b { display: block; color: var(--navy); font-size: 18px; }
 .routine-next { margin: 0; font-size: 13px; font-weight: 800; color: var(--teal) !important; }
+.routine-details-button { justify-self: start; padding: 8px 0; border: 0; background: transparent; color: var(--teal); font-weight: 900; }
 .empty-state { padding: 30px 18px; text-align: center; }
+.empty-state.compact { padding: 12px 4px; text-align: left; font-size: 13px; }
+.routine-detail-header { align-items: flex-start; margin-top: 20px; }
+.routine-detail-header .routine-status { margin-top: 6px; }
+.routine-detail-progress { display: flex; align-items: center; gap: 18px; }
+.routine-detail-progress small { color: var(--muted); font-weight: 800; }
+.routine-detail-progress h2 { margin-top: 4px; }
+.routine-detail-progress p { margin: 3px 0 0; font-size: 13px; }
+.routine-detail-section { margin-top: 16px; }
+.routine-detail-section > h2 { margin-bottom: 8px; }
+.routine-detail-section > p { margin-top: 0; }
 
 .app-shell { position: relative; height: 100dvh; overflow: hidden; background: var(--cream); }
 .app-shell > .content-screen { height: 100%; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }

@@ -41,6 +41,7 @@ describe('participant routines navigation', () => {
         { id: 'done', routineId: assignment.routineId, sessionId: 'one', requestedAt: '2026-07-02T08:00:00.000Z', expiresAt: '2026-07-02T09:00:00.000Z', status: 'detected' },
         { id: 'missed', routineId: assignment.routineId, sessionId: 'two', requestedAt: '2026-07-02T10:00:00.000Z', expiresAt: '2026-07-02T11:00:00.000Z', status: 'missed' },
         { id: 'next', routineId: assignment.routineId, sessionId: 'three', requestedAt: '2026-07-02T18:00:00.000Z', expiresAt: '2026-07-02T20:00:00.000Z', status: 'pending' },
+        { id: 'other', routineId: 'another-routine', sessionId: 'four', requestedAt: '2026-07-02T12:00:00.000Z', expiresAt: '2026-07-02T13:00:00.000Z', status: 'detected', reason: 'Other routine event' },
       ],
     };
 
@@ -51,5 +52,19 @@ describe('participant routines navigation', () => {
     expect(container.textContent).toContain('50% completion');
     expect(container.textContent).toContain('Next task before');
     expect(container.textContent).toContain('Active');
+
+    const details = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('View details'));
+    act(() => details?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+
+    expect(container.textContent).toContain('Routine overview');
+    expect(container.textContent).toContain('Progress');
+    expect(container.textContent).toContain('Schedule');
+    expect(container.textContent).toContain('History');
+    expect(container.textContent).toContain('50%');
+    expect(container.textContent).not.toContain('Other routine event');
+
+    const back = container.querySelector('.back-button');
+    act(() => back?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(container.textContent).toContain('My routines');
   });
 });
