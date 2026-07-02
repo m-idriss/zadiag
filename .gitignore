@@ -12,3 +12,4 @@ functions/lib/
 *-debug.log
 .vercel
 .env*
+.idea
