@@ -147,6 +147,8 @@ export function App() {
         ? <SettingsScreen
             enableNotifications={enableNotifications}
             notificationsEnabled={state.notificationsEnabled}
+            childLinkingCode={state.family.linkingCode}
+            regenerateLinkCode={async () => { await repository.regenerateLinkCode(); sync(); }}
             reset={() => { void reset(); }}
             role={role}
             t={t}
@@ -154,7 +156,6 @@ export function App() {
         : role === 'parent'
           ? <ParentDashboard
               state={state}
-              regenerateCode={async () => { await repository.regenerateLinkCode(); sync(); }}
               requestCheck={async () => { await repository.requestCheckNow(); sync(); }}
               t={t}
             />
