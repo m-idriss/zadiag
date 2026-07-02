@@ -116,7 +116,11 @@ export class FirebaseRepository implements AppRepository {
   async requestCheckNow() {
     if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
     const requestCheckNow = httpsCallable<{ familyId: string }, void>(this.services.functions, 'requestCheckNow');
-    await requestCheckNow({ familyId: this.state.family.id });
+    try { await requestCheckNow({ familyId: this.state.family.id }); }
+    catch (error) {
+      if ((error as { code?: string }).code === 'functions/already-exists') throw new Error('active_check_exists');
+      throw error;
+    }
   }
 
   async savePlan(plan: MonitoringPlan) {
