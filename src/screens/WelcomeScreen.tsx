@@ -21,9 +21,11 @@ export function WelcomeScreen({
         <button className={locale === 'fr' ? 'active' : ''} onClick={() => setLocale('fr')}>FR</button>
       </div>
       <div className="brand-icon"><img src="/icons/icon.svg" alt="" /></div>
+      <div className="installed-badge"><span>✓</span>{t('setupInstalledBadge')}</div>
       <h1>Zadiag</h1>
       <p className="hero-copy">{t('tagline')}</p>
       <h2>{t('continueAs')}</h2>
+      <p className="role-help">{t('setupRoleHelp')}</p>
       <div className="role-grid">
         <IonButton className="role-button" fill="clear" onClick={() => chooseRole('parent')}>
           <span className="role-symbol">⌂</span>

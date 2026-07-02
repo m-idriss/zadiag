@@ -22,6 +22,7 @@ interface UserProfile {
   familyId: string;
   role: Role;
   linkingCode?: string;
+  notificationsEnabled?: boolean;
 }
 interface FamilyDocument {
   childName: string;
@@ -33,6 +34,7 @@ const initialState = (): AppState => {
   const preferences = JSON.parse(localStorage.getItem(PREFERENCES_KEY) ?? '{}') as { locale?: Locale; role?: Role };
   return {
     locale: preferences.locale ?? 'en',
+    notificationsEnabled: false,
     role: preferences.role,
     family: { linked: false, childName: '', linkingCode: '', consented: false },
     plan: defaultPlan,
@@ -135,6 +137,8 @@ export class FirebaseRepository implements AppRepository {
       subscription,
       locale: this.state.locale,
     });
+    this.state.notificationsEnabled = true;
+    this.emit();
   }
 
   async savePlan(plan: MonitoringPlan) {
@@ -181,6 +185,7 @@ export class FirebaseRepository implements AppRepository {
     const profile = await getDoc(doc(this.services.db, 'users', this.user.uid));
     if (!profile.exists()) { this.emit(); return; }
     const data = profile.data() as UserProfile;
+    this.state.notificationsEnabled = data.notificationsEnabled === true;
     this.state.family.linkingCode = data.linkingCode ?? '';
     await this.attachFamily(data.familyId, data.role);
   }

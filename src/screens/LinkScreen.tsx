@@ -3,6 +3,7 @@ import { IonButton, IonCheckbox, IonInput } from '@ionic/react';
 import type { Role } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { Disclaimer } from '../components/Disclaimer';
+import { SetupProgress } from '../components/SetupProgress';
 
 export function LinkScreen({
   role,
@@ -42,7 +43,9 @@ export function LinkScreen({
   return (
     <main className="page link-page">
       <button className="back-button" onClick={back}>‹</button>
+      {!parent ? <SetupProgress current={2} t={t} /> : null}
       <div className="section-icon">{parent ? '⌂' : '⌁'}</div>
+      {!parent ? <p className="setup-eyebrow">{t('setupStepTwo')}</p> : null}
       <h1>{parent ? t('createLink') : t('joinFamily')}</h1>
       <p>{parent ? t('parentLinkHint') : t('childLinkHint')}</p>
       <section className="card link-card">
@@ -62,8 +65,9 @@ export function LinkScreen({
             </label>
           </>
         )}
-        {error && <p className="form-error">{t('invalidCode')}</p>}
+        {error && <p className="form-error" role="alert">{t('invalidCode')}</p>}
       </section>
+      {!parent ? <aside className="setup-help"><span aria-hidden="true">ⓘ</span><p>{t('setupLinkHelp')}</p></aside> : null}
       <Disclaimer t={t} />
       <IonButton expand="block" disabled={busy || !value.trim() || (parent && !consent)} onClick={submit}>
         {parent ? t('createContinue') : t('linkContinue')}
