@@ -8,6 +8,14 @@ declare let self: ServiceWorkerGlobalScope & {
 cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST);
 
+self.addEventListener('install', () => {
+  void self.skipWaiting();
+});
+
+self.addEventListener('activate', (event: ExtendableEvent) => {
+  event.waitUntil(self.clients.claim());
+});
+
 self.addEventListener('push', (event: PushEvent) => {
   const payload = event.data?.json() as { sessionId?: string; title?: string; body?: string } | undefined;
   event.waitUntil(
