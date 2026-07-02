@@ -501,21 +501,21 @@ export const dispatchPlannedChecks = onSchedule({
       dispatchSource: 'schedule',
     };
 
-    await db.runTransaction(async (transaction) => {
+    const created = await db.runTransaction(async (transaction): Promise<boolean> => {
       const [freshFamily, activePending] = await Promise.all([
         transaction.get(familyDoc.ref),
         transaction.get(familyDoc.ref.collection('checks').where('status', '==', 'pending').limit(5)),
       ]);
-      if (!freshFamily.exists) return;
+      if (!freshFamily.exists) return false;
       const freshData = freshFamily.data() as typeof familyData;
       const stillHasChild = Object.values(freshData.members ?? {}).includes('child');
-      if (!stillHasChild) return;
+      if (!stillHasChild) return false;
       const pendingDocs = activePending.docs.map((doc) => doc.data() as { expiresAt?: string; status?: string });
       const stillHasActivePending = pendingDocs.some((pending) => {
         const pendingExpiresAt = Date.parse(String(pending.expiresAt ?? ''));
         return pending.status === 'pending' && Number.isFinite(pendingExpiresAt) && pendingExpiresAt > now.getTime();
       });
-      if (stillHasActivePending) return;
+      if (stillHasActivePending) return false;
 
       const freshRecentChecks = await transaction.get(familyDoc.ref.collection('checks').where('requestedAt', '>=', recentSince).orderBy('requestedAt', 'desc'));
       const freshDecision = shouldAutoDispatchCheck(
@@ -525,7 +525,7 @@ export const dispatchPlannedChecks = onSchedule({
         (freshData.plan?.timeZone ?? defaultPlan.timeZone),
         stillHasActivePending,
       );
-      if (!freshDecision.shouldDispatch || freshDecision.dispatchKey !== decision.dispatchKey) return;
+      if (!freshDecision.shouldDispatch || freshDecision.dispatchKey !== decision.dispatchKey) return false;
 
       transaction.create(checkRef, check);
       transaction.update(familyDoc.ref, {
@@ -533,9 +533,10 @@ export const dispatchPlannedChecks = onSchedule({
         activeCheckExpiresAt: expiresAt.toISOString(),
         updatedAt: FieldValue.serverTimestamp(),
       });
+      return true;
     });
 
-    await sendCheckPushNotifications(familyDoc.ref, { sessionId: check.sessionId }, false);
+    if (created) await sendCheckPushNotifications(familyDoc.ref, { sessionId: check.sessionId }, false);
   }));
 });
 
