@@ -13,11 +13,15 @@ import { CameraScreen } from './screens/CameraScreen';
 import { ResultScreen } from './screens/ResultScreen';
 import { BottomNav, type Tab } from './components/BottomNav';
 import { WebPushGateway } from './services/webPush';
+import { firebaseEnabled } from './services/firebaseClient';
 import { InstallScreen } from './screens/InstallScreen';
 import { NotificationSetupScreen } from './screens/NotificationSetupScreen';
 
 type Route = 'install' | 'welcome' | 'link' | 'notifications' | 'app' | 'camera' | 'result';
 
+const isLocalhost = /^(localhost|127\.0\.0\.1|::1)$/.test(window.location.hostname);
+const useFirebase = import.meta.env.VITE_USE_FIREBASE === 'true';
+const useLocalDemo = isLocalhost && !useFirebase;
 const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches
   || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
 const isIos = () => /iPad|iPhone|iPod/.test(navigator.userAgent)
@@ -29,6 +33,7 @@ const routeForState = (state: ReturnType<ReturnType<typeof createRepository>['sn
   if (isIos() && !isStandalone()) return 'install';
   if (!state.role) return 'welcome';
   if (!state.family.linked) return 'link';
+  if (useLocalDemo && state.role === 'child' && !state.notificationsEnabled) return 'app';
   if (state.role === 'child' && !state.notificationsEnabled) return 'notifications';
   return 'app';
 };
@@ -81,6 +86,10 @@ export function App() {
   };
 
   const enableNotifications = async () => {
+    if (!firebaseEnabled) {
+      await repository.savePushSubscription({ endpoint: 'local-demo' } as PushSubscriptionJSON);
+      return;
+    }
     const push = new WebPushGateway();
     const permission = await push.permission();
     if (permission !== 'granted') throw new Error('notification_permission_denied');
@@ -114,7 +123,7 @@ export function App() {
         childName={state.family.childName}
         back={() => setRoute('welcome')}
         onParentLink={async (name) => { await repository.linkParent(name); sync(); setRoute('app'); }}
-        onChildLink={async (code) => { await repository.linkChild(code); sync(); setRoute('notifications'); }}
+        onChildLink={async (code) => { await repository.linkChild(code); sync(); setRoute(useLocalDemo ? 'app' : 'notifications'); }}
         t={t}
       />
     );

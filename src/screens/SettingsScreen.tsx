@@ -36,33 +36,43 @@ export function SettingsScreen({
   const confirmReset = () => {
     if (window.confirm(t('resetConfirm'))) reset();
   };
+  const notificationStatusKey = notificationState === 'enabled'
+    ? 'settingsNotificationsStatusEnabled'
+    : 'settingsNotificationsStatusDisabled';
 
   return (
     <div className="content-screen settings-screen">
       <header className="screen-header"><div><small>Zadiag</small><h1>{t('settings')}</h1><p>{t('settingsHint')}</p></div></header>
-      <section className="card install-card">
+      <section className="card settings-row">
         <div className="install-icon">⇧</div>
-        <div><h2>{t('installTitle')}</h2><p>{standalone ? t('installed') : t('installBody')}</p></div>
+        <div className="settings-row-copy">
+          <div className="settings-row-head">
+            <h2>{t('installTitle')}</h2>
+            <span className="status-pill status-detected">{t('settingsInstallStatus')}</span>
+          </div>
+          <p>{standalone ? t('installed') : t('installBody')}</p>
+        </div>
       </section>
       {role === 'child' ? <section className="card install-card notification-card">
         <div className="install-icon notification-icon" aria-hidden="true">🔔</div>
-        <div>
-          <h2>{t('notifications')}</h2>
+        <div className="settings-row-copy">
+          <div className="settings-row-head">
+            <h2>{t('notifications')}</h2>
+            <span className={notificationState === 'enabled' ? 'status-pill status-detected' : 'status-pill status-missed'}>
+              {t(notificationStatusKey)}
+            </span>
+          </div>
           <p>{standalone ? t('pushReadyHint') : t('reminderHelp')}</p>
+          {notificationState !== 'enabled' ? <IonButton
+            className="settings-inline-action"
+            disabled={!standalone || notificationState === 'saving'}
+            onClick={() => { void requestNotifications(); }}
+          >
+            {notificationState === 'saving' ? t('enablingReminders') : t('enableReminders')}
+          </IonButton> : null}
+          {notificationState === 'error' ? <small className="notification-note">{t('pushError')}</small> : null}
         </div>
       </section> : null}
-      {role === 'child' ? <IonButton
-        className="notification-action"
-        disabled={!standalone || notificationState === 'saving' || notificationState === 'enabled'}
-        onClick={() => { void requestNotifications(); }}
-      >
-        {notificationState === 'saving'
-          ? t('enablingReminders')
-          : notificationState === 'enabled'
-            ? t('remindersEnabled')
-            : t('enableReminders')}
-      </IonButton> : null}
-      {role === 'child' && notificationState === 'error' ? <small className="notification-note">{t('pushError')}</small> : null}
       <section className="card privacy-card">
         <h2>{t('privacyDefaults')}</h2>
         <ul><li>{t('noFaceRecognition')}</li><li>{t('noModelTraining')}</li><li>{t('noPhotoUpload')}</li><li>{t('immediateDeletion')}</li></ul>

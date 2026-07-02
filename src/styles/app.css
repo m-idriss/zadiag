@@ -160,13 +160,16 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .settings-screen .notification-note,
 .settings-screen .disclaimer p { font-size: 13px; line-height: 1.45; }
 .settings-screen .card h2 { font-size: 17px; }
-.install-card { display: flex; align-items: center; gap: 15px; }
-.install-card p { margin: 4px 0 0; }
+.settings-row { display: flex; align-items: center; gap: 15px; }
+.settings-row p { margin: 4px 0 0; }
 .install-icon { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 16px; color: var(--teal); background: var(--mint); font-size: 24px; }
 .notification-card { padding: 16px 18px; }
 .notification-card p { margin-bottom: 0; }
 .notification-icon { font-size: 20px; }
-.settings-screen .notification-action { justify-self: start; align-self: start; width: fit-content; min-height: 40px; margin-top: -2px; --padding-start: 16px; --padding-end: 16px; --border-radius: 14px; font-size: 13px; }
+.settings-row-copy { flex: 1; min-width: 0; }
+.settings-row-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.settings-row-head h2 { margin: 0; }
+.settings-inline-action { width: fit-content; min-height: 36px; margin-top: 10px; --padding-start: 14px; --padding-end: 14px; --border-radius: 12px; font-size: 13px; }
 .notification-note { color: var(--coral); font-size: 12px; font-weight: 800; margin-top: -6px; }
 .privacy-card ul { padding-left: 19px; color: var(--muted); line-height: 1.8; }
 
