@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "npm run build && node --test lib/helpers.test.js"
+    "test": "npm run build && node --test lib/*.test.js"
   },
   "dependencies": {
     "ai": "^7.0.9",

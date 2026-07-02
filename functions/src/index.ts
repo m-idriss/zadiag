@@ -3,9 +3,9 @@ import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import { GoogleAuth } from 'google-auth-library';
-import { z } from 'zod';
 import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, normalizeLinkCode } from './helpers.js';
+import { analyzeWithGemini, type AnalysisResult } from './analysis.js';
 
 initializeApp();
 const db = getFirestore();
@@ -41,161 +41,6 @@ const defaultPlan = {
   timeZone: 'Europe/Paris',
 };
 const recoveryLifetimeMs = 90 * 24 * 60 * 60 * 1000;
-const toProbability = (value: unknown) => {
-  if (typeof value === 'number') {
-    if (value > 1 && value <= 100) return value / 100;
-    return value;
-  }
-  if (typeof value !== 'string') return value;
-  const normalized = value.trim();
-  if (!normalized) return value;
-  const percent = normalized.match(/-?\d+(?:[.,]\d+)?\s*%/);
-  if (percent) {
-    const parsed = Number.parseFloat(percent[0].replace('%', '').replace(',', '.'));
-    if (Number.isFinite(parsed)) return parsed / 100;
-  }
-  const numberMatch = normalized.match(/-?\d+(?:[.,]\d+)?/);
-  if (!numberMatch) return value;
-  const parsed = Number.parseFloat(numberMatch[0].replace(',', '.'));
-  if (!Number.isFinite(parsed)) return value;
-  return parsed > 1 && parsed <= 100 ? parsed / 100 : parsed;
-};
-const analysisSchema = z.object({
-  status: z.unknown(),
-  confidence: z.unknown(),
-  imageQuality: z.unknown(),
-  reason: z.unknown(),
-});
-type AnalysisResult = {
-  status: 'detected' | 'not_detected' | 'uncertain';
-  confidence: number;
-  imageQuality: number;
-  reason: string;
-};
-
-const normalizeStatus = (value: unknown): AnalysisResult['status'] => {
-  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
-  if (normalized === 'detected') return 'detected';
-  if (normalized === 'not_detected' || normalized === 'not detected' || normalized === 'notdetected') return 'not_detected';
-  return 'uncertain';
-};
-
-const normalizeReason = (value: unknown) => {
-  if (typeof value !== 'string') return 'analysis_unavailable';
-  const trimmed = value.trim();
-  return trimmed ? trimmed.slice(0, 220) : 'analysis_unavailable';
-};
-
-const imageDataUrlSchema = z.string().regex(/^data:(.+?);base64,(.+)$/);
-
-const parseImageDataUrl = (dataUrl: string) => {
-  const match = imageDataUrlSchema.safeParse(dataUrl);
-  if (!match.success) {
-    throw new HttpsError('invalid-argument', 'A valid image is required.');
-  }
-  const [, mimeType, data] = dataUrl.match(/^data:(.+?);base64,(.+)$/) ?? [];
-  if (!mimeType || !data) {
-    throw new HttpsError('invalid-argument', 'A valid image is required.');
-  }
-  return { mimeType, data };
-};
-
-const extractJsonPayload = (text: string) => {
-  const trimmed = text.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '');
-  const start = trimmed.indexOf('{');
-  const end = trimmed.lastIndexOf('}');
-  if (start < 0 || end < 0 || end <= start) {
-    throw new Error('Gemini response did not contain JSON.');
-  }
-  return trimmed.slice(start, end + 1);
-};
-
-const normalizeAnalysisResult = (value: unknown): AnalysisResult => {
-  const parsed = analysisSchema.parse(value);
-  const confidence = toProbability(parsed.confidence);
-  const imageQuality = toProbability(parsed.imageQuality);
-  return {
-    status: normalizeStatus(parsed.status),
-    confidence: Number.isFinite(Number(confidence)) ? Math.min(1, Math.max(0, Number(confidence))) : 0.5,
-    imageQuality: Number.isFinite(Number(imageQuality)) ? Math.min(1, Math.max(0, Number(imageQuality))) : 0.5,
-    reason: normalizeReason(parsed.reason),
-  };
-};
-
-const analyzeWithGemini = async (imageDataUrl: string): Promise<AnalysisResult> => {
-  const { mimeType, data } = parseImageDataUrl(imageDataUrl);
-  const token = await geminiAuth.getAccessToken();
-  if (!token) {
-    throw new Error('Missing Google access token.');
-  }
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            {
-              text: [
-                'Check whether the treatment aid is clearly visible in the photo.',
-                'Return JSON only.',
-                'Keys: status, confidence, imageQuality, reason.',
-                'status must be detected, not_detected, or uncertain.',
-              ].join(' '),
-            },
-            {
-              inline_data: {
-                mime_type: mimeType,
-                data,
-              },
-            },
-          ],
-        },
-      ],
-      generationConfig: {
-        temperature: 0,
-        maxOutputTokens: 2048,
-        responseMimeType: 'application/json',
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Gemini API request failed with status ${response.status}: ${errorText}`);
-  }
-
-  const payload = await response.json() as {
-    candidates?: Array<{
-      content?: {
-        parts?: Array<{ text?: string }>;
-      };
-      finishReason?: string;
-    }>;
-    error?: unknown;
-  };
-
-  if (payload.error) {
-    throw new Error(`Gemini API returned an error: ${JSON.stringify(payload.error)}`);
-  }
-
-  const candidate = payload.candidates?.[0];
-  const text = candidate?.content?.parts?.map((part) => part.text ?? '').join('').trim();
-  if (!text) {
-    throw new Error('Gemini response did not contain text.');
-  }
-
-  if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
-    console.warn(`Gemini response finished with ${candidate.finishReason}, attempting to parse payload anyway.`);
-  }
-
-  return normalizeAnalysisResult(JSON.parse(extractJsonPayload(text)));
-};
-
 const createRecoveryRecord = (familyId: string, expiresAt: Date) => ({
   familyId,
   expiresAt: expiresAt.toISOString(),
@@ -589,7 +434,10 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
   };
   let result: Partial<AnalysisResult> = fallbackResult;
   try {
-    result = await analyzeWithGemini(imageDataUrl);
+    result = await analyzeWithGemini(imageDataUrl, {
+      model: geminiModel,
+      getAccessToken: () => geminiAuth.getAccessToken(),
+    });
   } catch (error) {
     console.error('AI analysis failed, returning fallback result', error);
   }
