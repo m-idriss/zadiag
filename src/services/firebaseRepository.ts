@@ -70,6 +70,7 @@ const asRoutineAssignment = (id: string, data: DocumentData): RoutineAssignment 
     id: String(data.routine?.id ?? data.routineId ?? id),
     name: String(data.routine?.name ?? ''),
     description: String(data.routine?.description ?? ''),
+    instructions: data.routine?.instructions ? String(data.routine.instructions) : undefined,
   },
   plan: data.plan as MonitoringPlan,
   status: data.status,

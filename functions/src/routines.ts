@@ -6,6 +6,7 @@ export const defaultRoutine = {
   id: DEFAULT_ROUTINE_ID,
   name: 'Orthodontic Elastics',
   description: 'Daily orthodontic elastic wear checks.',
+  instructions: 'Wear your elastics as prescribed. When a check is ready, take a clear photo in good light.',
 };
 
 export interface RoutineAssignmentDocument {

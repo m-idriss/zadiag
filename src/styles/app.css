@@ -180,6 +180,19 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .routine-detail-section { margin-top: 16px; }
 .routine-detail-section > h2 { margin-bottom: 8px; }
 .routine-detail-section > p { margin-top: 0; }
+.routine-calendar { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; margin-top: 13px; }
+.routine-calendar > div { min-width: 0; display: grid; justify-items: center; gap: 3px; padding: 8px 2px; border-radius: 12px; background: #f4f7f6; color: var(--muted); }
+.routine-calendar small { overflow: hidden; max-width: 100%; text-transform: uppercase; font-size: 9px; }
+.routine-calendar b { color: var(--navy); font-size: 13px; }
+.routine-calendar span { width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; font-size: 10px; font-weight: 900; }
+.routine-calendar .completed span { background: var(--teal); color: white; }
+.routine-calendar .attention span { background: #fdebe7; color: var(--coral); }
+@media (max-width: 380px) {
+  .routine-detail-header { display: grid; }
+  .routine-detail-progress { align-items: flex-start; }
+  .routine-detail-progress .progress-ring { width: 80px; height: 80px; flex-basis: 80px; }
+  .routine-calendar { gap: 3px; }
+}
 
 .app-shell { position: relative; height: 100dvh; overflow: hidden; background: var(--cream); }
 .app-shell > .content-screen { height: 100%; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }

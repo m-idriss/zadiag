@@ -59,6 +59,9 @@ describe('participant routines navigation', () => {
     expect(container.textContent).toContain('Routine overview');
     expect(container.textContent).toContain('Progress');
     expect(container.textContent).toContain('Schedule');
+    expect(container.textContent).toContain('Instructions');
+    expect(container.textContent).toContain('Calendar');
+    expect(container.textContent).toContain('Recent submissions');
     expect(container.textContent).toContain('History');
     expect(container.textContent).toContain('50%');
     expect(container.textContent).not.toContain('Other routine event');
