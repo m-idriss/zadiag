@@ -51,3 +51,21 @@ jobs:
           git add package.json
           git commit -m "chore(version): bump to ${{ steps.bump.outputs.version }} [skip ci]"
           git push
+
+      - name: Create or update Git tag
+        run: |
+          TAG="v${{ steps.bump.outputs.version }}"
+          git tag -f -a "$TAG" -m "Release ${{ steps.bump.outputs.version }}"
+          git push origin "$TAG" --force
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v${{ steps.bump.outputs.version }}"
+          TITLE="Release ${{ steps.bump.outputs.version }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "$TITLE" --notes "Automated release for $TAG" --latest
+          else
+            gh release create "$TAG" --title "$TITLE" --notes "Automated release for $TAG" --latest
+          fi
