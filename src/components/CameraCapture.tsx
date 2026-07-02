@@ -17,6 +17,7 @@ export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureP
   const [capturedAt, setCapturedAt] = useState<Date>();
   const [error, setError] = useState<string>();
   const [localCheckError, setLocalCheckError] = useState<string>();
+  const [localCheckWarning, setLocalCheckWarning] = useState<string>();
   const [opening, setOpening] = useState(false);
   const [permissionState, setPermissionState] = useState<PermissionState | 'unknown'>('unknown');
   const autoOpenedRef = useRef(false);
@@ -29,6 +30,7 @@ export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureP
   const openCamera = async () => {
     setError(undefined);
     setLocalCheckError(undefined);
+    setLocalCheckWarning(undefined);
     setOpening(true);
     setPreview(undefined);
     setCapturedAt(undefined);
@@ -98,11 +100,12 @@ export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureP
     const timestamp = new Date();
     setCapturedAt(timestamp);
     setLocalCheckError(undefined);
+    setLocalCheckWarning(undefined);
     setPreview(canvas.toDataURL('image/jpeg', 0.72));
     stopCamera();
   };
 
-  const analyzePreview = async (dataUrl: string) => {
+  const analyzePreview = async (dataUrl: string): Promise<{ message: string; blocked: boolean } | null> => {
     const image = new Image();
     image.src = dataUrl;
     await image.decode();
@@ -177,16 +180,16 @@ export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureP
           return Math.max(largest, area);
         }, 0);
         const faceRatio = largestFace / (width * height);
-        if (faces.length === 0 || faceRatio < 0.06) return t('localPhotoCheckFaceMissing');
+        if (faces.length === 0 || faceRatio < 0.06) return { message: t('localPhotoCheckFaceMissing'), blocked: true };
       }
     } catch {
       // fall back to heuristics below
     }
 
-    if (brightness < 52) return t('localPhotoCheckTooDark');
-    if (brightness > 218) return t('localPhotoCheckTooBright');
-    if (contrast < 22 || edgeStrength < 6) return t('localPhotoCheckTooBlurry');
-    if (skinRatio < 0.05) return t('localPhotoCheckFaceMissing');
+    if (brightness < 52) return { message: t('localPhotoCheckTooDark'), blocked: true };
+    if (brightness > 218) return { message: t('localPhotoCheckTooBright'), blocked: true };
+    if (contrast < 22 || edgeStrength < 6) return { message: t('localPhotoCheckTooBlurry'), blocked: false };
+    if (skinRatio < 0.05) return { message: t('localPhotoCheckFaceMissing'), blocked: true };
     return null;
   };
 
@@ -194,11 +197,13 @@ export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureP
     if (!preview || !capturedAt) return;
     setError(undefined);
     setLocalCheckError(undefined);
+    setLocalCheckWarning(undefined);
     const localError = await analyzePreview(preview);
-    if (localError) {
-      setLocalCheckError(localError);
+    if (localError?.blocked) {
+      setLocalCheckError(localError.message);
       return;
     }
+    if (localError?.message) setLocalCheckWarning(localError.message);
     await onSubmit(capturedAt, preview);
   };
 
@@ -251,6 +256,7 @@ export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureP
         </div>
       )}
       {localCheckError ? <p className="form-error" role="alert">{localCheckError}</p> : null}
+      {localCheckWarning ? <p className="form-warning" role="status">{localCheckWarning}</p> : null}
       {submitError ? <p className="form-error" role="alert">{submitError}</p> : null}
       <small className="camera-only">{t('cameraOnly')}</small>
     </div>

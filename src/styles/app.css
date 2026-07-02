@@ -115,6 +115,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .regenerate-code:disabled { opacity: .55; }
 .consent-row { display: flex; align-items: flex-start; gap: 12px; color: var(--navy); line-height: 1.4; font-size: 14px; }
 .form-error { color: var(--coral) !important; font-weight: 800; font-size: 13px; }
+.form-warning { color: #b87218 !important; font-weight: 800; font-size: 13px; }
 
 .setup-page { padding-bottom: calc(38px + env(safe-area-inset-bottom)); }
 .setup-progress { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 22px 0 30px; padding: 0; list-style: none; }
