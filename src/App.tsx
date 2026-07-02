@@ -23,6 +23,10 @@ type Route = 'install' | 'welcome' | 'link' | 'notifications' | 'app' | 'camera'
 const isLocalhost = /^(localhost|127\.0\.0\.1|::1)$/.test(window.location.hostname);
 const useFirebase = import.meta.env.VITE_USE_FIREBASE === 'true';
 const useLocalDemo = isLocalhost && !useFirebase;
+const appBadgeApi = navigator as Navigator & {
+  setAppBadge?: (contents?: number) => Promise<void>;
+  clearAppBadge?: () => Promise<void>;
+};
 const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches
   || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
 const isIos = () => /iPad|iPhone|iPod/.test(navigator.userAgent)
@@ -69,6 +73,12 @@ export function App() {
       unsubscribe();
     };
   }, [repository]);
+
+  useEffect(() => {
+    const pendingCount = state.events.filter((event) => event.status === 'pending' && Date.parse(event.expiresAt) > Date.now()).length;
+    if (!appBadgeApi.setAppBadge || !appBadgeApi.clearAppBadge) return;
+    void (pendingCount > 0 ? appBadgeApi.setAppBadge(pendingCount) : appBadgeApi.clearAppBadge()).catch(console.error);
+  }, [state.events, state.role]);
 
   const sync = () => setState(repository.snapshot());
   const selectRole = async (role: Role) => {
