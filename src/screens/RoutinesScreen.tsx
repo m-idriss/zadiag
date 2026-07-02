@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import type { AppState, RoutineAssignment, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
-import { RoutineDetailScreen } from './RoutineDetailScreen';
+
+const RoutineDetailScreen = lazy(() => import('./RoutineDetailScreen').then((module) => ({ default: module.RoutineDetailScreen })));
 
 const completionRate = (assignment: RoutineAssignment, events: VerificationEvent[]) => {
   const completed = events.filter((event) => event.routineId === assignment.routineId && !['pending', 'analyzing'].includes(event.status));
@@ -12,7 +13,7 @@ const completionRate = (assignment: RoutineAssignment, events: VerificationEvent
 export function RoutinesScreen({ state, t }: { state: AppState; t: (key: MessageKey) => string }) {
   const [selectedId, setSelectedId] = useState<string>();
   const selected = state.routineAssignments.find((assignment) => assignment.id === selectedId);
-  if (selected) return <RoutineDetailScreen assignment={selected} state={state} back={() => setSelectedId(undefined)} t={t} />;
+  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen assignment={selected} state={state} back={() => setSelectedId(undefined)} t={t} /></Suspense>;
 
   if (state.routinesLoaded === false) return <div className="content-screen routines-state" role="status"><p>{t('loadingRoutines')}</p></div>;
   if (state.routinesError) return <div className="content-screen routines-state" role="alert"><p>{t('routinesLoadError')}</p></div>;

@@ -11,6 +11,7 @@ describe('participant routines navigation', () => {
   let root: Root;
 
   beforeEach(() => {
+    (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
@@ -31,6 +32,12 @@ describe('participant routines navigation', () => {
     expect(container.querySelector('button[aria-current="page"]')?.textContent).toContain('Today');
   });
 
+  it('can roll participant navigation back with the feature flag', () => {
+    act(() => root.render(<BottomNav tab="home" role="child" routineCentricEnabled={false} onChange={() => undefined} t={(key) => translate('en', key)} />));
+    expect(container.textContent).toContain('My progress');
+    expect(container.textContent).not.toContain('Routines');
+  });
+
   it('announces routine loading and error states', () => {
     const state = {
       role: 'child' as const, locale: 'en' as const, notificationsEnabled: true,
@@ -44,7 +51,7 @@ describe('participant routines navigation', () => {
     expect(container.querySelector('[role="alert"]')?.textContent).toContain('could not be loaded');
   });
 
-  it('shows the assigned routine frequency, completion and next task', () => {
+  it('shows the assigned routine frequency, completion and next task', async () => {
     const assignment = createDefaultRoutineAssignment('2026-07-02T08:00:00.000Z');
     const state: AppState = {
       role: 'child',
@@ -69,7 +76,10 @@ describe('participant routines navigation', () => {
     expect(container.textContent).toContain('Active');
 
     const details = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('View details'));
-    act(() => details?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    await act(async () => {
+      details?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await new Promise((resolve) => window.setTimeout(resolve, 25));
+    });
 
     expect(container.textContent).toContain('Routine overview');
     expect(container.textContent).toContain('Progress');

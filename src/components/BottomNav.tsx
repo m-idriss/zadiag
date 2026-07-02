@@ -5,11 +5,13 @@ export type Tab = 'home' | 'history' | 'routines' | 'settings';
 export function BottomNav({
   tab,
   role,
+  routineCentricEnabled = true,
   onChange,
   t,
 }: {
   tab: Tab;
   role: 'parent' | 'child';
+  routineCentricEnabled?: boolean;
   onChange: (tab: Tab) => void;
   t: (key: MessageKey) => string;
 }) {
@@ -19,9 +21,13 @@ export function BottomNav({
         { tab: 'history', icon: '◷', label: t('history') },
         { tab: 'settings', icon: '⚙', label: t('settings') },
       ]
-    : [
+    : routineCentricEnabled ? [
         { tab: 'home', icon: '☀', label: t('today') },
         { tab: 'routines', icon: '▣', label: t('routines') },
+        { tab: 'settings', icon: '⚙', label: t('settings') },
+      ] : [
+        { tab: 'home', icon: '☀', label: t('today') },
+        { tab: 'history', icon: '◷', label: t('progress') },
         { tab: 'settings', icon: '⚙', label: t('settings') },
       ];
   return (

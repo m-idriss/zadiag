@@ -28,6 +28,7 @@ jobs:
       - run: pnpm test
       - run: pnpm test:rules
       - run: pnpm build
+      - run: pnpm check:bundle
       - run: npm ci
         working-directory: functions
       - run: npm test

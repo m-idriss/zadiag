@@ -23,6 +23,7 @@ type Route = 'install' | 'welcome' | 'link' | 'notifications' | 'app' | 'camera'
 
 const isLocalhost = /^(localhost|127\.0\.0\.1|::1)$/.test(window.location.hostname);
 const useFirebase = import.meta.env.VITE_USE_FIREBASE === 'true';
+const routineCentricUiEnabled = import.meta.env.VITE_ROUTINE_CENTRIC_UI !== 'false';
 const useLocalDemo = isLocalhost && !useFirebase;
 const appBadgeApi = navigator as Navigator & {
   setAppBadge?: (contents?: number) => Promise<void>;
@@ -227,7 +228,7 @@ export function App() {
     const role = state.role ?? 'child';
     const screen = tab === 'history'
       ? <HistoryScreen events={state.events} locale={state.locale} t={t} />
-      : tab === 'routines' && role === 'child'
+      : routineCentricUiEnabled && tab === 'routines' && role === 'child'
         ? <RoutinesScreen state={state} t={t} />
       : tab === 'settings'
         ? <SettingsScreen
@@ -257,7 +258,7 @@ export function App() {
               t={t}
             />
           : <ChildDashboard state={state} active={repository.activeSession()} start={() => setRoute('camera')} t={t} />;
-    content = <div className="app-shell">{screen}<BottomNav tab={tab} role={role} onChange={setTab} t={t} /></div>;
+    content = <div className="app-shell">{screen}<BottomNav tab={tab} role={role} routineCentricEnabled={routineCentricUiEnabled} onChange={setTab} t={t} /></div>;
   }
 
   return <IonApp>{content}{!ready ? <SplashScreen progress={splashProgress} message={t(splashMessage)} /> : null}</IonApp>;
