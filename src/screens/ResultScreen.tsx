@@ -30,6 +30,7 @@ export function ResultScreen({
           {quality ? <span>{t('analysisQuality')} {quality}%</span> : null}
         </div>
       ) : null}
+      {quality != null && quality <= 60 ? <p className="result-reason">{t('analysisQualityHint')}</p> : null}
       <Disclaimer t={t} />
       <IonButton expand="block" onClick={done}>{t('backToday')}</IonButton>
     </main>
