@@ -16,6 +16,10 @@ export function StatusPill({
       ? t('uncertain')
       : status === 'missed'
         ? t('missed')
-        : status.replace('_', ' ');
+        : status === 'pending'
+          ? t('pending')
+          : status === 'analyzing'
+            ? t('analyzing')
+            : t('expired');
   return <span className={`status-pill status-${status}`}>{label}</span>;
 }
