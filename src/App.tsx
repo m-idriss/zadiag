@@ -91,7 +91,7 @@ export function App() {
   } else {
     const role = state.role ?? 'child';
     const screen = tab === 'history'
-      ? <HistoryScreen events={state.events} t={t} />
+      ? <HistoryScreen events={state.events} locale={state.locale} t={t} />
       : tab === 'settings'
         ? <SettingsScreen reset={() => { void reset(); }} t={t} />
         : role === 'parent'
