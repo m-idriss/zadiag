@@ -203,6 +203,8 @@ export class FirebaseRepository implements AppRepository {
       imageDataUrl,
       locale: this.state.locale,
     });
+    this.state.events = this.state.events.map((item) => item.id === result.data.id ? result.data : item);
+    this.emit();
     return result.data;
   }
 

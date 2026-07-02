@@ -61,4 +61,35 @@ describe('participant Today screen', () => {
     act(() => complete?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(start).toHaveBeenCalledOnce();
   });
+
+  it('keeps task state correct after synchronization and reload reconstruction', () => {
+    const pending = event('task', 'pending', atToday(9));
+    const base: AppState = {
+      role: 'child', locale: 'en', notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: false },
+      routineAssignments: [createDefaultRoutineAssignment()], events: [pending],
+    };
+
+    act(() => root.render(<ChildDashboard state={base} active={pending} start={() => undefined} t={(key) => translate('en', key)} />));
+    expect(container.textContent).toContain("Today's tasks1");
+
+    const analyzing = { ...pending, status: 'analyzing' as const };
+    act(() => root.render(<ChildDashboard state={{ ...base, events: [analyzing] }} start={() => undefined} t={(key) => translate('en', key)} />));
+    expect(container.textContent).toContain('Checking the photo');
+
+    const reloadedState = structuredClone({
+      ...base,
+      events: [
+        { ...pending, status: 'detected' as const, capturedAt: atToday(9) },
+        event('missed', 'missed', atToday(12)),
+        event('expired', 'expired', atToday(15)),
+      ],
+    });
+    act(() => root.render(<ChildDashboard state={reloadedState} start={() => undefined} t={(key) => translate('en', key)} />));
+
+    expect(container.textContent).toContain("Today's tasks0");
+    expect(container.textContent).toContain('Completed today3');
+    expect(container.textContent).toContain('Missed');
+    expect(container.textContent).toContain('Expired');
+  });
 });
