@@ -93,8 +93,11 @@ type GeminiGenerateContentResponse = {
   error?: unknown;
 };
 
-const buildPrompt = (retry: boolean) => [
+type AnalysisLocale = 'en' | 'fr';
+
+const buildPrompt = (locale: AnalysisLocale, retry: boolean) => [
   'Check whether the treatment aid is clearly visible in the photo.',
+  locale === 'fr' ? 'Reply in French.' : 'Reply in English.',
   retry ? 'This is a second pass. Re-check carefully before answering.' : '',
   'Return JSON only.',
   'Keys: status, confidence, imageQuality, reason.',
@@ -108,6 +111,7 @@ const requestGeminiAnalysis = async (
     model: string;
     getAccessToken: () => Promise<string | null | undefined>;
     fetchImpl?: typeof fetch;
+    locale?: AnalysisLocale;
   },
   retry: boolean,
 ): Promise<AnalysisResult> => {
@@ -128,7 +132,7 @@ const requestGeminiAnalysis = async (
           role: 'user',
           parts: [
             {
-              text: buildPrompt(retry),
+              text: buildPrompt(options.locale ?? 'en', retry),
             },
             {
               inline_data: {
@@ -177,6 +181,7 @@ export const analyzeWithGemini = async (
     model: string;
     getAccessToken: () => Promise<string | null | undefined>;
     fetchImpl?: typeof fetch;
+    locale?: AnalysisLocale;
   },
 ): Promise<AnalysisResult> => {
   const initialResult = await requestGeminiAnalysis(imageDataUrl, options, false);

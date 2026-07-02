@@ -519,6 +519,7 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
   const checkId = String(request.data?.checkId ?? '');
   const capturedAt = String(request.data?.capturedAt ?? '');
   const imageDataUrl = String(request.data?.imageDataUrl ?? '');
+  const locale = request.data?.locale === 'fr' ? 'fr' : 'en';
   const profile = await db.collection('users').doc(uid).get();
   if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'child') {
     throw new HttpsError('permission-denied', 'Only the linked child can submit this check.');
@@ -536,6 +537,7 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
     result = await analyzeWithGemini(imageDataUrl, {
       model: geminiModel,
       getAccessToken: () => geminiAuth.getAccessToken(),
+      locale,
     });
   } catch (error) {
     console.error('AI analysis failed, returning fallback result', error);

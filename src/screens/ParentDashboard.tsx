@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { adherenceSummary } from '../domain/adherence';
+import { formatAnalysisReason } from '../domain/analysisReason';
 import type { AppState } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { StatusPill } from '../components/StatusPill';
@@ -86,7 +87,7 @@ export function ParentDashboard({
         <section className="card history-row" key={event.id}>
           <div>
             <strong>{new Intl.DateTimeFormat(state.locale === 'fr' ? 'fr-FR' : 'en-US', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(event.requestedAt))}</strong>
-            <small>{event.reason}</small>
+            <small>{formatAnalysisReason(event.reason, t)}</small>
           </div>
           <StatusPill status={event.status} t={t} />
         </section>

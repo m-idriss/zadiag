@@ -83,6 +83,35 @@ test('calls Gemini with the expected payload and returns a conforming analysis r
   });
 });
 
+test('asks Gemini to answer in the requested locale', async () => {
+  let bodyText = '';
+  const result = await analyzeWithGemini('data:image/png;base64,AAAA', {
+    model: 'gemini-test-model',
+    locale: 'fr',
+    getAccessToken: async () => 'token-123',
+    fetchImpl: async (_input, init) => {
+      bodyText = String(init?.body ?? '');
+      return new Response(JSON.stringify({
+        candidates: [
+          {
+            finishReason: 'STOP',
+            content: {
+              parts: [
+                {
+                  text: '{"status":"detected","confidence":"0.88","imageQuality":"0.91","reason":"Les élastiques sont visibles."}',
+                },
+              ],
+            },
+          },
+        ],
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    },
+  });
+
+  assert.match(bodyText, /Reply in French\./);
+  assert.equal(result.reason, 'Les élastiques sont visibles.');
+});
+
 test('retries once when Gemini first answers not_detected', async () => {
   const bodies: string[] = [];
   let callCount = 0;

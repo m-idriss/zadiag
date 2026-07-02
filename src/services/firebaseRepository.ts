@@ -171,12 +171,14 @@ export class FirebaseRepository implements AppRepository {
       checkId: string;
       capturedAt: string;
       imageDataUrl: string;
+      locale: Locale;
     }, VerificationEvent>(this.services.functions, 'analyzeCheck');
     const result = await analyzeCheck({
       familyId,
       checkId: event.id,
       capturedAt: capturedAt.toISOString(),
       imageDataUrl,
+      locale: this.state.locale,
     });
     return result.data;
   }
