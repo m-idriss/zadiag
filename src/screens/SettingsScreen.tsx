@@ -1,19 +1,32 @@
+import { useState } from 'react';
 import { IonButton } from '@ionic/react';
+import type { Role } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { Disclaimer } from '../components/Disclaimer';
 
 export function SettingsScreen({
   t,
   reset,
+  role,
+  enableNotifications,
 }: {
   t: (key: MessageKey) => string;
   reset: () => void;
+  role: Role;
+  enableNotifications: () => Promise<void>;
 }) {
   const standalone = window.matchMedia('(display-mode: standalone)').matches;
+  const [notificationState, setNotificationState] = useState<'idle' | 'saving' | 'enabled' | 'error'>('idle');
 
   const requestNotifications = async () => {
-    if (!('Notification' in window)) return;
-    await Notification.requestPermission();
+    setNotificationState('saving');
+    try {
+      await enableNotifications();
+      setNotificationState('enabled');
+    } catch (error) {
+      console.error(error);
+      setNotificationState('error');
+    }
   };
 
   const confirmReset = () => {
@@ -27,12 +40,22 @@ export function SettingsScreen({
         <div className="install-icon">⇧</div>
         <div><h2>{t('installTitle')}</h2><p>{standalone ? t('installed') : t('installBody')}</p></div>
       </section>
-      <section className="card">
+      {role === 'child' ? <section className="card">
         <h2>{t('notifications')}</h2>
         <p>{t('reminderHelp')}</p>
-        <IonButton expand="block" disabled={!standalone} onClick={requestNotifications}>{t('enableReminders')}</IonButton>
-        <small>{t('pushDemoHint')}</small>
-      </section>
+        <IonButton
+          expand="block"
+          disabled={!standalone || notificationState === 'saving' || notificationState === 'enabled'}
+          onClick={() => { void requestNotifications(); }}
+        >
+          {notificationState === 'saving'
+            ? t('enablingReminders')
+            : notificationState === 'enabled'
+              ? t('remindersEnabled')
+              : t('enableReminders')}
+        </IonButton>
+        <small>{notificationState === 'error' ? t('pushError') : t('pushReadyHint')}</small>
+      </section> : null}
       <section className="card privacy-card">
         <h2>{t('privacyDefaults')}</h2>
         <ul><li>{t('noFaceRecognition')}</li><li>{t('noModelTraining')}</li><li>{t('noPhotoUpload')}</li><li>{t('immediateDeletion')}</li></ul>

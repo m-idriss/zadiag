@@ -12,6 +12,7 @@ import { SettingsScreen } from './screens/SettingsScreen';
 import { CameraScreen } from './screens/CameraScreen';
 import { ResultScreen } from './screens/ResultScreen';
 import { BottomNav, type Tab } from './components/BottomNav';
+import { WebPushGateway } from './services/webPush';
 
 type Route = 'welcome' | 'link' | 'app' | 'camera' | 'result';
 
@@ -62,6 +63,14 @@ export function App() {
     setTab('home');
   };
 
+  const enableNotifications = async () => {
+    const push = new WebPushGateway();
+    const permission = await push.permission();
+    if (permission !== 'granted') throw new Error('notification_permission_denied');
+    const subscription = await push.subscribe();
+    await repository.savePushSubscription(subscription.toJSON());
+  };
+
   let content: React.ReactNode;
   if (route === 'welcome') {
     content = (
@@ -93,7 +102,12 @@ export function App() {
     const screen = tab === 'history'
       ? <HistoryScreen events={state.events} locale={state.locale} t={t} />
       : tab === 'settings'
-        ? <SettingsScreen reset={() => { void reset(); }} t={t} />
+        ? <SettingsScreen
+            enableNotifications={enableNotifications}
+            reset={() => { void reset(); }}
+            role={role}
+            t={t}
+          />
         : role === 'parent'
           ? <ParentDashboard
               state={state}

@@ -10,6 +10,7 @@ export interface AppRepository {
   linkChild(code: string): Promise<void>;
   regenerateLinkCode(): Promise<void>;
   requestCheckNow(): Promise<void>;
+  savePushSubscription(subscription: PushSubscriptionJSON): Promise<void>;
   savePlan(plan: MonitoringPlan): Promise<void>;
   activeSession(): VerificationEvent | undefined;
   submitCapture(sessionId: string, capturedAt: Date): Promise<VerificationEvent>;
