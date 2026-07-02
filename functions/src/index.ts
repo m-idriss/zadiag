@@ -44,6 +44,7 @@ const analysisSchema = z.object({
   imageQuality: z.number().min(0).max(1),
   reason: z.string().min(1).max(220),
 });
+type AnalysisResult = z.infer<typeof analysisSchema>;
 
 const createRecoveryRecord = (familyId: string, expiresAt: Date) => ({
   familyId,
@@ -432,38 +433,49 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true, secret
     throw new HttpsError('invalid-argument', 'A valid image is required.');
   }
   const checkRef = db.collection('families').doc(familyId).collection('checks').doc(checkId);
-  const aiResult = await generateText({
-    model: gateway('google/gemini-3.1-flash-image-preview'),
-    output: Output.object({ schema: analysisSchema }),
-    messages: [
-      {
-        role: 'system',
-        content: 'You are a visual checker for treatment adherence. Judge only what is visible in the photo. Do not diagnose. If the image is unclear, mark it as uncertain.',
-      },
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: [
-              'Review this child treatment check photo.',
-              'Decide whether the required treatment aid is clearly visible and being worn as expected.',
-              'Return JSON only through the structured output.',
-              'Use status "detected" when visible, "not_detected" when clearly absent, and "uncertain" when the image is too unclear.',
-              'Explain the result briefly in one sentence.',
-            ].join(' '),
-          },
-          {
-            type: 'file',
-            mediaType: 'image/jpeg',
-            data: imageDataUrl,
-          },
-        ],
-      },
-    ],
-    maxOutputTokens: 220,
-  });
-  const result = aiResult.output;
+  const fallbackResult: AnalysisResult = {
+    status: 'uncertain' as const,
+    confidence: 0.32,
+    imageQuality: 0.5,
+    reason: 'analysis_unavailable',
+  };
+  let result = fallbackResult;
+  try {
+    const aiResult = await generateText({
+      model: gateway('google/gemini-3.1-flash-image-preview'),
+      output: Output.object({ schema: analysisSchema }),
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a visual checker for treatment adherence. Judge only what is visible in the photo. Do not diagnose. If the image is unclear, mark it as uncertain.',
+        },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: [
+                'Review this child treatment check photo.',
+                'Decide whether the required treatment aid is clearly visible and being worn as expected.',
+                'Return JSON only through the structured output.',
+                'Use status "detected" when visible, "not_detected" when clearly absent, and "uncertain" when the image is too unclear.',
+                'Explain the result briefly in one sentence.',
+              ].join(' '),
+            },
+            {
+              type: 'file',
+              mediaType: 'image/jpeg',
+              data: imageDataUrl,
+            },
+          ],
+        },
+      ],
+      maxOutputTokens: 220,
+    });
+    result = aiResult.output;
+  } catch (error) {
+    console.error('AI analysis failed, returning fallback result', error);
+  }
   const response = await db.runTransaction(async (transaction) => {
     const check = await transaction.get(checkRef);
     const checkData = check.data();
