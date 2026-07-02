@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { analyzeGeminiResponse, analyzeWithGemini, extractJsonPayload, normalizeAnalysisResult } from './analysis.js';
+import { analyzeGeminiResponse, analyzeWithGemini, extractJsonPayload, localizeAnalysisReason, normalizeAnalysisResult } from './analysis.js';
 
 test('extracts and normalizes a Gemini JSON payload', () => {
   const payload = extractJsonPayload('```json\n{"status":"not detected","confidence":"87%","imageQuality":"0.72","reason":"clear enough"}\n```');
@@ -110,6 +110,35 @@ test('asks Gemini to answer in the requested locale', async () => {
 
   assert.match(bodyText, /Reply in French\./);
   assert.equal(result.reason, 'Les élastiques sont visibles.');
+});
+
+test('translates the reason when locale is French', async () => {
+  let bodyText = '';
+  const translated = await localizeAnalysisReason('No treatment aid is visible on the teeth.', {
+    model: 'gemini-test-model',
+    locale: 'fr',
+    getAccessToken: async () => 'token-123',
+    fetchImpl: async (_input, init) => {
+      bodyText = String(init?.body ?? '');
+      return new Response(JSON.stringify({
+        candidates: [
+          {
+            finishReason: 'STOP',
+            content: {
+              parts: [
+                {
+                  text: 'Aucun appareil de traitement n’est visible sur les dents.',
+                },
+              ],
+            },
+          },
+        ],
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    },
+  });
+
+  assert.match(bodyText, /Translate the following text to French/);
+  assert.equal(translated, 'Aucun appareil de traitement n’est visible sur les dents.');
 });
 
 test('retries once when Gemini first answers not_detected', async () => {

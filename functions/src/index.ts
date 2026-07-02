@@ -6,7 +6,7 @@ import { GoogleAuth } from 'google-auth-library';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, normalizeLinkCode } from './helpers.js';
-import { analyzeWithGemini, type AnalysisResult } from './analysis.js';
+import { analyzeWithGemini, localizeAnalysisReason, type AnalysisResult } from './analysis.js';
 import { getLocalDateKey, getWindowForDate, shouldAutoDispatchCheck } from './planning.js';
 
 initializeApp();
@@ -539,6 +539,18 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
       getAccessToken: () => geminiAuth.getAccessToken(),
       locale,
     });
+    if (result.reason && result.reason !== 'analysis_unavailable' && locale === 'fr') {
+      const reasonRaw = result.reason;
+      result = {
+        ...result,
+        reasonRaw,
+        reason: await localizeAnalysisReason(reasonRaw, {
+          model: geminiModel,
+          getAccessToken: () => geminiAuth.getAccessToken(),
+          locale,
+        }),
+      };
+    }
   } catch (error) {
     console.error('AI analysis failed, returning fallback result', error);
   }
@@ -549,6 +561,7 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
     ...(result.confidence !== undefined ? { confidence: result.confidence } : {}),
     ...(result.imageQuality !== undefined ? { imageQuality: result.imageQuality } : {}),
     ...(result.reason ? { reason: result.reason } : {}),
+    ...(result.reasonRaw ? { reasonRaw: result.reasonRaw } : {}),
   };
   const response = await db.runTransaction(async (transaction) => {
     const check = await transaction.get(checkRef);
