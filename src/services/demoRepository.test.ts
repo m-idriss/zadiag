@@ -31,10 +31,13 @@ describe('DemoRepository compatibility', () => {
     expect(repository.snapshot().family.linkingCode).not.toBe(previousCode);
   });
 
-  test('does not create a duplicate immediate check', async () => {
+  test('resends an immediate check without duplicating it', async () => {
     const repository = new DemoRepository();
+    const before = repository.snapshot().events.filter((event) => event.status === 'pending').length;
 
-    await expect(repository.requestCheckNow()).rejects.toThrow('active_check_exists');
+    await expect(repository.requestCheckNow()).resolves.toBeUndefined();
+
+    expect(repository.snapshot().events.filter((event) => event.status === 'pending').length).toBe(before);
   });
 
   test('keeps notification setup complete after a reload', async () => {

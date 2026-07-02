@@ -200,7 +200,7 @@ export const requestCheckNow = onCall({
   const checkRef = familyRef.collection('checks').doc();
   const pendingChecks = familyRef.collection('checks').where('status', '==', 'pending').limit(10);
 
-  const check = await db.runTransaction(async (transaction) => {
+  const { check, resend } = await db.runTransaction(async (transaction) => {
     const [profile, family, pending] = await Promise.all([
       transaction.get(userRef),
       transaction.get(familyRef),
@@ -215,9 +215,9 @@ export const requestCheckNow = onCall({
 
     const familyData = family.data();
     const activeExpiry = Date.parse(String(familyData?.activeCheckExpiresAt ?? ''));
-    const hasActivePendingCheck = pending.docs.some((check) => Date.parse(String(check.data().expiresAt)) > Date.now());
-    if ((Number.isFinite(activeExpiry) && activeExpiry > Date.now()) || hasActivePendingCheck) {
-      throw new HttpsError('already-exists', 'A check is already waiting for a response.');
+    const activePendingCheck = pending.docs.find((doc) => Date.parse(String(doc.data().expiresAt)) > Date.now());
+    if (Number.isFinite(activeExpiry) && activeExpiry > Date.now() && activePendingCheck) {
+      return { check: { id: activePendingCheck.id, ...activePendingCheck.data() }, resend: true };
     }
 
     const configuredMinutes = Number(familyData?.plan?.expiryMinutes);
@@ -240,7 +240,7 @@ export const requestCheckNow = onCall({
       activeCheckExpiresAt: expiresAt.toISOString(),
       updatedAt: FieldValue.serverTimestamp(),
     });
-    return { id: checkRef.id, ...check };
+    return { check: { id: checkRef.id, ...check }, resend: false };
   });
 
   const subscriptions = await familyRef.collection('pushSubscriptions').get();
@@ -253,13 +253,15 @@ export const requestCheckNow = onCall({
         await webpush.sendNotification(subscription, JSON.stringify({
           sessionId: check.sessionId,
           title: 'Zadiag',
-          body: isFrench ? 'Un contrôle rapide est prêt.' : 'A quick check is ready.',
-        }), { TTL: 120 });
-      } catch (error) {
-        const statusCode = (error as { statusCode?: number }).statusCode;
-        if (statusCode === 404 || statusCode === 410) await document.ref.delete();
-        else console.error('Unable to send Web Push notification', error);
-      }
+         body: resend
+           ? (isFrench ? 'Un rappel est prêt.' : 'A reminder is ready.')
+           : (isFrench ? 'Un contrôle rapide est prêt.' : 'A quick check is ready.'),
+       }), { TTL: 120 });
+     } catch (error) {
+       const statusCode = (error as { statusCode?: number }).statusCode;
+       if (statusCode === 404 || statusCode === 410) await document.ref.delete();
+       else console.error('Unable to send Web Push notification', error);
+     }
     }));
   }
   return check;

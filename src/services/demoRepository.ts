@@ -131,7 +131,10 @@ export class DemoRepository implements AppRepository {
   }
 
   async requestCheckNow() {
-    if (this.activeSession()) throw new Error('active_check_exists');
+    if (this.activeSession()) {
+      this.persist();
+      return;
+    }
     const now = new Date();
     this.state.events.unshift({
       id: crypto.randomUUID(),
