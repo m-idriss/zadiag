@@ -3,7 +3,7 @@ import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import webpush, { type PushSubscription } from 'web-push';
-import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, normalizeLinkCode } from './helpers.js';
+import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, isFreshCheckSubmission, normalizeLinkCode } from './helpers.js';
 
 initializeApp();
 const db = getFirestore();
@@ -201,6 +201,7 @@ export const regenerateLinkCode = onCall({ region, cors, enforceAppCheck: true }
   const batch = db.batch();
   links.docs.forEach((link) => batch.delete(link.ref));
   childIds.forEach((childId) => batch.delete(db.collection('users').doc(childId)));
+  childIds.forEach((childId) => batch.delete(familyRef.collection('pushSubscriptions').doc(childId)));
   batch.update(familyRef, familyUpdate);
   batch.update(userRef, {
     linkingCode: code,
@@ -321,25 +322,28 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
   const uid = requireUid(request.auth);
   const familyId = String(request.data?.familyId ?? '');
   const checkId = String(request.data?.checkId ?? '');
+  const capturedAt = String(request.data?.capturedAt ?? '');
   const profile = await db.collection('users').doc(uid).get();
   if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'child') {
     throw new HttpsError('permission-denied', 'Only the linked child can submit this check.');
   }
   const checkRef = db.collection('families').doc(familyId).collection('checks').doc(checkId);
-  const check = await checkRef.get();
-  if (!check.exists || check.data()?.status !== 'analyzing') {
-    throw new HttpsError('failed-precondition', 'This check cannot be analyzed.');
-  }
   const result = { status: 'detected', confidence: 0.94, imageQuality: 0.91 };
-  const batch = db.batch();
-  batch.update(checkRef, result);
-  batch.update(db.collection('families').doc(familyId), {
-    activeCheckId: FieldValue.delete(),
-    activeCheckExpiresAt: FieldValue.delete(),
-    updatedAt: FieldValue.serverTimestamp(),
+  const response = await db.runTransaction(async (transaction) => {
+    const check = await transaction.get(checkRef);
+    const checkData = check.data();
+    if (!check.exists || !checkData || !isFreshCheckSubmission(checkData, capturedAt)) {
+      throw new HttpsError('failed-precondition', 'This check is expired, completed, or invalid.');
+    }
+    transaction.update(checkRef, { ...result, capturedAt });
+    transaction.update(db.collection('families').doc(familyId), {
+      activeCheckId: FieldValue.delete(),
+      activeCheckExpiresAt: FieldValue.delete(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    return { id: check.id, ...checkData, capturedAt, ...result };
   });
-  await batch.commit();
-  return { id: check.id, ...check.data(), ...result };
+  return response;
 });
 
 export const deleteAccountData = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
@@ -353,6 +357,7 @@ export const deleteAccountData = onCall({ region, cors, enforceAppCheck: true },
   if (role === 'child') {
     await Promise.all([
       familyRef.update({ [`members.${uid}`]: FieldValue.delete(), updatedAt: FieldValue.serverTimestamp() }),
+      familyRef.collection('pushSubscriptions').doc(uid).delete(),
       userRef.delete(),
     ]);
     return;

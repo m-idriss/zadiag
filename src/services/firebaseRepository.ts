@@ -6,7 +6,6 @@ import {
   onSnapshot,
   orderBy,
   query,
-  runTransaction,
   type DocumentData,
   type Unsubscribe,
 } from 'firebase/firestore';
@@ -165,14 +164,12 @@ export class FirebaseRepository implements AppRepository {
     const familyId = this.state.family.id;
     const event = this.state.events.find((item) => item.sessionId === sessionId);
     if (!familyId || !event || !isFreshCapture(event, capturedAt)) throw new Error('invalid_or_replayed_capture');
-    const eventRef = doc(this.services.db, 'families', familyId, 'checks', event.id);
-    await runTransaction(this.services.db, async (transaction) => {
-      const snapshot = await transaction.get(eventRef);
-      if (!snapshot.exists() || snapshot.data().status !== 'pending') throw new Error('invalid_or_replayed_capture');
-      transaction.update(eventRef, { status: 'analyzing', capturedAt: capturedAt.toISOString() });
-    });
-    const analyzeCheck = httpsCallable<{ familyId: string; checkId: string }, VerificationEvent>(this.services.functions, 'analyzeCheck');
-    const result = await analyzeCheck({ familyId, checkId: event.id });
+    const analyzeCheck = httpsCallable<{
+      familyId: string;
+      checkId: string;
+      capturedAt: string;
+    }, VerificationEvent>(this.services.functions, 'analyzeCheck');
+    const result = await analyzeCheck({ familyId, checkId: event.id, capturedAt: capturedAt.toISOString() });
     return result.data;
   }
 
