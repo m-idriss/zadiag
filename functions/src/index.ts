@@ -2,7 +2,7 @@ import { initializeApp } from 'firebase-admin/app';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
-import { gateway, generateText, Output } from 'ai';
+import { GoogleAuth } from 'google-auth-library';
 import { z } from 'zod';
 import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, normalizeLinkCode } from './helpers.js';
@@ -10,9 +10,12 @@ import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, isFr
 initializeApp();
 const db = getFirestore();
 const region = 'europe-west1';
-const aiGatewayApiKey = defineSecret('AI_GATEWAY_API_KEY');
 const vapidPrivateKey = defineSecret('WEB_PUSH_VAPID_PRIVATE_KEY');
 const vapidPublicKey = defineSecret('WEB_PUSH_VAPID_PUBLIC_KEY');
+const geminiAuth = new GoogleAuth({
+  scopes: ['https://www.googleapis.com/auth/generative-language'],
+});
+const geminiModel = process.env.GEMINI_MODEL ?? 'gemini-2.5-flash';
 const cors = [
   'https://zadiag.vercel.app',
   'https://zadiag.com',
@@ -40,12 +43,112 @@ const defaultPlan = {
 const recoveryLifetimeMs = 90 * 24 * 60 * 60 * 1000;
 const analysisSchema = z.object({
   status: z.enum(['detected', 'not_detected', 'uncertain']),
-  analysisSource: z.enum(['ai', 'fallback']).optional(),
   confidence: z.number().min(0).max(1),
   imageQuality: z.number().min(0).max(1),
   reason: z.string().min(1).max(220),
 });
 type AnalysisResult = z.infer<typeof analysisSchema>;
+
+const imageDataUrlSchema = z.string().regex(/^data:(.+?);base64,(.+)$/);
+
+const parseImageDataUrl = (dataUrl: string) => {
+  const match = imageDataUrlSchema.safeParse(dataUrl);
+  if (!match.success) {
+    throw new HttpsError('invalid-argument', 'A valid image is required.');
+  }
+  const [, mimeType, data] = dataUrl.match(/^data:(.+?);base64,(.+)$/) ?? [];
+  if (!mimeType || !data) {
+    throw new HttpsError('invalid-argument', 'A valid image is required.');
+  }
+  return { mimeType, data };
+};
+
+const extractJsonPayload = (text: string) => {
+  const trimmed = text.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '');
+  const start = trimmed.indexOf('{');
+  const end = trimmed.lastIndexOf('}');
+  if (start < 0 || end < 0 || end <= start) {
+    throw new Error('Gemini response did not contain JSON.');
+  }
+  return trimmed.slice(start, end + 1);
+};
+
+const analyzeWithGemini = async (imageDataUrl: string): Promise<AnalysisResult> => {
+  const { mimeType, data } = parseImageDataUrl(imageDataUrl);
+  const token = await geminiAuth.getAccessToken();
+  if (!token) {
+    throw new Error('Missing Google access token.');
+  }
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            {
+              text: [
+                'You are a visual checker for treatment adherence.',
+                'Judge only what is visible in the photo.',
+                'Do not diagnose.',
+                'If the image is unclear, mark it as uncertain.',
+                'Return JSON only with keys status, confidence, imageQuality, and reason.',
+                'Use status "detected" when visible, "not_detected" when clearly absent, and "uncertain" when the image is too unclear.',
+                'Explain the result briefly in one sentence.',
+              ].join(' '),
+            },
+            {
+              inline_data: {
+                mime_type: mimeType,
+                data,
+              },
+            },
+          ],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.1,
+        maxOutputTokens: 220,
+        responseMimeType: 'application/json',
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Gemini API request failed with status ${response.status}`);
+  }
+
+  const payload = await response.json() as {
+    candidates?: Array<{
+      content?: {
+        parts?: Array<{ text?: string }>;
+      };
+      finishReason?: string;
+    }>;
+    error?: unknown;
+  };
+
+  if (payload.error) {
+    throw new Error(`Gemini API returned an error: ${JSON.stringify(payload.error)}`);
+  }
+
+  const candidate = payload.candidates?.[0];
+  const text = candidate?.content?.parts?.map((part) => part.text ?? '').join('').trim();
+  if (!text) {
+    throw new Error('Gemini response did not contain text.');
+  }
+
+  if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
+    throw new Error(`Gemini response was incomplete: ${candidate.finishReason}`);
+  }
+
+  const parsed = analysisSchema.parse(JSON.parse(extractJsonPayload(text)));
+  return parsed;
+};
 
 const createRecoveryRecord = (familyId: string, expiresAt: Date) => ({
   familyId,
@@ -420,7 +523,7 @@ export const updatePlan = onCall({ region, cors, enforceAppCheck: true }, async 
   await db.collection('families').doc(familyId).update({ plan: request.data.plan, updatedAt: FieldValue.serverTimestamp() });
 });
 
-export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true, secrets: [aiGatewayApiKey] }, async (request) => {
+export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
   const familyId = String(request.data?.familyId ?? '');
   const checkId = String(request.data?.checkId ?? '');
@@ -436,47 +539,17 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true, secret
   const checkRef = db.collection('families').doc(familyId).collection('checks').doc(checkId);
   const fallbackResult: Partial<AnalysisResult> = {
     status: 'uncertain',
-    analysisSource: 'fallback',
     reason: 'analysis_unavailable',
   };
   let result: Partial<AnalysisResult> = fallbackResult;
   try {
-    const aiResult = await generateText({
-      model: gateway('google/gemini-3.1-flash-image-preview'),
-      instructions: 'You are a visual checker for treatment adherence. Judge only what is visible in the photo. Do not diagnose. If the image is unclear, mark it as uncertain.',
-      output: Output.object({ schema: analysisSchema }),
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: [
-                'Review this child treatment check photo.',
-                'Decide whether the required treatment aid is clearly visible and being worn as expected.',
-                'Return JSON only through the structured output.',
-                'Use status "detected" when visible, "not_detected" when clearly absent, and "uncertain" when the image is too unclear.',
-                'Explain the result briefly in one sentence.',
-              ].join(' '),
-            },
-            {
-              type: 'file',
-              mediaType: 'image/jpeg',
-              data: imageDataUrl,
-            },
-          ],
-        },
-      ],
-      maxOutputTokens: 220,
-    });
-    result = aiResult.output;
+    result = await analyzeWithGemini(imageDataUrl);
   } catch (error) {
     console.error('AI analysis failed, returning fallback result', error);
   }
   const analysisUpdate = {
     capturedAt,
     status: result.status ?? 'uncertain',
-    analysisSource: result.analysisSource ?? 'ai',
     ...(result.confidence !== undefined ? { confidence: result.confidence } : {}),
     ...(result.imageQuality !== undefined ? { imageQuality: result.imageQuality } : {}),
     ...(result.reason ? { reason: result.reason } : {}),
