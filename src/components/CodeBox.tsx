@@ -25,6 +25,7 @@ export function CodeBox({
   hint,
   value,
   action,
+  maskValue = false,
   t,
   className = '',
 }: {
@@ -32,16 +33,19 @@ export function CodeBox({
   hint: string;
   value: string;
   action?: ReactNode;
+  maskValue?: boolean;
   t: (key: MessageKey) => string;
   className?: string;
   }) {
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
+  const [revealed, setRevealed] = useState(!maskValue);
   const resetTimer = useRef<number | null>(null);
 
   useEffect(() => {
     setCopyState('idle');
+    setRevealed(!maskValue);
     if (resetTimer.current) window.clearTimeout(resetTimer.current);
-  }, [value]);
+  }, [value, maskValue]);
 
   const handleCopy = async () => {
     try {
@@ -64,13 +68,29 @@ export function CodeBox({
     : copyState === 'error'
       ? t('copyCodeError')
       : t('copyCode');
+  const visibilityLabel = revealed ? t('hideCode') : t('showCode');
+  const visibleValue = revealed ? value : '•'.repeat(value.length);
 
   return (
     <section className={`card code-box ${className}`.trim()}>
       <div className="code-box-header">
         <div>
           <small className="code-box-label">{label}</small>
-          <strong>{value}</strong>
+          <div className="code-box-value-row">
+            <strong>{visibleValue}</strong>
+            {maskValue ? (
+              <button
+                type="button"
+                className="toggle-code-visibility"
+                aria-label={visibilityLabel}
+                title={visibilityLabel}
+                onClick={() => setRevealed((current) => !current)}
+              >
+                <span aria-hidden="true">{revealed ? '🙈' : '👁️'}</span>
+                <span>{visibilityLabel}</span>
+              </button>
+            ) : null}
+          </div>
         </div>
         <button
           type="button"

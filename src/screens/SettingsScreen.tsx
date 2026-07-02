@@ -212,6 +212,7 @@ export function SettingsScreen({
           label={t('parentRecoveryCode')}
           hint={t('childRecoveryHelp')}
           value={parentRecoveryCode}
+          maskValue
           t={t}
         />
       ) : null}

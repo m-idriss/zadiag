@@ -96,7 +96,10 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .code-box-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .code-box-header > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .code-box-label { text-transform: uppercase; letter-spacing: .08em; font-weight: 800; }
+.code-box-value-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .code-box strong { color: var(--teal); font-size: 24px; letter-spacing: 1.5px; margin: 0; word-break: break-word; }
+.toggle-code-visibility { min-height: 30px; display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; border: 1px solid rgba(29, 138, 122, .2); border-radius: 999px; background: rgba(255,255,255,.94); color: var(--teal); font-size: 11px; font-weight: 900; }
+.toggle-code-visibility span:first-child { font-size: 13px; line-height: 1; }
 .code-box span, .code-box small { font-size: 12px; color: var(--muted); }
 .code-box-actions { display: grid; gap: 8px; }
 .copy-code-button { min-height: 36px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 10px; border: 1px solid rgba(29, 138, 122, .16); border-radius: 13px; background: rgba(255,255,255,.94); color: var(--teal); font-weight: 900; font-size: 12px; white-space: nowrap; box-shadow: 0 6px 14px rgba(21, 50, 75, .05); transition: transform .12s ease, box-shadow .12s ease, background .12s ease; }
