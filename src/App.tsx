@@ -50,16 +50,26 @@ const waitForInstalledState = (worker: ServiceWorker) => new Promise<void>((reso
   }
   worker.addEventListener('statechange', () => {
     if (worker.state === 'installed') resolve();
-  }, { once: true   });
+  }, { once: true });
 });
 
-const refreshServiceWorkerRegistration = async (): Promise<ServiceWorkerRegistration | undefined> => {
+const checkForPendingAppUpdate = async (onApplying: () => void) => {
   if (!('serviceWorker' in navigator)) return;
   const registration = await navigator.serviceWorker.getRegistration();
-  if (!registration) return undefined;
+  if (!registration) return;
   await registration.update();
   if (registration.installing) await waitForInstalledState(registration.installing);
-  return registration;
+  if (!registration.waiting) return;
+  onApplying();
+  registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+  await new Promise<void>((resolve) => {
+    const timer = window.setTimeout(resolve, 2500);
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      window.clearTimeout(timer);
+      resolve();
+    }, { once: true });
+  });
+  window.location.reload();
 };
 
 export function App() {
@@ -67,7 +77,6 @@ export function App() {
   const [state, setState] = useState(repository.snapshot());
   const [route, setRoute] = useState<Route>(() => routeForState(state));
   const [ready, setReady] = useState(false);
-  const [updateAvailable, setUpdateAvailable] = useState(false);
   const [splashProgress, setSplashProgress] = useState(12);
   const [splashMessage, setSplashMessage] = useState<MessageKey>('splashLoading');
   const [tab, setTab] = useState<Tab>('home');
@@ -91,9 +100,7 @@ export function App() {
       setState(restored);
       setRoute(routeForState(restored));
       setStartupStep(48, 'splashCheckingUpdate');
-      const registration = await refreshServiceWorkerRegistration();
-      if (!alive) return;
-      setUpdateAvailable(Boolean(registration?.waiting));
+      await checkForPendingAppUpdate(() => setStartupStep(78, 'splashApplyingUpdate'));
       setStartupStep(92, 'splashFinalizing');
       const elapsed = Date.now() - startedAt;
       window.setTimeout(() => {
@@ -162,21 +169,28 @@ export function App() {
     const subscription = await push.subscribe();
     await repository.savePushSubscription(subscription.toJSON());
   };
-  const forceAppUpdate = async (): Promise<boolean> => {
-    const registration = await refreshServiceWorkerRegistration();
-    const available = Boolean(registration?.waiting);
-    setUpdateAvailable(available);
-    if (!registration?.waiting) return false;
-    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-    await new Promise<void>((resolve) => {
-      const timer = window.setTimeout(resolve, 1500);
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        window.clearTimeout(timer);
-        resolve();
-      }, { once: true });
-    });
+  const forceAppUpdate = async () => {
+    if (!('serviceWorker' in navigator)) {
+      window.location.reload();
+      return;
+    }
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (!registration) {
+      window.location.reload();
+      return;
+    }
+    await registration.update();
+    if (registration.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      await new Promise<void>((resolve) => {
+        const timer = window.setTimeout(resolve, 1500);
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          window.clearTimeout(timer);
+          resolve();
+        }, { once: true });
+      });
+    }
     window.location.reload();
-    return true;
   };
 
   let content: React.ReactNode;
@@ -240,7 +254,6 @@ export function App() {
             regenerateLinkCode={async () => { await repository.regenerateLinkCode(); sync(); }}
             locale={state.locale}
             setLocale={async (locale) => { await repository.setLocale(locale); sync(); }}
-            updateAvailable={updateAvailable}
             forceAppUpdate={forceAppUpdate}
             reset={() => { void reset(); }}
             role={role}
