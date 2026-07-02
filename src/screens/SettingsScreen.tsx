@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { IonButton } from '@ionic/react';
 import type { Locale, Role, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
@@ -50,6 +50,9 @@ export function SettingsScreen({
   const [updateError, setUpdateError] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [codeError, setCodeError] = useState(false);
+  const pullStartY = useRef<number | null>(null);
+  const [pullDistance, setPullDistance] = useState(0);
+  const pullThreshold = 72;
 
   const requestNotifications = async () => {
     setNotificationState('saving');
@@ -111,6 +114,30 @@ export function SettingsScreen({
       setUpdatingApp(false);
     }
   };
+  const startPull = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (updatingApp || event.currentTarget.scrollTop > 0 || event.touches.length !== 1) {
+      pullStartY.current = null;
+      return;
+    }
+    pullStartY.current = event.touches[0].clientY;
+    setPullDistance(0);
+  };
+  const movePull = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (pullStartY.current === null || updatingApp) return;
+    if (event.currentTarget.scrollTop > 0) {
+      setPullDistance(0);
+      return;
+    }
+    const distance = event.touches[0].clientY - pullStartY.current;
+    setPullDistance(Math.max(0, Math.min(110, distance)));
+  };
+  const endPull = () => {
+    if (pullStartY.current === null || updatingApp) return;
+    const shouldUpdate = pullDistance >= pullThreshold;
+    pullStartY.current = null;
+    setPullDistance(0);
+    if (shouldUpdate) void forceUpdate();
+  };
   const notificationEnabled = notificationState === 'enabled';
   const notificationStatusKey = notificationState === 'enabled'
     ? 'settingsNotificationsStatusEnabled'
@@ -134,10 +161,23 @@ export function SettingsScreen({
       dateStyle: 'short',
       timeStyle: 'short',
     }).format(updatedAt);
+  const pullProgress = updatingApp
+    ? 100
+    : Math.max(0, Math.min(100, Math.round((pullDistance / pullThreshold) * 100)));
+  const pullLabel = updatingApp
+    ? t('settingsPullUpdateChecking')
+    : pullDistance >= pullThreshold
+      ? t('settingsPullUpdateRelease')
+      : t('settingsPullUpdatePull');
+  const pullVisible = updatingApp || pullDistance > 0;
 
   return (
-    <div className="content-screen settings-screen">
+    <div className="content-screen settings-screen" onTouchStart={startPull} onTouchMove={movePull} onTouchEnd={endPull} onTouchCancel={endPull}>
       <header className="screen-header"><div><small>Zadiag</small><h1>{t('settings')}</h1><p>{t('settingsHint')}</p></div></header>
+      <div className={`settings-pull-indicator ${pullVisible ? 'visible' : ''}`} aria-live="polite">
+        <small>{pullLabel}</small>
+        <div className="settings-pull-bar" aria-hidden="true"><div style={{ width: `${pullProgress}%` }} /></div>
+      </div>
       <section className="card history-row settings-history-row">
         <div className="history-icon settings-history-icon">⇧</div>
         <div>
