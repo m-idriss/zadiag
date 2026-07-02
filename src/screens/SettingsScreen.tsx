@@ -110,7 +110,7 @@ export function SettingsScreen({
         {notificationState === 'saving' ? t('enablingReminders') : t('enableReminders')}
       </IonButton> : null}
       {role === 'child' && notificationState === 'error' ? <small className="notification-note">{t('pushError')}</small> : null}
-      {role === 'parent' && childLinkingCode ? (
+      {role === 'parent' && childInstalled && childLinkingCode ? (
         <section className="card code-box settings-link-code-card">
           <small>{t('childLinkCode')}</small>
           <strong>{childLinkingCode}</strong>

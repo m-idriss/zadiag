@@ -4,12 +4,33 @@ import type { AppState } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { StatusPill } from '../components/StatusPill';
 
-export function ParentDashboard({ state, requestCheck, t }: { state: AppState; requestCheck: () => Promise<void>; t: (key: MessageKey) => string }) {
+export function ParentDashboard({
+  state,
+  regenerateCode,
+  requestCheck,
+  t,
+}: {
+  state: AppState;
+  regenerateCode: () => Promise<void>;
+  requestCheck: () => Promise<void>;
+  t: (key: MessageKey) => string;
+}) {
   const summary = adherenceSummary(state.events);
   const attention = state.events.filter((event) => ['uncertain', 'missed', 'expired', 'not_detected'].includes(event.status));
   const hasActiveCheck = state.events.some((event) => event.status === 'pending' && Date.parse(event.expiresAt) > Date.now());
+  const [regenerating, setRegenerating] = useState(false);
+  const [codeError, setCodeError] = useState(false);
   const [requesting, setRequesting] = useState(false);
   const [requestStatus, setRequestStatus] = useState<'idle' | 'sent' | 'active' | 'error'>('idle');
+
+  const regenerate = async () => {
+    if (!window.confirm(t('regenerateCodeConfirm'))) return;
+    setCodeError(false);
+    setRegenerating(true);
+    try { await regenerateCode(); }
+    catch { setCodeError(true); }
+    finally { setRegenerating(false); }
+  };
 
   const requestNow = async () => {
     setRequesting(true);
@@ -43,6 +64,17 @@ export function ParentDashboard({ state, requestCheck, t }: { state: AppState; r
         {requestStatus === 'active' && !hasActiveCheck && <p role="status" aria-live="polite" className="request-feedback">{t('requestCheckActive')}</p>}
         {requestStatus === 'error' && <p role="status" aria-live="polite" className="request-feedback error">{t('requestCheckError')}</p>}
       </section>
+      {!state.family.childLinked && state.family.linkingCode ? (
+        <section className="card code-box">
+          <small>{t('childLinkCode')}</small>
+          <strong>{state.family.linkingCode}</strong>
+          <span>{t('childLinkCodeHint')}</span>
+          <button className="regenerate-code" disabled={regenerating} onClick={() => { void regenerate(); }}>
+            {regenerating ? t('regeneratingCode') : t('regenerateCode')}
+          </button>
+          {codeError ? <span className="form-error">{t('regenerateCodeError')}</span> : null}
+        </section>
+      ) : null}
       <div className="section-heading"><h2>{t('attention')}</h2><span>{attention.length}</span></div>
       {attention.map((event) => (
         <section className="card history-row" key={event.id}>
