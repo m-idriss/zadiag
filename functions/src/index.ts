@@ -443,12 +443,9 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true, secret
   try {
     const aiResult = await generateText({
       model: gateway('google/gemini-3.1-flash-image-preview'),
+      instructions: 'You are a visual checker for treatment adherence. Judge only what is visible in the photo. Do not diagnose. If the image is unclear, mark it as uncertain.',
       output: Output.object({ schema: analysisSchema }),
       messages: [
-        {
-          role: 'system',
-          content: 'You are a visual checker for treatment adherence. Judge only what is visible in the photo. Do not diagnose. If the image is unclear, mark it as uncertain.',
-        },
         {
           role: 'user',
           content: [
