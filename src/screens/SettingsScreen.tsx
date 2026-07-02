@@ -7,6 +7,7 @@ import { Disclaimer } from '../components/Disclaimer';
 export function SettingsScreen({
   t,
   locale,
+  setLocale,
   reset,
   role,
   enableNotifications,
@@ -17,6 +18,7 @@ export function SettingsScreen({
 }: {
   t: (key: MessageKey) => string;
   locale: Locale;
+  setLocale: (locale: Locale) => Promise<void>;
   reset: () => void;
   role: Role;
   enableNotifications: () => Promise<void>;
@@ -71,6 +73,9 @@ export function SettingsScreen({
   const childInstallDetailKey = childInstalled
     ? 'settingsChildInstallDetailLinked'
     : 'settingsChildInstallDetailPending';
+  const languageDetailKey = locale === 'fr'
+    ? 'settingsLanguageDetailFr'
+    : 'settingsLanguageDetailEn';
   const updatedAt = new Date(import.meta.env.VITE_APP_UPDATED_AT ?? '');
   const appUpdated = Number.isNaN(updatedAt.getTime())
     ? import.meta.env.VITE_APP_UPDATED_AT
@@ -130,6 +135,17 @@ export function SettingsScreen({
           {codeError ? <span className="form-error">{t('regenerateCodeError')}</span> : null}
         </section>
       ) : null}
+      <section className="card history-row settings-history-row">
+        <div className="history-icon settings-history-icon" aria-hidden="true">🌐</div>
+        <div>
+          <strong>{t('settingsLanguageTitle')}</strong>
+          <small>{t(languageDetailKey)}</small>
+        </div>
+        <div className="settings-locale-toggle">
+          <button className={locale === 'en' ? 'active' : ''} onClick={() => { void setLocale('en'); }}>EN</button>
+          <button className={locale === 'fr' ? 'active' : ''} onClick={() => { void setLocale('fr'); }}>FR</button>
+        </div>
+      </section>
       <section className="card history-row settings-history-row">
         <div className="history-icon settings-history-icon" aria-hidden="true">ⓘ</div>
         <div>

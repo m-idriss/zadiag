@@ -151,6 +151,7 @@ export function App() {
             childLinkingCode={state.family.linkingCode}
             regenerateLinkCode={async () => { await repository.regenerateLinkCode(); sync(); }}
             locale={state.locale}
+            setLocale={async (locale) => { await repository.setLocale(locale); sync(); }}
             reset={() => { void reset(); }}
             role={role}
             t={t}

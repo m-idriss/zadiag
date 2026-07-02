@@ -71,7 +71,7 @@ stored by this implementation; only structured check metadata is synchronized.
 
 - The app displays its version and last update timestamp in **Settings**.
 - Version comes from `package.json` and update time is injected at build time.
-- `.github/workflows/auto-version-bump.yml` bumps **minor** (`x.(y+1).0`) on every push to `main` (matching Vercel production deploy flow).
+- `.github/workflows/auto-version-bump.yml` bumps **patch** (`x.y.(z+1)`) on every push to `main` (matching Vercel production deploy flow).
 - `.github/workflows/force-version-bump.yml` lets you force a bump manually (patch/minor/major/custom).
 
 Local verification:

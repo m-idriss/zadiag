@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  bump-minor:
+  bump-patch:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
@@ -31,14 +31,14 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Bump minor version
+      - name: Bump patch version
         id: bump
         run: |
           NEW_VERSION=$(node -e "
             const fs = require('fs');
             const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
             const [major, minor, patch] = String(pkg.version || '0.0.0').split('.').map((v) => Number(v) || 0);
-            const next = [major, minor + 1, 0].join('.');
+            const next = [major, minor, patch + 1].join('.');
             pkg.version = next;
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\\n');
             process.stdout.write(next);

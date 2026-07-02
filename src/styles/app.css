@@ -155,6 +155,9 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .settings-screen .screen-header small { color: var(--muted); }
 .settings-history-row { margin: 0; }
 .settings-history-icon { font-size: 24px; }
+.settings-locale-toggle { display: flex; gap: 6px; padding: 3px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.settings-locale-toggle button { border: 0; background: transparent; border-radius: 8px; padding: 5px 8px; font-size: 11px; font-weight: 900; color: var(--muted); }
+.settings-locale-toggle button.active { background: var(--navy); color: #fff; }
 .settings-inline-action { width: fit-content; min-height: 34px; margin-top: -6px; --padding-start: 14px; --padding-end: 14px; --border-radius: 12px; font-size: 12px; }
 .notification-note { color: var(--coral); font-size: 12px; font-weight: 800; margin-top: -8px; }
 .privacy-card ul { padding-left: 19px; color: var(--muted); line-height: 1.8; }
