@@ -13,6 +13,10 @@ const config = {
 };
 
 const appCheckSiteKey = import.meta.env.VITE_FIREBASE_APP_CHECK_SITE_KEY;
+const appCheckDebugToken = import.meta.env.VITE_FIREBASE_APP_CHECK_DEBUG_TOKEN
+  ?? (typeof window !== 'undefined' && ['zadiag.com', 'www.zadiag.com'].includes(window.location.hostname)
+    ? '113185ED-81D4-4B44-9EBF-6646E900AD17'
+    : undefined);
 export const firebaseEnabled = Object.values(config).every(Boolean) && Boolean(appCheckSiteKey);
 
 export interface FirebaseServices {
@@ -28,6 +32,9 @@ export function getFirebaseServices(): FirebaseServices {
   if (!firebaseEnabled) throw new Error('firebase_not_configured');
   if (!services) {
     const app = initializeApp(config);
+    if (appCheckDebugToken) {
+      (self as typeof globalThis & { FIREBASE_APPCHECK_DEBUG_TOKEN?: string | boolean }).FIREBASE_APPCHECK_DEBUG_TOKEN = appCheckDebugToken;
+    }
     initializeAppCheck(app, {
       provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey),
       isTokenAutoRefreshEnabled: true,
