@@ -44,22 +44,25 @@ export function SettingsScreen({
         <div className="install-icon">⇧</div>
         <div><h2>{t('installTitle')}</h2><p>{standalone ? t('installed') : t('installBody')}</p></div>
       </section>
-      {role === 'child' ? <section className="card">
-        <h2>{t('notifications')}</h2>
-        <p>{t('reminderHelp')}</p>
-        <IonButton
-          expand="block"
-          disabled={!standalone || notificationState === 'saving' || notificationState === 'enabled'}
-          onClick={() => { void requestNotifications(); }}
-        >
-          {notificationState === 'saving'
-            ? t('enablingReminders')
-            : notificationState === 'enabled'
-              ? t('remindersEnabled')
-              : t('enableReminders')}
-        </IonButton>
-        <small>{notificationState === 'error' ? t('pushError') : t('pushReadyHint')}</small>
+      {role === 'child' ? <section className="card install-card notification-card">
+        <div className="install-icon notification-icon" aria-hidden="true">🔔</div>
+        <div>
+          <h2>{t('notifications')}</h2>
+          <p>{standalone ? t('pushReadyHint') : t('reminderHelp')}</p>
+        </div>
       </section> : null}
+      {role === 'child' ? <IonButton
+        className="notification-action"
+        disabled={!standalone || notificationState === 'saving' || notificationState === 'enabled'}
+        onClick={() => { void requestNotifications(); }}
+      >
+        {notificationState === 'saving'
+          ? t('enablingReminders')
+          : notificationState === 'enabled'
+            ? t('remindersEnabled')
+            : t('enableReminders')}
+      </IonButton> : null}
+      {role === 'child' && notificationState === 'error' ? <small className="notification-note">{t('pushError')}</small> : null}
       <section className="card privacy-card">
         <h2>{t('privacyDefaults')}</h2>
         <ul><li>{t('noFaceRecognition')}</li><li>{t('noModelTraining')}</li><li>{t('noPhotoUpload')}</li><li>{t('immediateDeletion')}</li></ul>
