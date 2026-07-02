@@ -7,7 +7,14 @@ export const hashLinkCode = (code: string) => createHash('sha256')
   .digest('hex');
 
 export const createLinkCode = () => `ZD-${randomInt(100000, 1000000)}`;
-export const createRecoveryCode = () => `PR-${randomInt(100000, 1000000)}`;
+const recoveryAlphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+export const createRecoveryCode = () => {
+  const token = Array.from({ length: 12 }, () => recoveryAlphabet[randomInt(0, recoveryAlphabet.length)]).join('');
+  return `PR-${token.slice(0, 4)}-${token.slice(4, 8)}-${token.slice(8)}`;
+};
+
+export const isRecoveryCode = (code: string) => /^PR-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}$/.test(normalizeLinkCode(code));
+export const isLegacyRecoveryCode = (code: string) => /^PR-\d{6}$/.test(normalizeLinkCode(code));
 
 export const assertChildName = (value: unknown) => {
   if (typeof value !== 'string') throw new Error('invalid_child_name');
