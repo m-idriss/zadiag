@@ -2,13 +2,13 @@ name: 🔢 Auto bump app version
 
 on:
   push:
-    branches: [main]
+    branches: [release/prod]
 
 permissions:
   contents: write
 
 concurrency:
-  group: auto-version-bump-main
+  group: auto-version-bump-release-prod
   cancel-in-progress: true
 
 jobs:
@@ -49,7 +49,7 @@ jobs:
       - name: Commit and push version bump
         run: |
           git add package.json
-          git commit -m "chore(version): bump to ${{ steps.bump.outputs.version }} [skip ci]"
+          git commit -m "chore(release): bump to ${{ steps.bump.outputs.version }} [skip ci]"
           git push
 
       - name: Create or update Git tag
