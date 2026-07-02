@@ -200,10 +200,10 @@ export function SettingsScreen({
         </div>
       </section>
       <section className="card history-row settings-history-row">
-        <div className="history-icon settings-history-icon" aria-hidden="true">⟳</div>
+        <div className="history-icon settings-history-icon" aria-hidden="true">ⓘ</div>
         <div>
-          <strong>{t('settingsUpdateTitle')}</strong>
-          <small>{t('settingsUpdateDetail')}</small>
+          <strong>{t('settingsAppInfoTitle')}</strong>
+          <small>{t('settingsVersionLabel')} {import.meta.env.VITE_APP_VERSION} · {t('settingsUpdatedLabel')} {appUpdated}</small>
           {updateError ? <small className="settings-action-error">{t('settingsUpdateError')}</small> : null}
         </div>
         <div>
@@ -215,13 +215,6 @@ export function SettingsScreen({
           >
             {updatingApp ? t('settingsUpdateChecking') : t('settingsUpdateAction')}
           </IonButton>
-        </div>
-      </section>
-      <section className="card history-row settings-history-row">
-        <div className="history-icon settings-history-icon" aria-hidden="true">ⓘ</div>
-        <div>
-          <strong>{t('settingsAppInfoTitle')}</strong>
-          <small>{t('settingsVersionLabel')} {import.meta.env.VITE_APP_VERSION} · {t('settingsUpdatedLabel')} {appUpdated}</small>
         </div>
       </section>
       {role === 'parent' && childLinkingCode ? (
