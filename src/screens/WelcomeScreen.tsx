@@ -17,13 +17,15 @@ export function WelcomeScreen({
   return (
     <main className="page welcome-page">
       <div className="language-toggle" role="group" aria-label="Language">
-        <button className={locale === 'en' ? 'active' : ''} onClick={() => setLocale('en')}>EN</button>
-        <button className={locale === 'fr' ? 'active' : ''} onClick={() => setLocale('fr')}>FR</button>
+        <button type="button" className={locale === 'en' ? 'active' : ''} aria-pressed={locale === 'en'} onClick={() => setLocale('en')}>EN</button>
+        <button type="button" className={locale === 'fr' ? 'active' : ''} aria-pressed={locale === 'fr'} onClick={() => setLocale('fr')}>FR</button>
       </div>
-      <div className="brand-icon"><img src="/icons/icon.svg" alt="" /></div>
-      <div className="installed-badge"><span>✓</span>{t('setupInstalledBadge')}</div>
-      <h1>Zadiag</h1>
-      <p className="hero-copy">{t('tagline')}</p>
+      <section className="card welcome-hero">
+        <div className="brand-icon"><img src="/icons/icon.svg" alt="" /></div>
+        <div className="installed-badge"><span>✓</span>{t('setupInstalledBadge')}</div>
+        <h1>Zadiag</h1>
+        <p className="hero-copy">{t('tagline')}</p>
+      </section>
       <h2>{t('continueAs')}</h2>
       <p className="role-help">{t('setupRoleHelp')}</p>
       <div className="role-grid">

@@ -14,14 +14,22 @@ export function InstallScreen({
   return (
     <main className="page setup-page install-setup-page">
       <div className="language-toggle" role="group" aria-label="Language">
-        <button className={locale === 'en' ? 'active' : ''} onClick={() => setLocale('en')}>EN</button>
-        <button className={locale === 'fr' ? 'active' : ''} onClick={() => setLocale('fr')}>FR</button>
+        <button type="button" className={locale === 'en' ? 'active' : ''} aria-pressed={locale === 'en'} onClick={() => setLocale('en')}>EN</button>
+        <button type="button" className={locale === 'fr' ? 'active' : ''} aria-pressed={locale === 'fr'} onClick={() => setLocale('fr')}>FR</button>
       </div>
       <SetupProgress current={1} t={t} />
       <div className="setup-hero-icon" aria-hidden="true">⇧</div>
       <p className="setup-eyebrow">{t('setupStepOne')}</p>
       <h1>{t('setupInstallTitle')}</h1>
       <p className="setup-intro">{t('setupInstallIntro')}</p>
+
+      <section className="card setup-summary">
+        <div>
+          <strong>{t('setupInstallSummaryTitle')}</strong>
+          <p>{t('setupInstallSummaryBody')}</p>
+        </div>
+        <span aria-hidden="true">⌁</span>
+      </section>
 
       <section className="card instruction-card">
         <div className="instruction-row">

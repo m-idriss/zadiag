@@ -3,6 +3,7 @@ import { IonButton } from '@ionic/react';
 import type { Locale, Role } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { Disclaimer } from '../components/Disclaimer';
+import { CodeBox } from '../components/CodeBox';
 
 export function SettingsScreen({
   t,
@@ -126,17 +127,6 @@ export function SettingsScreen({
         {notificationState === 'saving' ? t('enablingReminders') : t('enableReminders')}
       </IonButton> : null}
       {role === 'child' && notificationState === 'error' ? <small className="notification-note">{t('pushError')}</small> : null}
-      {role === 'parent' && childLinkingCode ? (
-        <section className="card code-box settings-link-code-card">
-          <small>{t('childLinkCode')}</small>
-          <strong>{childLinkingCode}</strong>
-          <span>{t('childLinkCodeHint')}</span>
-          <button className="regenerate-code" disabled={regenerating} onClick={() => { void regenerate(); }}>
-            {regenerating ? t('regeneratingCode') : t('regenerateCode')}
-          </button>
-          {codeError ? <span className="form-error">{t('regenerateCodeError')}</span> : null}
-        </section>
-      ) : null}
       <section className="card history-row settings-history-row">
         <div className="history-icon settings-history-icon" aria-hidden="true">🌐</div>
         <div>
@@ -144,8 +134,8 @@ export function SettingsScreen({
           <small>{t(languageDetailKey)}</small>
         </div>
         <div className="settings-locale-toggle">
-          <button className={locale === 'en' ? 'active' : ''} onClick={() => { void setLocale('en'); }}>EN</button>
-          <button className={locale === 'fr' ? 'active' : ''} onClick={() => { void setLocale('fr'); }}>FR</button>
+          <button type="button" className={locale === 'en' ? 'active' : ''} aria-pressed={locale === 'en'} onClick={() => { void setLocale('en'); }}>EN</button>
+          <button type="button" className={locale === 'fr' ? 'active' : ''} aria-pressed={locale === 'fr'} onClick={() => { void setLocale('fr'); }}>FR</button>
         </div>
       </section>
       <section className="card history-row settings-history-row">
@@ -155,17 +145,34 @@ export function SettingsScreen({
           <small>{t('settingsVersionLabel')} {import.meta.env.VITE_APP_VERSION} · {t('settingsUpdatedLabel')} {appUpdated}</small>
         </div>
       </section>
+      {role === 'parent' && childLinkingCode ? (
+        <CodeBox
+          label={t('childLinkCode')}
+          hint={t('childLinkCodeHint')}
+          value={childLinkingCode}
+          t={t}
+          action={(
+            <>
+              <button type="button" className="regenerate-code" disabled={regenerating} onClick={() => { void regenerate(); }}>
+                {regenerating ? t('regeneratingCode') : t('regenerateCode')}
+              </button>
+              {codeError ? <span className="form-error">{t('regenerateCodeError')}</span> : null}
+            </>
+          )}
+        />
+      ) : null}
+      {role === 'child' && parentRecoveryCode ? (
+        <CodeBox
+          label={t('parentRecoveryCode')}
+          hint={t('childRecoveryHelp')}
+          value={parentRecoveryCode}
+          t={t}
+        />
+      ) : null}
       <section className="card privacy-card">
         <h2>{t('privacyDefaults')}</h2>
         <ul><li>{t('noFaceRecognition')}</li><li>{t('noModelTraining')}</li><li>{t('noPhotoUpload')}</li><li>{t('immediateDeletion')}</li></ul>
       </section>
-      {parentRecoveryCode ? (
-        <section className="card code-box settings-link-code-card">
-          <small>{t('parentRecoveryCode')}</small>
-          <strong>{parentRecoveryCode}</strong>
-          <span>{t('parentRecoverHelp')}</span>
-        </section>
-      ) : null}
       <Disclaimer t={t} />
       <IonButton expand="block" fill="outline" color="danger" onClick={confirmReset}>{t('resetDemo')}</IonButton>
     </div>

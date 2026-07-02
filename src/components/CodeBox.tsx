@@ -1,0 +1,92 @@
+import { useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
+import type { MessageKey } from '../services/i18n';
+
+async function copyToClipboard(value: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.value = value;
+  textarea.setAttribute('readonly', 'true');
+  textarea.style.position = 'absolute';
+  textarea.style.left = '-9999px';
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand('copy');
+  document.body.removeChild(textarea);
+  if (!copied) throw new Error('copy_failed');
+}
+
+export function CodeBox({
+  label,
+  hint,
+  value,
+  action,
+  t,
+  className = '',
+}: {
+  label: string;
+  hint: string;
+  value: string;
+  action?: ReactNode;
+  t: (key: MessageKey) => string;
+  className?: string;
+  }) {
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
+  const resetTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    setCopyState('idle');
+    if (resetTimer.current) window.clearTimeout(resetTimer.current);
+  }, [value]);
+
+  const handleCopy = async () => {
+    try {
+      await copyToClipboard(value);
+      setCopyState('copied');
+    } catch {
+      setCopyState('error');
+    } finally {
+      if (resetTimer.current) window.clearTimeout(resetTimer.current);
+      resetTimer.current = window.setTimeout(() => setCopyState('idle'), 1200);
+    }
+  };
+
+  useEffect(() => () => {
+    if (resetTimer.current) window.clearTimeout(resetTimer.current);
+  }, []);
+
+  const copyLabel = copyState === 'copied'
+    ? t('copiedCode')
+    : copyState === 'error'
+      ? t('copyCodeError')
+      : t('copyCode');
+
+  return (
+    <section className={`card code-box ${className}`.trim()}>
+      <div className="code-box-header">
+        <div>
+          <small className="code-box-label">{label}</small>
+          <strong>{value}</strong>
+        </div>
+        <button
+          type="button"
+          className={`copy-code-button ${copyState}`}
+          aria-label={copyLabel}
+          title={copyLabel}
+          aria-live="polite"
+          onClick={() => { void handleCopy(); }}
+        >
+          <span aria-hidden="true">{copyState === 'copied' ? '✓' : '⧉'}</span>
+          <span className="copy-code-label">{copyLabel}</span>
+        </button>
+      </div>
+      <span>{hint}</span>
+      {copyState !== 'idle' ? <small className={`copy-code-feedback ${copyState}`} role="status" aria-live="polite">{copyLabel}</small> : null}
+      {action ? <div className="code-box-actions">{action}</div> : null}
+    </section>
+  );
+}

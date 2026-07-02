@@ -3,6 +3,7 @@ import { IonButton, IonCheckbox, IonInput } from '@ionic/react';
 import type { Role } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { Disclaimer } from '../components/Disclaimer';
+import { CodeBox } from '../components/CodeBox';
 import { SetupProgress } from '../components/SetupProgress';
 
 export function LinkScreen({
@@ -46,7 +47,7 @@ export function LinkScreen({
 
   return (
     <main className="page link-page">
-      <button className="back-button" onClick={back}>‹</button>
+      <button type="button" className="back-button" onClick={back}>‹</button>
       {!parent ? <SetupProgress current={2} t={t} /> : null}
       <div className="section-icon">{parent ? '⌂' : '⌁'}</div>
       {!parent ? <p className="setup-eyebrow">{t('setupStepTwo')}</p> : null}
@@ -64,7 +65,7 @@ export function LinkScreen({
           <>
             {mode === 'create' ? (
               <>
-                {code && <div className="code-box"><small>{t('linkingCode')}</small><strong>{code}</strong><span>{t('shareCodeHint')}</span></div>}
+                {code && <CodeBox label={t('linkingCode')} hint={t('shareCodeHint')} value={code} t={t} />}
                 <label className="consent-row">
                   <IonCheckbox checked={consent} onIonChange={(event) => setConsent(event.detail.checked)} />
                   <span>{t('consent')}</span>

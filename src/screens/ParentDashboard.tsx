@@ -3,6 +3,7 @@ import { adherenceSummary } from '../domain/adherence';
 import type { AppState } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { StatusPill } from '../components/StatusPill';
+import { CodeBox } from '../components/CodeBox';
 
 export function ParentDashboard({
   state,
@@ -65,15 +66,20 @@ export function ParentDashboard({
         {requestStatus === 'error' && <p role="status" aria-live="polite" className="request-feedback error">{t('requestCheckError')}</p>}
       </section>
       {!state.family.childLinked && state.family.linkingCode ? (
-        <section className="card code-box">
-          <small>{t('childLinkCode')}</small>
-          <strong>{state.family.linkingCode}</strong>
-          <span>{t('childLinkCodeHint')}</span>
-          <button className="regenerate-code" disabled={regenerating} onClick={() => { void regenerate(); }}>
-            {regenerating ? t('regeneratingCode') : t('regenerateCode')}
-          </button>
-          {codeError ? <span className="form-error">{t('regenerateCodeError')}</span> : null}
-        </section>
+        <CodeBox
+          label={t('childLinkCode')}
+          hint={t('childLinkCodeHint')}
+          value={state.family.linkingCode}
+          t={t}
+          action={(
+            <>
+              <button type="button" className="regenerate-code" disabled={regenerating} onClick={() => { void regenerate(); }}>
+                {regenerating ? t('regeneratingCode') : t('regenerateCode')}
+              </button>
+              {codeError ? <span className="form-error">{t('regenerateCodeError')}</span> : null}
+            </>
+          )}
+        />
       ) : null}
       <div className="section-heading"><h2>{t('attention')}</h2><span>{attention.length}</span></div>
       {attention.map((event) => (

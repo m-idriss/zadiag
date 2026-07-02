@@ -1,85 +1,126 @@
-# Zadiag PWA
+# Zadiag
 
-An installable, PWA-first treatment follow-up app for families. The initial
-prototype tests orthodontic-elastics adherence on iPhone without Apple Developer
-distribution, while the Zadiag brand can support additional treatment routines.
+Zadiag is a PWA-first family app for simple treatment follow-up. It is designed
+to be easy to install on iPhone, link a child device, and receive reminders
+without needing App Store distribution during testing.
 
-## Current vertical slice
+## What the app does
 
-- Parent and child roles with a one-time demo link code (`ZD-4821`)
-- Explicit parent consent
-- Parent adherence dashboard and history
-- Child check/progress experience
-- Live `getUserMedia` camera capture with no gallery input
-- One-use session and capture timestamp validation
-- Simulated structured AI result; no photo leaves the device
-- English and French UI
-- iPhone standalone manifest and custom service worker
-- Generic Web Push handler ready for a VAPID subscription
+- Guides the family through three onboarding steps: install on the Home Screen,
+  link parent and child, then enable notifications.
+- Lets a parent create a family, generate a linking code, and recover access
+  later with a secure recovery code.
+- Lets the child phone join with a one-time code and request push permission.
+- Stores history, status, and reminder state in Firebase when configured.
+- Keeps the camera flow privacy-first: the child takes a live photo in the app,
+  and the UI makes it clear that photos are not uploaded in demo mode.
 
-## Run locally
+## Current stack
+
+- React 19 + TypeScript
+- Ionic UI components
+- Vite + PWA support
+- Firebase Auth, Firestore, Cloud Functions, and App Check
+- Web Push with a standards-based subscription flow
+- Vercel for hosting the web app
+
+## Local development
+
+Install dependencies:
 
 ```sh
-npm install
-npm run dev
+pnpm install
 ```
 
-Camera access requires HTTPS except on `localhost`. For an iPhone test, deploy the
-`dist/` output to Firebase Hosting or another HTTPS host.
+Run the app:
 
-## Deploy after creating a Firebase project
+```sh
+pnpm dev
+```
+
+Run the checks:
+
+```sh
+pnpm test
+pnpm test:rules
+pnpm build
+pnpm --prefix functions test
+```
+
+## Environment variables
+
+Copy the example files and fill in your values:
 
 ```sh
 cp .firebaserc.example .firebaserc
-# Replace the placeholder project ID, then:
-npm run build
-firebase deploy --only hosting
 ```
 
-## Production boundary
+The public web config lives in `.env.example` and is required when Firebase is
+enabled:
 
-The demo repository intentionally stores only structured demo state in localStorage.
-Before processing a minor's photo, implement `FamilyRepository` and
-`VerificationGateway` against authenticated backend endpoints, deploy deny-by-default
-Firebase Rules, enable App Check, and configure lifecycle deletion.
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID`
+- `VITE_FIREBASE_STORAGE_BUCKET`
+- `VITE_FIREBASE_APP_ID`
+- `VITE_FIREBASE_APP_CHECK_SITE_KEY`
+- `VITE_WEB_PUSH_PUBLIC_KEY`
 
-The web camera removes the gallery control but cannot offer native anti-tamper
-guarantees. Treat a server nonce, capture timestamp, digest, and random visual
-challenge as risk reduction—not proof of identity or medical compliance.
+If those values are missing, the app falls back to its local demo repository so
+you can still test the UI without Firebase.
 
-## Firebase backend
+## Firebase setup
 
-The app keeps its local demo behavior until every `VITE_FIREBASE_*` value in
-`.env.example` is configured. Once configured, it uses anonymous Firebase Auth,
-callable Cloud Functions, App Check, and real-time Firestore listeners to link the
-parent and child devices.
+To enable the full family-link flow:
 
-Setup requirements:
+1. Create a Firebase project.
+2. Enable Anonymous Authentication.
+3. Create Firestore in a European region.
+4. Register the web app.
+5. Create a reCAPTCHA Enterprise App Check key for the deployed domains.
+6. Add the public Firebase values to your Vercel environment.
+7. Deploy Firestore rules and Cloud Functions.
 
-1. Create a Firebase project and enable the Blaze plan (required for Cloud Functions).
-2. Enable Anonymous Authentication and create a Firestore database in a European region.
-3. Register the web app and a reCAPTCHA Enterprise App Check key for the Vercel domains.
-4. Copy `.firebaserc.example` to `.firebaserc` and set the Firebase project ID.
-5. Add the public Firebase web values from `.env.example` to the Vercel project.
-6. Deploy the backend with `firebase deploy --only firestore,functions`.
+The backend uses callable functions, App Check, and Firestore listeners to keep
+the parent and child devices in sync. Linking codes are one-time and expire,
+and parent recovery codes are hashed, time-limited, and rotated after use.
 
-The callable functions run in `europe-west1`, enforce App Check, create single-use
-24-hour linking codes, and keep code hashes private. Photos are not uploaded or
-stored by this implementation; only structured check metadata is synchronized.
+## Deploying
+
+Build the app:
+
+```sh
+pnpm build
+```
+
+Deploy the Firebase backend:
+
+```sh
+firebase deploy --only firestore,functions
+```
+
+For Vercel, import the repository and set the root directory to the project
+folder that contains this README. Add the public Firebase and Web Push values
+in the Vercel project environment.
+
+## iPhone testing flow
+
+1. Open the app in Safari.
+2. Install it to the Home Screen.
+3. Create the parent family or join with the child linking code.
+4. Enable notifications on the child phone.
+
+That is the intended test path for a one-month pilot: install, link, then
+notifications.
+
+## Notes and limits
+
+- This project is privacy-first, not a medical device.
+- The verification result is a structured app response, not a diagnosis.
+- The app is still built for testing and iteration, so some flows may evolve.
 
 ## App versioning
 
-- The app displays its version and last update timestamp in **Settings**.
-- Version comes from `package.json` and update time is injected at build time.
-- `.github/workflows/auto-version-bump.yml` bumps **patch** (`x.y.(z+1)`) on every push to `main` (matching Vercel production deploy flow).
-- Both version bump workflows also create/update a GitHub Release for the new tag.
-- `.github/workflows/force-version-bump.yml` lets you force a bump manually (patch/minor/major/custom).
-
-Local verification:
-
-```sh
-npm test
-npm run test:rules
-npm run build
-npm --prefix functions test
-```
+- The app displays its version and last update timestamp in Settings.
+- Version comes from `package.json`.
+- GitHub workflows auto-bump patch versions on pushes to `main`.

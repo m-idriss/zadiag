@@ -27,13 +27,6 @@ export function ChildDashboard({
         {active && <small>{t('minutesLeft')}</small>}
       </section>
       <section className="card week-card"><h2>{t('thisWeek')}</h2><progress max="1" value={summary.rate} /><p>{summary.successful} {t('weekProgress')}</p></section>
-      {state.family.parentRecoveryCode ? (
-        <section className="card code-box child-code-card">
-          <small>{t('childRecoveryCode')}</small>
-          <strong>{state.family.parentRecoveryCode}</strong>
-          <span>{t('childRecoveryHelp')}</span>
-        </section>
-      ) : null}
       <Disclaimer t={t} />
     </div>
   );
