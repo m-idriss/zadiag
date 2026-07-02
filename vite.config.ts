@@ -5,7 +5,15 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 const packageJson = JSON.parse(readFileSync(resolve(process.cwd(), 'package.json'), 'utf8')) as { version: string };
-const appVersion = process.env.VITE_APP_VERSION ?? packageJson.version;
+const commitSha = process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.GITHUB_SHA;
+const shortSha = commitSha?.slice(0, 7);
+const gitRef = process.env.VERCEL_GIT_COMMIT_REF ?? process.env.GITHUB_REF_NAME;
+const prNumber = process.env.VERCEL_GIT_PULL_REQUEST_ID;
+const vercelEnv = process.env.VERCEL_ENV;
+const isPreviewBuild = vercelEnv === 'preview' || Boolean(prNumber);
+const previewRef = (prNumber ? `pr${prNumber}` : gitRef ?? 'preview').replace(/[^a-zA-Z0-9._-]/g, '-');
+const computedPreviewVersion = `${packageJson.version}-preview.${previewRef}.${shortSha ?? 'dev'}`;
+const appVersion = process.env.VITE_APP_VERSION ?? (isPreviewBuild ? computedPreviewVersion : packageJson.version);
 const appUpdatedAt = process.env.VITE_APP_UPDATED_AT ?? new Date().toISOString();
 
 export default defineConfig({
