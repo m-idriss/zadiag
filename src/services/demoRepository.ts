@@ -138,6 +138,8 @@ export class DemoRepository implements AppRepository {
     this.persist();
   }
 
+  async savePushSubscription(_subscription: PushSubscriptionJSON) {}
+
   async savePlan(plan: MonitoringPlan) {
     this.state.plan = structuredClone(plan);
     this.persist();

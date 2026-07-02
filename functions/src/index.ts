@@ -1,11 +1,15 @@
 import { initializeApp } from 'firebase-admin/app';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
+import { defineSecret } from 'firebase-functions/params';
+import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, hashLinkCode, normalizeLinkCode } from './helpers.js';
 
 initializeApp();
 const db = getFirestore();
 const region = 'europe-west1';
+const vapidPrivateKey = defineSecret('WEB_PUSH_VAPID_PRIVATE_KEY');
+const vapidPublicKey = defineSecret('WEB_PUSH_VAPID_PUBLIC_KEY');
 const cors = [
   'https://zadiag.vercel.app',
   'https://zadiag.com',
@@ -106,6 +110,31 @@ export const joinFamily = onCall({ region, cors, enforceAppCheck: true }, async 
   return { familyId };
 });
 
+export const savePushSubscription = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = requireUid(request.auth);
+  const familyId = String(request.data?.familyId ?? '');
+  const subscription = request.data?.subscription as Partial<PushSubscription> | undefined;
+  const endpoint = String(subscription?.endpoint ?? '');
+  const p256dh = String(subscription?.keys?.p256dh ?? '');
+  const auth = String(subscription?.keys?.auth ?? '');
+  const locale = request.data?.locale === 'fr' ? 'fr' : 'en';
+  if (!endpoint.startsWith('https://') || !p256dh || !auth) {
+    throw new HttpsError('invalid-argument', 'A valid push subscription is required.');
+  }
+
+  const profile = await db.collection('users').doc(uid).get();
+  if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'child') {
+    throw new HttpsError('permission-denied', 'Only the linked child can enable notifications.');
+  }
+
+  await db.collection('families').doc(familyId).collection('pushSubscriptions').doc(uid).set({
+    endpoint,
+    keys: { p256dh, auth },
+    locale,
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+});
+
 export const regenerateLinkCode = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
   const familyId = String(request.data?.familyId ?? '');
@@ -154,7 +183,12 @@ export const regenerateLinkCode = onCall({ region, cors, enforceAppCheck: true }
   return { code, expiresAt: expiresAt.toISOString() };
 });
 
-export const requestCheckNow = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+export const requestCheckNow = onCall({
+  region,
+  cors,
+  enforceAppCheck: true,
+  secrets: [vapidPrivateKey, vapidPublicKey],
+}, async (request) => {
   const uid = requireUid(request.auth);
   const familyId = String(request.data?.familyId ?? '');
   const familyRef = db.collection('families').doc(familyId);
@@ -162,7 +196,7 @@ export const requestCheckNow = onCall({ region, cors, enforceAppCheck: true }, a
   const checkRef = familyRef.collection('checks').doc();
   const pendingChecks = familyRef.collection('checks').where('status', '==', 'pending').limit(10);
 
-  return db.runTransaction(async (transaction) => {
+  const check = await db.runTransaction(async (transaction) => {
     const [profile, family, pending] = await Promise.all([
       transaction.get(userRef),
       transaction.get(familyRef),
@@ -204,6 +238,27 @@ export const requestCheckNow = onCall({ region, cors, enforceAppCheck: true }, a
     });
     return { id: checkRef.id, ...check };
   });
+
+  const subscriptions = await familyRef.collection('pushSubscriptions').get();
+  if (!subscriptions.empty) {
+    webpush.setVapidDetails('https://www.zadiag.com', vapidPublicKey.value(), vapidPrivateKey.value());
+    await Promise.allSettled(subscriptions.docs.map(async (document) => {
+      const subscription = document.data() as PushSubscription & { locale?: string };
+      const isFrench = subscription.locale === 'fr';
+      try {
+        await webpush.sendNotification(subscription, JSON.stringify({
+          sessionId: check.sessionId,
+          title: 'Zadiag',
+          body: isFrench ? 'Un contrôle rapide est prêt.' : 'A quick check is ready.',
+        }), { TTL: 120 });
+      } catch (error) {
+        const statusCode = (error as { statusCode?: number }).statusCode;
+        if (statusCode === 404 || statusCode === 410) await document.ref.delete();
+        else console.error('Unable to send Web Push notification', error);
+      }
+    }));
+  }
+  return check;
 });
 
 export const updatePlan = onCall({ region, cors, enforceAppCheck: true }, async (request) => {

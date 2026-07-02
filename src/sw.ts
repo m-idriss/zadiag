@@ -9,10 +9,10 @@ cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST);
 
 self.addEventListener('push', (event: PushEvent) => {
-  const payload = event.data?.json() as { sessionId?: string } | undefined;
+  const payload = event.data?.json() as { sessionId?: string; title?: string; body?: string } | undefined;
   event.waitUntil(
-    self.registration.showNotification('Zadiag', {
-      body: 'A quick check is ready when you are.',
+    self.registration.showNotification(payload?.title ?? 'Zadiag', {
+      body: payload?.body ?? 'A quick check is ready when you are.',
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
       tag: payload?.sessionId ?? 'verification',
