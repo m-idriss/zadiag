@@ -46,23 +46,23 @@ export function SettingsScreen({
       </section>
       {role === 'child' ? <section className="card install-card notification-card">
         <div className="install-icon notification-icon" aria-hidden="true">🔔</div>
-        <div>
+        <div className="notification-copy">
           <h2>{t('notifications')}</h2>
           <p>{standalone ? t('pushReadyHint') : t('reminderHelp')}</p>
+          <IonButton
+            className="notification-action"
+            disabled={!standalone || notificationState === 'saving' || notificationState === 'enabled'}
+            onClick={() => { void requestNotifications(); }}
+          >
+            {notificationState === 'saving'
+              ? t('enablingReminders')
+              : notificationState === 'enabled'
+                ? t('remindersEnabled')
+                : t('enableReminders')}
+          </IonButton>
+          {notificationState === 'error' ? <small className="notification-note">{t('pushError')}</small> : null}
         </div>
       </section> : null}
-      {role === 'child' ? <IonButton
-        className="notification-action"
-        disabled={!standalone || notificationState === 'saving' || notificationState === 'enabled'}
-        onClick={() => { void requestNotifications(); }}
-      >
-        {notificationState === 'saving'
-          ? t('enablingReminders')
-          : notificationState === 'enabled'
-            ? t('remindersEnabled')
-            : t('enableReminders')}
-      </IonButton> : null}
-      {role === 'child' && notificationState === 'error' ? <small className="notification-note">{t('pushError')}</small> : null}
       <section className="card privacy-card">
         <h2>{t('privacyDefaults')}</h2>
         <ul><li>{t('noFaceRecognition')}</li><li>{t('noModelTraining')}</li><li>{t('noPhotoUpload')}</li><li>{t('immediateDeletion')}</li></ul>
