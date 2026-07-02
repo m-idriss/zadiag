@@ -86,6 +86,7 @@ export function LinkScreen({
       <IonButton expand="block" disabled={busy || !value.trim() || (parent && mode === 'create' && !consent)} onClick={submit}>
         {parent ? (mode === 'recover' ? t('recoverContinue') : t('createContinue')) : t('linkContinue')}
       </IonButton>
+      <small className="link-version">v{import.meta.env.VITE_APP_VERSION}</small>
     </main>
   );
 }

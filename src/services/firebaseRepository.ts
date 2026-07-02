@@ -247,7 +247,11 @@ export class FirebaseRepository implements AppRepository {
       console.error('Unable to refresh the parent recovery code', error);
     }
     const migrateRoutines = httpsCallable<{ familyId: string }, void>(this.services.functions, 'migrateFamilyRoutines');
-    await migrateRoutines({ familyId });
+    try {
+      await migrateRoutines({ familyId });
+    } catch (error) {
+      console.error('Unable to migrate family routines', error);
+    }
     const familyRef = doc(this.services.db, 'families', familyId);
     this.remoteSubscriptions.push(onSnapshot(familyRef, (snapshot) => {
       if (!snapshot.exists()) return;
