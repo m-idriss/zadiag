@@ -3,9 +3,11 @@ import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import { GoogleAuth } from 'google-auth-library';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
 import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, normalizeLinkCode } from './helpers.js';
 import { analyzeWithGemini, type AnalysisResult } from './analysis.js';
+import { getLocalDateKey, getWindowForDate, shouldAutoDispatchCheck } from './planning.js';
 
 initializeApp();
 const db = getFirestore();
@@ -62,6 +64,33 @@ const recordRecoveryAttempt = async (uid: string) => {
       updatedAt: FieldValue.serverTimestamp(),
     });
   });
+};
+
+const sendCheckPushNotifications = async (
+  familyRef: FirebaseFirestore.DocumentReference,
+  check: { sessionId: string },
+  resend: boolean,
+) => {
+  const subscriptions = await familyRef.collection('pushSubscriptions').get();
+  if (subscriptions.empty) return;
+  webpush.setVapidDetails('https://www.zadiag.com', vapidPublicKey.value(), vapidPrivateKey.value());
+  await Promise.allSettled(subscriptions.docs.map(async (document) => {
+    const subscription = document.data() as PushSubscription & { locale?: string };
+    const isFrench = subscription.locale === 'fr';
+    try {
+      await webpush.sendNotification(subscription, JSON.stringify({
+        sessionId: check.sessionId,
+        title: 'Zadiag',
+        body: resend
+          ? (isFrench ? 'Un rappel est prêt.' : 'A reminder is ready.')
+          : (isFrench ? 'Un contrôle rapide est prêt.' : 'A quick check is ready.'),
+      }), { TTL: 120 });
+    } catch (error) {
+      const statusCode = (error as { statusCode?: number }).statusCode;
+      if (statusCode === 404 || statusCode === 410) await document.ref.delete();
+      else console.error('Unable to send Web Push notification', error);
+    }
+  }));
 };
 
 export const createFamily = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
@@ -380,28 +409,98 @@ export const requestCheckNow = onCall({
     return { check: { id: checkRef.id, ...check }, resend: false };
   });
 
-  const subscriptions = await familyRef.collection('pushSubscriptions').get();
-  if (!subscriptions.empty) {
-    webpush.setVapidDetails('https://www.zadiag.com', vapidPublicKey.value(), vapidPrivateKey.value());
-    await Promise.allSettled(subscriptions.docs.map(async (document) => {
-      const subscription = document.data() as PushSubscription & { locale?: string };
-      const isFrench = subscription.locale === 'fr';
-      try {
-        await webpush.sendNotification(subscription, JSON.stringify({
-          sessionId: check.sessionId,
-          title: 'Zadiag',
-         body: resend
-           ? (isFrench ? 'Un rappel est prêt.' : 'A reminder is ready.')
-           : (isFrench ? 'Un contrôle rapide est prêt.' : 'A quick check is ready.'),
-       }), { TTL: 120 });
-     } catch (error) {
-       const statusCode = (error as { statusCode?: number }).statusCode;
-       if (statusCode === 404 || statusCode === 410) await document.ref.delete();
-       else console.error('Unable to send Web Push notification', error);
-     }
-    }));
-  }
+  await sendCheckPushNotifications(familyRef, check, resend);
   return check;
+});
+
+export const dispatchPlannedChecks = onSchedule({
+  region,
+  schedule: 'every 5 minutes',
+  timeZone: 'UTC',
+  secrets: [vapidPrivateKey, vapidPublicKey],
+}, async () => {
+  const families = await db.collection('families').get();
+  if (families.empty) return;
+
+  const now = new Date();
+  await Promise.allSettled(families.docs.map(async (familyDoc) => {
+    const familyData = familyDoc.data() as {
+      plan?: typeof defaultPlan;
+      members?: Record<string, string>;
+      activeCheckId?: string;
+      activeCheckExpiresAt?: string;
+    };
+    const hasChild = Object.values(familyData.members ?? {}).includes('child');
+    const plan = familyData.plan ?? defaultPlan;
+    if (!hasChild) return;
+
+    const recentSince = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
+    const recentChecksSnapshot = await familyDoc.ref.collection('checks')
+      .where('requestedAt', '>=', recentSince)
+      .orderBy('requestedAt', 'desc')
+      .get();
+    const recentChecks = recentChecksSnapshot.docs.map((doc) => doc.data() as {
+      requestedAt?: string;
+      status?: string;
+      expiresAt?: string;
+      dispatchKey?: string;
+    });
+    const activePendingCheck = recentChecks.some((check) => {
+      const expiresAt = Date.parse(String(check.expiresAt ?? ''));
+      return check.status === 'pending' && Number.isFinite(expiresAt) && expiresAt > now.getTime();
+    });
+
+    const decision = shouldAutoDispatchCheck(plan, recentChecks, now, plan.timeZone ?? defaultPlan.timeZone, activePendingCheck);
+    if (!decision.shouldDispatch || !decision.windowId || !decision.dispatchKey) return;
+
+    const checkRef = familyDoc.ref.collection('checks').doc();
+    const expiresAt = new Date(now.getTime() + Math.min(120, Math.max(1, plan.expiryMinutes ?? defaultPlan.expiryMinutes)) * 60 * 1000);
+    const check = {
+      sessionId: crypto.randomUUID(),
+      requestedAt: now.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+      status: 'pending',
+      requestedBy: 'system',
+      dispatchKey: decision.dispatchKey,
+      dispatchSource: 'schedule',
+    };
+
+    await db.runTransaction(async (transaction) => {
+      const [freshFamily, activePending] = await Promise.all([
+        transaction.get(familyDoc.ref),
+        transaction.get(familyDoc.ref.collection('checks').where('status', '==', 'pending').limit(5)),
+      ]);
+      if (!freshFamily.exists) return;
+      const freshData = freshFamily.data() as typeof familyData;
+      const stillHasChild = Object.values(freshData.members ?? {}).includes('child');
+      if (!stillHasChild) return;
+      const pendingDocs = activePending.docs.map((doc) => doc.data() as { expiresAt?: string; status?: string });
+      const stillHasActivePending = pendingDocs.some((pending) => {
+        const pendingExpiresAt = Date.parse(String(pending.expiresAt ?? ''));
+        return pending.status === 'pending' && Number.isFinite(pendingExpiresAt) && pendingExpiresAt > now.getTime();
+      });
+      if (stillHasActivePending) return;
+
+      const freshRecentChecks = await transaction.get(familyDoc.ref.collection('checks').where('requestedAt', '>=', recentSince).orderBy('requestedAt', 'desc'));
+      const freshDecision = shouldAutoDispatchCheck(
+        (freshData.plan ?? defaultPlan) as typeof defaultPlan,
+        freshRecentChecks.docs.map((doc) => doc.data() as { requestedAt?: string; status?: string; dispatchKey?: string }),
+        now,
+        (freshData.plan?.timeZone ?? defaultPlan.timeZone),
+        stillHasActivePending,
+      );
+      if (!freshDecision.shouldDispatch || freshDecision.dispatchKey !== decision.dispatchKey) return;
+
+      transaction.create(checkRef, check);
+      transaction.update(familyDoc.ref, {
+        activeCheckId: checkRef.id,
+        activeCheckExpiresAt: expiresAt.toISOString(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    });
+
+    await sendCheckPushNotifications(familyDoc.ref, { sessionId: check.sessionId }, false);
+  }));
 });
 
 export const updatePlan = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
