@@ -43,6 +43,7 @@ const defaultPlan = {
   timeZone: 'Europe/Paris',
 };
 const recoveryLifetimeMs = 90 * 24 * 60 * 60 * 1000;
+const maxImageDataUrlLength = 5 * 1024 * 1024;
 const createRecoveryRecord = (familyId: string, expiresAt: Date) => ({
   familyId,
   expiresAt: expiresAt.toISOString(),
@@ -561,10 +562,25 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
   if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'child') {
     throw new HttpsError('permission-denied', 'Only the linked child can submit this check.');
   }
-  if (!imageDataUrl.startsWith('data:image/')) {
+  if (!/^data:image\/(?:jpeg|png|webp);base64,/.test(imageDataUrl) || imageDataUrl.length > maxImageDataUrlLength) {
     throw new HttpsError('invalid-argument', 'A valid image is required.');
   }
   const checkRef = db.collection('families').doc(familyId).collection('checks').doc(checkId);
+  await db.runTransaction(async (transaction) => {
+    const check = await transaction.get(checkRef);
+    const checkData = check.data();
+    if (!check.exists || !checkData || !isFreshCheckSubmission(checkData, capturedAt)) {
+      throw new HttpsError('failed-precondition', 'This check is expired, completed, or invalid.');
+    }
+    if (checkData.status !== 'pending') {
+      throw new HttpsError('already-exists', 'This check is already being analyzed.');
+    }
+    transaction.update(checkRef, {
+      capturedAt,
+      status: 'analyzing',
+      analysisStartedAt: FieldValue.serverTimestamp(),
+    });
+  });
   const fallbackResult: Partial<AnalysisResult> = {
     status: 'uncertain',
     reason: 'analysis_unavailable',
@@ -603,8 +619,8 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
   const response = await db.runTransaction(async (transaction) => {
     const check = await transaction.get(checkRef);
     const checkData = check.data();
-    if (!check.exists || !checkData || !isFreshCheckSubmission(checkData, capturedAt)) {
-      throw new HttpsError('failed-precondition', 'This check is expired, completed, or invalid.');
+    if (!check.exists || !checkData || checkData.status !== 'analyzing' || checkData.capturedAt !== capturedAt) {
+      throw new HttpsError('failed-precondition', 'This check is no longer awaiting this analysis.');
     }
     transaction.update(checkRef, analysisUpdate);
     transaction.update(db.collection('families').doc(familyId), {
