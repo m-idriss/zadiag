@@ -157,6 +157,19 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .link-page .setup-progress { margin-top: -30px; margin-left: 54px; }
 .link-version { align-self: center; color: var(--ion-color-medium); margin-top: 4px; }
 
+.routine-list { display: grid; gap: 14px; }
+.routine-card { display: grid; gap: 16px; }
+.routine-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.routine-card-heading p { margin: 5px 0 0; font-size: 13px; }
+.routine-status { flex: 0 0 auto; padding: 5px 9px; border-radius: 999px; background: var(--mint); color: var(--teal); font-size: 11px; font-weight: 900; }
+.routine-status.paused { background: #fff3dc; color: #a56612; }
+.routine-status.completed { background: #eef2f3; color: var(--muted); }
+.routine-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.routine-metrics span { padding: 11px; border-radius: 14px; background: #f5f8f7; color: var(--muted); font-size: 12px; }
+.routine-metrics b { display: block; color: var(--navy); font-size: 18px; }
+.routine-next { margin: 0; font-size: 13px; font-weight: 800; color: var(--teal) !important; }
+.empty-state { padding: 30px 18px; text-align: center; }
+
 .app-shell { position: relative; height: 100dvh; overflow: hidden; background: var(--cream); }
 .app-shell > .content-screen { height: 100%; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
 .screen-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }

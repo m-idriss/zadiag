@@ -8,6 +8,7 @@ import { LinkScreen } from './screens/LinkScreen';
 import { ParentDashboard } from './screens/ParentDashboard';
 import { ChildDashboard } from './screens/ChildDashboard';
 import { HistoryScreen } from './screens/HistoryScreen';
+import { RoutinesScreen } from './screens/RoutinesScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { CameraScreen } from './screens/CameraScreen';
 import { ResultScreen } from './screens/ResultScreen';
@@ -226,6 +227,8 @@ export function App() {
     const role = state.role ?? 'child';
     const screen = tab === 'history'
       ? <HistoryScreen events={state.events} locale={state.locale} t={t} />
+      : tab === 'routines' && role === 'child'
+        ? <RoutinesScreen state={state} t={t} />
       : tab === 'settings'
         ? <SettingsScreen
             enableNotifications={enableNotifications}

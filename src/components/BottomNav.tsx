@@ -1,6 +1,6 @@
 import type { MessageKey } from '../services/i18n';
 
-export type Tab = 'home' | 'history' | 'settings';
+export type Tab = 'home' | 'history' | 'routines' | 'settings';
 
 export function BottomNav({
   tab,
@@ -13,11 +13,17 @@ export function BottomNav({
   onChange: (tab: Tab) => void;
   t: (key: MessageKey) => string;
 }) {
-  const items: { tab: Tab; icon: string; label: string }[] = [
-    { tab: 'home', icon: role === 'parent' ? '▦' : '☀', label: role === 'parent' ? t('overview') : t('today') },
-    { tab: 'history', icon: '◷', label: role === 'parent' ? t('history') : t('progress') },
-    { tab: 'settings', icon: '⚙', label: t('settings') },
-  ];
+  const items: { tab: Tab; icon: string; label: string }[] = role === 'parent'
+    ? [
+        { tab: 'home', icon: '▦', label: t('overview') },
+        { tab: 'history', icon: '◷', label: t('history') },
+        { tab: 'settings', icon: '⚙', label: t('settings') },
+      ]
+    : [
+        { tab: 'home', icon: '☀', label: t('today') },
+        { tab: 'routines', icon: '▣', label: t('routines') },
+        { tab: 'settings', icon: '⚙', label: t('settings') },
+      ];
   return (
     <nav className="bottom-nav" aria-label="Primary navigation">
       {items.map((item) => (
