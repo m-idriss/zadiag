@@ -10,6 +10,7 @@ export function SettingsScreen({
   t,
   locale,
   setLocale,
+  forceAppUpdate,
   reset,
   role,
   enableNotifications,
@@ -26,6 +27,7 @@ export function SettingsScreen({
   t: (key: MessageKey) => string;
   locale: Locale;
   setLocale: (locale: Locale) => Promise<void>;
+  forceAppUpdate: () => Promise<void>;
   reset: () => void;
   role: Role;
   enableNotifications: () => Promise<void>;
@@ -44,6 +46,8 @@ export function SettingsScreen({
     notificationsEnabled ? 'enabled' : 'idle',
   );
   const [mailError, setMailError] = useState(false);
+  const [updatingApp, setUpdatingApp] = useState(false);
+  const [updateError, setUpdateError] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [codeError, setCodeError] = useState(false);
 
@@ -94,6 +98,17 @@ export function SettingsScreen({
     } catch (error) {
       console.error(error);
       setMailError(true);
+    }
+  };
+  const forceUpdate = async () => {
+    setUpdateError(false);
+    setUpdatingApp(true);
+    try {
+      await forceAppUpdate();
+    } catch (error) {
+      console.error(error);
+      setUpdateError(true);
+      setUpdatingApp(false);
     }
   };
   const notificationEnabled = notificationState === 'enabled';
@@ -181,6 +196,24 @@ export function SettingsScreen({
         <div>
           <IonButton className="settings-inline-action settings-inline-action-contained" size="small" onClick={sendDiagnosticsEmail}>
             {t('settingsDebugMailSend')}
+          </IonButton>
+        </div>
+      </section>
+      <section className="card history-row settings-history-row">
+        <div className="history-icon settings-history-icon" aria-hidden="true">⟳</div>
+        <div>
+          <strong>{t('settingsUpdateTitle')}</strong>
+          <small>{t('settingsUpdateDetail')}</small>
+          {updateError ? <small className="settings-action-error">{t('settingsUpdateError')}</small> : null}
+        </div>
+        <div>
+          <IonButton
+            className="settings-inline-action settings-inline-action-contained"
+            size="small"
+            disabled={updatingApp}
+            onClick={() => { void forceUpdate(); }}
+          >
+            {updatingApp ? t('settingsUpdateChecking') : t('settingsUpdateAction')}
           </IonButton>
         </div>
       </section>

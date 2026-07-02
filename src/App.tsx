@@ -124,6 +124,29 @@ export function App() {
     const subscription = await push.subscribe();
     await repository.savePushSubscription(subscription.toJSON());
   };
+  const forceAppUpdate = async () => {
+    if (!('serviceWorker' in navigator)) {
+      window.location.reload();
+      return;
+    }
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (!registration) {
+      window.location.reload();
+      return;
+    }
+    await registration.update();
+    if (registration.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      await new Promise<void>((resolve) => {
+        const timer = window.setTimeout(resolve, 1500);
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          window.clearTimeout(timer);
+          resolve();
+        }, { once: true });
+      });
+    }
+    window.location.reload();
+  };
 
   let content: React.ReactNode;
   if (route === 'install') {
@@ -186,6 +209,7 @@ export function App() {
             regenerateLinkCode={async () => { await repository.regenerateLinkCode(); sync(); }}
             locale={state.locale}
             setLocale={async (locale) => { await repository.setLocale(locale); sync(); }}
+            forceAppUpdate={forceAppUpdate}
             reset={() => { void reset(); }}
             role={role}
             t={t}

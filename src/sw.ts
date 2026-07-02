@@ -16,6 +16,12 @@ self.addEventListener('activate', (event: ExtendableEvent) => {
   event.waitUntil(self.clients.claim());
 });
 
+self.addEventListener('message', (event: ExtendableMessageEvent) => {
+  if ((event.data as { type?: string } | undefined)?.type === 'SKIP_WAITING') {
+    void self.skipWaiting();
+  }
+});
+
 self.addEventListener('push', (event: PushEvent) => {
   const payload = event.data?.json() as { sessionId?: string; title?: string; body?: string } | undefined;
   event.waitUntil(
