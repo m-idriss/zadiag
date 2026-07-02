@@ -103,8 +103,11 @@ const buildPrompt = (locale: AnalysisLocale, retry: boolean) => [
   'Keys: status, confidence, imageQuality, reason.',
   'status must be detected, not_detected, or uncertain.',
   locale === 'fr'
-    ? 'The reason field must be written in French.'
-    : 'The reason field must be written in English.',
+    ? 'The reason field must be a natural French sentence, with no English words.'
+    : 'The reason field must be a natural English sentence, with no French words.',
+  locale === 'fr'
+    ? 'Example reason: "Aucun appareil de traitement n’est visible sur les dents."'
+    : 'Example reason: "No treatment aid is visible on the teeth."',
   retry ? 'Only use not_detected if you are genuinely confident the aid is not visible.' : '',
 ].filter(Boolean).join(' ');
 

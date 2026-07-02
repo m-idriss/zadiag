@@ -10,6 +10,8 @@ export function StatusPill({
 }) {
   const label = status === 'detected'
     ? t('elasticsVisible')
+    : status === 'not_detected'
+      ? t('notDetected')
     : status === 'uncertain'
       ? t('uncertain')
       : status === 'missed'
