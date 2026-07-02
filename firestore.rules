@@ -28,5 +28,13 @@ service cloud.firestore {
     match /linkCodes/{codeHash} {
       allow read, write: if false;
     }
+
+    match /parentRecoveryCodes/{codeHash} {
+      allow read, write: if false;
+    }
+
+    match /recoveryAttempts/{userId} {
+      allow read, write: if false;
+    }
   }
 }

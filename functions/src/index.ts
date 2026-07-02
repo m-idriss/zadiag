@@ -3,7 +3,7 @@ import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import webpush, { type PushSubscription } from 'web-push';
-import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, isFreshCheckSubmission, normalizeLinkCode } from './helpers.js';
+import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, normalizeLinkCode } from './helpers.js';
 
 initializeApp();
 const db = getFirestore();
@@ -34,6 +34,30 @@ const defaultPlan = {
   expiryMinutes: 20,
   timeZone: 'Europe/Paris',
 };
+const recoveryLifetimeMs = 90 * 24 * 60 * 60 * 1000;
+
+const createRecoveryRecord = (familyId: string, expiresAt: Date) => ({
+  familyId,
+  expiresAt: expiresAt.toISOString(),
+  createdAt: new Date().toISOString(),
+});
+
+const recordRecoveryAttempt = async (uid: string) => {
+  const attemptRef = db.collection('recoveryAttempts').doc(uid);
+  await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(attemptRef);
+    const data = snapshot.data();
+    const windowStartedAt = Date.parse(String(data?.windowStartedAt ?? ''));
+    const inWindow = Number.isFinite(windowStartedAt) && Date.now() - windowStartedAt < 15 * 60 * 1000;
+    const attempts = inWindow ? Number(data?.attempts ?? 0) : 0;
+    if (attempts >= 5) throw new HttpsError('resource-exhausted', 'Too many recovery attempts. Try again later.');
+    transaction.set(attemptRef, {
+      attempts: attempts + 1,
+      windowStartedAt: inWindow ? data?.windowStartedAt : new Date().toISOString(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  });
+};
 
 export const createFamily = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
@@ -48,6 +72,8 @@ export const createFamily = onCall({ region, cors, enforceAppCheck: true }, asyn
   const linkRef = db.collection('linkCodes').doc(hashLinkCode(code));
   const recoveryCode = createRecoveryCode();
   const now = new Date();
+  const recoveryExpiresAt = new Date(now.getTime() + recoveryLifetimeMs);
+  const recoveryRef = db.collection('parentRecoveryCodes').doc(hashLinkCode(recoveryCode));
   const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const checkExpiresAt = new Date(now.getTime() + defaultPlan.expiryMinutes * 60 * 1000);
 
@@ -61,6 +87,7 @@ export const createFamily = onCall({ region, cors, enforceAppCheck: true }, asyn
       activeCheckId: checkRef.id,
       activeCheckExpiresAt: checkExpiresAt.toISOString(),
       parentRecoveryCode: recoveryCode,
+      parentRecoveryCodeExpiresAt: recoveryExpiresAt.toISOString(),
       createdAt: now.toISOString(),
     });
     transaction.create(userRef, {
@@ -76,6 +103,7 @@ export const createFamily = onCall({ region, cors, enforceAppCheck: true }, asyn
       expiresAt: expiresAt.toISOString(),
       consumedAt: null,
     });
+    transaction.create(recoveryRef, createRecoveryRecord(familyRef.id, recoveryExpiresAt));
     transaction.create(checkRef, {
       sessionId: crypto.randomUUID(),
       requestedAt: now.toISOString(),
@@ -89,30 +117,93 @@ export const createFamily = onCall({ region, cors, enforceAppCheck: true }, asyn
 export const recoverParent = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
   const code = normalizeLinkCode(String(request.data?.code ?? ''));
-  if (!/^PR-\d{6}$/.test(code)) throw new HttpsError('invalid-argument', 'The recovery code is invalid.');
+  if (!isRecoveryCode(code) && !isLegacyRecoveryCode(code)) throw new HttpsError('invalid-argument', 'The recovery code is invalid.');
+  await recordRecoveryAttempt(uid);
   const userRef = db.collection('users').doc(uid);
-  const families = await db.collection('families').where('parentRecoveryCode', '==', code).limit(1).get();
-  const familyDoc = families.docs[0];
-  if (!familyDoc) throw new HttpsError('not-found', 'The recovery code is invalid.');
+  const recoveryRef = isRecoveryCode(code)
+    ? db.collection('parentRecoveryCodes').doc(hashLinkCode(code))
+    : undefined;
+  const recovery = recoveryRef ? await recoveryRef.get() : undefined;
+  const legacyFamilies = recoveryRef
+    ? undefined
+    : await db.collection('families').where('parentRecoveryCode', '==', code).limit(1).get();
+  const familyId = recovery?.exists ? String(recovery.data()?.familyId ?? '') : legacyFamilies?.docs[0]?.id;
+  const familyDoc = familyId ? await db.collection('families').doc(familyId).get() : undefined;
+  if (!familyDoc?.exists) throw new HttpsError('not-found', 'The recovery code is invalid.');
+  if (recovery && (!recovery.exists || Date.parse(String(recovery.data()?.expiresAt ?? '')) <= Date.now())) {
+    throw new HttpsError('failed-precondition', 'The recovery code has expired.');
+  }
 
   const familyRef = familyDoc.ref;
+  const nextCode = createRecoveryCode();
+  const nextExpiresAt = new Date(Date.now() + recoveryLifetimeMs);
+  const nextRecoveryRef = db.collection('parentRecoveryCodes').doc(hashLinkCode(nextCode));
   await db.runTransaction(async (transaction) => {
     const [existingUser, family] = await Promise.all([transaction.get(userRef), transaction.get(familyRef)]);
-    if (existingUser.exists && existingUser.data()?.familyId === familyRef.id && existingUser.data()?.role === 'parent') {
-      return;
-    }
     if (existingUser.exists && existingUser.data()?.familyId !== familyRef.id) {
       throw new HttpsError('already-exists', 'This account already belongs to a family.');
     }
+    if (existingUser.exists && existingUser.data()?.role !== 'parent') {
+      throw new HttpsError('already-exists', 'This device already uses the child profile.');
+    }
     if (!family.exists) throw new HttpsError('not-found', 'The family could not be found.');
-    transaction.update(familyRef, { [`members.${uid}`]: 'parent', updatedAt: FieldValue.serverTimestamp() });
+    const previousParentIds = Object.entries((family.data()?.members ?? {}) as Record<string, string>)
+      .filter(([memberId, role]) => role === 'parent' && memberId !== uid)
+      .map(([memberId]) => memberId);
+    const familyUpdate: Record<string, unknown> = {
+      [`members.${uid}`]: 'parent',
+      parentRecoveryCode: nextCode,
+      parentRecoveryCodeExpiresAt: nextExpiresAt.toISOString(),
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+    previousParentIds.forEach((memberId) => { familyUpdate[`members.${memberId}`] = FieldValue.delete(); });
+    transaction.update(familyRef, familyUpdate);
+    previousParentIds.forEach((memberId) => transaction.delete(db.collection('users').doc(memberId)));
     transaction.set(userRef, {
       familyId: familyRef.id,
       role: 'parent',
       recoveredAt: new Date().toISOString(),
     });
+    transaction.create(nextRecoveryRef, createRecoveryRecord(familyRef.id, nextExpiresAt));
+    if (recoveryRef) transaction.delete(recoveryRef);
+    transaction.delete(db.collection('recoveryAttempts').doc(uid));
   });
-  return { familyId: familyRef.id, childName: String(familyDoc.data().childName ?? '') };
+  return { familyId: familyRef.id, childName: String(familyDoc.data()?.childName ?? ''), recoveryCode: nextCode };
+});
+
+export const ensureParentRecoveryCode = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = requireUid(request.auth);
+  const familyId = String(request.data?.familyId ?? '');
+  const familyRef = db.collection('families').doc(familyId);
+  const profileRef = db.collection('users').doc(uid);
+  const [family, profile] = await Promise.all([familyRef.get(), profileRef.get()]);
+  if (!family.exists || !profile.exists || profile.data()?.familyId !== familyId) {
+    throw new HttpsError('permission-denied', 'Only a family member can refresh the recovery code.');
+  }
+  const existingCode = String(family.data()?.parentRecoveryCode ?? '');
+  const existingExpiry = Date.parse(String(family.data()?.parentRecoveryCodeExpiresAt ?? ''));
+  if (isRecoveryCode(existingCode) && existingExpiry > Date.now()) return { recoveryCode: existingCode };
+
+  const recoveryCode = createRecoveryCode();
+  const expiresAt = new Date(Date.now() + recoveryLifetimeMs);
+  const recoveryRef = db.collection('parentRecoveryCodes').doc(hashLinkCode(recoveryCode));
+  await db.runTransaction(async (transaction) => {
+    const current = await transaction.get(familyRef);
+    const currentCode = String(current.data()?.parentRecoveryCode ?? '');
+    const currentExpiry = Date.parse(String(current.data()?.parentRecoveryCodeExpiresAt ?? ''));
+    if (isRecoveryCode(currentCode) && currentExpiry > Date.now()) return;
+    transaction.update(familyRef, {
+      parentRecoveryCode: recoveryCode,
+      parentRecoveryCodeExpiresAt: expiresAt.toISOString(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    transaction.create(recoveryRef, createRecoveryRecord(familyId, expiresAt));
+    if (isRecoveryCode(currentCode)) {
+      transaction.delete(db.collection('parentRecoveryCodes').doc(hashLinkCode(currentCode)));
+    }
+  });
+  const refreshed = await familyRef.get();
+  return { recoveryCode: String(refreshed.data()?.parentRecoveryCode ?? recoveryCode) };
 });
 
 export const joinFamily = onCall({ region, cors, enforceAppCheck: true }, async (request) => {

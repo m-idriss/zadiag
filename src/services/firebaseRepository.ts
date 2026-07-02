@@ -104,8 +104,9 @@ export class FirebaseRepository implements AppRepository {
   }
 
   async recoverParent(code: string) {
-    const recoverParent = httpsCallable<{ code: string }, { familyId: string; childName: string }>(this.services.functions, 'recoverParent');
+    const recoverParent = httpsCallable<{ code: string }, { familyId: string; childName: string; recoveryCode: string }>(this.services.functions, 'recoverParent');
     const result = await recoverParent({ code: code.trim().toUpperCase() });
+    this.state.family.parentRecoveryCode = result.data.recoveryCode;
     await this.attachFamily(result.data.familyId, 'parent');
   }
 
@@ -206,6 +207,16 @@ export class FirebaseRepository implements AppRepository {
       childLinked: role === 'child',
       consented: role === 'parent',
     };
+    try {
+      const ensureRecoveryCode = httpsCallable<{ familyId: string }, { recoveryCode: string }>(
+        this.services.functions,
+        'ensureParentRecoveryCode',
+      );
+      const recovery = await ensureRecoveryCode({ familyId });
+      this.state.family.parentRecoveryCode = recovery.data.recoveryCode;
+    } catch (error) {
+      console.error('Unable to refresh the parent recovery code', error);
+    }
     const familyRef = doc(this.services.db, 'families', familyId);
     this.remoteSubscriptions.push(onSnapshot(familyRef, (snapshot) => {
       if (!snapshot.exists()) return;

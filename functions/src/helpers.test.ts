@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { assertChildName, createLinkCode, hashLinkCode, isFreshCheckSubmission, normalizeLinkCode } from './helpers.js';
+import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, normalizeLinkCode } from './helpers.js';
 
 test('normalizes and hashes codes consistently', () => {
   assert.equal(normalizeLinkCode(' zd-123456 '), 'ZD-123456');
@@ -9,6 +9,9 @@ test('normalizes and hashes codes consistently', () => {
 
 test('creates a non-ambiguous code shape', () => {
   assert.match(createLinkCode(), /^ZD-\d{6}$/);
+  assert.equal(isRecoveryCode(createRecoveryCode()), true);
+  assert.equal(isRecoveryCode('PR-O0II-1111-AAAA'), false);
+  assert.equal(isLegacyRecoveryCode('PR-123456'), true);
 });
 
 test('validates child names', () => {
