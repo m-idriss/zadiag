@@ -45,6 +45,8 @@ const initialState = (): AppState => {
     role: preferences.role,
     family: { linked: false, childLinked: false, childName: '', linkingCode: '', parentRecoveryCode: '', consented: false },
     routineAssignments: [],
+    routinesLoaded: false,
+    routinesError: false,
     events: [],
   };
 };
@@ -266,6 +268,13 @@ export class FirebaseRepository implements AppRepository {
     const assignments = query(collection(familyRef, 'routineAssignments'), orderBy('assignedAt', 'asc'));
     this.remoteSubscriptions.push(onSnapshot(assignments, (snapshot) => {
       this.state.routineAssignments = snapshot.docs.map((item) => asRoutineAssignment(item.id, item.data()));
+      this.state.routinesLoaded = true;
+      this.state.routinesError = false;
+      this.emit();
+    }, (error) => {
+      console.error('Unable to load routine assignments', error);
+      this.state.routinesLoaded = true;
+      this.state.routinesError = true;
       this.emit();
     }));
     const checks = query(collection(familyRef, 'checks'), orderBy('requestedAt', 'desc'));

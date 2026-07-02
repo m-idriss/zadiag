@@ -74,6 +74,8 @@ function initialState(): AppState {
       consented: false,
     },
     routineAssignments: [createDefaultRoutineAssignment()],
+    routinesLoaded: true,
+    routinesError: false,
     events: seedEvents(),
   };
 }

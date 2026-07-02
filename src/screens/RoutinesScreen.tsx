@@ -14,6 +14,9 @@ export function RoutinesScreen({ state, t }: { state: AppState; t: (key: Message
   const selected = state.routineAssignments.find((assignment) => assignment.id === selectedId);
   if (selected) return <RoutineDetailScreen assignment={selected} state={state} back={() => setSelectedId(undefined)} t={t} />;
 
+  if (state.routinesLoaded === false) return <div className="content-screen routines-state" role="status"><p>{t('loadingRoutines')}</p></div>;
+  if (state.routinesError) return <div className="content-screen routines-state" role="alert"><p>{t('routinesLoadError')}</p></div>;
+
   return (
     <div className="content-screen routines-screen">
       <header className="screen-header">

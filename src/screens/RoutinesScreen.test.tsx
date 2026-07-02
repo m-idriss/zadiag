@@ -27,6 +27,21 @@ describe('participant routines navigation', () => {
     expect(container.textContent).toContain('Today');
     expect(container.textContent).toContain('Routines');
     expect(container.textContent).not.toContain('My progress');
+    expect(container.querySelector('nav')?.getAttribute('aria-label')).toBe('Primary navigation');
+    expect(container.querySelector('button[aria-current="page"]')?.textContent).toContain('Today');
+  });
+
+  it('announces routine loading and error states', () => {
+    const state = {
+      role: 'child' as const, locale: 'en' as const, notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: false },
+      routineAssignments: [], events: [], routinesLoaded: false, routinesError: false,
+    };
+    act(() => root.render(<RoutinesScreen state={state} t={(key) => translate('en', key)} />));
+    expect(container.querySelector('[role="status"]')?.textContent).toContain('Loading routines');
+
+    act(() => root.render(<RoutinesScreen state={{ ...state, routinesLoaded: true, routinesError: true }} t={(key) => translate('en', key)} />));
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('could not be loaded');
   });
 
   it('shows the assigned routine frequency, completion and next task', () => {

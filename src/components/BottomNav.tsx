@@ -25,11 +25,13 @@ export function BottomNav({
         { tab: 'settings', icon: '⚙', label: t('settings') },
       ];
   return (
-    <nav className="bottom-nav" aria-label="Primary navigation">
+    <nav className="bottom-nav" aria-label={t('primaryNavigation')}>
       {items.map((item) => (
         <button
+          type="button"
           key={item.tab}
           className={tab === item.tab ? 'active' : ''}
+          aria-current={tab === item.tab ? 'page' : undefined}
           onClick={() => onChange(item.tab)}
         >
           <span>{item.icon}</span>{item.label}

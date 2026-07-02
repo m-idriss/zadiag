@@ -254,6 +254,9 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .bottom-nav button { flex: 1; border: 0; background: transparent; color: #78858d; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; font-weight: 800; }
 .bottom-nav button span { font-size: 21px; }
 .bottom-nav button.active { color: var(--teal); }
+.bottom-nav button:focus-visible { outline: 3px solid rgba(29, 138, 122, .35); outline-offset: 2px; border-radius: 10px; }
+.routines-state { display: grid; place-items: center; text-align: center; }
+.routines-state p { max-width: 30ch; }
 
 .settings-screen { display: grid; align-content: start; gap: 14px; }
 .settings-screen .screen-header { margin-bottom: 6px; }

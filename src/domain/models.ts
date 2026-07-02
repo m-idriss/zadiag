@@ -74,6 +74,8 @@ export interface AppState {
   notificationsEnabled: boolean;
   family: FamilyState;
   routineAssignments: RoutineAssignment[];
+  routinesLoaded?: boolean;
+  routinesError?: boolean;
   events: VerificationEvent[];
 }
 
