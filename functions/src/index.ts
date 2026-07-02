@@ -7,7 +7,7 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, normalizeLinkCode } from './helpers.js';
 import { analyzeWithGemini, localizeAnalysisReason, type AnalysisResult } from './analysis.js';
-import { getLocalDateKey, getWindowForDate, shouldAutoDispatchCheck } from './planning.js';
+import { getLocalDateKey, getWindowForDate, monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
 
 initializeApp();
 const db = getFirestore();
@@ -548,7 +548,9 @@ export const updatePlan = onCall({ region, cors, enforceAppCheck: true }, async 
   if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'parent') {
     throw new HttpsError('permission-denied', 'Only the parent can update this plan.');
   }
-  await db.collection('families').doc(familyId).update({ plan: request.data.plan, updatedAt: FieldValue.serverTimestamp() });
+  const parsedPlan = monitoringPlanSchema.safeParse(request.data?.plan);
+  if (!parsedPlan.success) throw new HttpsError('invalid-argument', 'The monitoring plan is invalid.');
+  await db.collection('families').doc(familyId).update({ plan: parsedPlan.data, updatedAt: FieldValue.serverTimestamp() });
 });
 
 export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, async (request) => {

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { shouldAutoDispatchCheck } from './planning.js';
+import { monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
 
 const plan = {
   checksPerDay: 3,
@@ -13,6 +13,17 @@ const plan = {
   expiryMinutes: 20,
   timeZone: 'Europe/Paris',
 };
+
+test('validates monitoring plans at the callable boundary', () => {
+  assert.equal(monitoringPlanSchema.safeParse(plan).success, true);
+  assert.equal(monitoringPlanSchema.safeParse({ ...plan, timeZone: 'Not/AZone' }).success, false);
+  assert.equal(monitoringPlanSchema.safeParse({ ...plan, expiryMinutes: 0 }).success, false);
+  assert.equal(monitoringPlanSchema.safeParse({ ...plan, weekdays: [1, 1] }).success, false);
+  assert.equal(monitoringPlanSchema.safeParse({
+    ...plan,
+    windows: [{ id: 'invalid', start: '20:00', end: '08:00' }],
+  }).success, false);
+});
 
 test('allows a check inside the current window when quota is available', () => {
   const now = new Date('2026-07-02T06:45:00.000Z');

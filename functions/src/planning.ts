@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export interface MonitoringPlan {
   checksPerDay: number;
   weekdays: number[];
@@ -5,6 +7,43 @@ export interface MonitoringPlan {
   expiryMinutes: number;
   timeZone: string;
 }
+
+const timePattern = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+const minutesForTime = (value: string) => {
+  const [hours, minutes] = value.split(':').map(Number);
+  return hours * 60 + minutes;
+};
+
+const timeWindowSchema = z.object({
+  id: z.string().trim().min(1).max(40).regex(/^[a-z0-9_-]+$/i),
+  start: z.string().regex(timePattern),
+  end: z.string().regex(timePattern),
+}).strict().refine((window) => minutesForTime(window.start) < minutesForTime(window.end), {
+  message: 'Window end must be after its start.',
+});
+
+export const monitoringPlanSchema = z.object({
+  checksPerDay: z.number().int().min(1).max(12),
+  weekdays: z.array(z.number().int().min(1).max(7)).min(1).max(7)
+    .refine((days) => new Set(days).size === days.length, { message: 'Weekdays must be unique.' }),
+  windows: z.array(timeWindowSchema).min(1).max(12),
+  expiryMinutes: z.number().int().min(1).max(120),
+  timeZone: z.string().min(1).max(100).refine((timeZone) => {
+    try {
+      new Intl.DateTimeFormat('en-US', { timeZone }).format();
+      return true;
+    } catch {
+      return false;
+    }
+  }, { message: 'Invalid time zone.' }),
+}).strict().superRefine((plan, context) => {
+  if (plan.checksPerDay > plan.windows.length) {
+    context.addIssue({ code: 'custom', path: ['checksPerDay'], message: 'Checks per day cannot exceed the number of windows.' });
+  }
+  if (new Set(plan.windows.map((window) => window.id)).size !== plan.windows.length) {
+    context.addIssue({ code: 'custom', path: ['windows'], message: 'Window IDs must be unique.' });
+  }
+});
 
 export interface PlannedCheckRecord {
   requestedAt?: string;
