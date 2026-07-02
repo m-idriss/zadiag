@@ -40,6 +40,7 @@ const defaultPlan = {
 const recoveryLifetimeMs = 90 * 24 * 60 * 60 * 1000;
 const analysisSchema = z.object({
   status: z.enum(['detected', 'not_detected', 'uncertain']),
+  analysisSource: z.enum(['ai', 'fallback']).optional(),
   confidence: z.number().min(0).max(1),
   imageQuality: z.number().min(0).max(1),
   reason: z.string().min(1).max(220),
@@ -433,13 +434,12 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true, secret
     throw new HttpsError('invalid-argument', 'A valid image is required.');
   }
   const checkRef = db.collection('families').doc(familyId).collection('checks').doc(checkId);
-  const fallbackResult: AnalysisResult = {
-    status: 'uncertain' as const,
-    confidence: 0.32,
-    imageQuality: 0.5,
+  const fallbackResult: Partial<AnalysisResult> = {
+    status: 'uncertain',
+    analysisSource: 'fallback',
     reason: 'analysis_unavailable',
   };
-  let result = fallbackResult;
+  let result: Partial<AnalysisResult> = fallbackResult;
   try {
     const aiResult = await generateText({
       model: gateway('google/gemini-3.1-flash-image-preview'),
@@ -476,19 +476,27 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true, secret
   } catch (error) {
     console.error('AI analysis failed, returning fallback result', error);
   }
+  const analysisUpdate = {
+    capturedAt,
+    status: result.status ?? 'uncertain',
+    analysisSource: result.analysisSource ?? 'ai',
+    ...(result.confidence !== undefined ? { confidence: result.confidence } : {}),
+    ...(result.imageQuality !== undefined ? { imageQuality: result.imageQuality } : {}),
+    ...(result.reason ? { reason: result.reason } : {}),
+  };
   const response = await db.runTransaction(async (transaction) => {
     const check = await transaction.get(checkRef);
     const checkData = check.data();
     if (!check.exists || !checkData || !isFreshCheckSubmission(checkData, capturedAt)) {
       throw new HttpsError('failed-precondition', 'This check is expired, completed, or invalid.');
     }
-    transaction.update(checkRef, { ...result, capturedAt });
+    transaction.update(checkRef, analysisUpdate);
     transaction.update(db.collection('families').doc(familyId), {
       activeCheckId: FieldValue.delete(),
       activeCheckExpiresAt: FieldValue.delete(),
       updatedAt: FieldValue.serverTimestamp(),
     });
-    return { id: check.id, ...checkData, capturedAt, ...result };
+    return { id: check.id, ...checkData, ...analysisUpdate };
   });
   return response;
 });

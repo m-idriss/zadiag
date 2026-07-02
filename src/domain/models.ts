@@ -30,6 +30,7 @@ export interface VerificationEvent {
   expiresAt: string;
   capturedAt?: string;
   status: VerificationStatus;
+  analysisSource?: 'ai' | 'fallback';
   confidence?: number;
   imageQuality?: number;
   reason?: string;
@@ -56,6 +57,7 @@ export interface AppState {
 
 export interface AnalysisResult {
   status: Extract<VerificationStatus, 'detected' | 'not_detected' | 'uncertain'>;
+  analysisSource?: 'ai' | 'fallback';
   confidence: number;
   imageQuality: number;
   reason?: string;

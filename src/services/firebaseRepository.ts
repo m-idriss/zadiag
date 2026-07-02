@@ -50,6 +50,7 @@ const asEvent = (id: string, data: DocumentData): VerificationEvent => ({
   expiresAt: String(data.expiresAt),
   capturedAt: data.capturedAt ? String(data.capturedAt) : undefined,
   status: data.status,
+  analysisSource: data.analysisSource,
   confidence: data.confidence,
   imageQuality: data.imageQuality,
   reason: data.reason,
