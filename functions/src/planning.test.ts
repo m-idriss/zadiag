@@ -79,3 +79,27 @@ test('blocks outside configured windows and when quota is reached', () => {
   assert.equal(quotaReached.shouldDispatch, false);
   assert.equal(quotaReached.reason, 'quota_reached');
 });
+
+test('evaluates active checks and dispatch keys independently per routine', () => {
+  const now = new Date('2026-07-02T06:45:00.000Z');
+  const elasticsChecks = [{
+    requestedAt: '2026-07-02T06:35:00.000Z',
+    status: 'pending',
+    dispatchKey: '2026-07-02_morning',
+  }];
+  const medicationChecks: Array<{ requestedAt?: string; status?: string; dispatchKey?: string }> = [];
+
+  const elastics = shouldAutoDispatchCheck(plan, elasticsChecks, now, plan.timeZone, true);
+  const medication = shouldAutoDispatchCheck(plan, medicationChecks, now, plan.timeZone, false);
+
+  assert.equal(elastics.reason, 'active_check');
+  assert.equal(medication.shouldDispatch, true);
+  assert.equal(medication.dispatchKey, '2026-07-02_morning');
+
+  const retriedMedication = shouldAutoDispatchCheck(plan, [{
+    requestedAt: now.toISOString(),
+    status: 'pending',
+    dispatchKey: medication.dispatchKey,
+  }], now, plan.timeZone, false);
+  assert.equal(retriedMedication.reason, 'already_dispatched');
+});

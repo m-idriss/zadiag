@@ -104,7 +104,7 @@ const recordRecoveryAttempt = async (uid: string) => {
 
 const sendCheckPushNotifications = async (
   familyRef: FirebaseFirestore.DocumentReference,
-  check: { sessionId: string },
+  check: { sessionId: string; routineId: string; routineName: string },
   resend: boolean,
 ) => {
   const subscriptions = await familyRef.collection('pushSubscriptions').get();
@@ -116,10 +116,11 @@ const sendCheckPushNotifications = async (
     try {
       await webpush.sendNotification(subscription, JSON.stringify({
         sessionId: check.sessionId,
+        routineId: check.routineId,
         title: 'Zadiag',
         body: resend
-          ? (isFrench ? 'Un rappel est prêt.' : 'A reminder is ready.')
-          : (isFrench ? 'Un contrôle rapide est prêt.' : 'A quick check is ready.'),
+          ? (isFrench ? `Le rappel « ${check.routineName} » est prêt.` : `${check.routineName} reminder is ready.`)
+          : (isFrench ? `Un contrôle « ${check.routineName} » est prêt.` : `${check.routineName} check is ready.`),
       }), { TTL: 120 });
     } catch (error) {
       const statusCode = (error as { statusCode?: number }).statusCode;
@@ -155,8 +156,6 @@ export const createFamily = onCall({ region, cors, enforceAppCheck: true }, asyn
       childName,
       members: { [uid]: 'parent' },
       routineMigrationVersion: 1,
-      activeCheckId: checkRef.id,
-      activeCheckExpiresAt: checkExpiresAt.toISOString(),
       createdAt: now.toISOString(),
     });
     transaction.create(userRef, {
@@ -446,6 +445,7 @@ export const requestCheckNow = onCall({
 }, async (request) => {
   type RequestedCheck = {
     id: string;
+    routineId: string;
     sessionId: string;
     requestedAt: string;
     expiresAt: string;
@@ -465,7 +465,10 @@ export const requestCheckNow = onCall({
   await ensureFamilyRoutineMigration(familyRef);
   const assignmentRef = familyRef.collection('routineAssignments').doc(routineId);
   const checkRef = familyRef.collection('checks').doc();
-  const pendingChecks = familyRef.collection('checks').where('status', '==', 'pending').limit(10);
+  const pendingChecks = familyRef.collection('checks')
+    .where('routineId', '==', routineId)
+    .where('status', '==', 'pending')
+    .limit(10);
 
   const { check, resend } = await db.runTransaction(async (transaction): Promise<RequestCheckResult> => {
     const [profile, family, assignment, pending] = await Promise.all([
@@ -484,10 +487,8 @@ export const requestCheckNow = onCall({
       throw new HttpsError('failed-precondition', 'The routine is not active.');
     }
 
-    const familyData = family.data();
-    const activeExpiry = Date.parse(String(familyData?.activeCheckExpiresAt ?? ''));
     const activePendingCheck = pending.docs.find((doc) => Date.parse(String(doc.data().expiresAt)) > Date.now());
-    if (Number.isFinite(activeExpiry) && activeExpiry > Date.now() && activePendingCheck) {
+    if (activePendingCheck) {
       return { check: { id: activePendingCheck.id, ...activePendingCheck.data() } as RequestedCheck, resend: true };
     }
 
@@ -507,15 +508,12 @@ export const requestCheckNow = onCall({
     };
 
     transaction.create(checkRef, check);
-    transaction.update(familyRef, {
-      activeCheckId: checkRef.id,
-      activeCheckExpiresAt: expiresAt.toISOString(),
-      updatedAt: FieldValue.serverTimestamp(),
-    });
     return { check: { id: checkRef.id, ...check }, resend: false };
   });
 
-  await sendCheckPushNotifications(familyRef, check, resend);
+  const assignment = await assignmentRef.get();
+  const routineName = String(assignment.data()?.routine?.name ?? routineId);
+  await sendCheckPushNotifications(familyRef, { ...check, routineName }, resend);
   return check;
 });
 
@@ -532,86 +530,86 @@ export const dispatchPlannedChecks = onSchedule({
   await Promise.allSettled(families.docs.map(async (familyDoc) => {
     const familyData = familyDoc.data() as {
       members?: Record<string, string>;
-      activeCheckId?: string;
-      activeCheckExpiresAt?: string;
     };
     const hasChild = Object.values(familyData.members ?? {}).includes('child');
     if (!hasChild) return;
-    const assignment = await ensureFamilyRoutineMigration(familyDoc.ref);
-    const assignmentData = assignment.data() as RoutineAssignmentDocument | undefined;
-    if (!assignmentData || assignmentData.status !== 'active') return;
-    const plan = assignmentData.plan;
-
+    await ensureFamilyRoutineMigration(familyDoc.ref);
+    const assignments = await familyDoc.ref.collection('routineAssignments').where('status', '==', 'active').get();
     const recentSince = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
-    const recentChecksSnapshot = await familyDoc.ref.collection('checks')
-      .where('requestedAt', '>=', recentSince)
-      .orderBy('requestedAt', 'desc')
-      .get();
-    const recentChecks = recentChecksSnapshot.docs.map((doc) => doc.data() as {
-      requestedAt?: string;
-      status?: string;
-      expiresAt?: string;
-      dispatchKey?: string;
-    });
-    const activePendingCheck = recentChecks.some((check) => {
-      const expiresAt = Date.parse(String(check.expiresAt ?? ''));
-      return check.status === 'pending' && Number.isFinite(expiresAt) && expiresAt > now.getTime();
-    });
-
-    const decision = shouldAutoDispatchCheck(plan, recentChecks, now, plan.timeZone ?? defaultPlan.timeZone, activePendingCheck);
-    if (!decision.shouldDispatch || !decision.windowId || !decision.dispatchKey) return;
-
-    const checkRef = familyDoc.ref.collection('checks').doc();
-    const expiresAt = new Date(now.getTime() + Math.min(120, Math.max(1, plan.expiryMinutes ?? defaultPlan.expiryMinutes)) * 60 * 1000);
-    const check = {
-      routineId: DEFAULT_ROUTINE_ID,
-      sessionId: crypto.randomUUID(),
-      requestedAt: now.toISOString(),
-      expiresAt: expiresAt.toISOString(),
-      status: 'pending',
-      requestedBy: 'system',
-      dispatchKey: decision.dispatchKey,
-      dispatchSource: 'schedule',
-    };
-
-    const created = await db.runTransaction(async (transaction): Promise<boolean> => {
-      const [freshFamily, freshAssignment, activePending] = await Promise.all([
-        transaction.get(familyDoc.ref),
-        transaction.get(familyDoc.ref.collection('routineAssignments').doc(DEFAULT_ROUTINE_ID)),
-        transaction.get(familyDoc.ref.collection('checks').where('status', '==', 'pending').limit(5)),
-      ]);
-      if (!freshFamily.exists) return false;
-      const freshData = freshFamily.data() as typeof familyData;
-      const freshAssignmentData = freshAssignment.data() as RoutineAssignmentDocument | undefined;
-      const stillHasChild = Object.values(freshData.members ?? {}).includes('child');
-      if (!stillHasChild || !freshAssignment.exists || freshAssignmentData?.status !== 'active') return false;
-      const pendingDocs = activePending.docs.map((doc) => doc.data() as { expiresAt?: string; status?: string });
-      const stillHasActivePending = pendingDocs.some((pending) => {
-        const pendingExpiresAt = Date.parse(String(pending.expiresAt ?? ''));
-        return pending.status === 'pending' && Number.isFinite(pendingExpiresAt) && pendingExpiresAt > now.getTime();
+    await Promise.allSettled(assignments.docs.map(async (assignmentDoc) => {
+      const assignmentData = assignmentDoc.data() as RoutineAssignmentDocument;
+      const routineId = assignmentData.routineId || assignmentDoc.id;
+      const parsedPlan = monitoringPlanSchema.safeParse(assignmentData.plan);
+      if (!parsedPlan.success) {
+        console.error('Skipping routine with invalid monitoring plan', familyDoc.id, routineId, parsedPlan.error.issues);
+        return;
+      }
+      const plan = parsedPlan.data;
+      const recentChecksQuery = familyDoc.ref.collection('checks')
+        .where('routineId', '==', routineId)
+        .where('requestedAt', '>=', recentSince)
+        .orderBy('requestedAt', 'desc');
+      const recentChecksSnapshot = await recentChecksQuery.get();
+      const recentChecks = recentChecksSnapshot.docs.map((doc) => doc.data() as {
+        requestedAt?: string; status?: string; expiresAt?: string; dispatchKey?: string;
       });
-      if (stillHasActivePending) return false;
-
-      const freshRecentChecks = await transaction.get(familyDoc.ref.collection('checks').where('requestedAt', '>=', recentSince).orderBy('requestedAt', 'desc'));
-      const freshDecision = shouldAutoDispatchCheck(
-        freshAssignmentData.plan,
-        freshRecentChecks.docs.map((doc) => doc.data() as { requestedAt?: string; status?: string; dispatchKey?: string }),
-        now,
-        freshAssignmentData.plan.timeZone,
-        stillHasActivePending,
-      );
-      if (!freshDecision.shouldDispatch || freshDecision.dispatchKey !== decision.dispatchKey) return false;
-
-      transaction.create(checkRef, check);
-      transaction.update(familyDoc.ref, {
-        activeCheckId: checkRef.id,
-        activeCheckExpiresAt: expiresAt.toISOString(),
-        updatedAt: FieldValue.serverTimestamp(),
+      const activePendingCheck = recentChecks.some((check) => {
+        const expiresAt = Date.parse(String(check.expiresAt ?? ''));
+        return check.status === 'pending' && Number.isFinite(expiresAt) && expiresAt > now.getTime();
       });
-      return true;
-    });
+      const decision = shouldAutoDispatchCheck(plan, recentChecks, now, plan.timeZone, activePendingCheck);
+      if (!decision.shouldDispatch || !decision.dispatchKey) return;
 
-    if (created) await sendCheckPushNotifications(familyDoc.ref, { sessionId: check.sessionId }, false);
+      const checkRef = familyDoc.ref.collection('checks').doc();
+      const expiresAt = new Date(now.getTime() + plan.expiryMinutes * 60 * 1000);
+      const check = {
+        routineId,
+        sessionId: crypto.randomUUID(),
+        requestedAt: now.toISOString(),
+        expiresAt: expiresAt.toISOString(),
+        status: 'pending',
+        requestedBy: 'system',
+        dispatchKey: decision.dispatchKey,
+        dispatchSource: 'schedule',
+      };
+
+      const created = await db.runTransaction(async (transaction): Promise<boolean> => {
+        const freshAssignmentRef = familyDoc.ref.collection('routineAssignments').doc(assignmentDoc.id);
+        const activePendingQuery = familyDoc.ref.collection('checks')
+          .where('routineId', '==', routineId)
+          .where('status', '==', 'pending')
+          .limit(5);
+        const [freshFamily, freshAssignment, activePending, freshRecentChecks] = await Promise.all([
+          transaction.get(familyDoc.ref),
+          transaction.get(freshAssignmentRef),
+          transaction.get(activePendingQuery),
+          transaction.get(recentChecksQuery),
+        ]);
+        const freshAssignmentData = freshAssignment.data() as RoutineAssignmentDocument | undefined;
+        if (!freshFamily.exists || !freshAssignment.exists || freshAssignmentData?.status !== 'active') return false;
+        if (!Object.values(freshFamily.data()?.members ?? {}).includes('child')) return false;
+        const freshPlan = monitoringPlanSchema.safeParse(freshAssignmentData.plan);
+        if (!freshPlan.success) return false;
+        const stillHasActivePending = activePending.docs.some((pending) => Date.parse(String(pending.data().expiresAt ?? '')) > now.getTime());
+        if (stillHasActivePending) return false;
+        const freshDecision = shouldAutoDispatchCheck(
+          freshPlan.data,
+          freshRecentChecks.docs.map((doc) => doc.data() as { requestedAt?: string; status?: string; dispatchKey?: string }),
+          now,
+          freshPlan.data.timeZone,
+          false,
+        );
+        if (!freshDecision.shouldDispatch || freshDecision.dispatchKey !== decision.dispatchKey) return false;
+        transaction.create(checkRef, check);
+        return true;
+      });
+
+      if (created) await sendCheckPushNotifications(familyDoc.ref, {
+        sessionId: check.sessionId,
+        routineId,
+        routineName: String(assignmentData.routine?.name ?? routineId),
+      }, false);
+    }));
   }));
 });
 
@@ -705,11 +703,6 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
       throw new HttpsError('failed-precondition', 'This check is no longer awaiting this analysis.');
     }
     transaction.update(checkRef, analysisUpdate);
-    transaction.update(db.collection('families').doc(familyId), {
-      activeCheckId: FieldValue.delete(),
-      activeCheckExpiresAt: FieldValue.delete(),
-      updatedAt: FieldValue.serverTimestamp(),
-    });
     return { id: check.id, ...checkData, ...analysisUpdate };
   });
   return response;
