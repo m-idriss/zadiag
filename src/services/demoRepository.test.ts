@@ -36,4 +36,11 @@ describe('DemoRepository compatibility', () => {
 
     await expect(repository.requestCheckNow()).rejects.toThrow('active_check_exists');
   });
+
+  test('keeps notification setup complete after a reload', async () => {
+    const repository = new DemoRepository();
+    await repository.savePushSubscription({ endpoint: 'https://push.example/subscription' });
+
+    expect(new DemoRepository().snapshot().notificationsEnabled).toBe(true);
+  });
 });

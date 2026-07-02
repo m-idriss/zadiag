@@ -59,6 +59,7 @@ function seedEvents(now = new Date()): VerificationEvent[] {
 function initialState(): AppState {
   return {
     locale: 'en',
+    notificationsEnabled: false,
     family: {
       linked: false,
       childName: 'Maya',
@@ -138,7 +139,10 @@ export class DemoRepository implements AppRepository {
     this.persist();
   }
 
-  async savePushSubscription(_subscription: PushSubscriptionJSON) {}
+  async savePushSubscription(_subscription: PushSubscriptionJSON) {
+    this.state.notificationsEnabled = true;
+    this.persist();
+  }
 
   async savePlan(plan: MonitoringPlan) {
     this.state.plan = structuredClone(plan);

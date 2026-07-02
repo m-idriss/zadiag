@@ -9,14 +9,18 @@ export function SettingsScreen({
   reset,
   role,
   enableNotifications,
+  notificationsEnabled,
 }: {
   t: (key: MessageKey) => string;
   reset: () => void;
   role: Role;
   enableNotifications: () => Promise<void>;
+  notificationsEnabled: boolean;
 }) {
   const standalone = window.matchMedia('(display-mode: standalone)').matches;
-  const [notificationState, setNotificationState] = useState<'idle' | 'saving' | 'enabled' | 'error'>('idle');
+  const [notificationState, setNotificationState] = useState<'idle' | 'saving' | 'enabled' | 'error'>(
+    notificationsEnabled ? 'enabled' : 'idle',
+  );
 
   const requestNotifications = async () => {
     setNotificationState('saving');

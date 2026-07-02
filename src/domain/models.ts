@@ -46,6 +46,7 @@ export interface FamilyState {
 export interface AppState {
   role?: Role;
   locale: Locale;
+  notificationsEnabled: boolean;
   family: FamilyState;
   plan: MonitoringPlan;
   events: VerificationEvent[];

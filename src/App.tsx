@@ -13,13 +13,30 @@ import { CameraScreen } from './screens/CameraScreen';
 import { ResultScreen } from './screens/ResultScreen';
 import { BottomNav, type Tab } from './components/BottomNav';
 import { WebPushGateway } from './services/webPush';
+import { InstallScreen } from './screens/InstallScreen';
+import { NotificationSetupScreen } from './screens/NotificationSetupScreen';
 
-type Route = 'welcome' | 'link' | 'app' | 'camera' | 'result';
+type Route = 'install' | 'welcome' | 'link' | 'notifications' | 'app' | 'camera' | 'result';
+
+const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches
+  || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+const isIos = () => /iPad|iPhone|iPod/.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+const routeForState = (state: ReturnType<ReturnType<typeof createRepository>['snapshot']>): Route => {
+  const setupPreview = import.meta.env.DEV ? new URLSearchParams(window.location.search).get('setup') : null;
+  if (setupPreview === 'install' || setupPreview === 'notifications') return setupPreview;
+  if (isIos() && !isStandalone()) return 'install';
+  if (!state.role) return 'welcome';
+  if (!state.family.linked) return 'link';
+  if (state.role === 'child' && !state.notificationsEnabled) return 'notifications';
+  return 'app';
+};
 
 export function App() {
   const repository = useMemo(createRepository, []);
   const [state, setState] = useState(repository.snapshot());
-  const [route, setRoute] = useState<Route>(state.role ? (state.family.linked ? 'app' : 'link') : 'welcome');
+  const [route, setRoute] = useState<Route>(() => routeForState(state));
   const [tab, setTab] = useState<Tab>('home');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<VerificationEvent>();
@@ -30,7 +47,7 @@ export function App() {
     repository.initialize().then(() => {
       const restored = repository.snapshot();
       setState(restored);
-      setRoute(restored.role ? (restored.family.linked ? 'app' : 'link') : 'welcome');
+      setRoute(routeForState(restored));
     }).catch(console.error);
     return unsubscribe;
   }, [repository]);
@@ -72,7 +89,15 @@ export function App() {
   };
 
   let content: React.ReactNode;
-  if (route === 'welcome') {
+  if (route === 'install') {
+    content = (
+      <InstallScreen
+        locale={state.locale}
+        setLocale={(locale) => { void repository.setLocale(locale).then(sync); }}
+        t={t}
+      />
+    );
+  } else if (route === 'welcome') {
     content = (
       <WelcomeScreen
         locale={state.locale}
@@ -89,7 +114,15 @@ export function App() {
         childName={state.family.childName}
         back={() => setRoute('welcome')}
         onParentLink={async (name) => { await repository.linkParent(name); sync(); setRoute('app'); }}
-        onChildLink={async (code) => { await repository.linkChild(code); sync(); setRoute('app'); }}
+        onChildLink={async (code) => { await repository.linkChild(code); sync(); setRoute('notifications'); }}
+        t={t}
+      />
+    );
+  } else if (route === 'notifications') {
+    content = (
+      <NotificationSetupScreen
+        complete={() => { sync(); setRoute('app'); }}
+        enableNotifications={enableNotifications}
         t={t}
       />
     );
@@ -104,6 +137,7 @@ export function App() {
       : tab === 'settings'
         ? <SettingsScreen
             enableNotifications={enableNotifications}
+            notificationsEnabled={state.notificationsEnabled}
             reset={() => { void reset(); }}
             role={role}
             t={t}

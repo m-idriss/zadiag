@@ -127,12 +127,16 @@ export const savePushSubscription = onCall({ region, cors, enforceAppCheck: true
     throw new HttpsError('permission-denied', 'Only the linked child can enable notifications.');
   }
 
-  await db.collection('families').doc(familyId).collection('pushSubscriptions').doc(uid).set({
+  const subscriptionRef = db.collection('families').doc(familyId).collection('pushSubscriptions').doc(uid);
+  const batch = db.batch();
+  batch.set(subscriptionRef, {
     endpoint,
     keys: { p256dh, auth },
     locale,
     updatedAt: FieldValue.serverTimestamp(),
   });
+  batch.update(profile.ref, { notificationsEnabled: true, updatedAt: FieldValue.serverTimestamp() });
+  await batch.commit();
 });
 
 export const regenerateLinkCode = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
