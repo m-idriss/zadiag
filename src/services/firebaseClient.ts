@@ -13,10 +13,7 @@ const config = {
 };
 
 const appCheckSiteKey = import.meta.env.VITE_FIREBASE_APP_CHECK_SITE_KEY;
-const appCheckDebugToken = import.meta.env.VITE_FIREBASE_APP_CHECK_DEBUG_TOKEN
-  ?? (typeof window !== 'undefined' && ['zadiag.com', 'www.zadiag.com'].includes(window.location.hostname)
-    ? '113185ED-81D4-4B44-9EBF-6646E900AD17'
-    : undefined);
+const appCheckDebugToken = import.meta.env.VITE_FIREBASE_APP_CHECK_DEBUG_TOKEN;
 export const firebaseEnabled = Object.values(config).every(Boolean) && Boolean(appCheckSiteKey);
 
 export interface FirebaseServices {
