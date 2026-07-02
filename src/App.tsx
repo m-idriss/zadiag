@@ -150,6 +150,7 @@ export function App() {
             childInstalled={state.family.childLinked}
             childLinkingCode={state.family.linkingCode}
             regenerateLinkCode={async () => { await repository.regenerateLinkCode(); sync(); }}
+            locale={state.locale}
             reset={() => { void reset(); }}
             role={role}
             t={t}

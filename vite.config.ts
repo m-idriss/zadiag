@@ -1,8 +1,18 @@
 import { defineConfig } from 'vitest/config';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+const packageJson = JSON.parse(readFileSync(resolve(process.cwd(), 'package.json'), 'utf8')) as { version: string };
+const appVersion = process.env.VITE_APP_VERSION ?? packageJson.version;
+const appUpdatedAt = process.env.VITE_APP_UPDATED_AT ?? new Date().toISOString();
+
 export default defineConfig({
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(appVersion),
+    'import.meta.env.VITE_APP_UPDATED_AT': JSON.stringify(appUpdatedAt),
+  },
   plugins: [
     react(),
     VitePWA({

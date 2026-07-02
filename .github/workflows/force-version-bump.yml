@@ -1,0 +1,86 @@
+name: 🏷️ Force app version bump
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: Version bump type
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - custom
+        default: minor
+      custom_version:
+        description: Custom version (required if version_type is custom)
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Calculate and apply version
+        id: bump
+        env:
+          VERSION_TYPE: ${{ inputs.version_type }}
+          CUSTOM_VERSION: ${{ inputs.custom_version }}
+        run: |
+          NEW_VERSION=$(node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            const versionType = process.env.VERSION_TYPE;
+            const customVersion = process.env.CUSTOM_VERSION;
+            const parts = String(pkg.version || '0.0.0').split('.').map((v) => Number(v) || 0);
+            let [major, minor, patch] = parts;
+            let next = '';
+            if (versionType === 'custom') {
+              if (!customVersion) throw new Error('custom_version is required when version_type=custom');
+              next = customVersion;
+            } else if (versionType === 'major') {
+              next = [major + 1, 0, 0].join('.');
+            } else if (versionType === 'minor') {
+              next = [major, minor + 1, 0].join('.');
+            } else if (versionType === 'patch') {
+              next = [major, minor, patch + 1].join('.');
+            } else {
+              throw new Error('Unsupported version type');
+            }
+            if (!/^\\d+\\.\\d+\\.\\d+$/.test(next)) throw new Error('Invalid version format: ' + next);
+            pkg.version = next;
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\\n');
+            process.stdout.write(next);
+          ")
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Target version: $NEW_VERSION"
+
+      - name: Commit and push version bump
+        run: |
+          git add package.json
+          git commit -m "chore(version): bump to ${{ steps.bump.outputs.version }} [skip ci]"
+          git push
+
+      - name: Summary
+        run: |
+          echo "## ✅ Version updated" >> "$GITHUB_STEP_SUMMARY"
+          echo "- New version: \`${{ steps.bump.outputs.version }}\`" >> "$GITHUB_STEP_SUMMARY"

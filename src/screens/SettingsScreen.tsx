@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { IonButton } from '@ionic/react';
-import type { Role } from '../domain/models';
+import type { Locale, Role } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { Disclaimer } from '../components/Disclaimer';
 
 export function SettingsScreen({
   t,
+  locale,
   reset,
   role,
   enableNotifications,
@@ -15,6 +16,7 @@ export function SettingsScreen({
   regenerateLinkCode,
 }: {
   t: (key: MessageKey) => string;
+  locale: Locale;
   reset: () => void;
   role: Role;
   enableNotifications: () => Promise<void>;
@@ -69,6 +71,13 @@ export function SettingsScreen({
   const childInstallDetailKey = childInstalled
     ? 'settingsChildInstallDetailLinked'
     : 'settingsChildInstallDetailPending';
+  const updatedAt = new Date(import.meta.env.VITE_APP_UPDATED_AT ?? '');
+  const appUpdated = Number.isNaN(updatedAt.getTime())
+    ? import.meta.env.VITE_APP_UPDATED_AT
+    : new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-US', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    }).format(updatedAt);
 
   return (
     <div className="content-screen settings-screen">
@@ -121,6 +130,13 @@ export function SettingsScreen({
           {codeError ? <span className="form-error">{t('regenerateCodeError')}</span> : null}
         </section>
       ) : null}
+      <section className="card history-row settings-history-row">
+        <div className="history-icon settings-history-icon" aria-hidden="true">ⓘ</div>
+        <div>
+          <strong>{t('settingsAppInfoTitle')}</strong>
+          <small>{t('settingsVersionLabel')} {import.meta.env.VITE_APP_VERSION} · {t('settingsUpdatedLabel')} {appUpdated}</small>
+        </div>
+      </section>
       <section className="card privacy-card">
         <h2>{t('privacyDefaults')}</h2>
         <ul><li>{t('noFaceRecognition')}</li><li>{t('noModelTraining')}</li><li>{t('noPhotoUpload')}</li><li>{t('immediateDeletion')}</li></ul>
