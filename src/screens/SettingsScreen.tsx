@@ -10,6 +10,7 @@ export function SettingsScreen({
   role,
   enableNotifications,
   notificationsEnabled,
+  childInstalled,
   childLinkingCode,
   regenerateLinkCode,
 }: {
@@ -18,6 +19,7 @@ export function SettingsScreen({
   role: Role;
   enableNotifications: () => Promise<void>;
   notificationsEnabled: boolean;
+  childInstalled: boolean;
   childLinkingCode?: string;
   regenerateLinkCode: () => Promise<void>;
 }) {
@@ -61,6 +63,12 @@ export function SettingsScreen({
   const notificationDetailKey = notificationState === 'enabled'
     ? 'settingsNotificationsDetailEnabled'
     : 'settingsNotificationsDetailDisabled';
+  const childInstallStatusKey = childInstalled
+    ? 'settingsChildInstallStatusLinked'
+    : 'settingsChildInstallStatusPending';
+  const childInstallDetailKey = childInstalled
+    ? 'settingsChildInstallDetailLinked'
+    : 'settingsChildInstallDetailPending';
 
   return (
     <div className="content-screen settings-screen">
@@ -73,6 +81,16 @@ export function SettingsScreen({
         </div>
         <span className="status-pill status-detected">{t('settingsInstallStatus')}</span>
       </section>
+      {role === 'parent' ? <section className="card history-row settings-history-row">
+        <div className="history-icon settings-history-icon" aria-hidden="true">⌁</div>
+        <div>
+          <strong>{t('settingsChildInstallTitle')}</strong>
+          <small>{t(childInstallDetailKey)}</small>
+        </div>
+        <span className={childInstalled ? 'status-pill status-detected' : 'status-pill status-missed'}>
+          {t(childInstallStatusKey)}
+        </span>
+      </section> : null}
       {role === 'child' ? <section className="card history-row settings-history-row">
         <div className="history-icon settings-history-icon" aria-hidden="true">🔔</div>
         <div>

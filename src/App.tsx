@@ -147,6 +147,7 @@ export function App() {
         ? <SettingsScreen
             enableNotifications={enableNotifications}
             notificationsEnabled={state.notificationsEnabled}
+            childInstalled={state.family.childLinked}
             childLinkingCode={state.family.linkingCode}
             regenerateLinkCode={async () => { await repository.regenerateLinkCode(); sync(); }}
             reset={() => { void reset(); }}

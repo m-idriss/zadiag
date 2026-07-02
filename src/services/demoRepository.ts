@@ -62,6 +62,7 @@ function initialState(): AppState {
     notificationsEnabled: false,
     family: {
       linked: false,
+      childLinked: false,
       childName: 'Maya',
       linkingCode: 'ZD-4821',
       consented: false,
@@ -79,6 +80,7 @@ export class DemoRepository implements AppRepository {
   constructor() {
     const saved = localStorage.getItem(STORAGE_KEY);
     this.state = saved ? (JSON.parse(saved) as AppState) : initialState();
+    this.state.family.childLinked ??= this.state.role === 'child';
     this.ensureActiveSession();
   }
 
@@ -108,6 +110,7 @@ export class DemoRepository implements AppRepository {
       ...this.state.family,
       childName,
       linked: true,
+      childLinked: false,
       consented: true,
     };
     this.persist();
@@ -118,6 +121,7 @@ export class DemoRepository implements AppRepository {
       throw new Error('invalid_code');
     }
     this.state.family.linked = true;
+    this.state.family.childLinked = true;
     this.persist();
   }
 

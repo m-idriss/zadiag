@@ -28,6 +28,7 @@ interface FamilyDocument {
   childName: string;
   linkingCode?: string;
   plan?: MonitoringPlan;
+  members?: Record<string, string>;
 }
 
 const initialState = (): AppState => {
@@ -36,7 +37,7 @@ const initialState = (): AppState => {
     locale: preferences.locale ?? 'en',
     notificationsEnabled: false,
     role: preferences.role,
-    family: { linked: false, childName: '', linkingCode: '', consented: false },
+    family: { linked: false, childLinked: false, childName: '', linkingCode: '', consented: false },
     plan: defaultPlan,
     events: [],
   };
@@ -193,12 +194,20 @@ export class FirebaseRepository implements AppRepository {
   private async attachFamily(familyId: string, role: Role) {
     this.remoteSubscriptions.splice(0).forEach((unsubscribe) => unsubscribe());
     this.state.role = role;
-    this.state.family = { ...this.state.family, id: familyId, linked: true, consented: role === 'parent' };
+    this.state.family = {
+      ...this.state.family,
+      id: familyId,
+      linked: true,
+      childLinked: role === 'child',
+      consented: role === 'parent',
+    };
     const familyRef = doc(this.services.db, 'families', familyId);
     this.remoteSubscriptions.push(onSnapshot(familyRef, (snapshot) => {
       if (!snapshot.exists()) return;
       const family = snapshot.data() as FamilyDocument;
+      const childLinked = Object.values(family.members ?? {}).some((memberRole) => memberRole === 'child');
       this.state.family.childName = family.childName;
+      this.state.family.childLinked = childLinked;
       this.state.family.linkingCode = family.linkingCode ?? this.state.family.linkingCode;
       this.state.plan = family.plan ?? defaultPlan;
       this.emit();
