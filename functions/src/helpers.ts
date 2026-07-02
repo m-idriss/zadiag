@@ -7,6 +7,7 @@ export const hashLinkCode = (code: string) => createHash('sha256')
   .digest('hex');
 
 export const createLinkCode = () => `ZD-${randomInt(100000, 1000000)}`;
+export const createRecoveryCode = () => `PR-${randomInt(100000, 1000000)}`;
 
 export const assertChildName = (value: unknown) => {
   if (typeof value !== 'string') throw new Error('invalid_child_name');

@@ -3,7 +3,7 @@ import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import webpush, { type PushSubscription } from 'web-push';
-import { assertChildName, createLinkCode, hashLinkCode, normalizeLinkCode } from './helpers.js';
+import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, normalizeLinkCode } from './helpers.js';
 
 initializeApp();
 const db = getFirestore();
@@ -46,6 +46,7 @@ export const createFamily = onCall({ region, cors, enforceAppCheck: true }, asyn
   const checkRef = familyRef.collection('checks').doc();
   const code = createLinkCode();
   const linkRef = db.collection('linkCodes').doc(hashLinkCode(code));
+  const recoveryCode = createRecoveryCode();
   const now = new Date();
   const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const checkExpiresAt = new Date(now.getTime() + defaultPlan.expiryMinutes * 60 * 1000);
@@ -59,6 +60,7 @@ export const createFamily = onCall({ region, cors, enforceAppCheck: true }, asyn
       plan: defaultPlan,
       activeCheckId: checkRef.id,
       activeCheckExpiresAt: checkExpiresAt.toISOString(),
+      parentRecoveryCode: recoveryCode,
       createdAt: now.toISOString(),
     });
     transaction.create(userRef, {
@@ -81,7 +83,36 @@ export const createFamily = onCall({ region, cors, enforceAppCheck: true }, asyn
       status: 'pending',
     });
   });
-  return { familyId: familyRef.id, code, expiresAt: expiresAt.toISOString() };
+  return { familyId: familyRef.id, code, recoveryCode, expiresAt: expiresAt.toISOString() };
+});
+
+export const recoverParent = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = requireUid(request.auth);
+  const code = normalizeLinkCode(String(request.data?.code ?? ''));
+  if (!/^PR-\d{6}$/.test(code)) throw new HttpsError('invalid-argument', 'The recovery code is invalid.');
+  const userRef = db.collection('users').doc(uid);
+  const families = await db.collection('families').where('parentRecoveryCode', '==', code).limit(1).get();
+  const familyDoc = families.docs[0];
+  if (!familyDoc) throw new HttpsError('not-found', 'The recovery code is invalid.');
+
+  const familyRef = familyDoc.ref;
+  await db.runTransaction(async (transaction) => {
+    const [existingUser, family] = await Promise.all([transaction.get(userRef), transaction.get(familyRef)]);
+    if (existingUser.exists && existingUser.data()?.familyId === familyRef.id && existingUser.data()?.role === 'parent') {
+      return;
+    }
+    if (existingUser.exists && existingUser.data()?.familyId !== familyRef.id) {
+      throw new HttpsError('already-exists', 'This account already belongs to a family.');
+    }
+    if (!family.exists) throw new HttpsError('not-found', 'The family could not be found.');
+    transaction.update(familyRef, { [`members.${uid}`]: 'parent', updatedAt: FieldValue.serverTimestamp() });
+    transaction.set(userRef, {
+      familyId: familyRef.id,
+      role: 'parent',
+      recoveredAt: new Date().toISOString(),
+    });
+  });
+  return { familyId: familyRef.id, childName: String(familyDoc.data().childName ?? '') };
 });
 
 export const joinFamily = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
@@ -193,6 +224,15 @@ export const requestCheckNow = onCall({
   enforceAppCheck: true,
   secrets: [vapidPrivateKey, vapidPublicKey],
 }, async (request) => {
+  type RequestedCheck = {
+    id: string;
+    sessionId: string;
+    requestedAt: string;
+    expiresAt: string;
+    status: string;
+    requestedBy?: string;
+  };
+  type RequestCheckResult = { check: RequestedCheck; resend: boolean };
   const uid = requireUid(request.auth);
   const familyId = String(request.data?.familyId ?? '');
   const familyRef = db.collection('families').doc(familyId);
@@ -200,7 +240,7 @@ export const requestCheckNow = onCall({
   const checkRef = familyRef.collection('checks').doc();
   const pendingChecks = familyRef.collection('checks').where('status', '==', 'pending').limit(10);
 
-  const { check, resend } = await db.runTransaction(async (transaction) => {
+  const { check, resend } = await db.runTransaction(async (transaction): Promise<RequestCheckResult> => {
     const [profile, family, pending] = await Promise.all([
       transaction.get(userRef),
       transaction.get(familyRef),
@@ -217,7 +257,7 @@ export const requestCheckNow = onCall({
     const activeExpiry = Date.parse(String(familyData?.activeCheckExpiresAt ?? ''));
     const activePendingCheck = pending.docs.find((doc) => Date.parse(String(doc.data().expiresAt)) > Date.now());
     if (Number.isFinite(activeExpiry) && activeExpiry > Date.now() && activePendingCheck) {
-      return { check: { id: activePendingCheck.id, ...activePendingCheck.data() }, resend: true };
+      return { check: { id: activePendingCheck.id, ...activePendingCheck.data() } as RequestedCheck, resend: true };
     }
 
     const configuredMinutes = Number(familyData?.plan?.expiryMinutes);

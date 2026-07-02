@@ -14,6 +14,7 @@ export function SettingsScreen({
   notificationsEnabled,
   childInstalled,
   childLinkingCode,
+  parentRecoveryCode,
   regenerateLinkCode,
 }: {
   t: (key: MessageKey) => string;
@@ -25,6 +26,7 @@ export function SettingsScreen({
   notificationsEnabled: boolean;
   childInstalled: boolean;
   childLinkingCode?: string;
+  parentRecoveryCode?: string;
   regenerateLinkCode: () => Promise<void>;
 }) {
   const standalone = window.matchMedia('(display-mode: standalone)').matches;
@@ -124,7 +126,7 @@ export function SettingsScreen({
         {notificationState === 'saving' ? t('enablingReminders') : t('enableReminders')}
       </IonButton> : null}
       {role === 'child' && notificationState === 'error' ? <small className="notification-note">{t('pushError')}</small> : null}
-      {role === 'parent' && childInstalled && childLinkingCode ? (
+      {role === 'parent' && childLinkingCode ? (
         <section className="card code-box settings-link-code-card">
           <small>{t('childLinkCode')}</small>
           <strong>{childLinkingCode}</strong>
@@ -133,6 +135,13 @@ export function SettingsScreen({
             {regenerating ? t('regeneratingCode') : t('regenerateCode')}
           </button>
           {codeError ? <span className="form-error">{t('regenerateCodeError')}</span> : null}
+        </section>
+      ) : null}
+      {parentRecoveryCode ? (
+        <section className="card code-box settings-link-code-card">
+          <small>{t('parentRecoveryCode')}</small>
+          <strong>{parentRecoveryCode}</strong>
+          <span>{t('parentRecoverHelp')}</span>
         </section>
       ) : null}
       <section className="card history-row settings-history-row">

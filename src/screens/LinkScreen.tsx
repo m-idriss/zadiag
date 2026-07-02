@@ -10,6 +10,7 @@ export function LinkScreen({
   code,
   childName,
   onParentLink,
+  onParentRecover,
   onChildLink,
   back,
   t,
@@ -18,11 +19,13 @@ export function LinkScreen({
   code: string;
   childName: string;
   onParentLink: (name: string) => void | Promise<void>;
+  onParentRecover: (code: string) => void | Promise<void>;
   onChildLink: (code: string) => void | Promise<void>;
   back: () => void;
   t: (key: MessageKey) => string;
 }) {
   const parent = role === 'parent';
+  const [mode, setMode] = useState<'create' | 'recover'>('create');
   const [value, setValue] = useState(parent ? childName : code);
   const [consent, setConsent] = useState(false);
   const [error, setError] = useState(false);
@@ -32,7 +35,8 @@ export function LinkScreen({
     setError(false);
     setBusy(true);
     try {
-      await (parent ? onParentLink(value.trim()) : onChildLink(value.trim()));
+      if (parent && mode === 'recover') await onParentRecover(value.trim());
+      else await (parent ? onParentLink(value.trim()) : onChildLink(value.trim()));
     } catch {
       setError(true);
     } finally {
@@ -47,10 +51,10 @@ export function LinkScreen({
       <div className="section-icon">{parent ? '⌂' : '⌁'}</div>
       {!parent ? <p className="setup-eyebrow">{t('setupStepTwo')}</p> : null}
       <h1>{parent ? t('createLink') : t('joinFamily')}</h1>
-      <p>{parent ? t('parentLinkHint') : t('childLinkHint')}</p>
+      <p>{parent ? (mode === 'recover' ? t('parentRecoverHint') : t('parentLinkHint')) : t('childLinkHint')}</p>
       <section className="card link-card">
         <IonInput
-          label={parent ? t('childNickname') : t('linkingCode')}
+          label={parent ? (mode === 'recover' ? t('parentRecoveryCode') : t('childNickname')) : t('linkingCode')}
           labelPlacement="stacked"
           fill="outline"
           value={value}
@@ -58,19 +62,28 @@ export function LinkScreen({
         />
         {parent && (
           <>
-            {code && <div className="code-box"><small>{t('linkingCode')}</small><strong>{code}</strong><span>{t('shareCodeHint')}</span></div>}
-            <label className="consent-row">
-              <IonCheckbox checked={consent} onIonChange={(event) => setConsent(event.detail.checked)} />
-              <span>{t('consent')}</span>
-            </label>
+            {mode === 'create' ? (
+              <>
+                {code && <div className="code-box"><small>{t('linkingCode')}</small><strong>{code}</strong><span>{t('shareCodeHint')}</span></div>}
+                <label className="consent-row">
+                  <IonCheckbox checked={consent} onIonChange={(event) => setConsent(event.detail.checked)} />
+                  <span>{t('consent')}</span>
+                </label>
+              </>
+            ) : (
+              <p className="setup-help-text">{t('parentRecoverHelp')}</p>
+            )}
           </>
         )}
         {error && <p className="form-error" role="alert">{t('invalidCode')}</p>}
       </section>
       {!parent ? <aside className="setup-help"><span aria-hidden="true">ⓘ</span><p>{t('setupLinkHelp')}</p></aside> : null}
       <Disclaimer t={t} />
-      <IonButton expand="block" disabled={busy || !value.trim() || (parent && !consent)} onClick={submit}>
-        {parent ? t('createContinue') : t('linkContinue')}
+      {parent ? <button className="regenerate-code" type="button" onClick={() => { setMode(mode === 'create' ? 'recover' : 'create'); setValue(''); setConsent(false); }}>
+        {mode === 'create' ? t('recoverExistingFamily') : t('createNewFamily')}
+      </button> : null}
+      <IonButton expand="block" disabled={busy || !value.trim() || (parent && mode === 'create' && !consent)} onClick={submit}>
+        {parent ? (mode === 'recover' ? t('recoverContinue') : t('createContinue')) : t('linkContinue')}
       </IonButton>
     </main>
   );

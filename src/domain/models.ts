@@ -41,6 +41,7 @@ export interface FamilyState {
   childLinked: boolean;
   childName: string;
   linkingCode: string;
+  parentRecoveryCode: string;
   consented: boolean;
 }
 

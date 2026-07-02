@@ -146,6 +146,7 @@ export function App() {
         childName={state.family.childName}
         back={() => setRoute('welcome')}
         onParentLink={async (name) => { await repository.linkParent(name); sync(); setRoute('app'); }}
+        onParentRecover={async (code) => { await repository.recoverParent(code); sync(); setRoute('app'); }}
         onChildLink={async (code) => { await repository.linkChild(code); sync(); setRoute(useLocalDemo ? 'app' : 'notifications'); }}
         t={t}
       />
@@ -172,6 +173,7 @@ export function App() {
             notificationsEnabled={state.notificationsEnabled}
             childInstalled={state.family.childLinked}
             childLinkingCode={state.family.linkingCode}
+            parentRecoveryCode={state.family.parentRecoveryCode}
             regenerateLinkCode={async () => { await repository.regenerateLinkCode(); sync(); }}
             locale={state.locale}
             setLocale={async (locale) => { await repository.setLocale(locale); sync(); }}

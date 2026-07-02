@@ -27,6 +27,7 @@ interface UserProfile {
 interface FamilyDocument {
   childName: string;
   linkingCode?: string;
+  parentRecoveryCode?: string;
   plan?: MonitoringPlan;
   members?: Record<string, string>;
 }
@@ -37,7 +38,7 @@ const initialState = (): AppState => {
     locale: preferences.locale ?? 'en',
     notificationsEnabled: false,
     role: preferences.role,
-    family: { linked: false, childLinked: false, childName: '', linkingCode: '', consented: false },
+    family: { linked: false, childLinked: false, childName: '', linkingCode: '', parentRecoveryCode: '', consented: false },
     plan: defaultPlan,
     events: [],
   };
@@ -96,9 +97,16 @@ export class FirebaseRepository implements AppRepository {
   }
 
   async linkParent(childName: string) {
-    const createFamily = httpsCallable<{ childName: string }, { familyId: string; code: string }>(this.services.functions, 'createFamily');
+    const createFamily = httpsCallable<{ childName: string }, { familyId: string; code: string; recoveryCode: string }>(this.services.functions, 'createFamily');
     const result = await createFamily({ childName });
     this.state.family.linkingCode = result.data.code;
+    this.state.family.parentRecoveryCode = result.data.recoveryCode;
+    await this.attachFamily(result.data.familyId, 'parent');
+  }
+
+  async recoverParent(code: string) {
+    const recoverParent = httpsCallable<{ code: string }, { familyId: string; childName: string }>(this.services.functions, 'recoverParent');
+    const result = await recoverParent({ code: code.trim().toUpperCase() });
     await this.attachFamily(result.data.familyId, 'parent');
   }
 
@@ -209,6 +217,7 @@ export class FirebaseRepository implements AppRepository {
       this.state.family.childName = family.childName;
       this.state.family.childLinked = childLinked;
       this.state.family.linkingCode = family.linkingCode ?? this.state.family.linkingCode;
+      this.state.family.parentRecoveryCode = family.parentRecoveryCode ?? this.state.family.parentRecoveryCode;
       this.state.plan = family.plan ?? defaultPlan;
       this.emit();
     }));

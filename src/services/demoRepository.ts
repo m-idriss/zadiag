@@ -65,6 +65,7 @@ function initialState(): AppState {
       childLinked: false,
       childName: 'Maya',
       linkingCode: 'ZD-4821',
+      parentRecoveryCode: 'PR-4821',
       consented: false,
     },
     plan: defaultPlan,
@@ -111,8 +112,19 @@ export class DemoRepository implements AppRepository {
       childName,
       linked: true,
       childLinked: false,
+      parentRecoveryCode: `PR-${Math.floor(100000 + Math.random() * 900000)}`,
       consented: true,
     };
+    this.persist();
+  }
+
+  async recoverParent(code: string) {
+    if (code.trim().toUpperCase() !== this.state.family.parentRecoveryCode) {
+      throw new Error('invalid_code');
+    }
+    this.state.role = 'parent';
+    this.state.family.linked = true;
+    this.state.family.consented = true;
     this.persist();
   }
 
