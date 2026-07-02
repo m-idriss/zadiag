@@ -7,6 +7,7 @@ import { StatusPill } from '../components/StatusPill';
 export function ParentDashboard({ state, regenerateCode, requestCheck, t }: { state: AppState; regenerateCode: () => Promise<void>; requestCheck: () => Promise<void>; t: (key: MessageKey) => string }) {
   const summary = adherenceSummary(state.events);
   const attention = state.events.filter((event) => ['uncertain', 'missed', 'expired', 'not_detected'].includes(event.status));
+  const hasActiveCheck = state.events.some((event) => event.status === 'pending' && Date.parse(event.expiresAt) > Date.now());
   const [regenerating, setRegenerating] = useState(false);
   const [codeError, setCodeError] = useState(false);
   const [requesting, setRequesting] = useState(false);
@@ -26,7 +27,7 @@ export function ParentDashboard({ state, regenerateCode, requestCheck, t }: { st
     setRequestStatus('idle');
     try { await requestCheck(); setRequestStatus('sent'); }
     catch (error) {
-      setRequestStatus(String(error).includes('already-exists') ? 'active' : 'error');
+      setRequestStatus(String(error).includes('active_check_exists') ? 'active' : 'error');
     } finally { setRequesting(false); }
   };
   return (
@@ -45,11 +46,12 @@ export function ParentDashboard({ state, regenerateCode, requestCheck, t }: { st
         <div className="card-title"><h2>▣ {t('monitoringPlan')}</h2><button>{t('edit')}</button></div>
         <p><b>{state.plan.checksPerDay}</b> {t('checksDay')} · <b>{state.plan.expiryMinutes}</b> {t('minutesRespond')}</p>
         <div className="chips">{state.plan.windows.map((window) => <span key={window.id}>◷ {window.start}–{window.end}</span>)}</div>
-        <button className="request-check" disabled={requesting} onClick={() => { void requestNow(); }}>
-          {requesting ? t('requestingCheck') : t('requestCheckNow')}
+        <button className="request-check" disabled={requesting || hasActiveCheck} onClick={() => { void requestNow(); }}>
+          {requesting ? t('requestingCheck') : hasActiveCheck ? t('requestCheckAlreadyActive') : t('requestCheckNow')}
         </button>
+        {hasActiveCheck && <p role="status" className="request-feedback">{t('requestCheckActive')}</p>}
         {requestStatus === 'sent' && <p role="status" aria-live="polite" className="request-feedback success">{t('requestCheckSent')}</p>}
-        {requestStatus === 'active' && <p role="status" aria-live="polite" className="request-feedback">{t('requestCheckActive')}</p>}
+        {requestStatus === 'active' && !hasActiveCheck && <p role="status" aria-live="polite" className="request-feedback">{t('requestCheckActive')}</p>}
         {requestStatus === 'error' && <p role="status" aria-live="polite" className="request-feedback error">{t('requestCheckError')}</p>}
       </section>
       {state.family.linkingCode && (
