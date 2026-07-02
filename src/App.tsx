@@ -43,11 +43,42 @@ const routeForState = (state: ReturnType<ReturnType<typeof createRepository>['sn
   return 'app';
 };
 
+const waitForInstalledState = (worker: ServiceWorker) => new Promise<void>((resolve) => {
+  if (worker.state === 'installed') {
+    resolve();
+    return;
+  }
+  worker.addEventListener('statechange', () => {
+    if (worker.state === 'installed') resolve();
+  }, { once: true });
+});
+
+const checkForPendingAppUpdate = async (onApplying: () => void) => {
+  if (!('serviceWorker' in navigator)) return;
+  const registration = await navigator.serviceWorker.getRegistration();
+  if (!registration) return;
+  await registration.update();
+  if (registration.installing) await waitForInstalledState(registration.installing);
+  if (!registration.waiting) return;
+  onApplying();
+  registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+  await new Promise<void>((resolve) => {
+    const timer = window.setTimeout(resolve, 2500);
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      window.clearTimeout(timer);
+      resolve();
+    }, { once: true });
+  });
+  window.location.reload();
+};
+
 export function App() {
   const repository = useMemo(createRepository, []);
   const [state, setState] = useState(repository.snapshot());
   const [route, setRoute] = useState<Route>(() => routeForState(state));
   const [ready, setReady] = useState(false);
+  const [splashProgress, setSplashProgress] = useState(12);
+  const [splashMessage, setSplashMessage] = useState<MessageKey>('splashLoading');
   const [tab, setTab] = useState<Tab>('home');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<VerificationEvent>();
@@ -58,16 +89,30 @@ export function App() {
     let alive = true;
     const startedAt = Date.now();
     const unsubscribe = repository.subscribe(() => setState(repository.snapshot()));
-    repository.initialize().then(() => {
+    const setStartupStep = (progress: number, message: MessageKey) => {
+      if (!alive) return;
+      setSplashProgress(progress);
+      setSplashMessage(message);
+    };
+    repository.initialize().then(async () => {
       if (!alive) return;
       const restored = repository.snapshot();
       setState(restored);
       setRoute(routeForState(restored));
+      setStartupStep(48, 'splashCheckingUpdate');
+      await checkForPendingAppUpdate(() => setStartupStep(78, 'splashApplyingUpdate'));
+      setStartupStep(92, 'splashFinalizing');
       const elapsed = Date.now() - startedAt;
-      window.setTimeout(() => { if (alive) setReady(true); }, Math.max(150, 700 - elapsed));
+      window.setTimeout(() => {
+        if (!alive) return;
+        setSplashProgress(100);
+        setReady(true);
+      }, Math.max(150, 700 - elapsed));
     }).catch((error) => {
       console.error(error);
-      if (alive) setReady(true);
+      if (!alive) return;
+      setSplashProgress(100);
+      setReady(true);
     });
     return () => {
       alive = false;
@@ -225,5 +270,5 @@ export function App() {
     content = <div className="app-shell">{screen}<BottomNav tab={tab} role={role} onChange={setTab} t={t} /></div>;
   }
 
-  return <IonApp>{content}{!ready ? <SplashScreen /> : null}</IonApp>;
+  return <IonApp>{content}{!ready ? <SplashScreen progress={splashProgress} message={t(splashMessage)} /> : null}</IonApp>;
 }

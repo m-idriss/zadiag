@@ -45,6 +45,8 @@ ion-app {
 .app-splash-card img { width: 92px; height: 92px; }
 .app-splash-card strong { font-size: 24px; font-weight: 900; color: var(--navy); }
 .app-splash-card span { color: var(--muted); font-size: 13px; font-weight: 700; }
+.app-splash-progress { width: min(240px, 70vw); height: 7px; border-radius: 999px; background: #e4ece8; overflow: hidden; }
+.app-splash-progress > div { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--teal), #41b6a2); transition: width .2s ease; }
 ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-transform: none; letter-spacing: 0; }
 
 .page, .content-screen { position: relative; isolation: isolate; min-height: 100dvh; max-width: 640px; margin: 0 auto; padding: calc(20px + env(safe-area-inset-top)) 22px calc(100px + env(safe-area-inset-bottom)); background: transparent; }
