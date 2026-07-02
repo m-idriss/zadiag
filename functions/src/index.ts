@@ -41,10 +41,29 @@ const defaultPlan = {
   timeZone: 'Europe/Paris',
 };
 const recoveryLifetimeMs = 90 * 24 * 60 * 60 * 1000;
+const toProbability = (value: unknown) => {
+  if (typeof value === 'number') {
+    if (value > 1 && value <= 100) return value / 100;
+    return value;
+  }
+  if (typeof value !== 'string') return value;
+  const normalized = value.trim();
+  if (!normalized) return value;
+  const percent = normalized.match(/-?\d+(?:[.,]\d+)?\s*%/);
+  if (percent) {
+    const parsed = Number.parseFloat(percent[0].replace('%', '').replace(',', '.'));
+    if (Number.isFinite(parsed)) return parsed / 100;
+  }
+  const numberMatch = normalized.match(/-?\d+(?:[.,]\d+)?/);
+  if (!numberMatch) return value;
+  const parsed = Number.parseFloat(numberMatch[0].replace(',', '.'));
+  if (!Number.isFinite(parsed)) return value;
+  return parsed > 1 && parsed <= 100 ? parsed / 100 : parsed;
+};
 const analysisSchema = z.object({
   status: z.enum(['detected', 'not_detected', 'uncertain']),
-  confidence: z.coerce.number().min(0).max(1),
-  imageQuality: z.coerce.number().min(0).max(1),
+  confidence: z.preprocess(toProbability, z.number().min(0).max(1)),
+  imageQuality: z.preprocess(toProbability, z.number().min(0).max(1)),
   reason: z.string().min(1).max(220),
 });
 type AnalysisResult = z.infer<typeof analysisSchema>;
