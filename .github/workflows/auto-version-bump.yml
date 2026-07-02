@@ -1,13 +1,14 @@
 name: 🔢 Auto bump app version
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [release/prod]
 
 permissions:
   contents: write
 
 concurrency:
-  group: auto-version-bump-manual
+  group: auto-version-bump-release-prod
   cancel-in-progress: true
 
 jobs:
