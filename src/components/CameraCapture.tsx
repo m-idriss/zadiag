@@ -17,8 +17,8 @@ export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureP
   const [capturedAt, setCapturedAt] = useState<Date>();
   const [error, setError] = useState<string>();
   const [opening, setOpening] = useState(false);
-
-  useEffect(() => () => stopCamera(), []);
+  const [permissionState, setPermissionState] = useState<PermissionState | 'unknown'>('unknown');
+  const autoOpenedRef = useRef(false);
 
   const stopCamera = () => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -44,12 +44,44 @@ export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureP
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
-    } catch {
-      setError(t('requestCamera'));
+      setPermissionState('granted');
+    } catch (error) {
+      const denied = error instanceof DOMException && (error.name === 'NotAllowedError' || error.name === 'SecurityError');
+      if (denied) setPermissionState('denied');
+      setError(denied ? t('cameraPermissionDenied') : t('requestCamera'));
     } finally {
       setOpening(false);
     }
   };
+
+  useEffect(() => () => stopCamera(), []);
+
+  useEffect(() => {
+    let alive = true;
+    const permissionApi = navigator.permissions;
+    if (!permissionApi?.query) return () => { alive = false; };
+    let statusRef: PermissionStatus | undefined;
+    const updateFromStatus = (state: PermissionState) => {
+      if (!alive) return;
+      setPermissionState(state);
+      if (state === 'denied') setError(t('cameraPermissionDenied'));
+      if (state === 'granted' && !autoOpenedRef.current && !preview && !streamRef.current) {
+        autoOpenedRef.current = true;
+        void openCamera();
+      }
+    };
+    permissionApi.query({ name: 'camera' as PermissionName }).then((status) => {
+      statusRef = status;
+      updateFromStatus(status.state);
+      status.onchange = () => updateFromStatus(status.state);
+    }).catch(() => {
+      setPermissionState('unknown');
+    });
+    return () => {
+      alive = false;
+      if (statusRef) statusRef.onchange = null;
+    };
+  }, [preview, t]);
 
   const capture = () => {
     const video = videoRef.current;
@@ -93,7 +125,7 @@ export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureP
       {!streamRef.current && !preview && (
         <IonButton expand="block" color="light" disabled={opening} onClick={openCamera}>
           {opening ? <IonSpinner name="crescent" /> : <IonIcon icon={camera} slot="start" />}
-          {t('openCamera')}
+          {permissionState === 'denied' ? t('openCameraSettings') : t('openCamera')}
         </IonButton>
       )}
 
