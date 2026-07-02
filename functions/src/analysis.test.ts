@@ -82,3 +82,56 @@ test('calls Gemini with the expected payload and returns a conforming analysis r
     reason: 'clear',
   });
 });
+
+test('retries once when Gemini first answers not_detected', async () => {
+  const bodies: string[] = [];
+  let callCount = 0;
+  const result = await analyzeWithGemini('data:image/png;base64,AAAA', {
+    model: 'gemini-test-model',
+    getAccessToken: async () => 'token-123',
+    fetchImpl: async (_input, init) => {
+      bodies.push(String(init?.body ?? ''));
+      callCount += 1;
+      const payload = callCount === 1
+        ? {
+            candidates: [
+              {
+                finishReason: 'STOP',
+                content: {
+                  parts: [
+                    {
+                      text: '{"status":"not_detected","confidence":"0.18","imageQuality":"0.41","reason":"first pass"}',
+                    },
+                  ],
+                },
+              },
+            ],
+          }
+        : {
+            candidates: [
+              {
+                finishReason: 'STOP',
+                content: {
+                  parts: [
+                    {
+                      text: '{"status":"detected","confidence":"0.91","imageQuality":"0.88","reason":"second pass"}',
+                    },
+                  ],
+                },
+              },
+            ],
+          };
+      return new Response(JSON.stringify(payload), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    },
+  });
+
+  assert.equal(callCount, 2);
+  assert.equal(bodies.length, 2);
+  assert.match(bodies[1], /second pass/i);
+  assert.deepEqual(result, {
+    status: 'detected',
+    confidence: 0.91,
+    imageQuality: 0.88,
+    reason: 'second pass',
+  });
+});

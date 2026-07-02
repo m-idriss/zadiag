@@ -93,28 +93,23 @@ type GeminiGenerateContentResponse = {
   error?: unknown;
 };
 
-export const analyzeGeminiResponse = (payload: GeminiGenerateContentResponse) => {
-  if (payload.error) {
-    throw new Error(`Gemini API returned an error: ${JSON.stringify(payload.error)}`);
-  }
-  const candidate = payload.candidates?.[0];
-  const text = candidate?.content?.parts?.map((part) => part.text ?? '').join('').trim();
-  if (!text) {
-    throw new Error('Gemini response did not contain text.');
-  }
-  if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
-    console.warn(`Gemini response finished with ${candidate.finishReason}, attempting to parse payload anyway.`);
-  }
-  return normalizeAnalysisResult(JSON.parse(extractJsonPayload(text)));
-};
+const buildPrompt = (retry: boolean) => [
+  'Check whether the treatment aid is clearly visible in the photo.',
+  retry ? 'This is a second pass. Re-check carefully before answering.' : '',
+  'Return JSON only.',
+  'Keys: status, confidence, imageQuality, reason.',
+  'status must be detected, not_detected, or uncertain.',
+  retry ? 'Only use not_detected if you are genuinely confident the aid is not visible.' : '',
+].filter(Boolean).join(' ');
 
-export const analyzeWithGemini = async (
+const requestGeminiAnalysis = async (
   imageDataUrl: string,
   options: {
     model: string;
     getAccessToken: () => Promise<string | null | undefined>;
     fetchImpl?: typeof fetch;
   },
+  retry: boolean,
 ): Promise<AnalysisResult> => {
   const { mimeType, data } = parseImageDataUrl(imageDataUrl);
   const token = await options.getAccessToken();
@@ -133,12 +128,7 @@ export const analyzeWithGemini = async (
           role: 'user',
           parts: [
             {
-              text: [
-                'Check whether the treatment aid is clearly visible in the photo.',
-                'Return JSON only.',
-                'Keys: status, confidence, imageQuality, reason.',
-                'status must be detected, not_detected, or uncertain.',
-              ].join(' '),
+              text: buildPrompt(retry),
             },
             {
               inline_data: {
@@ -164,4 +154,37 @@ export const analyzeWithGemini = async (
 
   const payload = await response.json() as GeminiGenerateContentResponse;
   return analyzeGeminiResponse(payload);
+};
+
+export const analyzeGeminiResponse = (payload: GeminiGenerateContentResponse) => {
+  if (payload.error) {
+    throw new Error(`Gemini API returned an error: ${JSON.stringify(payload.error)}`);
+  }
+  const candidate = payload.candidates?.[0];
+  const text = candidate?.content?.parts?.map((part) => part.text ?? '').join('').trim();
+  if (!text) {
+    throw new Error('Gemini response did not contain text.');
+  }
+  if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
+    console.warn(`Gemini response finished with ${candidate.finishReason}, attempting to parse payload anyway.`);
+  }
+  return normalizeAnalysisResult(JSON.parse(extractJsonPayload(text)));
+};
+
+export const analyzeWithGemini = async (
+  imageDataUrl: string,
+  options: {
+    model: string;
+    getAccessToken: () => Promise<string | null | undefined>;
+    fetchImpl?: typeof fetch;
+  },
+): Promise<AnalysisResult> => {
+  const initialResult = await requestGeminiAnalysis(imageDataUrl, options, false);
+  if (initialResult.status !== 'not_detected') return initialResult;
+  try {
+    return await requestGeminiAnalysis(imageDataUrl, options, true);
+  } catch (error) {
+    console.warn('Gemini retry failed, keeping first result', error);
+    return initialResult;
+  }
 };
