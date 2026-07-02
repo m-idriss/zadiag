@@ -137,13 +137,6 @@ export function SettingsScreen({
           {codeError ? <span className="form-error">{t('regenerateCodeError')}</span> : null}
         </section>
       ) : null}
-      {parentRecoveryCode ? (
-        <section className="card code-box settings-link-code-card">
-          <small>{t('parentRecoveryCode')}</small>
-          <strong>{parentRecoveryCode}</strong>
-          <span>{t('parentRecoverHelp')}</span>
-        </section>
-      ) : null}
       <section className="card history-row settings-history-row">
         <div className="history-icon settings-history-icon" aria-hidden="true">🌐</div>
         <div>
@@ -166,6 +159,13 @@ export function SettingsScreen({
         <h2>{t('privacyDefaults')}</h2>
         <ul><li>{t('noFaceRecognition')}</li><li>{t('noModelTraining')}</li><li>{t('noPhotoUpload')}</li><li>{t('immediateDeletion')}</li></ul>
       </section>
+      {parentRecoveryCode ? (
+        <section className="card code-box settings-link-code-card">
+          <small>{t('parentRecoveryCode')}</small>
+          <strong>{parentRecoveryCode}</strong>
+          <span>{t('parentRecoverHelp')}</span>
+        </section>
+      ) : null}
       <Disclaimer t={t} />
       <IonButton expand="block" fill="outline" color="danger" onClick={confirmReset}>{t('resetDemo')}</IonButton>
     </div>
