@@ -43,8 +43,8 @@ const defaultPlan = {
 const recoveryLifetimeMs = 90 * 24 * 60 * 60 * 1000;
 const analysisSchema = z.object({
   status: z.enum(['detected', 'not_detected', 'uncertain']),
-  confidence: z.number().min(0).max(1),
-  imageQuality: z.number().min(0).max(1),
+  confidence: z.coerce.number().min(0).max(1),
+  imageQuality: z.coerce.number().min(0).max(1),
   reason: z.string().min(1).max(220),
 });
 type AnalysisResult = z.infer<typeof analysisSchema>;
@@ -85,22 +85,19 @@ const analyzeWithGemini = async (imageDataUrl: string): Promise<AnalysisResult> 
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            {
-              text: [
-                'You are a visual checker for treatment adherence.',
-                'Judge only what is visible in the photo.',
-                'Do not diagnose.',
-                'If the image is unclear, mark it as uncertain.',
-                'Return JSON only with keys status, confidence, imageQuality, and reason.',
-                'Use status "detected" when visible, "not_detected" when clearly absent, and "uncertain" when the image is too unclear.',
-                'Explain the result briefly in one sentence.',
-              ].join(' '),
-            },
+      body: JSON.stringify({
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                text: [
+                  'Check whether the treatment aid is clearly visible in the photo.',
+                  'Return JSON only.',
+                  'Keys: status, confidence, imageQuality, reason.',
+                  'status must be detected, not_detected, or uncertain.',
+                ].join(' '),
+              },
             {
               inline_data: {
                 mime_type: mimeType,
@@ -111,8 +108,8 @@ const analyzeWithGemini = async (imageDataUrl: string): Promise<AnalysisResult> 
         },
       ],
       generationConfig: {
-        temperature: 0.1,
-        maxOutputTokens: 220,
+        temperature: 0,
+        maxOutputTokens: 512,
         responseMimeType: 'application/json',
       },
     }),
