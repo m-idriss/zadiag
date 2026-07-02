@@ -3,23 +3,19 @@ import type { Locale, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { Disclaimer } from '../components/Disclaimer';
 import { StatusPill } from '../components/StatusPill';
-import { formatAnalysisReason } from '../domain/analysisReason';
 
 export function ResultScreen({
   event,
   done,
-  locale,
   t,
 }: {
   event: VerificationEvent;
   done: () => void;
-  locale: Locale;
   t: (key: MessageKey) => string;
   }) {
   const success = event.status === 'detected';
   const confidence = event.confidence != null ? Math.round(event.confidence * 100) : undefined;
   const quality = event.imageQuality != null ? Math.round(event.imageQuality * 100) : undefined;
-  const reason = formatAnalysisReason(event.status, event.reason, locale, t);
   return (
     <main className="page result-page">
       <div className={`result-icon ${success ? 'success' : ''}`}>{success ? '✓' : '↻'}</div>
@@ -27,7 +23,7 @@ export function ResultScreen({
       <p className="hero-copy">{success ? t('visibleMessage') : t('unclearResult')}</p>
       <StatusPill status={event.status} t={t} />
       {event.analysisSource ? <p className="result-reason"><strong>{t('analysisSource')}:</strong> {event.analysisSource === 'ai' ? t('analysisSourceAi') : t('analysisSourceFallback')}</p> : null}
-      {reason ? <p className="result-reason"><strong>{t('analysisReason')}:</strong> {reason}</p> : null}
+      {event.reason ? <p className="result-reason"><strong>{t('analysisReason')}:</strong> {event.reason}</p> : null}
       {confidence || quality ? (
         <div className="result-metrics">
           {confidence ? <span>{t('analysisConfidence')} {confidence}%</span> : null}

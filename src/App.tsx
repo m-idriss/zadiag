@@ -221,7 +221,7 @@ export function App() {
   } else if (route === 'camera') {
     content = <CameraScreen busy={busy} submitError={submitError} back={() => setRoute('app')} submit={submit} t={t} />;
   } else if (route === 'result' && result) {
-    content = <ResultScreen event={result} done={() => { setResult(undefined); setRoute('app'); }} locale={state.locale} t={t} />;
+    content = <ResultScreen event={result} done={() => { setResult(undefined); setRoute('app'); }} t={t} />;
   } else {
     const role = state.role ?? 'child';
     const screen = tab === 'history'
