@@ -10,6 +10,7 @@ export function SettingsScreen({
   t,
   locale,
   setLocale,
+  updateAvailable,
   forceAppUpdate,
   reset,
   role,
@@ -27,7 +28,8 @@ export function SettingsScreen({
   t: (key: MessageKey) => string;
   locale: Locale;
   setLocale: (locale: Locale) => Promise<void>;
-  forceAppUpdate: () => Promise<void>;
+  updateAvailable: boolean;
+  forceAppUpdate: () => Promise<boolean>;
   reset: () => void;
   role: Role;
   enableNotifications: () => Promise<void>;
@@ -111,6 +113,7 @@ export function SettingsScreen({
     } catch (error) {
       console.error(error);
       setUpdateError(true);
+    } finally {
       setUpdatingApp(false);
     }
   };
@@ -250,7 +253,7 @@ export function SettingsScreen({
           <IonButton
             className="settings-inline-action settings-inline-action-contained"
             size="small"
-            disabled={updatingApp}
+            disabled={updatingApp || !updateAvailable}
             onClick={() => { void forceUpdate(); }}
           >
             {updatingApp ? t('settingsUpdateChecking') : t('settingsUpdateAction')}
