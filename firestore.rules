@@ -10,11 +10,6 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/families/$(familyId)).data.members[request.auth.uid] in ['parent', 'child'];
     }
 
-    function childMember(familyId) {
-      return signedIn()
-        && get(/databases/$(database)/documents/families/$(familyId)).data.members[request.auth.uid] == 'child';
-    }
-
     match /users/{userId} {
       allow read: if signedIn() && request.auth.uid == userId;
       allow write: if false;
@@ -26,11 +21,7 @@ service cloud.firestore {
 
       match /checks/{checkId} {
         allow read: if familyMember(familyId);
-        allow create, delete: if false;
-        allow update: if childMember(familyId)
-          && resource.data.status == 'pending'
-          && request.resource.data.status == 'analyzing'
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'capturedAt']);
+        allow create, update, delete: if false;
       }
     }
 

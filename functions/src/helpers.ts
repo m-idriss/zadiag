@@ -15,3 +15,22 @@ export const assertChildName = (value: unknown) => {
   if (childName.length < 1 || childName.length > 40) throw new Error('invalid_child_name');
   return childName;
 };
+
+export const isFreshCheckSubmission = (
+  check: { status?: unknown; requestedAt?: unknown; expiresAt?: unknown; capturedAt?: unknown },
+  capturedAt: unknown,
+  now = Date.now(),
+) => {
+  const requestedAtMs = Date.parse(String(check.requestedAt ?? ''));
+  const expiresAtMs = Date.parse(String(check.expiresAt ?? ''));
+  const capturedAtMs = Date.parse(String(capturedAt ?? ''));
+  const isNewSubmission = check.status === 'pending' && !check.capturedAt;
+  const isLegacySubmission = check.status === 'analyzing' && String(check.capturedAt) === String(capturedAt);
+  return (isNewSubmission || isLegacySubmission)
+    && Number.isFinite(requestedAtMs)
+    && Number.isFinite(expiresAtMs)
+    && Number.isFinite(capturedAtMs)
+    && capturedAtMs >= requestedAtMs
+    && capturedAtMs <= now + 30_000
+    && now <= expiresAtMs;
+};

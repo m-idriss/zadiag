@@ -56,9 +56,9 @@ describe('family isolation', () => {
 });
 
 describe('check submission', () => {
-  test('allows the child to atomically move a pending check to analyzing', async () => {
+  test('denies direct child check submissions so the server validates expiry', async () => {
     const childDb = environment.authenticatedContext('child').firestore();
-    await assertSucceeds(updateDoc(doc(childDb, 'families/family-1/checks/check-1'), {
+    await assertFails(updateDoc(doc(childDb, 'families/family-1/checks/check-1'), {
       status: 'analyzing',
       capturedAt: new Date().toISOString(),
     }));
