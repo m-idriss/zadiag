@@ -120,8 +120,6 @@ export const createFamily = onCall({ region, cors, enforceAppCheck: true }, asyn
       plan: defaultPlan,
       activeCheckId: checkRef.id,
       activeCheckExpiresAt: checkExpiresAt.toISOString(),
-      parentRecoveryCode: recoveryCode,
-      parentRecoveryCodeExpiresAt: recoveryExpiresAt.toISOString(),
       createdAt: now.toISOString(),
     });
     transaction.create(userRef, {
@@ -129,6 +127,8 @@ export const createFamily = onCall({ region, cors, enforceAppCheck: true }, asyn
       role: 'parent',
       linkingCode: code,
       linkingCodeExpiresAt: expiresAt.toISOString(),
+      parentRecoveryCode: recoveryCode,
+      parentRecoveryCodeExpiresAt: recoveryExpiresAt.toISOString(),
       createdAt: now.toISOString(),
     });
     transaction.create(linkRef, {
@@ -186,8 +186,8 @@ export const recoverParent = onCall({ region, cors, enforceAppCheck: true }, asy
       .map(([memberId]) => memberId);
     const familyUpdate: Record<string, unknown> = {
       [`members.${uid}`]: 'parent',
-      parentRecoveryCode: nextCode,
-      parentRecoveryCodeExpiresAt: nextExpiresAt.toISOString(),
+      parentRecoveryCode: FieldValue.delete(),
+      parentRecoveryCodeExpiresAt: FieldValue.delete(),
       updatedAt: FieldValue.serverTimestamp(),
     };
     previousParentIds.forEach((memberId) => { familyUpdate[`members.${memberId}`] = FieldValue.delete(); });
@@ -196,6 +196,8 @@ export const recoverParent = onCall({ region, cors, enforceAppCheck: true }, asy
     transaction.set(userRef, {
       familyId: familyRef.id,
       role: 'parent',
+      parentRecoveryCode: nextCode,
+      parentRecoveryCodeExpiresAt: nextExpiresAt.toISOString(),
       recoveredAt: new Date().toISOString(),
     });
     transaction.create(nextRecoveryRef, createRecoveryRecord(familyRef.id, nextExpiresAt));
@@ -211,32 +213,66 @@ export const ensureParentRecoveryCode = onCall({ region, cors, enforceAppCheck: 
   const familyRef = db.collection('families').doc(familyId);
   const profileRef = db.collection('users').doc(uid);
   const [family, profile] = await Promise.all([familyRef.get(), profileRef.get()]);
-  if (!family.exists || !profile.exists || profile.data()?.familyId !== familyId) {
-    throw new HttpsError('permission-denied', 'Only a family member can refresh the recovery code.');
+  if (
+    !family.exists
+    || !profile.exists
+    || profile.data()?.familyId !== familyId
+    || profile.data()?.role !== 'parent'
+    || family.data()?.members?.[uid] !== 'parent'
+  ) {
+    throw new HttpsError('permission-denied', 'Only the parent can refresh the recovery code.');
   }
-  const existingCode = String(family.data()?.parentRecoveryCode ?? '');
-  const existingExpiry = Date.parse(String(family.data()?.parentRecoveryCodeExpiresAt ?? ''));
-  if (isRecoveryCode(existingCode) && existingExpiry > Date.now()) return { recoveryCode: existingCode };
+  const existingCode = String(profile.data()?.parentRecoveryCode ?? '');
+  const existingExpiry = Date.parse(String(profile.data()?.parentRecoveryCodeExpiresAt ?? ''));
+  const legacyFamilyCode = String(family.data()?.parentRecoveryCode ?? '');
+  if (isRecoveryCode(existingCode) && existingExpiry > Date.now()) {
+    if (legacyFamilyCode || family.data()?.parentRecoveryCodeExpiresAt) {
+      const cleanup = db.batch();
+      cleanup.update(familyRef, {
+        parentRecoveryCode: FieldValue.delete(),
+        parentRecoveryCodeExpiresAt: FieldValue.delete(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      if (isRecoveryCode(legacyFamilyCode) && legacyFamilyCode !== existingCode) {
+        cleanup.delete(db.collection('parentRecoveryCodes').doc(hashLinkCode(legacyFamilyCode)));
+      }
+      await cleanup.commit();
+    }
+    return { recoveryCode: existingCode };
+  }
 
   const recoveryCode = createRecoveryCode();
   const expiresAt = new Date(Date.now() + recoveryLifetimeMs);
   const recoveryRef = db.collection('parentRecoveryCodes').doc(hashLinkCode(recoveryCode));
   await db.runTransaction(async (transaction) => {
-    const current = await transaction.get(familyRef);
+    const [currentFamily, current] = await Promise.all([
+      transaction.get(familyRef),
+      transaction.get(profileRef),
+    ]);
     const currentCode = String(current.data()?.parentRecoveryCode ?? '');
     const currentExpiry = Date.parse(String(current.data()?.parentRecoveryCodeExpiresAt ?? ''));
     if (isRecoveryCode(currentCode) && currentExpiry > Date.now()) return;
-    transaction.update(familyRef, {
+    transaction.update(profileRef, {
       parentRecoveryCode: recoveryCode,
       parentRecoveryCodeExpiresAt: expiresAt.toISOString(),
       updatedAt: FieldValue.serverTimestamp(),
     });
+    if (currentFamily.data()?.parentRecoveryCode || currentFamily.data()?.parentRecoveryCodeExpiresAt) {
+      transaction.update(familyRef, {
+        parentRecoveryCode: FieldValue.delete(),
+        parentRecoveryCodeExpiresAt: FieldValue.delete(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    }
     transaction.create(recoveryRef, createRecoveryRecord(familyId, expiresAt));
     if (isRecoveryCode(currentCode)) {
       transaction.delete(db.collection('parentRecoveryCodes').doc(hashLinkCode(currentCode)));
     }
+    if (isRecoveryCode(legacyFamilyCode) && legacyFamilyCode !== currentCode) {
+      transaction.delete(db.collection('parentRecoveryCodes').doc(hashLinkCode(legacyFamilyCode)));
+    }
   });
-  const refreshed = await familyRef.get();
+  const refreshed = await profileRef.get();
   return { recoveryCode: String(refreshed.data()?.parentRecoveryCode ?? recoveryCode) };
 });
 

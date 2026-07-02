@@ -26,7 +26,6 @@ interface UserProfile {
 interface FamilyDocument {
   childName: string;
   linkingCode?: string;
-  parentRecoveryCode?: string;
   plan?: MonitoringPlan;
   members?: Record<string, string>;
 }
@@ -216,7 +215,7 @@ export class FirebaseRepository implements AppRepository {
       childLinked: role === 'child',
       consented: role === 'parent',
     };
-    try {
+    if (role === 'parent') try {
       const ensureRecoveryCode = httpsCallable<{ familyId: string }, { recoveryCode: string }>(
         this.services.functions,
         'ensureParentRecoveryCode',
@@ -234,7 +233,6 @@ export class FirebaseRepository implements AppRepository {
       this.state.family.childName = family.childName;
       this.state.family.childLinked = childLinked;
       this.state.family.linkingCode = family.linkingCode ?? this.state.family.linkingCode;
-      this.state.family.parentRecoveryCode = family.parentRecoveryCode ?? this.state.family.parentRecoveryCode;
       this.state.plan = family.plan ?? defaultPlan;
       this.emit();
     }));
