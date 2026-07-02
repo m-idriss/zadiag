@@ -119,7 +119,8 @@ const analyzeWithGemini = async (imageDataUrl: string): Promise<AnalysisResult> 
   });
 
   if (!response.ok) {
-    throw new Error(`Gemini API request failed with status ${response.status}`);
+    const errorText = await response.text();
+    throw new Error(`Gemini API request failed with status ${response.status}: ${errorText}`);
   }
 
   const payload = await response.json() as {
