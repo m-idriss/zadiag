@@ -61,12 +61,30 @@ const toProbability = (value: unknown) => {
   return parsed > 1 && parsed <= 100 ? parsed / 100 : parsed;
 };
 const analysisSchema = z.object({
-  status: z.enum(['detected', 'not_detected', 'uncertain']),
-  confidence: z.preprocess(toProbability, z.number().min(0).max(1)),
-  imageQuality: z.preprocess(toProbability, z.number().min(0).max(1)),
-  reason: z.string().min(1).max(220),
+  status: z.unknown(),
+  confidence: z.unknown(),
+  imageQuality: z.unknown(),
+  reason: z.unknown(),
 });
-type AnalysisResult = z.infer<typeof analysisSchema>;
+type AnalysisResult = {
+  status: 'detected' | 'not_detected' | 'uncertain';
+  confidence: number;
+  imageQuality: number;
+  reason: string;
+};
+
+const normalizeStatus = (value: unknown): AnalysisResult['status'] => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (normalized === 'detected') return 'detected';
+  if (normalized === 'not_detected' || normalized === 'not detected' || normalized === 'notdetected') return 'not_detected';
+  return 'uncertain';
+};
+
+const normalizeReason = (value: unknown) => {
+  if (typeof value !== 'string') return 'analysis_unavailable';
+  const trimmed = value.trim();
+  return trimmed ? trimmed.slice(0, 220) : 'analysis_unavailable';
+};
 
 const imageDataUrlSchema = z.string().regex(/^data:(.+?);base64,(.+)$/);
 
@@ -92,6 +110,18 @@ const extractJsonPayload = (text: string) => {
   return trimmed.slice(start, end + 1);
 };
 
+const normalizeAnalysisResult = (value: unknown): AnalysisResult => {
+  const parsed = analysisSchema.parse(value);
+  const confidence = toProbability(parsed.confidence);
+  const imageQuality = toProbability(parsed.imageQuality);
+  return {
+    status: normalizeStatus(parsed.status),
+    confidence: Number.isFinite(Number(confidence)) ? Math.min(1, Math.max(0, Number(confidence))) : 0.5,
+    imageQuality: Number.isFinite(Number(imageQuality)) ? Math.min(1, Math.max(0, Number(imageQuality))) : 0.5,
+    reason: normalizeReason(parsed.reason),
+  };
+};
+
 const analyzeWithGemini = async (imageDataUrl: string): Promise<AnalysisResult> => {
   const { mimeType, data } = parseImageDataUrl(imageDataUrl);
   const token = await geminiAuth.getAccessToken();
@@ -104,19 +134,19 @@ const analyzeWithGemini = async (imageDataUrl: string): Promise<AnalysisResult> 
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              {
-                text: [
-                  'Check whether the treatment aid is clearly visible in the photo.',
-                  'Return JSON only.',
-                  'Keys: status, confidence, imageQuality, reason.',
-                  'status must be detected, not_detected, or uncertain.',
-                ].join(' '),
-              },
+    body: JSON.stringify({
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            {
+              text: [
+                'Check whether the treatment aid is clearly visible in the photo.',
+                'Return JSON only.',
+                'Keys: status, confidence, imageQuality, reason.',
+                'status must be detected, not_detected, or uncertain.',
+              ].join(' '),
+            },
             {
               inline_data: {
                 mime_type: mimeType,
@@ -128,7 +158,7 @@ const analyzeWithGemini = async (imageDataUrl: string): Promise<AnalysisResult> 
       ],
       generationConfig: {
         temperature: 0,
-        maxOutputTokens: 512,
+        maxOutputTokens: 2048,
         responseMimeType: 'application/json',
       },
     }),
@@ -160,11 +190,10 @@ const analyzeWithGemini = async (imageDataUrl: string): Promise<AnalysisResult> 
   }
 
   if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
-    throw new Error(`Gemini response was incomplete: ${candidate.finishReason}`);
+    console.warn(`Gemini response finished with ${candidate.finishReason}, attempting to parse payload anyway.`);
   }
 
-  const parsed = analysisSchema.parse(JSON.parse(extractJsonPayload(text)));
-  return parsed;
+  return normalizeAnalysisResult(JSON.parse(extractJsonPayload(text)));
 };
 
 const createRecoveryRecord = (familyId: string, expiresAt: Date) => ({
@@ -567,6 +596,7 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
   const analysisUpdate = {
     capturedAt,
     status: result.status ?? 'uncertain',
+    analysisSource: result.reason === 'analysis_unavailable' ? 'fallback' : 'ai',
     ...(result.confidence !== undefined ? { confidence: result.confidence } : {}),
     ...(result.imageQuality !== undefined ? { imageQuality: result.imageQuality } : {}),
     ...(result.reason ? { reason: result.reason } : {}),
