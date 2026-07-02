@@ -36,43 +36,44 @@ export function SettingsScreen({
   const confirmReset = () => {
     if (window.confirm(t('resetConfirm'))) reset();
   };
+  const notificationEnabled = notificationState === 'enabled';
   const notificationStatusKey = notificationState === 'enabled'
     ? 'settingsNotificationsStatusEnabled'
     : 'settingsNotificationsStatusDisabled';
+  const notificationDetailKey = notificationState === 'enabled'
+    ? 'settingsNotificationsDetailEnabled'
+    : 'settingsNotificationsDetailDisabled';
 
   return (
     <div className="content-screen settings-screen">
       <header className="screen-header"><div><small>Zadiag</small><h1>{t('settings')}</h1><p>{t('settingsHint')}</p></div></header>
-      <section className="card settings-row">
-        <div className="install-icon">⇧</div>
-        <div className="settings-row-copy">
-          <div className="settings-row-head">
-            <h2>{t('installTitle')}</h2>
-            <span className="status-pill status-detected">{t('settingsInstallStatus')}</span>
-          </div>
-          <p>{standalone ? t('installed') : t('installBody')}</p>
+      <section className="card history-row settings-history-row">
+        <div className="history-icon settings-history-icon">⇧</div>
+        <div>
+          <strong>{t('installTitle')}</strong>
+          <small>{t('settingsInstallDetail')}</small>
         </div>
+        <span className="status-pill status-detected">{t('settingsInstallStatus')}</span>
       </section>
-      {role === 'child' ? <section className="card install-card notification-card">
-        <div className="install-icon notification-icon" aria-hidden="true">🔔</div>
-        <div className="settings-row-copy">
-          <div className="settings-row-head">
-            <h2>{t('notifications')}</h2>
-            <span className={notificationState === 'enabled' ? 'status-pill status-detected' : 'status-pill status-missed'}>
-              {t(notificationStatusKey)}
-            </span>
-          </div>
-          <p>{standalone ? t('pushReadyHint') : t('reminderHelp')}</p>
-          {notificationState !== 'enabled' ? <IonButton
-            className="settings-inline-action"
-            disabled={!standalone || notificationState === 'saving'}
-            onClick={() => { void requestNotifications(); }}
-          >
-            {notificationState === 'saving' ? t('enablingReminders') : t('enableReminders')}
-          </IonButton> : null}
-          {notificationState === 'error' ? <small className="notification-note">{t('pushError')}</small> : null}
+      {role === 'child' ? <section className="card history-row settings-history-row">
+        <div className="history-icon settings-history-icon" aria-hidden="true">🔔</div>
+        <div>
+          <strong>{t('notifications')}</strong>
+          <small>{t(notificationDetailKey)}</small>
         </div>
+        <span className={notificationEnabled ? 'status-pill status-detected' : 'status-pill status-missed'}>
+          {t(notificationStatusKey)}
+        </span>
       </section> : null}
+      {role === 'child' && !notificationEnabled ? <IonButton
+        className="settings-inline-action"
+        size="small"
+        disabled={!standalone || notificationState === 'saving'}
+        onClick={() => { void requestNotifications(); }}
+      >
+        {notificationState === 'saving' ? t('enablingReminders') : t('enableReminders')}
+      </IonButton> : null}
+      {role === 'child' && notificationState === 'error' ? <small className="notification-note">{t('pushError')}</small> : null}
       <section className="card privacy-card">
         <h2>{t('privacyDefaults')}</h2>
         <ul><li>{t('noFaceRecognition')}</li><li>{t('noModelTraining')}</li><li>{t('noPhotoUpload')}</li><li>{t('immediateDeletion')}</li></ul>

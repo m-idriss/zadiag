@@ -152,25 +152,11 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 
 .settings-screen { display: grid; align-content: start; gap: 14px; }
 .settings-screen .screen-header { margin-bottom: 6px; }
-.settings-screen .screen-header small { font-size: 12px; }
-.settings-screen .screen-header h1 { font-size: clamp(25px, 7vw, 32px); }
-.settings-screen .screen-header p,
-.settings-screen .card p,
-.settings-screen .card li,
-.settings-screen .notification-note,
-.settings-screen .disclaimer p { font-size: 13px; line-height: 1.45; }
-.settings-screen .card h2 { font-size: 17px; }
-.settings-row { display: flex; align-items: center; gap: 15px; }
-.settings-row p { margin: 4px 0 0; }
-.install-icon { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 16px; color: var(--teal); background: var(--mint); font-size: 24px; }
-.notification-card { padding: 16px 18px; }
-.notification-card p { margin-bottom: 0; }
-.notification-icon { font-size: 20px; }
-.settings-row-copy { flex: 1; min-width: 0; }
-.settings-row-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.settings-row-head h2 { margin: 0; }
-.settings-inline-action { width: fit-content; min-height: 36px; margin-top: 10px; --padding-start: 14px; --padding-end: 14px; --border-radius: 12px; font-size: 13px; }
-.notification-note { color: var(--coral); font-size: 12px; font-weight: 800; margin-top: -6px; }
+.settings-screen .screen-header small { color: var(--muted); }
+.settings-history-row { margin: 0; }
+.settings-history-icon { font-size: 24px; }
+.settings-inline-action { width: fit-content; min-height: 34px; margin-top: -6px; --padding-start: 14px; --padding-end: 14px; --border-radius: 12px; font-size: 12px; }
+.notification-note { color: var(--coral); font-size: 12px; font-weight: 800; margin-top: -8px; }
 .privacy-card ul { padding-left: 19px; color: var(--muted); line-height: 1.8; }
 
 .camera-page { min-height: 100dvh; padding: calc(14px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom)); background: var(--navy); color: white; }
