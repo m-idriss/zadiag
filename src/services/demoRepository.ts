@@ -3,9 +3,10 @@ import type {
   AppState,
   MonitoringPlan,
   Role,
+  RoutineAssignment,
   VerificationEvent,
 } from '../domain/models';
-import { defaultPlan } from '../domain/models';
+import { createDefaultRoutineAssignment, DEFAULT_ROUTINE_ID, primaryRoutineAssignment } from '../domain/models';
 import { isFreshCapture } from '../domain/adherence';
 import type { AppRepository } from './contracts';
 
@@ -17,6 +18,7 @@ function seedEvents(now = new Date()): VerificationEvent[] {
   return [
     {
       id: 'active',
+      routineId: DEFAULT_ROUTINE_ID,
       sessionId: crypto.randomUUID(),
       requestedAt: minutes(-2),
       expiresAt: minutes(18),
@@ -24,6 +26,7 @@ function seedEvents(now = new Date()): VerificationEvent[] {
     },
     {
       id: 'yesterday',
+      routineId: DEFAULT_ROUTINE_ID,
       sessionId: 'closed-1',
       requestedAt: days(-1),
       expiresAt: days(-1),
@@ -34,6 +37,7 @@ function seedEvents(now = new Date()): VerificationEvent[] {
     },
     {
       id: 'two-days',
+      routineId: DEFAULT_ROUTINE_ID,
       sessionId: 'closed-2',
       requestedAt: days(-2),
       expiresAt: days(-2),
@@ -45,6 +49,7 @@ function seedEvents(now = new Date()): VerificationEvent[] {
     },
     {
       id: 'three-days',
+      routineId: DEFAULT_ROUTINE_ID,
       sessionId: 'closed-3',
       requestedAt: days(-3),
       expiresAt: days(-3),
@@ -68,7 +73,7 @@ function initialState(): AppState {
       parentRecoveryCode: 'PR-2345-6789-ABCD',
       consented: false,
     },
-    plan: defaultPlan,
+    routineAssignments: [createDefaultRoutineAssignment()],
     events: seedEvents(),
   };
 }
@@ -80,7 +85,8 @@ export class DemoRepository implements AppRepository {
 
   constructor() {
     const saved = localStorage.getItem(STORAGE_KEY);
-    this.state = saved ? (JSON.parse(saved) as AppState) : initialState();
+    this.state = saved ? this.migrateState(JSON.parse(saved) as AppState & { plan?: MonitoringPlan }) : initialState();
+    if (saved) localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
     this.state.family.childLinked ??= this.state.role === 'child';
     this.ensureActiveSession();
   }
@@ -149,11 +155,14 @@ export class DemoRepository implements AppRepository {
       return;
     }
     const now = new Date();
+    const assignment = primaryRoutineAssignment(this.state);
+    if (!assignment) throw new Error('routine_not_found');
     this.state.events.unshift({
       id: crypto.randomUUID(),
+      routineId: assignment.routineId,
       sessionId: crypto.randomUUID(),
       requestedAt: now.toISOString(),
-      expiresAt: new Date(now.getTime() + this.state.plan.expiryMinutes * 60_000).toISOString(),
+      expiresAt: new Date(now.getTime() + assignment.plan.expiryMinutes * 60_000).toISOString(),
       status: 'pending',
     });
     this.persist();
@@ -164,8 +173,10 @@ export class DemoRepository implements AppRepository {
     this.persist();
   }
 
-  async savePlan(plan: MonitoringPlan) {
-    this.state.plan = structuredClone(plan);
+  async savePlan(plan: MonitoringPlan, routineId = DEFAULT_ROUTINE_ID) {
+    const assignment = this.state.routineAssignments.find((item) => item.routineId === routineId);
+    if (!assignment) throw new Error('routine_not_found');
+    assignment.plan = structuredClone(plan);
     this.persist();
   }
 
@@ -207,6 +218,7 @@ export class DemoRepository implements AppRepository {
     const now = new Date();
     this.state.events.unshift({
       id: crypto.randomUUID(),
+      routineId: primaryRoutineAssignment(this.state)?.routineId ?? DEFAULT_ROUTINE_ID,
       sessionId: crypto.randomUUID(),
       requestedAt: new Date(now.getTime() - 60_000).toISOString(),
       expiresAt: new Date(now.getTime() + 19 * 60_000).toISOString(),
@@ -218,5 +230,17 @@ export class DemoRepository implements AppRepository {
   private persist() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
     this.listeners.forEach((listener) => listener());
+  }
+
+  private migrateState(state: AppState & { plan?: MonitoringPlan }): AppState {
+    const legacyPlan = state.plan;
+    const routineAssignments: RoutineAssignment[] = state.routineAssignments?.length
+      ? state.routineAssignments
+      : [{ ...createDefaultRoutineAssignment(), ...(legacyPlan ? { plan: legacyPlan } : {}) }];
+    return {
+      ...state,
+      routineAssignments,
+      events: state.events.map((event) => ({ ...event, routineId: event.routineId ?? DEFAULT_ROUTINE_ID })),
+    };
   }
 }

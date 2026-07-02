@@ -23,13 +23,34 @@ export interface MonitoringPlan {
   timeZone: string;
 }
 
-export interface VerificationEvent {
+export type RoutineStatus = 'active' | 'paused' | 'completed';
+
+export interface Routine {
   id: string;
-  sessionId: string;
+  name: string;
+  description: string;
+}
+
+export interface RoutineAssignment {
+  id: string;
+  routineId: string;
+  routine: Routine;
+  plan: MonitoringPlan;
+  status: RoutineStatus;
+  assignedAt: string;
+}
+
+export interface RoutineTask {
+  id: string;
+  routineId: string;
   requestedAt: string;
   expiresAt: string;
-  capturedAt?: string;
   status: VerificationStatus;
+}
+
+export interface VerificationEvent extends RoutineTask {
+  sessionId: string;
+  capturedAt?: string;
   analysisSource?: 'ai' | 'fallback';
   confidence?: number;
   imageQuality?: number;
@@ -51,7 +72,7 @@ export interface AppState {
   locale: Locale;
   notificationsEnabled: boolean;
   family: FamilyState;
-  plan: MonitoringPlan;
+  routineAssignments: RoutineAssignment[];
   events: VerificationEvent[];
 }
 
@@ -74,3 +95,23 @@ export const defaultPlan: MonitoringPlan = {
   expiryMinutes: 20,
   timeZone: 'Europe/Paris',
 };
+
+export const DEFAULT_ROUTINE_ID = 'orthodontic-elastics';
+
+export const defaultRoutine: Routine = {
+  id: DEFAULT_ROUTINE_ID,
+  name: 'Orthodontic Elastics',
+  description: 'Daily orthodontic elastic wear checks.',
+};
+
+export const createDefaultRoutineAssignment = (assignedAt = new Date().toISOString()): RoutineAssignment => ({
+  id: DEFAULT_ROUTINE_ID,
+  routineId: DEFAULT_ROUTINE_ID,
+  routine: defaultRoutine,
+  plan: structuredClone(defaultPlan),
+  status: 'active',
+  assignedAt,
+});
+
+export const primaryRoutineAssignment = (state: Pick<AppState, 'routineAssignments'>) =>
+  state.routineAssignments.find((assignment) => assignment.status === 'active') ?? state.routineAssignments[0];

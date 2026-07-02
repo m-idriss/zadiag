@@ -4,6 +4,7 @@ import type { VerificationEvent } from './models';
 
 const event = (status: VerificationEvent['status']): VerificationEvent => ({
   id: crypto.randomUUID(),
+  routineId: 'orthodontic-elastics',
   sessionId: crypto.randomUUID(),
   requestedAt: '2026-06-30T12:00:00.000Z',
   expiresAt: '2026-06-30T12:20:00.000Z',

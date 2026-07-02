@@ -3,7 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import type { ReactNode } from 'react';
 import type { AppRepository } from '../services/contracts';
 import type { AppState, MonitoringPlan, VerificationEvent } from '../domain/models';
-import { defaultPlan } from '../domain/models';
+import { createDefaultRoutineAssignment, DEFAULT_ROUTINE_ID, defaultPlan } from '../domain/models';
 
 let fakeRepository: AppRepository;
 
@@ -87,6 +87,7 @@ vi.mock('../components/CameraCapture', () => ({
 
 const makeActiveEvent = (): VerificationEvent => ({
   id: 'active',
+  routineId: DEFAULT_ROUTINE_ID,
   sessionId: 'session-1',
   requestedAt: new Date(Date.now() - 60_000).toISOString(),
   expiresAt: new Date(Date.now() + 15 * 60_000).toISOString(),
@@ -106,7 +107,7 @@ const makeState = (): AppState => ({
     parentRecoveryCode: 'PR-1234-5678-ABCD',
     consented: true,
   },
-  plan: structuredClone(defaultPlan) as MonitoringPlan,
+  routineAssignments: [{ ...createDefaultRoutineAssignment(), plan: structuredClone(defaultPlan) as MonitoringPlan }],
   events: [makeActiveEvent()],
 });
 
@@ -132,8 +133,12 @@ const createFakeRepository = (): AppRepository => {
       state = { ...state, notificationsEnabled: true };
       emit();
     },
-    async savePlan(plan: MonitoringPlan) {
-      state = { ...state, plan: structuredClone(plan) };
+    async savePlan(plan: MonitoringPlan, routineId = DEFAULT_ROUTINE_ID) {
+      state = {
+        ...state,
+        routineAssignments: state.routineAssignments.map((assignment) =>
+          assignment.routineId === routineId ? { ...assignment, plan: structuredClone(plan) } : assignment),
+      };
       emit();
     },
     activeSession() {

@@ -12,7 +12,15 @@ import {
 import { httpsCallable } from 'firebase/functions';
 import type { AppRepository } from './contracts';
 import { getFirebaseServices, type FirebaseServices } from './firebaseClient';
-import { defaultPlan, type AppState, type Locale, type MonitoringPlan, type Role, type VerificationEvent } from '../domain/models';
+import {
+  DEFAULT_ROUTINE_ID,
+  type AppState,
+  type Locale,
+  type MonitoringPlan,
+  type Role,
+  type RoutineAssignment,
+  type VerificationEvent,
+} from '../domain/models';
 import { isFreshCapture } from '../domain/adherence';
 
 const PREFERENCES_KEY = 'zadiag.preferences.v1';
@@ -26,7 +34,6 @@ interface UserProfile {
 interface FamilyDocument {
   childName: string;
   linkingCode?: string;
-  plan?: MonitoringPlan;
   members?: Record<string, string>;
 }
 
@@ -37,13 +44,14 @@ const initialState = (): AppState => {
     notificationsEnabled: false,
     role: preferences.role,
     family: { linked: false, childLinked: false, childName: '', linkingCode: '', parentRecoveryCode: '', consented: false },
-    plan: defaultPlan,
+    routineAssignments: [],
     events: [],
   };
 };
 
 const asEvent = (id: string, data: DocumentData): VerificationEvent => ({
   id,
+  routineId: String(data.routineId ?? DEFAULT_ROUTINE_ID),
   sessionId: String(data.sessionId),
   requestedAt: String(data.requestedAt),
   expiresAt: String(data.expiresAt),
@@ -53,6 +61,19 @@ const asEvent = (id: string, data: DocumentData): VerificationEvent => ({
   confidence: data.confidence,
   imageQuality: data.imageQuality,
   reason: data.reason,
+});
+
+const asRoutineAssignment = (id: string, data: DocumentData): RoutineAssignment => ({
+  id,
+  routineId: String(data.routineId ?? id),
+  routine: {
+    id: String(data.routine?.id ?? data.routineId ?? id),
+    name: String(data.routine?.name ?? ''),
+    description: String(data.routine?.description ?? ''),
+  },
+  plan: data.plan as MonitoringPlan,
+  status: data.status,
+  assignedAt: String(data.assignedAt),
 });
 
 export class FirebaseRepository implements AppRepository {
@@ -126,8 +147,8 @@ export class FirebaseRepository implements AppRepository {
 
   async requestCheckNow() {
     if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
-    const requestCheckNow = httpsCallable<{ familyId: string }, void>(this.services.functions, 'requestCheckNow');
-    try { await requestCheckNow({ familyId: this.state.family.id }); }
+    const requestCheckNow = httpsCallable<{ familyId: string; routineId: string }, void>(this.services.functions, 'requestCheckNow');
+    try { await requestCheckNow({ familyId: this.state.family.id, routineId: DEFAULT_ROUTINE_ID }); }
     catch (error) {
       if ((error as { code?: string }).code === 'functions/already-exists') throw new Error('active_check_exists');
       throw error;
@@ -150,10 +171,10 @@ export class FirebaseRepository implements AppRepository {
     this.emit();
   }
 
-  async savePlan(plan: MonitoringPlan) {
+  async savePlan(plan: MonitoringPlan, routineId = DEFAULT_ROUTINE_ID) {
     if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
-    const updatePlan = httpsCallable<{ familyId: string; plan: MonitoringPlan }, void>(this.services.functions, 'updatePlan');
-    await updatePlan({ familyId: this.state.family.id, plan });
+    const updatePlan = httpsCallable<{ familyId: string; routineId: string; plan: MonitoringPlan }, void>(this.services.functions, 'updatePlan');
+    await updatePlan({ familyId: this.state.family.id, routineId, plan });
   }
 
   activeSession() {
@@ -225,6 +246,8 @@ export class FirebaseRepository implements AppRepository {
     } catch (error) {
       console.error('Unable to refresh the parent recovery code', error);
     }
+    const migrateRoutines = httpsCallable<{ familyId: string }, void>(this.services.functions, 'migrateFamilyRoutines');
+    await migrateRoutines({ familyId });
     const familyRef = doc(this.services.db, 'families', familyId);
     this.remoteSubscriptions.push(onSnapshot(familyRef, (snapshot) => {
       if (!snapshot.exists()) return;
@@ -233,7 +256,11 @@ export class FirebaseRepository implements AppRepository {
       this.state.family.childName = family.childName;
       this.state.family.childLinked = childLinked;
       this.state.family.linkingCode = family.linkingCode ?? this.state.family.linkingCode;
-      this.state.plan = family.plan ?? defaultPlan;
+      this.emit();
+    }));
+    const assignments = query(collection(familyRef, 'routineAssignments'), orderBy('assignedAt', 'asc'));
+    this.remoteSubscriptions.push(onSnapshot(assignments, (snapshot) => {
+      this.state.routineAssignments = snapshot.docs.map((item) => asRoutineAssignment(item.id, item.data()));
       this.emit();
     }));
     const checks = query(collection(familyRef, 'checks'), orderBy('requestedAt', 'desc'));

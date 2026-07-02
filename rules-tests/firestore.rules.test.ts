@@ -28,10 +28,16 @@ beforeEach(async () => {
       members: { parent: 'parent', child: 'child' },
     });
     await setDoc(doc(db, 'families/family-1/checks/check-1'), {
+      routineId: 'orthodontic-elastics',
       sessionId: 'session-1',
       requestedAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 60_000).toISOString(),
       status: 'pending',
+    });
+    await setDoc(doc(db, 'families/family-1/routineAssignments/orthodontic-elastics'), {
+      routineId: 'orthodontic-elastics',
+      status: 'active',
+      assignedAt: new Date().toISOString(),
     });
     await setDoc(doc(db, 'users/parent'), { familyId: 'family-1', role: 'parent' });
     await setDoc(doc(db, 'linkCodes/private-hash'), { familyId: 'family-1' });
@@ -45,12 +51,14 @@ describe('family isolation', () => {
     const parentDb = environment.authenticatedContext('parent').firestore();
     await assertSucceeds(getDoc(doc(parentDb, 'families/family-1')));
     await assertSucceeds(getDoc(doc(parentDb, 'families/family-1/checks/check-1')));
+    await assertSucceeds(getDoc(doc(parentDb, 'families/family-1/routineAssignments/orthodontic-elastics')));
   });
 
   test('denies outsiders and hides linking documents', async () => {
     const outsiderDb = environment.authenticatedContext('outsider').firestore();
     const parentDb = environment.authenticatedContext('parent').firestore();
     await assertFails(getDoc(doc(outsiderDb, 'families/family-1')));
+    await assertFails(getDoc(doc(outsiderDb, 'families/family-1/routineAssignments/orthodontic-elastics')));
     await assertFails(getDoc(doc(parentDb, 'linkCodes/private-hash')));
   });
 });
@@ -79,5 +87,6 @@ describe('check submission', () => {
     const parentDb = environment.authenticatedContext('parent').firestore();
     await assertFails(updateDoc(doc(parentDb, 'families/family-1'), { childName: 'Changed' }));
     await assertFails(updateDoc(doc(parentDb, 'users/parent'), { role: 'child' }));
+    await assertFails(updateDoc(doc(parentDb, 'families/family-1/routineAssignments/orthodontic-elastics'), { status: 'paused' }));
   });
 });

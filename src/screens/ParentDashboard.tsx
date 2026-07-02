@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { adherenceSummary } from '../domain/adherence';
-import type { AppState } from '../domain/models';
+import { primaryRoutineAssignment, type AppState } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { StatusPill } from '../components/StatusPill';
 import { CodeBox } from '../components/CodeBox';
@@ -17,6 +17,7 @@ export function ParentDashboard({
   t: (key: MessageKey) => string;
 }) {
   const summary = adherenceSummary(state.events);
+  const assignment = primaryRoutineAssignment(state);
   const attention = state.events.filter((event) => ['uncertain', 'missed', 'expired', 'not_detected'].includes(event.status));
   const hasActiveCheck = state.events.some((event) => event.status === 'pending' && Date.parse(event.expiresAt) > Date.now());
   const [regenerating, setRegenerating] = useState(false);
@@ -55,8 +56,8 @@ export function ParentDashboard({
       </section>
       <section className="card plan-card">
         <div className="card-title"><h2>▣ {t('monitoringPlan')}</h2><button>{t('edit')}</button></div>
-        <p><b>{state.plan.checksPerDay}</b> {t('checksDay')} · <b>{state.plan.expiryMinutes}</b> {t('minutesRespond')}</p>
-        <div className="chips">{state.plan.windows.map((window) => <span key={window.id}>◷ {window.start}–{window.end}</span>)}</div>
+        {assignment && <p><b>{assignment.plan.checksPerDay}</b> {t('checksDay')} · <b>{assignment.plan.expiryMinutes}</b> {t('minutesRespond')}</p>}
+        <div className="chips">{assignment?.plan.windows.map((window) => <span key={window.id}>◷ {window.start}–{window.end}</span>)}</div>
         <button className="request-check" disabled={requesting} onClick={() => { void requestNow(); }}>
           {requesting ? t('requestingCheck') : hasActiveCheck ? t('requestCheckAgain') : t('requestCheckNow')}
         </button>

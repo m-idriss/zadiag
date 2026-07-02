@@ -23,6 +23,11 @@ service cloud.firestore {
         allow read: if familyMember(familyId);
         allow create, update, delete: if false;
       }
+
+      match /routineAssignments/{assignmentId} {
+        allow read: if familyMember(familyId);
+        allow create, update, delete: if false;
+      }
     }
 
     match /linkCodes/{codeHash} {

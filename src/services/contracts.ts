@@ -12,7 +12,7 @@ export interface AppRepository {
   regenerateLinkCode(): Promise<void>;
   requestCheckNow(): Promise<void>;
   savePushSubscription(subscription: PushSubscriptionJSON): Promise<void>;
-  savePlan(plan: MonitoringPlan): Promise<void>;
+  savePlan(plan: MonitoringPlan, routineId?: string): Promise<void>;
   activeSession(): VerificationEvent | undefined;
   submitCapture(sessionId: string, capturedAt: Date, imageDataUrl: string): Promise<VerificationEvent>;
   reset(): Promise<void>;

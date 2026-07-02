@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { DemoRepository } from './demoRepository';
+import { DEFAULT_ROUTINE_ID, defaultPlan } from '../domain/models';
 
 describe('DemoRepository compatibility', () => {
   beforeEach(() => localStorage.clear());
@@ -45,5 +46,22 @@ describe('DemoRepository compatibility', () => {
     await repository.savePushSubscription({ endpoint: 'https://push.example/subscription' });
 
     expect(new DemoRepository().snapshot().notificationsEnabled).toBe(true);
+  });
+
+  test('migrates legacy local state to the default routine idempotently', () => {
+    localStorage.setItem('zadiag.demo.v1', JSON.stringify({
+      locale: 'en',
+      notificationsEnabled: false,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      plan: defaultPlan,
+      events: [{ id: 'legacy', sessionId: 'session', requestedAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 60_000).toISOString(), status: 'pending' }],
+    }));
+
+    const first = new DemoRepository().snapshot();
+    const second = new DemoRepository().snapshot();
+    expect(first.routineAssignments).toHaveLength(1);
+    expect(first.routineAssignments[0].routineId).toBe(DEFAULT_ROUTINE_ID);
+    expect(first.events.every((event) => event.routineId === DEFAULT_ROUTINE_ID)).toBe(true);
+    expect(second.routineAssignments).toEqual(first.routineAssignments);
   });
 });

@@ -8,6 +8,7 @@ import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, normalizeLinkCode } from './helpers.js';
 import { analyzeWithGemini, localizeAnalysisReason, type AnalysisResult } from './analysis.js';
 import { getLocalDateKey, getWindowForDate, monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
+import { createDefaultRoutineAssignment, DEFAULT_ROUTINE_ID, type RoutineAssignmentDocument } from './routines.js';
 
 initializeApp();
 const db = getFirestore();
@@ -49,6 +50,40 @@ const createRecoveryRecord = (familyId: string, expiresAt: Date) => ({
   expiresAt: expiresAt.toISOString(),
   createdAt: new Date().toISOString(),
 });
+
+const ensureFamilyRoutineMigration = async (familyRef: FirebaseFirestore.DocumentReference) => {
+  const assignmentRef = familyRef.collection('routineAssignments').doc(DEFAULT_ROUTINE_ID);
+  await db.runTransaction(async (transaction) => {
+    const [family, assignment] = await Promise.all([
+      transaction.get(familyRef),
+      transaction.get(assignmentRef),
+    ]);
+    if (!family.exists) throw new HttpsError('not-found', 'The family could not be found.');
+    if (assignment.exists) return;
+    const legacyPlan = monitoringPlanSchema.safeParse(family.data()?.plan);
+    const assignedAt = String(family.data()?.createdAt ?? new Date().toISOString());
+    transaction.create(assignmentRef, createDefaultRoutineAssignment(
+      legacyPlan.success ? legacyPlan.data : defaultPlan,
+      assignedAt,
+    ));
+  });
+
+  const migratedFamily = await familyRef.get();
+  if (Number(migratedFamily.data()?.routineMigrationVersion ?? 0) >= 1) return assignmentRef.get();
+  const checks = await familyRef.collection('checks').get();
+  const legacyChecks = checks.docs.filter((check) => !check.data().routineId);
+  if (legacyChecks.length) {
+    const writer = db.bulkWriter();
+    legacyChecks.forEach((check) => writer.update(check.ref, { routineId: DEFAULT_ROUTINE_ID }));
+    await writer.close();
+  }
+  await familyRef.update({
+    plan: FieldValue.delete(),
+    routineMigrationVersion: 1,
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+  return assignmentRef.get();
+};
 
 const recordRecoveryAttempt = async (uid: string) => {
   const attemptRef = db.collection('recoveryAttempts').doc(uid);
@@ -103,6 +138,7 @@ export const createFamily = onCall({ region, cors, enforceAppCheck: true }, asyn
   const familyRef = db.collection('families').doc();
   const userRef = db.collection('users').doc(uid);
   const checkRef = familyRef.collection('checks').doc();
+  const assignmentRef = familyRef.collection('routineAssignments').doc(DEFAULT_ROUTINE_ID);
   const code = createLinkCode();
   const linkRef = db.collection('linkCodes').doc(hashLinkCode(code));
   const recoveryCode = createRecoveryCode();
@@ -118,7 +154,7 @@ export const createFamily = onCall({ region, cors, enforceAppCheck: true }, asyn
     transaction.create(familyRef, {
       childName,
       members: { [uid]: 'parent' },
-      plan: defaultPlan,
+      routineMigrationVersion: 1,
       activeCheckId: checkRef.id,
       activeCheckExpiresAt: checkExpiresAt.toISOString(),
       createdAt: now.toISOString(),
@@ -139,7 +175,9 @@ export const createFamily = onCall({ region, cors, enforceAppCheck: true }, asyn
       consumedAt: null,
     });
     transaction.create(recoveryRef, createRecoveryRecord(familyRef.id, recoveryExpiresAt));
+    transaction.create(assignmentRef, createDefaultRoutineAssignment(defaultPlan, now.toISOString()));
     transaction.create(checkRef, {
+      routineId: DEFAULT_ROUTINE_ID,
       sessionId: crypto.randomUUID(),
       requestedAt: now.toISOString(),
       expiresAt: checkExpiresAt.toISOString(),
@@ -147,6 +185,25 @@ export const createFamily = onCall({ region, cors, enforceAppCheck: true }, asyn
     });
   });
   return { familyId: familyRef.id, code, recoveryCode, expiresAt: expiresAt.toISOString() };
+});
+
+export const migrateFamilyRoutines = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = requireUid(request.auth);
+  const familyId = String(request.data?.familyId ?? '');
+  const familyRef = db.collection('families').doc(familyId);
+  const [family, profile] = await Promise.all([
+    familyRef.get(),
+    db.collection('users').doc(uid).get(),
+  ]);
+  if (
+    !family.exists
+    || !profile.exists
+    || profile.data()?.familyId !== familyId
+    || !['parent', 'child'].includes(String(family.data()?.members?.[uid] ?? ''))
+  ) {
+    throw new HttpsError('permission-denied', 'Only a family member can migrate routines.');
+  }
+  await ensureFamilyRoutineMigration(familyRef);
 });
 
 export const recoverParent = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
@@ -398,15 +455,23 @@ export const requestCheckNow = onCall({
   type RequestCheckResult = { check: RequestedCheck; resend: boolean };
   const uid = requireUid(request.auth);
   const familyId = String(request.data?.familyId ?? '');
+  const routineId = String(request.data?.routineId ?? DEFAULT_ROUTINE_ID);
   const familyRef = db.collection('families').doc(familyId);
   const userRef = db.collection('users').doc(uid);
+  const authorizationProfile = await userRef.get();
+  if (!authorizationProfile.exists || authorizationProfile.data()?.familyId !== familyId || authorizationProfile.data()?.role !== 'parent') {
+    throw new HttpsError('permission-denied', 'Only the parent can request a check.');
+  }
+  await ensureFamilyRoutineMigration(familyRef);
+  const assignmentRef = familyRef.collection('routineAssignments').doc(routineId);
   const checkRef = familyRef.collection('checks').doc();
   const pendingChecks = familyRef.collection('checks').where('status', '==', 'pending').limit(10);
 
   const { check, resend } = await db.runTransaction(async (transaction): Promise<RequestCheckResult> => {
-    const [profile, family, pending] = await Promise.all([
+    const [profile, family, assignment, pending] = await Promise.all([
       transaction.get(userRef),
       transaction.get(familyRef),
+      transaction.get(assignmentRef),
       transaction.get(pendingChecks),
     ]);
     if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'parent') {
@@ -414,6 +479,9 @@ export const requestCheckNow = onCall({
     }
     if (!family.exists || family.data()?.members?.[uid] !== 'parent') {
       throw new HttpsError('not-found', 'The family could not be found.');
+    }
+    if (!assignment.exists || assignment.data()?.status !== 'active') {
+      throw new HttpsError('failed-precondition', 'The routine is not active.');
     }
 
     const familyData = family.data();
@@ -423,13 +491,14 @@ export const requestCheckNow = onCall({
       return { check: { id: activePendingCheck.id, ...activePendingCheck.data() } as RequestedCheck, resend: true };
     }
 
-    const configuredMinutes = Number(familyData?.plan?.expiryMinutes);
+    const configuredMinutes = Number(assignment.data()?.plan?.expiryMinutes);
     const expiryMinutes = Number.isFinite(configuredMinutes)
       ? Math.min(120, Math.max(1, configuredMinutes))
       : defaultPlan.expiryMinutes;
     const now = new Date();
     const expiresAt = new Date(now.getTime() + expiryMinutes * 60 * 1000);
     const check = {
+      routineId,
       sessionId: crypto.randomUUID(),
       requestedAt: now.toISOString(),
       expiresAt: expiresAt.toISOString(),
@@ -462,14 +531,16 @@ export const dispatchPlannedChecks = onSchedule({
   const now = new Date();
   await Promise.allSettled(families.docs.map(async (familyDoc) => {
     const familyData = familyDoc.data() as {
-      plan?: typeof defaultPlan;
       members?: Record<string, string>;
       activeCheckId?: string;
       activeCheckExpiresAt?: string;
     };
     const hasChild = Object.values(familyData.members ?? {}).includes('child');
-    const plan = familyData.plan ?? defaultPlan;
     if (!hasChild) return;
+    const assignment = await ensureFamilyRoutineMigration(familyDoc.ref);
+    const assignmentData = assignment.data() as RoutineAssignmentDocument | undefined;
+    if (!assignmentData || assignmentData.status !== 'active') return;
+    const plan = assignmentData.plan;
 
     const recentSince = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
     const recentChecksSnapshot = await familyDoc.ref.collection('checks')
@@ -493,6 +564,7 @@ export const dispatchPlannedChecks = onSchedule({
     const checkRef = familyDoc.ref.collection('checks').doc();
     const expiresAt = new Date(now.getTime() + Math.min(120, Math.max(1, plan.expiryMinutes ?? defaultPlan.expiryMinutes)) * 60 * 1000);
     const check = {
+      routineId: DEFAULT_ROUTINE_ID,
       sessionId: crypto.randomUUID(),
       requestedAt: now.toISOString(),
       expiresAt: expiresAt.toISOString(),
@@ -503,14 +575,16 @@ export const dispatchPlannedChecks = onSchedule({
     };
 
     const created = await db.runTransaction(async (transaction): Promise<boolean> => {
-      const [freshFamily, activePending] = await Promise.all([
+      const [freshFamily, freshAssignment, activePending] = await Promise.all([
         transaction.get(familyDoc.ref),
+        transaction.get(familyDoc.ref.collection('routineAssignments').doc(DEFAULT_ROUTINE_ID)),
         transaction.get(familyDoc.ref.collection('checks').where('status', '==', 'pending').limit(5)),
       ]);
       if (!freshFamily.exists) return false;
       const freshData = freshFamily.data() as typeof familyData;
+      const freshAssignmentData = freshAssignment.data() as RoutineAssignmentDocument | undefined;
       const stillHasChild = Object.values(freshData.members ?? {}).includes('child');
-      if (!stillHasChild) return false;
+      if (!stillHasChild || !freshAssignment.exists || freshAssignmentData?.status !== 'active') return false;
       const pendingDocs = activePending.docs.map((doc) => doc.data() as { expiresAt?: string; status?: string });
       const stillHasActivePending = pendingDocs.some((pending) => {
         const pendingExpiresAt = Date.parse(String(pending.expiresAt ?? ''));
@@ -520,10 +594,10 @@ export const dispatchPlannedChecks = onSchedule({
 
       const freshRecentChecks = await transaction.get(familyDoc.ref.collection('checks').where('requestedAt', '>=', recentSince).orderBy('requestedAt', 'desc'));
       const freshDecision = shouldAutoDispatchCheck(
-        (freshData.plan ?? defaultPlan) as typeof defaultPlan,
+        freshAssignmentData.plan,
         freshRecentChecks.docs.map((doc) => doc.data() as { requestedAt?: string; status?: string; dispatchKey?: string }),
         now,
-        (freshData.plan?.timeZone ?? defaultPlan.timeZone),
+        freshAssignmentData.plan.timeZone,
         stillHasActivePending,
       );
       if (!freshDecision.shouldDispatch || freshDecision.dispatchKey !== decision.dispatchKey) return false;
@@ -544,13 +618,19 @@ export const dispatchPlannedChecks = onSchedule({
 export const updatePlan = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
   const familyId = String(request.data?.familyId ?? '');
+  const routineId = String(request.data?.routineId ?? DEFAULT_ROUTINE_ID);
   const profile = await db.collection('users').doc(uid).get();
   if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'parent') {
     throw new HttpsError('permission-denied', 'Only the parent can update this plan.');
   }
   const parsedPlan = monitoringPlanSchema.safeParse(request.data?.plan);
   if (!parsedPlan.success) throw new HttpsError('invalid-argument', 'The monitoring plan is invalid.');
-  await db.collection('families').doc(familyId).update({ plan: parsedPlan.data, updatedAt: FieldValue.serverTimestamp() });
+  const familyRef = db.collection('families').doc(familyId);
+  await ensureFamilyRoutineMigration(familyRef);
+  const assignmentRef = familyRef.collection('routineAssignments').doc(routineId);
+  const assignment = await assignmentRef.get();
+  if (!assignment.exists) throw new HttpsError('not-found', 'The routine assignment could not be found.');
+  await assignmentRef.update({ plan: parsedPlan.data, updatedAt: FieldValue.serverTimestamp() });
 });
 
 export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
