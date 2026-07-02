@@ -177,8 +177,12 @@ export function App() {
             enableNotifications={enableNotifications}
             notificationsEnabled={state.notificationsEnabled}
             childInstalled={state.family.childLinked}
+            familyId={state.family.id}
+            events={state.events}
             childLinkingCode={state.family.linkingCode}
             parentRecoveryCode={state.family.parentRecoveryCode}
+            pendingChecks={state.events.filter((event) => event.status === 'pending' && Date.parse(event.expiresAt) > Date.now()).length}
+            totalChecks={state.events.length}
             regenerateLinkCode={async () => { await repository.regenerateLinkCode(); sync(); }}
             locale={state.locale}
             setLocale={async (locale) => { await repository.setLocale(locale); sync(); }}

@@ -7,8 +7,10 @@ import '@ionic/react/css/structure.css';
 import '@ionic/react/css/typography.css';
 import './styles/app.css';
 import { App } from './App';
+import { initializeAppLogs } from './services/appLogs';
 
 setupIonicReact({ mode: 'ios' });
+initializeAppLogs();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

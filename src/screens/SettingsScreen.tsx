@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { IonButton } from '@ionic/react';
-import type { Locale, Role } from '../domain/models';
+import type { Locale, Role, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
+import { buildDiagnosticsEmailBody, createCorrelationId } from '../services/appLogs';
 import { Disclaimer } from '../components/Disclaimer';
 import { CodeBox } from '../components/CodeBox';
 
@@ -14,8 +15,12 @@ export function SettingsScreen({
   enableNotifications,
   notificationsEnabled,
   childInstalled,
+  familyId,
+  events,
   childLinkingCode,
   parentRecoveryCode,
+  pendingChecks,
+  totalChecks,
   regenerateLinkCode,
 }: {
   t: (key: MessageKey) => string;
@@ -26,14 +31,19 @@ export function SettingsScreen({
   enableNotifications: () => Promise<void>;
   notificationsEnabled: boolean;
   childInstalled: boolean;
+  familyId?: string;
+  events: VerificationEvent[];
   childLinkingCode?: string;
   parentRecoveryCode?: string;
+  pendingChecks: number;
+  totalChecks: number;
   regenerateLinkCode: () => Promise<void>;
 }) {
   const standalone = window.matchMedia('(display-mode: standalone)').matches;
   const [notificationState, setNotificationState] = useState<'idle' | 'saving' | 'enabled' | 'error'>(
     notificationsEnabled ? 'enabled' : 'idle',
   );
+  const [mailError, setMailError] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [codeError, setCodeError] = useState(false);
 
@@ -62,6 +72,29 @@ export function SettingsScreen({
 
   const confirmReset = () => {
     if (window.confirm(t('resetConfirm'))) reset();
+  };
+  const sendDiagnosticsEmail = () => {
+    setMailError(false);
+    try {
+      const correlationId = createCorrelationId();
+      const subject = `Zadiag debug report [${correlationId}] - ${new Date().toISOString()}`;
+      const body = buildDiagnosticsEmailBody({
+        correlationId,
+        locale,
+        role,
+        familyId,
+        notificationsEnabled,
+        childInstalled,
+        pendingChecks,
+        totalChecks,
+        events,
+      });
+      const mailto = `mailto:contact@3dime.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailto;
+    } catch (error) {
+      console.error(error);
+      setMailError(true);
+    }
   };
   const notificationEnabled = notificationState === 'enabled';
   const notificationStatusKey = notificationState === 'enabled'
@@ -136,6 +169,19 @@ export function SettingsScreen({
         <div className="settings-locale-toggle">
           <button type="button" className={locale === 'en' ? 'active' : ''} aria-pressed={locale === 'en'} onClick={() => { void setLocale('en'); }}>EN</button>
           <button type="button" className={locale === 'fr' ? 'active' : ''} aria-pressed={locale === 'fr'} onClick={() => { void setLocale('fr'); }}>FR</button>
+        </div>
+      </section>
+      <section className="card history-row settings-history-row">
+        <div className="history-icon settings-history-icon" aria-hidden="true">✉️</div>
+        <div>
+          <strong>{t('settingsDebugMailTitle')}</strong>
+          <small>{t('settingsDebugMailDetail')}</small>
+          {mailError ? <small className="settings-action-error">{t('settingsDebugMailError')}</small> : null}
+        </div>
+        <div>
+          <IonButton className="settings-inline-action settings-inline-action-contained" size="small" onClick={sendDiagnosticsEmail}>
+            {t('settingsDebugMailSend')}
+          </IonButton>
         </div>
       </section>
       <section className="card history-row settings-history-row">
