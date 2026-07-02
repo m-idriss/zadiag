@@ -87,7 +87,7 @@ export function ParentDashboard({
         <section className="card history-row" key={event.id}>
           <div>
             <strong>{new Intl.DateTimeFormat(state.locale === 'fr' ? 'fr-FR' : 'en-US', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(event.requestedAt))}</strong>
-            <small>{formatAnalysisReason(event.reason, t)}</small>
+            <small>{formatAnalysisReason(event.status, event.reason, state.locale, t)}</small>
           </div>
           <StatusPill status={event.status} t={t} />
         </section>
