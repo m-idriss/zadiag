@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { IonApp } from '@ionic/react';
 import type { Role, VerificationEvent } from './domain/models';
 import { DEFAULT_ROUTINE_ID } from './domain/models';
+import { routeForState, type AppRoute } from './domain/appRouting';
 import { createRepository } from './services/repositoryFactory';
 import { translate, type MessageKey } from './services/i18n';
 import { WelcomeScreen } from './screens/WelcomeScreen';
@@ -21,8 +22,6 @@ import { InstallScreen } from './screens/InstallScreen';
 import { NotificationSetupScreen } from './screens/NotificationSetupScreen';
 import { RoutineEditScreen } from './screens/RoutineEditScreen';
 
-type Route = 'install' | 'welcome' | 'link' | 'notifications' | 'app' | 'camera' | 'result' | 'routine-edit';
-
 const isLocalhost = /^(localhost|127\.0\.0\.1|::1)$/.test(window.location.hostname);
 const useFirebase = import.meta.env.VITE_USE_FIREBASE === 'true';
 const routineCentricUiEnabled = import.meta.env.VITE_ROUTINE_CENTRIC_UI !== 'false';
@@ -36,15 +35,17 @@ const isStandalone = () => window.matchMedia('(display-mode: standalone)').match
 const isIos = () => /iPad|iPhone|iPod/.test(navigator.userAgent)
   || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-const routeForState = (state: ReturnType<ReturnType<typeof createRepository>['snapshot']>): Route => {
+const setupPreviewRoute = (): Extract<AppRoute, 'install' | 'notifications'> | null => {
   const setupPreview = import.meta.env.DEV ? new URLSearchParams(window.location.search).get('setup') : null;
-  if (setupPreview === 'install' || setupPreview === 'notifications') return setupPreview;
-  if (isIos() && !isStandalone()) return 'install';
-  if (!state.role) return 'welcome';
-  if (!state.family.linked) return 'link';
-  if (useLocalDemo && state.role === 'child' && !state.notificationsEnabled) return 'app';
-  if (state.role === 'child' && !state.notificationsEnabled) return 'notifications';
-  return 'app';
+  return setupPreview === 'install' || setupPreview === 'notifications' ? setupPreview : null;
+};
+
+const browserRouteContext = () => {
+  return {
+    setupPreview: setupPreviewRoute(),
+    requiresInstall: isIos() && !isStandalone(),
+    useLocalDemo,
+  };
 };
 
 const waitForInstalledState = (worker: ServiceWorker) => new Promise<void>((resolve) => {
@@ -69,7 +70,7 @@ const refreshServiceWorkerRegistration = async (): Promise<ServiceWorkerRegistra
 export function App() {
   const repository = useMemo(createRepository, []);
   const [state, setState] = useState(repository.snapshot());
-  const [route, setRoute] = useState<Route>(() => routeForState(state));
+  const [route, setRoute] = useState<AppRoute>(() => routeForState(state, browserRouteContext()));
   const [ready, setReady] = useState(false);
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [splashProgress, setSplashProgress] = useState(12);
@@ -115,7 +116,7 @@ export function App() {
       window.clearInterval(startupProgressTicker);
       const restored = repository.snapshot();
       setState(restored);
-      setRoute(routeForState(restored));
+      setRoute(routeForState(restored, browserRouteContext()));
       setStartupStep(92, 'splashFinalizing');
       const elapsed = Date.now() - startedAt;
       window.setTimeout(() => {

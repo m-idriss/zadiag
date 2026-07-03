@@ -3,6 +3,7 @@ import { IonButton, IonIcon } from '@ionic/react';
 import { addCircleOutline, closeCircleOutline, timeOutline, calendarOutline, eyeOutline } from 'ionicons/icons';
 import type { MonitoringPlan, TimeWindow } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
+import { nextWindowId, normalizeWeekdays, summarizeWeekdays, validateMonitoringPlanDraft } from '../domain/monitoringPlan';
 
 const WINDOW_COLORS: Record<string, string> = {
   morning: '#F59E0B',
@@ -37,7 +38,7 @@ export function RoutineEditScreen({
   };
 
   const addWindow = () => {
-    setWindows([...windows, { id: `w${windows.length + 1}`, start: '09:00', end: '17:00' }]);
+    setWindows([...windows, { id: nextWindowId(windows), start: '09:00', end: '17:00' }]);
   };
 
   const removeWindow = (index: number) => {
@@ -48,20 +49,25 @@ export function RoutineEditScreen({
     if (weekdays.includes(day)) {
       setWeekdays(weekdays.filter((d) => d !== day));
     } else {
-      setWeekdays([...weekdays, day].sort());
+      setWeekdays(normalizeWeekdays([...weekdays, day]));
     }
   };
 
-  const dayShorts = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const dayOptions = [
+    { label: 'mondayShort', day: 1 },
+    { label: 'tuesdayShort', day: 2 },
+    { label: 'wednesdayShort', day: 3 },
+    { label: 'thursdayShort', day: 4 },
+    { label: 'fridayShort', day: 5 },
+    { label: 'saturdayShort', day: 6 },
+    { label: 'sundayShort', day: 7 },
+  ] as const;
 
   const handleSave = async () => {
     setError(undefined);
-    if (windows.length === 0) {
-      setError('Add at least one time window');
-      return;
-    }
-    if (weekdays.length === 0) {
-      setError('Select at least one day');
+    const validationError = validateMonitoringPlanDraft(windows, weekdays);
+    if (validationError) {
+      setError(t(validationError));
       return;
     }
     try {
@@ -69,24 +75,18 @@ export function RoutineEditScreen({
         ...plan,
         checksPerDay: windows.length,
         windows,
-        weekdays,
+        weekdays: normalizeWeekdays(weekdays),
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error('Save error:', message);
-      setError(`Failed to save: ${message}`);
+      setError(`${t('savePlanError')} ${message}`);
     }
   };
 
-  // Calculate summary
   const startTime = windows.length > 0 ? windows[0].start : '-';
   const endTime = windows.length > 0 ? windows[windows.length - 1].end : '-';
-  const activeDaysLabel = (() => {
-    if (weekdays.length === 0) return '-';
-    if (weekdays.length === 7) return 'Every day';
-    if (weekdays.length === 5 && weekdays.every(d => d <= 5)) return 'Mon - Fri';
-    return weekdays.map(d => dayShorts[d - 1]).join(', ');
-  })();
+  const activeDaysLabel = summarizeWeekdays(weekdays, t);
 
   const colors = [WINDOW_COLORS.morning, WINDOW_COLORS.midday, WINDOW_COLORS.evening];
 
@@ -164,15 +164,15 @@ export function RoutineEditScreen({
         <p className="card-hint">{t('onWhichDays')}</p>
 
         <div className="days-grid">
-          {dayShorts.map((day, index) => (
+          {dayOptions.map(({ label, day }) => (
             <button
-              key={index}
+              key={day}
               type="button"
-              className={`day-btn ${weekdays.includes(index + 1) ? 'active' : ''}`}
-              onClick={() => toggleWeekday(index + 1)}
+              className={`day-btn ${weekdays.includes(day) ? 'active' : ''}`}
+              onClick={() => toggleWeekday(day)}
             >
-              {day}
-              {weekdays.includes(index + 1) && <span className="check">✓</span>}
+              {t(label)}
+              {weekdays.includes(day) && <span className="check">✓</span>}
             </button>
           ))}
         </div>
