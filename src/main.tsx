@@ -12,6 +12,15 @@ import { initializeAppLogs } from './services/appLogs';
 setupIonicReact({ mode: 'ios' });
 initializeAppLogs();
 
+// Lock app to portrait orientation
+if (window.screen.orientation) {
+  try {
+    window.screen.orientation.lock('portrait-primary');
+  } catch {
+    // Fallback if orientation lock not supported
+  }
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />
