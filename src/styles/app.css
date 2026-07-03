@@ -2,6 +2,10 @@
 @font-face { font-family: 'Nunito'; src: url('/fonts/Nunito-Bold.ttf') format('truetype'); font-weight: 700; font-display: swap; }
 @font-face { font-family: 'Nunito'; src: url('/fonts/Nunito-ExtraBold.ttf') format('truetype'); font-weight: 800 900; font-display: swap; }
 
+@media (orientation: landscape) {
+  html, body { display: none !important; }
+}
+
 :root {
   --navy: #15324b;
   --teal: #1d8a7a;
@@ -88,6 +92,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
     linear-gradient(180deg, rgba(255, 255, 255, .6), rgba(255, 255, 255, .26) 36%, rgba(255, 251, 244, 0) 78%);
 }
 .page { height: 100dvh; overflow-y: auto; overscroll-behavior-y: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+.content-screen { height: 100dvh; overflow-y: auto; overscroll-behavior-y: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
 .page h1, .screen-header h1 { margin: 5px 0 8px; font-size: clamp(29px, 8vw, 38px); line-height: 1.08; font-weight: 900; color: var(--navy); }
 .page h2, .content-screen h2 { margin: 0; font-size: 20px; font-weight: 900; }
 .page p, .content-screen p { color: var(--muted); line-height: 1.5; }
