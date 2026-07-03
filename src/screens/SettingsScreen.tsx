@@ -207,7 +207,7 @@ export function SettingsScreen({
             </div>
             <span className="status-pill status-detected">{t('settingsInstallStatus')}</span>
           </div>
-          <div className="settings-row">
+          {role === 'child' ? <div className="settings-row">
             <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={cameraOutline} /></span>
             <div className="settings-row-copy">
               <strong>{t('settingsCameraTitle')}</strong>
@@ -225,7 +225,7 @@ export function SettingsScreen({
                 {t('settingsCameraReset')}
               </IonButton>
             </div>
-          </div>
+          </div> : null}
           {role === 'parent' ? <div className="settings-row">
             <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={linkOutline} /></span>
             <div className="settings-row-copy">
