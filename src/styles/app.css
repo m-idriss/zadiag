@@ -707,6 +707,53 @@ ion-input {
   .bottom-nav { right: 10px; left: 10px; }
 }
 
+/* Routine Edit Screen */
+.routine-edit-header { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 24px; }
+.routine-edit-header .back-btn { width: 40px; height: 40px; border-radius: 50%; border: none; background: #f3f4f6; color: var(--navy); font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.routine-edit-header h1 { margin: 4px 0 2px; font-size: 24px; font-weight: 800; }
+.routine-edit-header p { margin: 0; font-size: 14px; color: #6b7280; }
+
+.routine-edit-card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow-sm); }
+.card-header { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+.card-icon { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: var(--teal); font-size: 20px; }
+.card-header h2 { margin: 0; font-size: 16px; font-weight: 700; }
+.card-header-with-action { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.add-btn { background: white; border: 2px solid var(--teal); color: var(--teal); padding: 8px 12px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; gap: 6px; align-items: center; transition: all 0.2s; }
+.add-btn:hover { background: var(--teal-50); }
+.card-hint { margin: 0 0 16px; font-size: 14px; color: #6b7280; }
+
+.windows-container { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
+.window-row { display: flex; gap: 12px; align-items: center; padding: 12px; background: #f9fafb; border-radius: 12px; }
+.window-bar { width: 4px; height: 60px; border-radius: 2px; flex-shrink: 0; }
+.window-inputs { display: flex; gap: 16px; flex: 1; }
+.time-group { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.time-group label { font-size: 12px; font-weight: 600; color: #6b7280; }
+.time-group input { padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; }
+.remove-btn { width: 32px; height: 32px; border: none; background: transparent; color: #d1d5db; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color 0.2s; }
+.remove-btn:hover { color: #ef4444; }
+
+.windows-info { display: flex; gap: 12px; padding: 12px 16px; background: var(--teal-50); border-radius: 12px; align-items: flex-start; }
+.info-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; color: var(--teal); flex-shrink: 0; font-size: 18px; }
+.windows-info strong { display: block; font-size: 14px; margin-bottom: 2px; }
+.windows-info p { margin: 0; font-size: 13px; color: #047857; }
+
+.days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+.day-btn { padding: 12px 8px; border: 2px solid #e5e7eb; border-radius: 10px; background: white; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; position: relative; }
+.day-btn:hover { border-color: var(--teal); }
+.day-btn.active { background: var(--teal); color: white; border-color: var(--teal); }
+.day-btn .check { display: none; }
+.day-btn.active .check { display: inline; margin-left: 2px; }
+
+.summary-items { display: flex; flex-direction: column; gap: 12px; }
+.summary-row { display: flex; gap: 12px; align-items: flex-start; }
+.summary-icon { font-size: 24px; }
+.summary-text { display: flex; flex-direction: column; gap: 2px; }
+.summary-label { font-size: 14px; font-weight: 600; color: var(--navy); }
+.summary-detail { font-size: 12px; color: #6b7280; }
+
+.routine-edit-actions { display: flex; gap: 12px; margin-top: 24px; }
+.form-error { padding: 12px 16px; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 8px; color: #991b1b; font-size: 14px; margin-bottom: 12px; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
