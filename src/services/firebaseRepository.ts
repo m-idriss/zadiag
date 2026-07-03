@@ -34,6 +34,7 @@ interface UserProfile {
 interface FamilyDocument {
   childName: string;
   linkingCode?: string;
+  parentRecoveryCode?: string;
   members?: Record<string, string>;
 }
 
@@ -271,6 +272,7 @@ export class FirebaseRepository implements AppRepository {
       this.state.family.childName = family.childName;
       this.state.family.childLinked = childLinked;
       this.state.family.linkingCode = family.linkingCode ?? this.state.family.linkingCode;
+      this.state.family.parentRecoveryCode = family.parentRecoveryCode ?? this.state.family.parentRecoveryCode;
       this.emit();
     }));
     const assignments = query(collection(familyRef, 'routineAssignments'), orderBy('assignedAt', 'asc'));
