@@ -29,6 +29,7 @@ interface UserProfile {
   familyId: string;
   role: Role;
   linkingCode?: string;
+  parentRecoveryCode?: string;
   notificationsEnabled?: boolean;
 }
 interface FamilyDocument {
@@ -235,6 +236,7 @@ export class FirebaseRepository implements AppRepository {
     const data = profile.data() as UserProfile;
     this.state.notificationsEnabled = data.notificationsEnabled === true;
     this.state.family.linkingCode = data.linkingCode ?? '';
+    this.state.family.parentRecoveryCode = data.parentRecoveryCode ?? '';
     await this.attachFamily(data.familyId, data.role);
   }
 
