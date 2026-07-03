@@ -49,7 +49,7 @@ jobs:
       - name: Commit and push version bump
         run: |
           git add package.json
-          git commit -m "chore(version): bump to ${{ steps.bump.outputs.version }}"
+          git commit -m "chore(version): bump to ${{ steps.bump.outputs.version }} [skip ci]"
           git push
 
       - name: Create or update Git tag
