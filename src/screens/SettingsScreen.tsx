@@ -1,5 +1,13 @@
 import { useRef, useState } from 'react';
-import { IonButton } from '@ionic/react';
+import { IonButton, IonIcon } from '@ionic/react';
+import {
+  informationCircleOutline,
+  languageOutline,
+  linkOutline,
+  mailOutline,
+  notificationsOutline,
+  phonePortraitOutline,
+} from 'ionicons/icons';
 import type { Locale, Role, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { buildDiagnosticsEmailBody, createCorrelationId } from '../services/appLogs';
@@ -181,85 +189,95 @@ export function SettingsScreen({
         <small>{pullLabel}</small>
         <div className="settings-pull-bar" aria-hidden="true"><div style={{ width: `${pullProgress}%` }} /></div>
       </div>
-      <section className="card history-row settings-history-row">
-        <div className="history-icon settings-history-icon">⇧</div>
-        <div>
-          <strong>{t('installTitle')}</strong>
-          <small>{t('settingsInstallDetail')}</small>
-        </div>
-        <span className="status-pill status-detected">{t('settingsInstallStatus')}</span>
-      </section>
-      {role === 'parent' ? <section className="card history-row settings-history-row">
-        <div className="history-icon settings-history-icon" aria-hidden="true">⌁</div>
-        <div>
-          <strong>{t('settingsChildInstallTitle')}</strong>
-          <small>{t(childInstallDetailKey)}</small>
-        </div>
-        <span className={childInstalled ? 'status-pill status-detected' : 'status-pill status-missed'}>
-          {t(childInstallStatusKey)}
-        </span>
-      </section> : null}
-      {role === 'child' ? <section className="card history-row settings-history-row">
-        <div className="history-icon settings-history-icon" aria-hidden="true">🔔</div>
-        <div>
-          <strong>{t('notifications')}</strong>
-          <small>{t(notificationDetailKey)}</small>
-        </div>
-        <span className={notificationEnabled ? 'status-pill status-detected' : 'status-pill status-missed'}>
-          {t(notificationStatusKey)}
-        </span>
-      </section> : null}
-      {role === 'child' && !notificationEnabled ? <IonButton
-        className="settings-inline-action"
-        size="small"
-        disabled={!standalone || notificationState === 'saving'}
-        onClick={() => { void requestNotifications(); }}
-      >
-        {notificationState === 'saving' ? t('enablingReminders') : t('enableReminders')}
-      </IonButton> : null}
-      {role === 'child' && notificationState === 'error' ? <small className="notification-note">{t('pushError')}</small> : null}
-      <section className="card history-row settings-history-row">
-        <div className="history-icon settings-history-icon" aria-hidden="true">🌐</div>
-        <div>
-          <strong>{t('settingsLanguageTitle')}</strong>
-          <small>{t(languageDetailKey)}</small>
-        </div>
-        <div className="settings-locale-toggle">
-          <button type="button" className={locale === 'en' ? 'active' : ''} aria-pressed={locale === 'en'} onClick={() => { void setLocale('en'); }}>EN</button>
-          <button type="button" className={locale === 'fr' ? 'active' : ''} aria-pressed={locale === 'fr'} onClick={() => { void setLocale('fr'); }}>FR</button>
-        </div>
-      </section>
-      <section className="card history-row settings-history-row">
-        <div className="history-icon settings-history-icon" aria-hidden="true">✉️</div>
-        <div>
-          <strong>{t('settingsDebugMailTitle')}</strong>
-          <small>{t('settingsDebugMailDetail')}</small>
-          {mailError ? <small className="settings-action-error">{t('settingsDebugMailError')}</small> : null}
-        </div>
-        <div>
-          <IonButton className="settings-inline-action settings-inline-action-contained" size="small" onClick={sendDiagnosticsEmail}>
-            {t('settingsDebugMailSend')}
-          </IonButton>
+      <section className="settings-section" aria-labelledby="settings-device-heading">
+        <h2 id="settings-device-heading">{t('settingsDeviceSection')}</h2>
+        <div className="card settings-list">
+          <div className="settings-row">
+            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={phonePortraitOutline} /></span>
+            <div className="settings-row-copy">
+              <strong>{t('installTitle')}</strong>
+              <small>{t('settingsInstallDetail')}</small>
+            </div>
+            <span className="status-pill status-detected">{t('settingsInstallStatus')}</span>
+          </div>
+          {role === 'parent' ? <div className="settings-row">
+            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={linkOutline} /></span>
+            <div className="settings-row-copy">
+              <strong>{t('settingsChildInstallTitle')}</strong>
+              <small>{t(childInstallDetailKey)}</small>
+            </div>
+            <span className={childInstalled ? 'status-pill status-detected' : 'status-pill status-missed'}>
+              {t(childInstallStatusKey)}
+            </span>
+          </div> : null}
+          {role === 'child' ? <div className="settings-row settings-row-expandable">
+            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={notificationsOutline} /></span>
+            <div className="settings-row-copy">
+              <strong>{t('notifications')}</strong>
+              <small>{t(notificationDetailKey)}</small>
+              {notificationState === 'error' ? <small className="settings-action-error">{t('pushError')}</small> : null}
+            </div>
+            <div className="settings-row-control">
+              <span className={notificationEnabled ? 'status-pill status-detected' : 'status-pill status-missed'}>
+                {t(notificationStatusKey)}
+              </span>
+              {!notificationEnabled ? <IonButton
+                className="settings-inline-action settings-inline-action-contained"
+                size="small"
+                disabled={!standalone || notificationState === 'saving'}
+                onClick={() => { void requestNotifications(); }}
+              >
+                {notificationState === 'saving' ? t('enablingReminders') : t('enableReminders')}
+              </IonButton> : null}
+            </div>
+          </div> : null}
+          <div className="settings-row">
+            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={languageOutline} /></span>
+            <div className="settings-row-copy">
+              <strong>{t('settingsLanguageTitle')}</strong>
+              <small>{t(languageDetailKey)}</small>
+            </div>
+            <div className="settings-locale-toggle" role="group" aria-label={t('settingsLanguageTitle')}>
+              <button type="button" className={locale === 'en' ? 'active' : ''} aria-pressed={locale === 'en'} onClick={() => { void setLocale('en'); }}>EN</button>
+              <button type="button" className={locale === 'fr' ? 'active' : ''} aria-pressed={locale === 'fr'} onClick={() => { void setLocale('fr'); }}>FR</button>
+            </div>
+          </div>
         </div>
       </section>
-      <section className="card history-row settings-history-row">
-        <div className="history-icon settings-history-icon" aria-hidden="true">ⓘ</div>
-        <div>
-          <strong>{t('settingsAppInfoTitle')}</strong>
-          <small>{t('settingsVersionLabel')} {import.meta.env.VITE_APP_VERSION} · {t('settingsUpdatedLabel')} {appUpdated}</small>
-          {updateError ? <small className="settings-action-error">{t('settingsUpdateError')}</small> : null}
-        </div>
-        <div>
-          <IonButton
-            className="settings-inline-action settings-inline-action-contained"
-            size="small"
-            disabled={updatingApp || !updateAvailable}
-            onClick={() => { void forceUpdate(); }}
-          >
-            {updatingApp ? t('settingsUpdateChecking') : t('settingsUpdateAction')}
-          </IonButton>
+      <section className="settings-section" aria-labelledby="settings-support-heading">
+        <h2 id="settings-support-heading">{t('settingsSupportSection')}</h2>
+        <div className="card settings-list">
+          <div className="settings-row">
+            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={mailOutline} /></span>
+            <div className="settings-row-copy">
+              <strong>{t('settingsDebugMailTitle')}</strong>
+              <small>{t('settingsDebugMailDetail')}</small>
+              {mailError ? <small className="settings-action-error">{t('settingsDebugMailError')}</small> : null}
+            </div>
+            <IonButton className="settings-inline-action settings-inline-action-contained" size="small" onClick={sendDiagnosticsEmail}>
+              {t('settingsDebugMailSend')}
+            </IonButton>
+          </div>
+          <div className="settings-row">
+            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={informationCircleOutline} /></span>
+            <div className="settings-row-copy">
+              <strong>{t('settingsAppInfoTitle')}</strong>
+              <small>{t('settingsVersionLabel')} {import.meta.env.VITE_APP_VERSION} · {t('settingsUpdatedLabel')} {appUpdated}</small>
+              {updateError ? <small className="settings-action-error">{t('settingsUpdateError')}</small> : null}
+            </div>
+            <IonButton
+              className="settings-inline-action settings-inline-action-contained"
+              size="small"
+              disabled={updatingApp || !updateAvailable}
+              onClick={() => { void forceUpdate(); }}
+            >
+              {updatingApp ? t('settingsUpdateChecking') : t('settingsUpdateAction')}
+            </IonButton>
+          </div>
         </div>
       </section>
+      <section className="settings-section settings-account-section" aria-labelledby="settings-account-heading">
+        <h2 id="settings-account-heading">{t('settingsAccountSection')}</h2>
       {role === 'parent' && childLinkingCode ? (
         <CodeBox
           label={t('childLinkCode')}
@@ -290,7 +308,8 @@ export function SettingsScreen({
         <ul><li>{t('noFaceRecognition')}</li><li>{t('noModelTraining')}</li><li>{t('noPhotoUpload')}</li><li>{t('immediateDeletion')}</li></ul>
       </section>
       <Disclaimer t={t} />
-      <IonButton expand="block" fill="outline" color="danger" onClick={confirmReset}>{t('resetDemo')}</IonButton>
+      <IonButton className="settings-reset-button" expand="block" fill="outline" color="danger" onClick={confirmReset}>{t('resetDemo')}</IonButton>
+      </section>
     </div>
   );
 }

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { IonIcon } from '@ionic/react';
+import { checkmarkOutline, copyOutline, eyeOffOutline, eyeOutline } from 'ionicons/icons';
 import type { MessageKey } from '../services/i18n';
 
 async function copyToClipboard(value: string) {
@@ -86,7 +88,7 @@ export function CodeBox({
                 title={visibilityLabel}
                 onClick={() => setRevealed((current) => !current)}
               >
-                <span aria-hidden="true">{revealed ? '🙈' : '👁️'}</span>
+                <IonIcon aria-hidden="true" icon={revealed ? eyeOffOutline : eyeOutline} />
                 <span>{visibilityLabel}</span>
               </button>
             ) : null}
@@ -100,7 +102,7 @@ export function CodeBox({
           aria-live="polite"
           onClick={() => { void handleCopy(); }}
         >
-          <span aria-hidden="true">{copyState === 'copied' ? '✓' : '⧉'}</span>
+          <IonIcon aria-hidden="true" icon={copyState === 'copied' ? checkmarkOutline : copyOutline} />
           <span className="copy-code-label">{copyLabel}</span>
         </button>
       </div>
