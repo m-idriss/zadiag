@@ -81,7 +81,8 @@ ion-app {
 .app-splash-progress > div { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--teal), #41b6a2); transition: width .2s ease; }
 ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-transform: none; letter-spacing: 0; }
 
-.page, .content-screen { position: relative; isolation: isolate; min-height: 100dvh; max-width: 640px; margin: 0 auto; padding: calc(20px + env(safe-area-inset-top)) 22px calc(100px + env(safe-area-inset-bottom)); background: transparent; }
+.page, .content-screen { position: relative; isolation: isolate; min-height: 100dvh; max-width: 640px; margin: 0 auto; padding: calc(20px + env(safe-area-inset-top)) 22px calc(100px + env(safe-area-inset-bottom)); background: transparent; scrollbar-width: none; -ms-overflow-style: none; }
+.page::-webkit-scrollbar, .content-screen::-webkit-scrollbar { display: none; }
 .page::before, .content-screen::before { content: ''; position: absolute; inset: 0; z-index: -1; background:
     radial-gradient(circle at 12% 8%, rgba(229, 245, 240, .78), transparent 26%),
     radial-gradient(circle at 88% 4%, rgba(227, 235, 232, .55), transparent 22%),
