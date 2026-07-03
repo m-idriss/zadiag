@@ -2,7 +2,6 @@ import { useRef, useState } from 'react';
 import { IonButton, IonIcon } from '@ionic/react';
 import {
   informationCircleOutline,
-  cameraOutline,
   languageOutline,
   linkOutline,
   mailOutline,
@@ -12,7 +11,6 @@ import {
 import type { Locale, Role, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { buildDiagnosticsEmailBody, createCorrelationId } from '../services/appLogs';
-import { hasSeenCameraGuidance, resetCameraGuidance } from '../services/cameraPreferences';
 import { Disclaimer } from '../components/Disclaimer';
 import { CodeBox } from '../components/CodeBox';
 
@@ -62,7 +60,6 @@ export function SettingsScreen({
   const [updateError, setUpdateError] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [codeError, setCodeError] = useState(false);
-  const [cameraGuidanceSeen, setCameraGuidanceSeen] = useState(hasSeenCameraGuidance());
   const pullStartY = useRef<number | null>(null);
   const [pullDistance, setPullDistance] = useState(0);
   const pullThreshold = 72;
@@ -127,10 +124,6 @@ export function SettingsScreen({
     } finally {
       setUpdatingApp(false);
     }
-  };
-  const resetCameraHelp = () => {
-    resetCameraGuidance();
-    setCameraGuidanceSeen(false);
   };
   const startPull = (event: React.TouchEvent<HTMLDivElement>) => {
     if (updatingApp || event.currentTarget.scrollTop > 0 || event.touches.length !== 1) {
@@ -207,25 +200,6 @@ export function SettingsScreen({
             </div>
             <span className="status-pill status-detected">{t('settingsInstallStatus')}</span>
           </div>
-          {role === 'child' ? <div className="settings-row">
-            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={cameraOutline} /></span>
-            <div className="settings-row-copy">
-              <strong>{t('settingsCameraTitle')}</strong>
-              <small>{t(cameraGuidanceSeen ? 'settingsCameraDetailSeen' : 'settingsCameraDetailPending')}</small>
-            </div>
-            <div className="settings-row-control">
-              <span className={cameraGuidanceSeen ? 'status-pill status-detected' : 'status-pill status-missed'}>
-                {t(cameraGuidanceSeen ? 'settingsCameraStatusSeen' : 'settingsCameraStatusPending')}
-              </span>
-              <IonButton
-                className="settings-inline-action settings-inline-action-contained"
-                size="small"
-                onClick={resetCameraHelp}
-              >
-                {t('settingsCameraReset')}
-              </IonButton>
-            </div>
-          </div> : null}
           {role === 'parent' ? <div className="settings-row">
             <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={linkOutline} /></span>
             <div className="settings-row-copy">

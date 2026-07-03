@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { IonButton, IonIcon, IonSpinner } from '@ionic/react';
 import { camera, checkmark, refresh } from 'ionicons/icons';
 import type { MessageKey } from '../services/i18n';
-import { hasSeenCameraGuidance, markCameraGuidanceSeen } from '../services/cameraPreferences';
 
 interface CameraCaptureProps {
   t: (key: MessageKey) => string;
@@ -21,7 +20,6 @@ export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureP
   const [localCheckWarning, setLocalCheckWarning] = useState<string>();
   const [opening, setOpening] = useState(false);
   const [permissionState, setPermissionState] = useState<PermissionState | 'unknown'>('unknown');
-  const [cameraGuidanceSeen, setCameraGuidanceSeen] = useState(hasSeenCameraGuidance());
   const autoOpenedRef = useRef(false);
 
   const stopCamera = () => {
@@ -30,7 +28,6 @@ export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureP
   };
 
   const openCamera = async () => {
-    autoOpenedRef.current = true;
     setError(undefined);
     setLocalCheckError(undefined);
     setLocalCheckWarning(undefined);
@@ -73,7 +70,8 @@ export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureP
       if (!alive) return;
       setPermissionState(state);
       if (state === 'denied') setError(t('cameraPermissionDenied'));
-      if (state === 'granted' && cameraGuidanceSeen && !autoOpenedRef.current && !preview && !streamRef.current) {
+      if (state === 'granted' && !autoOpenedRef.current && !preview && !streamRef.current) {
+        autoOpenedRef.current = true;
         void openCamera();
       }
     };
@@ -88,15 +86,7 @@ export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureP
       alive = false;
       if (statusRef) statusRef.onchange = null;
     };
-  }, [cameraGuidanceSeen, preview, t]);
-
-  const startCamera = async () => {
-    if (!cameraGuidanceSeen) {
-      markCameraGuidanceSeen();
-      setCameraGuidanceSeen(true);
-    }
-    await openCamera();
-  };
+  }, [preview, t]);
 
   const capture = () => {
     const video = videoRef.current;
@@ -233,17 +223,6 @@ export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureP
         )}
       </div>
 
-      {!preview && !streamRef.current && !cameraGuidanceSeen ? (
-        <section className="card camera-intro" aria-labelledby="camera-intro-title">
-          <h2 id="camera-intro-title">{t('cameraGuideTitle')}</h2>
-          <p>{t('cameraGuideBody')}</p>
-          <IonButton expand="block" disabled={opening} onClick={() => { void startCamera(); }}>
-            {opening ? <IonSpinner name="crescent" /> : <IonIcon icon={camera} slot="start" />}
-            {t('cameraGuideAction')}
-          </IonButton>
-        </section>
-      ) : null}
-
       <div className="camera-hints">
         <span>☀️ {t('goodLight')}</span>
         <span>🙂 {t('mouthOpen')}</span>
@@ -252,7 +231,7 @@ export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureP
 
       {error && <p className="form-error" role="alert">{error}</p>}
 
-      {!streamRef.current && !preview && cameraGuidanceSeen && (
+      {!streamRef.current && !preview && (
         <IonButton expand="block" color="light" disabled={opening} onClick={openCamera}>
           {opening ? <IonSpinner name="crescent" /> : <IonIcon icon={camera} slot="start" />}
           {permissionState === 'denied' ? t('openCameraSettings') : t('openCamera')}

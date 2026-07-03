@@ -17,7 +17,6 @@ import { BottomNav, type Tab } from './components/BottomNav';
 import { SplashScreen } from './components/SplashScreen';
 import { WebPushGateway } from './services/webPush';
 import { firebaseEnabled } from './services/firebaseClient';
-import { resetCameraGuidance } from './services/cameraPreferences';
 import { InstallScreen } from './screens/InstallScreen';
 import { NotificationSetupScreen } from './screens/NotificationSetupScreen';
 import { RoutineEditScreen } from './screens/RoutineEditScreen';
@@ -153,7 +152,6 @@ export function App() {
 
   const reset = async () => {
     await repository.reset();
-    resetCameraGuidance();
     sync();
     setRoute('welcome');
     setTab('home');
