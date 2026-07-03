@@ -184,7 +184,7 @@ export function SettingsScreen({
 
   return (
     <div className="content-screen settings-screen" onTouchStart={startPull} onTouchMove={movePull} onTouchEnd={endPull} onTouchCancel={endPull}>
-      <header className="screen-header"><div><small>Zadiag</small><h1>{t('settings')}</h1><p>{t('settingsHint')}</p></div></header>
+      <header className="screen-header"><div><h1>{t('settings')}</h1><p>{t('settingsHint')}</p></div></header>
       <div className={`settings-pull-indicator ${pullVisible ? 'visible' : ''}`} aria-live="polite">
         <small>{pullLabel}</small>
         <div className="settings-pull-bar" aria-hidden="true"><div style={{ width: `${pullProgress}%` }} /></div>
