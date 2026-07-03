@@ -7,6 +7,7 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, normalizeLinkCode } from './helpers.js';
 import { analyzeWithGemini, localizeAnalysisReason, type AnalysisResult } from './analysis.js';
+import { buildCheckNotification } from './notifications.js';
 import { getLocalDateKey, getWindowForDate, monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
 import { createDefaultRoutineAssignment, DEFAULT_ROUTINE_ID, type RoutineAssignmentDocument } from './routines.js';
 
@@ -104,7 +105,7 @@ const recordRecoveryAttempt = async (uid: string) => {
 
 const sendCheckPushNotifications = async (
   familyRef: FirebaseFirestore.DocumentReference,
-  check: { sessionId: string; routineId: string; routineName: string },
+  check: { sessionId: string; routineId: string },
   resend: boolean,
 ) => {
   const subscriptions = await familyRef.collection('pushSubscriptions').get();
@@ -112,15 +113,14 @@ const sendCheckPushNotifications = async (
   webpush.setVapidDetails('https://www.zadiag.com', vapidPublicKey.value(), vapidPrivateKey.value());
   await Promise.allSettled(subscriptions.docs.map(async (document) => {
     const subscription = document.data() as PushSubscription & { locale?: string };
-    const isFrench = subscription.locale === 'fr';
+    const notification = buildCheckNotification({ sessionId: check.sessionId, locale: subscription.locale, resend });
     try {
       await webpush.sendNotification(subscription, JSON.stringify({
         sessionId: check.sessionId,
         routineId: check.routineId,
-        title: 'Zadiag',
-        body: resend
-          ? (isFrench ? `Le rappel « ${check.routineName} » est prêt.` : `${check.routineName} reminder is ready.`)
-          : (isFrench ? `Un contrôle « ${check.routineName} » est prêt.` : `${check.routineName} check is ready.`),
+        title: notification.title,
+        body: notification.body,
+        tag: notification.tag,
       }), { TTL: 120 });
     } catch (error) {
       const statusCode = (error as { statusCode?: number }).statusCode;
@@ -511,9 +511,7 @@ export const requestCheckNow = onCall({
     return { check: { id: checkRef.id, ...check }, resend: false };
   });
 
-  const assignment = await assignmentRef.get();
-  const routineName = String(assignment.data()?.routine?.name ?? routineId);
-  await sendCheckPushNotifications(familyRef, { ...check, routineName }, resend);
+  await sendCheckPushNotifications(familyRef, check, resend);
   return check;
 });
 
@@ -659,7 +657,6 @@ export const dispatchPlannedChecks = onSchedule({
       if (created) await sendCheckPushNotifications(familyDoc.ref, {
         sessionId: check.sessionId,
         routineId,
-        routineName: String(assignmentData.routine?.name ?? routineId),
       }, false);
     }));
   }));
