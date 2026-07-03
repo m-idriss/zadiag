@@ -112,7 +112,7 @@ export function App() {
         setSplashProgress(100);
         setReady(true);
         void checkForAppUpdate();
-      }, Math.max(150, 700 - elapsed));
+      }, Math.max(100, 500 - elapsed));
     }).catch((error) => {
       console.error(error);
       if (!alive) return;
