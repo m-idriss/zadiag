@@ -11,8 +11,13 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if signedIn() && request.auth.uid == userId;
+      allow read: if signedIn() && (request.auth.uid == userId || isChildInFamily(userId));
       allow write: if false;
+    }
+
+    function isChildInFamily(userId) {
+      return signedIn()
+        && get(/databases/$(database)/documents/families/$(get(/databases/$(database)/documents/users/$(userId)).data.familyId)).data.members[request.auth.uid] == 'child';
     }
 
     match /families/{familyId} {

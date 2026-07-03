@@ -267,7 +267,7 @@ export class FirebaseRepository implements AppRepository {
       console.error('Unable to migrate family routines', error);
     }
     const familyRef = doc(this.services.db, 'families', familyId);
-    this.remoteSubscriptions.push(onSnapshot(familyRef, (snapshot) => {
+    this.remoteSubscriptions.push(onSnapshot(familyRef, async (snapshot) => {
       if (!snapshot.exists()) return;
       const family = snapshot.data() as FamilyDocument;
       const childLinked = Object.values(family.members ?? {}).some((memberRole) => memberRole === 'child');
@@ -275,7 +275,30 @@ export class FirebaseRepository implements AppRepository {
       this.state.family.childLinked = childLinked;
       this.state.family.linkingCode = family.linkingCode ?? this.state.family.linkingCode;
       this.state.family.parentRecoveryCode = family.parentRecoveryCode ?? this.state.family.parentRecoveryCode;
-      this.emit();
+      
+      // For child role, fetch recovery code from parent profile
+      if (role === 'child' && !this.state.family.parentRecoveryCode && family.members) {
+        try {
+          const parentUids = Object.entries(family.members)
+            .filter(([, memberRole]) => memberRole === 'parent')
+            .map(([uid]) => uid);
+          
+          if (parentUids.length > 0) {
+            const parentProfile = await getDoc(doc(this.services.db, 'users', parentUids[0]));
+            if (parentProfile.exists()) {
+              const parentData = parentProfile.data();
+              if (parentData?.parentRecoveryCode) {
+                this.state.family.parentRecoveryCode = parentData.parentRecoveryCode;
+                this.emit();
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Unable to fetch parent recovery code from profile', error);
+        }
+      } else {
+        this.emit();
+      }
     }));
     const assignments = query(collection(familyRef, 'routineAssignments'), orderBy('assignedAt', 'asc'));
     this.remoteSubscriptions.push(onSnapshot(assignments, (snapshot) => {
