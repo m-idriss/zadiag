@@ -1,4 +1,5 @@
-import { IonButton } from '@ionic/react';
+import { IonButton, IonIcon } from '@ionic/react';
+import { cameraOutline, checkboxOutline } from 'ionicons/icons';
 import type { AppState, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { Disclaimer } from '../components/Disclaimer';
@@ -38,7 +39,7 @@ export function ChildDashboard({
       <header className="screen-header participant-header"><div><h1>{t('hi')} {state.family.childName} 👋</h1><p>{t('todayIntro')}</p></div><button type="button" className="more-button" aria-label={t('moreOptions')}>•••</button></header>
       <section className="today-section" aria-labelledby="pending-tasks-title">
         <div className="today-pending-panel">
-          <div className="today-panel-heading"><div><small>{t('toDoToday')}</small><h2 id="pending-tasks-title">{pending.length} {t(pending.length === 1 ? 'checkToComplete' : 'checksToComplete')}</h2></div><span aria-hidden="true">▣</span></div>
+          <div className="today-panel-heading"><div><small>{t('toDoToday')}</small><h2 id="pending-tasks-title">{pending.length} {t(pending.length === 1 ? 'checkToComplete' : 'checksToComplete')}</h2></div><span aria-hidden="true"><IonIcon icon={checkboxOutline} /></span></div>
           <div className="today-task-list">
           {pending.map((event) => (
             <article className={`today-task ${active?.id === event.id ? 'actionable' : ''}`} style={presentationFor(event).style} key={event.id}>
@@ -47,7 +48,7 @@ export function ChildDashboard({
                 <div><h3>{presentationFor(event).name}</h3><small>{t('thisEvening')}</small><p>{t('before')} {formatTime(event.expiresAt)}</p></div>
               </div>
               {active?.id === event.id
-                ? <IonButton expand="block" onClick={start}>▣&nbsp; {t('sendProof')}</IonButton>
+                ? <IonButton expand="block" onClick={start}><IonIcon icon={cameraOutline} slot="start" />{t('sendProof')}</IonButton>
                 : <StatusPill status={event.status} t={t} />}
             </article>
           ))}

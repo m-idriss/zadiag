@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { IonButton } from '@ionic/react';
+import { IonButton, IonIcon } from '@ionic/react';
+import { cameraOutline, chevronForwardOutline, peopleOutline, sendOutline, timeOutline } from 'ionicons/icons';
 import { adherenceSummary } from '../domain/adherence';
 import { presentRoutine } from '../domain/routinePresentation';
 import type { AppState, RoutineAssignment, VerificationEvent } from '../domain/models';
@@ -45,6 +46,12 @@ const streakFor = (events: VerificationEvent[]) => {
   return streak;
 };
 
+const renderRoutineStepIcon = (icon: string) => {
+  if (icon === '▣') return <IonIcon icon={cameraOutline} />;
+  if (icon === '➤') return <IonIcon icon={sendOutline} />;
+  return icon;
+};
+
 export function RoutineDetailScreen({ assignment, state, back, start, t }: {
   assignment: RoutineAssignment;
   state: AppState;
@@ -67,7 +74,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, t }: {
     <article className="routine-history-row" key={event.id}>
       <span className="submission-thumb" aria-hidden="true">{visual.icon}</span>
       <div><strong>{formatDateTime(event.requestedAt)}</strong><small>{event.reason ?? t('noAnalysisYet')}</small></div>
-      <StatusPill status={event.status} t={t} /><span aria-hidden="true">›</span>
+      <StatusPill status={event.status} t={t} /><span aria-hidden="true"><IonIcon icon={chevronForwardOutline} /></span>
     </article>
   );
 
@@ -83,17 +90,17 @@ export function RoutineDetailScreen({ assignment, state, back, start, t }: {
       </nav>
 
       {tab === 'overview' && <div className="routine-tab-panel">
-        <section className="next-check-card"><div><small>{t('nextCheck')}</small><h2>{next ? t('thisEvening') : t('noPendingTask')}</h2>{next && <p>{t('before')} {formatTime(next.expiresAt)}</p>}</div><span aria-hidden="true">◷</span></section>
+        <section className="next-check-card"><div><small>{t('nextCheck')}</small><h2>{next ? t('thisEvening') : t('noPendingTask')}</h2>{next && <p>{t('before')} {formatTime(next.expiresAt)}</p>}</div><span aria-hidden="true"><IonIcon icon={timeOutline} /></span></section>
         <section className="routine-copy"><h2>{t('overviewTab')}</h2><p>{visual.description}</p></section>
         <section className="routine-meta-card">
-          <div><span aria-hidden="true">⌘</span><b>{t('frequency')}</b><p>{assignment.plan.checksPerDay} {t('timesPerDay')}</p><i>›</i></div>
-          <div><span aria-hidden="true">▣</span><b>{t('expectedProof')}</b><p>{visual.proofType}</p><i>›</i></div>
-          <div><span aria-hidden="true">♟</span><b>{t('responsible')}</b><p>{visual.responsibleName}</p><i>›</i></div>
+          <div><span aria-hidden="true"><IonIcon icon={timeOutline} /></span><b>{t('frequency')}</b><p>{assignment.plan.checksPerDay} {t('timesPerDay')}</p><i><IonIcon icon={chevronForwardOutline} /></i></div>
+          <div><span aria-hidden="true"><IonIcon icon={cameraOutline} /></span><b>{t('expectedProof')}</b><p>{visual.proofType}</p><i><IonIcon icon={chevronForwardOutline} /></i></div>
+          <div><span aria-hidden="true"><IonIcon icon={peopleOutline} /></span><b>{t('responsible')}</b><p>{visual.responsibleName}</p><i><IonIcon icon={chevronForwardOutline} /></i></div>
         </section>
-        {next && start && <IonButton className="routine-proof-action" expand="block" onClick={start}>▣&nbsp; {t('sendProof')}</IonButton>}
+        {next && start && <IonButton className="routine-proof-action" expand="block" onClick={start}><IonIcon icon={cameraOutline} slot="start" />{t('sendProof')}</IonButton>}
       </div>}
 
-      {tab === 'instructions' && <div className="routine-tab-panel"><section className="routine-copy"><h2>{t('instructions')}</h2><p>{visual.instructions}</p></section><div className="routine-instruction-list">{visual.instructionSteps.map((step, index) => <article key={step.id}><b>{index + 1}</b><span aria-hidden="true">{step.icon}</span><div><h3>{step.title}</h3><p>{step.description}</p></div></article>)}</div><aside className="routine-advice"><b>{t('advice')}</b><p>{t('routineAdvice')}</p></aside></div>}
+      {tab === 'instructions' && <div className="routine-tab-panel"><section className="routine-copy"><h2>{t('instructions')}</h2><p>{visual.instructions}</p></section><div className="routine-instruction-list">{visual.instructionSteps.map((step, index) => <article key={step.id}><b>{index + 1}</b><span aria-hidden="true">{renderRoutineStepIcon(step.icon)}</span><div><h3>{step.title}</h3><p>{step.description}</p></div></article>)}</div><aside className="routine-advice"><b>{t('advice')}</b><p>{t('routineAdvice')}</p></aside></div>}
 
       {tab === 'history' && <div className="routine-tab-panel"><div className="tab-section-title"><h2>{t('recentHistory')}</h2><span>{events.length}</span></div><div className="routine-history-list">{events.map(historyRow)}{!events.length && <p className="empty-state">{t('noRoutineHistory')}</p>}</div></div>}
 

@@ -132,8 +132,8 @@ export const defaultRoutine: Routine = {
   responsibleName: 'Care team',
   instructionSteps: [
     { id: 'wear', icon: '🦷', title: 'Wear your elastics', description: 'Follow the instructions from your healthcare professional.' },
-    { id: 'photo', icon: '▣', title: 'Take a clear photo', description: 'Use good light and keep your mouth centered.' },
-    { id: 'send', icon: '➤', title: 'Send your proof', description: 'Submit it so the responsible person can review it.' },
+    { id: 'photo', icon: '📷', title: 'Take a clear photo', description: 'Use good light and keep your mouth centered.' },
+    { id: 'send', icon: '📤', title: 'Send your proof', description: 'Submit it so the responsible person can review it.' },
   ],
   translations: {
     fr: {
@@ -142,8 +142,8 @@ export const defaultRoutine: Routine = {
       instructions: 'Porte tes élastiques selon les consignes de ton praticien et envoie une photo claire pour chaque contrôle.',
       instructionSteps: [
         { id: 'wear', icon: '🦷', title: 'Mets tes élastiques', description: 'Suis les consignes de ton praticien.' },
-        { id: 'photo', icon: '▣', title: 'Prends une photo', description: 'Cadre bien ta bouche avec une lumière claire.' },
-        { id: 'send', icon: '➤', title: 'Envoie ta preuve', description: 'Le responsable pourra ensuite la vérifier.' },
+        { id: 'photo', icon: '📷', title: 'Prends une photo', description: 'Cadre bien ta bouche avec une lumière claire.' },
+        { id: 'send', icon: '📤', title: 'Envoie ta preuve', description: 'Le responsable pourra ensuite la vérifier.' },
       ],
     },
   },

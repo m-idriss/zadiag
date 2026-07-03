@@ -13,6 +13,7 @@
   --ion-color-primary: #1d8a7a;
   --ion-color-primary-rgb: 29, 138, 122;
   --ion-font-family: 'Nunito', system-ui, sans-serif;
+  --icon-font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "Noto Sans Symbols", "Apple Symbols", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", 'Nunito', system-ui, sans-serif;
   font-family: 'Nunito', system-ui, sans-serif;
   color: var(--navy);
   background:
@@ -24,6 +25,37 @@
 * { box-sizing: border-box; }
 body { margin: 0; background: inherit; color: var(--navy); }
 button, input { font: inherit; }
+
+.role-symbol,
+.section-icon,
+.setup-progress li > span,
+.setup-hero-icon,
+.setup-summary > span,
+.instruction-symbol,
+.setup-help > span,
+.notification-benefits span,
+.disclaimer span,
+.history-icon,
+.today-task-icon,
+.routine-icon,
+.routine-hero-icon,
+.submission-thumb,
+.result-icon,
+.back-button,
+.detail-back,
+.more-button,
+.add-routine-button,
+.role-button b,
+.routine-card-next > span,
+.routine-meta-card > div > span,
+.routine-meta-card i,
+.routine-history-row > span:last-child,
+.today-panel-heading > span,
+.privacy-card li::before {
+  font-family: var(--icon-font-family);
+  font-variant-emoji: emoji;
+}
+
 ion-app {
   background: transparent;
   overflow: hidden;
@@ -318,17 +350,21 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .next-check-card h2 { margin-top: 5px; font-size: 18px; }
 .next-check-card p { margin: 2px 0 0; font-size: 12px; }
 .next-check-card > span { width: 50px; height: 50px; display: grid; place-items: center; border-radius: 16px; background: rgba(255,255,255,.75); color: var(--routine-accent); font-size: 26px; box-shadow: 0 8px 20px rgba(21,50,75,.07); }
+.next-check-card > span ion-icon { font-size: 24px; }
 .routine-copy p { margin-bottom: 0; color: var(--navy); font-size: 14px; }
 .routine-meta-card { display: grid; }
 .routine-meta-card > div { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto 12px; align-items: center; gap: 8px; min-height: 47px; border-bottom: 1px solid var(--line); font-size: 12px; }
 .routine-meta-card > div > span { color: var(--navy); }
 .routine-meta-card p { margin: 0; color: var(--navy); text-align: right; }
 .routine-meta-card i { color: var(--muted); font-style: normal; font-size: 18px; }
+.routine-meta-card > div > span ion-icon { font-size: 16px; }
+.routine-meta-card i ion-icon { font-size: 16px; }
 .routine-proof-action { margin-top: 4px; --background: var(--routine-accent); --border-radius: 10px; }
 .routine-instruction-list { display: grid; gap: 16px; }
 .routine-instruction-list article { display: grid; grid-template-columns: 24px 46px 1fr; align-items: center; gap: 10px; }
 .routine-instruction-list article > b { width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--routine-accent) 15%, white); color: var(--routine-accent); font-size: 11px; }
 .routine-instruction-list article > span { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 13px; background: #f1f5f3; font-size: 23px; }
+.routine-instruction-list article > span ion-icon { font-size: 23px; }
 .routine-instruction-list h3 { margin: 0; font-size: 14px; }
 .routine-instruction-list p { margin: 3px 0 0; font-size: 12px; }
 .routine-advice { padding: 15px; border-radius: 16px; background: linear-gradient(120deg, color-mix(in srgb, var(--routine-accent) 10%, white), #f6fbf9); }
@@ -341,6 +377,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .routine-history-row > div { display: grid; gap: 3px; min-width: 0; }
 .routine-history-row strong { font-size: 12px; }
 .routine-history-row small { overflow: hidden; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.routine-history-row > span:last-child ion-icon { font-size: 14px; }
 .progress-summary { display: flex; align-items: center; gap: 18px; padding: 16px; }
 .progress-summary dl { flex: 1; margin: 0; }
 .progress-summary dl div { display: flex; justify-content: space-between; gap: 15px; font-size: 12px; }
@@ -623,6 +660,7 @@ ion-input {
 }
 .bottom-nav button {
   min-height: 52px;
+  padding: 8px 8px 5px;
   border-radius: 17px;
   color: #7b878f;
   font-size: 10px;
