@@ -278,35 +278,29 @@ export function SettingsScreen({
       </section>
       <section className="settings-section settings-account-section" aria-labelledby="settings-account-heading">
         <h2 id="settings-account-heading">{t('settingsAccountSection')}</h2>
-      {role === 'parent' && childLinkingCode ? (
-        <CodeBox
-          label={t('childLinkCode')}
-          hint={t('childLinkCodeHint')}
-          value={childLinkingCode}
-          t={t}
-          action={(
-            <>
-              <button type="button" className="regenerate-code" disabled={regenerating} onClick={() => { void regenerate(); }}>
-                {regenerating ? t('regeneratingCode') : t('regenerateCode')}
-              </button>
-              {codeError ? <span className="form-error">{t('regenerateCodeError')}</span> : null}
-            </>
-          )}
-        />
-      ) : null}
-      {role === 'child' && parentRecoveryCode ? (
-        <CodeBox
-          label={t('parentRecoveryCode')}
-          hint={t('childRecoveryHelp')}
-          value={parentRecoveryCode}
-          maskValue
-          t={t}
-        />
-      ) : null}
       <section className="card privacy-card">
         <h2>{t('privacyDefaults')}</h2>
         <ul><li>{t('noFaceRecognition')}</li><li>{t('noModelTraining')}</li><li>{t('noPhotoUpload')}</li><li>{t('immediateDeletion')}</li></ul>
       </section>
+      {(role === 'parent' ? childLinkingCode : parentRecoveryCode) ? (
+        <CodeBox
+          label={t(role === 'parent' ? 'childLinkCode' : 'parentRecoveryCode')}
+          hint={t(role === 'parent' ? 'childLinkCodeHint' : 'childRecoveryHelp')}
+          value={(role === 'parent' ? childLinkingCode : parentRecoveryCode) || ''}
+          maskValue
+          t={t}
+          {...(role === 'parent' ? {
+            action: (
+              <>
+                <button type="button" className="regenerate-code" disabled={regenerating} onClick={() => { void regenerate(); }}>
+                  {regenerating ? t('regeneratingCode') : t('regenerateCode')}
+                </button>
+                {codeError ? <span className="form-error">{t('regenerateCodeError')}</span> : null}
+              </>
+            ),
+          } : {})}
+        />
+      ) : null}
       <Disclaimer t={t} />
       <IonButton className="settings-reset-button" expand="block" fill="outline" color="danger" onClick={confirmReset}>{t('resetDemo')}</IonButton>
       </section>
