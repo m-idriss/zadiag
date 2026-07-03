@@ -13,19 +13,26 @@ const sameLocalDay = (value: string, day = new Date()) => {
   return date.getFullYear() === day.getFullYear() && date.getMonth() === day.getMonth() && date.getDate() === day.getDate();
 };
 
-const calendarDays = (events: VerificationEvent[], locale: string) => Array.from({ length: 28 }, (_, index) => {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  date.setDate(date.getDate() - (27 - index));
-  const dayEvents = events.filter((event) => sameLocalDay(event.requestedAt, date));
-  return {
-    key: date.toISOString(),
-    label: new Intl.DateTimeFormat(locale, { weekday: 'narrow' }).format(date),
-    completed: dayEvents.some((event) => event.status === 'detected'),
-    attention: dayEvents.some((event) => ['not_detected', 'uncertain'].includes(event.status)),
-    missed: dayEvents.some((event) => ['missed', 'expired'].includes(event.status)),
-  };
-});
+export const calendarDays = (events: VerificationEvent[], locale: string, referenceDate = new Date()) => {
+  const start = new Date(referenceDate);
+  start.setHours(0, 0, 0, 0);
+  const daysSinceMonday = (start.getDay() + 6) % 7;
+  start.setDate(start.getDate() - daysSinceMonday - 21);
+
+  return Array.from({ length: 28 }, (_, index) => {
+    const date = new Date(start);
+    date.setDate(start.getDate() + index);
+    const dayEvents = events.filter((event) => sameLocalDay(event.requestedAt, date));
+    return {
+      key: date.toISOString(),
+      weekday: date.getDay(),
+      label: new Intl.DateTimeFormat(locale, { weekday: 'narrow' }).format(date),
+      completed: dayEvents.some((event) => event.status === 'detected'),
+      attention: dayEvents.some((event) => ['not_detected', 'uncertain'].includes(event.status)),
+      missed: dayEvents.some((event) => ['missed', 'expired'].includes(event.status)),
+    };
+  });
+};
 
 const streakFor = (events: VerificationEvent[]) => {
   let streak = 0;
