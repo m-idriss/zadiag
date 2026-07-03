@@ -23,13 +23,18 @@ self.addEventListener('message', (event: ExtendableMessageEvent) => {
 });
 
 self.addEventListener('push', (event: PushEvent) => {
-  const payload = event.data?.json() as { sessionId?: string; title?: string; body?: string } | undefined;
+  const payload = event.data?.json() as {
+    sessionId?: string;
+    title?: string;
+    body?: string;
+    tag?: string;
+  } | undefined;
   event.waitUntil(
     self.registration.showNotification(payload?.title ?? 'Time to do a check', {
       body: payload?.body ?? 'Take a photo of your elastics.',
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
-      tag: payload?.sessionId ?? 'verification',
+      tag: payload?.tag ?? payload?.sessionId ?? 'verification',
       data: { path: '/?open=verification' },
     }),
   );

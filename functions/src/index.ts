@@ -117,6 +117,7 @@ const sendCheckPushNotifications = async (
       await webpush.sendNotification(subscription, JSON.stringify({
         sessionId: check.sessionId,
         routineId: check.routineId,
+        tag: resend ? `reminder:${check.sessionId}` : `verification:${check.sessionId}`,
         title: 'Zadiag',
         body: resend
           ? (isFrench ? `Le rappel « ${check.routineName} » est prêt.` : `${check.routineName} reminder is ready.`)
