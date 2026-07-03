@@ -86,6 +86,16 @@ export function App() {
     let alive = true;
     const startedAt = Date.now();
     const unsubscribe = repository.subscribe(() => setState(repository.snapshot()));
+    const startupProgressTicker = window.setInterval(() => {
+      if (!alive) return;
+      setSplashProgress((current) => {
+        const ceiling = 88;
+        if (current >= ceiling) return current;
+        const remaining = ceiling - current;
+        const step = remaining > 30 ? 2.4 : remaining > 16 ? 1.6 : 0.9;
+        return Math.min(ceiling, Number((current + step).toFixed(1)));
+      });
+    }, 140);
     const setStartupStep = (progress: number, message: MessageKey) => {
       if (!alive) return;
       setSplashProgress(progress);
@@ -102,6 +112,7 @@ export function App() {
     };
     repository.initialize().then(() => {
       if (!alive) return;
+      window.clearInterval(startupProgressTicker);
       const restored = repository.snapshot();
       setState(restored);
       setRoute(routeForState(restored));
@@ -116,11 +127,13 @@ export function App() {
     }).catch((error) => {
       console.error(error);
       if (!alive) return;
+      window.clearInterval(startupProgressTicker);
       setSplashProgress(100);
       setReady(true);
     });
     return () => {
       alive = false;
+      window.clearInterval(startupProgressTicker);
       unsubscribe();
     };
   }, [repository]);
