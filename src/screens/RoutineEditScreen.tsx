@@ -21,7 +21,7 @@ export function RoutineEditScreen({
   const [checksPerDay, setChecksPerDay] = useState(String(plan.checksPerDay));
   const [windows, setWindows] = useState<TimeWindow[]>(plan.windows);
   const [weekdays, setWeekdays] = useState<number[]>(plan.weekdays);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string>();
 
   const handleWindowChange = (index: number, field: 'start' | 'end', value: string) => {
     const newWindows = [...windows];
@@ -38,14 +38,14 @@ export function RoutineEditScreen({
   };
 
   const handleSave = async () => {
-    setError(false);
+    setError(undefined);
     const checksNum = parseInt(checksPerDay, 10);
     if (Number.isNaN(checksNum) || checksNum < 1 || checksNum > 10) {
-      setError(true);
+      setError('Invalid checks per day');
       return;
     }
     if (weekdays.length === 0) {
-      setError(true);
+      setError('Select at least one day');
       return;
     }
     try {
@@ -55,8 +55,10 @@ export function RoutineEditScreen({
         windows,
         weekdays,
       });
-    } catch {
-      setError(true);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error('Save error:', message);
+      setError(`Failed to save: ${message}`);
     }
   };
 
@@ -118,7 +120,7 @@ export function RoutineEditScreen({
         </div>
       </section>
 
-      {error && <p className="form-error">{t('invalidInput')}</p>}
+      {error && <p className="form-error">{error || t('invalidInput')}</p>}
 
       <div className="edit-actions">
         <IonButton expand="block" fill="outline" onClick={onCancel} disabled={busy}>

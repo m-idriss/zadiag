@@ -241,6 +241,8 @@ export function App() {
             sync();
             setRoute('app');
             setEditingRoutineId(undefined);
+          } catch (error) {
+            console.error('Update routine error:', error);
           } finally {
             setIsSavingRoutine(false);
           }
