@@ -1,5 +1,5 @@
 import type { Locale, Role, VerificationEvent } from '../domain/models';
-import { firebaseEnabled, getFirebaseServices } from './firebaseClient';
+import { firebaseConfig, firebaseEnabled } from './firebaseConfig';
 
 type LogLevel = 'log' | 'info' | 'warn' | 'error' | 'debug';
 
@@ -104,33 +104,14 @@ const collectDeviceInfo = () => ({
 });
 
 const collectFirebaseContext = () => {
-  const envProjectId = import.meta.env.VITE_FIREBASE_PROJECT_ID ?? 'unset';
-  const envAuthDomain = import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ?? 'unset';
-  const envAppId = import.meta.env.VITE_FIREBASE_APP_ID ?? 'unset';
-  const base = {
+  return {
     firebaseEnabled,
-    projectId: envProjectId,
-    authDomain: envAuthDomain,
-    appId: envAppId,
+    projectId: firebaseConfig.projectId ?? 'unset',
+    authDomain: firebaseConfig.authDomain ?? 'unset',
+    appId: firebaseConfig.appId ?? 'unset',
     functionsRegion: 'europe-west1',
     uid: 'unavailable',
   };
-  if (!firebaseEnabled) return base;
-  try {
-    const services = getFirebaseServices();
-    return {
-      ...base,
-      projectId: services.app.options.projectId ?? envProjectId,
-      authDomain: services.app.options.authDomain ?? envAuthDomain,
-      appId: services.app.options.appId ?? envAppId,
-      uid: services.auth.currentUser?.uid ?? 'missing',
-    };
-  } catch (error) {
-    return {
-      ...base,
-      uid: `unavailable (${String(error)})`,
-    };
-  }
 };
 
 const summarizeRecentEvents = (events: VerificationEvent[]) => {

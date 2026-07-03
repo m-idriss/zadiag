@@ -1,26 +1,32 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType } from 'react';
 import { IonApp } from '@ionic/react';
 import type { Role, VerificationEvent } from './domain/models';
 import { DEFAULT_ROUTINE_ID } from './domain/models';
 import { routeForState, type AppRoute } from './domain/appRouting';
 import { createRepository } from './services/repositoryFactory';
 import { translate, type MessageKey } from './services/i18n';
-import { WelcomeScreen } from './screens/WelcomeScreen';
-import { LinkScreen } from './screens/LinkScreen';
-import { ParentDashboard } from './screens/ParentDashboard';
-import { ChildDashboard } from './screens/ChildDashboard';
-import { HistoryScreen } from './screens/HistoryScreen';
-import { RoutinesScreen } from './screens/RoutinesScreen';
-import { SettingsScreen } from './screens/SettingsScreen';
-import { CameraScreen } from './screens/CameraScreen';
-import { ResultScreen } from './screens/ResultScreen';
 import { BottomNav, type Tab } from './components/BottomNav';
 import { SplashScreen } from './components/SplashScreen';
 import { WebPushGateway } from './services/webPush';
-import { firebaseEnabled } from './services/firebaseClient';
-import { InstallScreen } from './screens/InstallScreen';
-import { NotificationSetupScreen } from './screens/NotificationSetupScreen';
-import { RoutineEditScreen } from './screens/RoutineEditScreen';
+import { firebaseEnabled } from './services/firebaseConfig';
+
+const lazyScreen = <TProps extends object>(
+  load: () => Promise<Record<string, ComponentType<TProps>>>,
+  name: string,
+) => lazy(async () => ({ default: (await load())[name] as ComponentType<TProps> }));
+
+const InstallScreen = lazyScreen(() => import('./screens/InstallScreen'), 'InstallScreen');
+const WelcomeScreen = lazyScreen(() => import('./screens/WelcomeScreen'), 'WelcomeScreen');
+const LinkScreen = lazyScreen(() => import('./screens/LinkScreen'), 'LinkScreen');
+const NotificationSetupScreen = lazyScreen(() => import('./screens/NotificationSetupScreen'), 'NotificationSetupScreen');
+const CameraScreen = lazyScreen(() => import('./screens/CameraScreen'), 'CameraScreen');
+const ResultScreen = lazyScreen(() => import('./screens/ResultScreen'), 'ResultScreen');
+const RoutineEditScreen = lazyScreen(() => import('./screens/RoutineEditScreen'), 'RoutineEditScreen');
+const HistoryScreen = lazyScreen(() => import('./screens/HistoryScreen'), 'HistoryScreen');
+const SettingsScreen = lazyScreen(() => import('./screens/SettingsScreen'), 'SettingsScreen');
+const ParentDashboard = lazyScreen(() => import('./screens/ParentDashboard'), 'ParentDashboard');
+const ChildDashboard = lazyScreen(() => import('./screens/ChildDashboard'), 'ChildDashboard');
+const RoutinesScreen = lazyScreen(() => import('./screens/RoutinesScreen'), 'RoutinesScreen');
 
 const isLocalhost = /^(localhost|127\.0\.0\.1|::1)$/.test(window.location.hostname);
 const useFirebase = import.meta.env.VITE_USE_FIREBASE === 'true';
@@ -313,5 +319,12 @@ export function App() {
     content = <div className="app-shell">{screen}<BottomNav tab={tab} role={role} routineCentricEnabled={routineCentricUiEnabled} onChange={setTab} t={t} /></div>;
   }
 
-  return <IonApp>{content}{!ready ? <SplashScreen progress={splashProgress} message={t(splashMessage)} /> : null}</IonApp>;
+  return (
+    <IonApp>
+      <Suspense fallback={<SplashScreen progress={ready ? 96 : splashProgress} message={t(ready ? 'splashFinalizing' : splashMessage)} />}>
+        {content}
+      </Suspense>
+      {!ready ? <SplashScreen progress={splashProgress} message={t(splashMessage)} /> : null}
+    </IonApp>
+  );
 }
