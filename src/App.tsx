@@ -91,21 +91,27 @@ export function App() {
       setSplashProgress(progress);
       setSplashMessage(message);
     };
-    repository.initialize().then(async () => {
+    const checkForAppUpdate = async () => {
+      try {
+        const registration = await refreshServiceWorkerRegistration();
+        if (!alive) return;
+        setUpdateAvailable(Boolean(registration?.waiting));
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    repository.initialize().then(() => {
       if (!alive) return;
       const restored = repository.snapshot();
       setState(restored);
       setRoute(routeForState(restored));
-      setStartupStep(48, 'splashCheckingUpdate');
-      const registration = await refreshServiceWorkerRegistration();
-      if (!alive) return;
-      setUpdateAvailable(Boolean(registration?.waiting));
       setStartupStep(92, 'splashFinalizing');
       const elapsed = Date.now() - startedAt;
       window.setTimeout(() => {
         if (!alive) return;
         setSplashProgress(100);
         setReady(true);
+        void checkForAppUpdate();
       }, Math.max(150, 700 - elapsed));
     }).catch((error) => {
       console.error(error);
