@@ -604,10 +604,22 @@ ion-input {
   padding: 8px 8px;
   border: 1px solid rgba(255,255,255,.7);
   border-radius: 24px;
-  background: rgba(250,251,250,.78);
+  background: rgba(250,251,250,.98);
   box-shadow: 0 12px 36px rgba(16,42,67,.13), inset 0 1px rgba(255,255,255,.8);
-  backdrop-filter: blur(24px) saturate(170%);
-  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+}
+.bottom-nav-backdrop {
+  position: absolute;
+  z-index: 9;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: calc(118px + env(safe-area-inset-bottom));
+  max-width: 640px;
+  margin: auto;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(248,250,249,0) 0%, rgba(248,250,249,.94) 42%, #f8faf9 68%);
 }
 .bottom-nav button {
   min-height: 52px;
@@ -618,7 +630,7 @@ ion-input {
   transition: color .2s ease, background .2s ease, transform .16s ease;
 }
 .bottom-nav button ion-icon { font-size: 22px; }
-.bottom-nav button.active { background: rgba(255,255,255,.68); color: var(--teal); box-shadow: 0 5px 16px rgba(16,42,67,.065); }
+.bottom-nav button.active { background: #fff; color: var(--teal); box-shadow: 0 5px 16px rgba(16,42,67,.065); }
 .bottom-nav button:active { transform: scale(.95); }
 
 .app-splash { background: linear-gradient(155deg, #fbfcfb, #eef6f3); }

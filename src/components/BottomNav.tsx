@@ -33,18 +33,21 @@ export function BottomNav({
         { tab: 'settings', icon: settingsOutline, label: t('settings') },
       ];
   return (
-    <nav className="bottom-nav" aria-label={t('primaryNavigation')}>
-      {items.map((item) => (
-        <button
-          type="button"
-          key={item.tab}
-          className={tab === item.tab ? 'active' : ''}
-          aria-current={tab === item.tab ? 'page' : undefined}
-          onClick={() => onChange(item.tab)}
-        >
-          <IonIcon icon={item.icon} aria-hidden="true" />{item.label}
-        </button>
-      ))}
-    </nav>
+    <>
+      <div className="bottom-nav-backdrop" aria-hidden="true" />
+      <nav className="bottom-nav" aria-label={t('primaryNavigation')}>
+        {items.map((item) => (
+          <button
+            type="button"
+            key={item.tab}
+            className={tab === item.tab ? 'active' : ''}
+            aria-current={tab === item.tab ? 'page' : undefined}
+            onClick={() => onChange(item.tab)}
+          >
+            <IonIcon icon={item.icon} aria-hidden="true" />{item.label}
+          </button>
+        ))}
+      </nav>
+    </>
   );
 }
