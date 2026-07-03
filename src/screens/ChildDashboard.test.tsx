@@ -52,12 +52,12 @@ describe('participant Today screen', () => {
 
     act(() => root.render(<ChildDashboard state={state} active={pending} start={start} t={(key) => translate('en', key)} />));
 
-    expect(container.textContent).toContain("Today's tasks1");
+    expect(container.textContent).toContain('1 check to complete');
     expect(container.textContent).toContain('Completed today1');
     expect(container.textContent).not.toContain('This week');
     expect(container.querySelectorAll('.today-task')).toHaveLength(2);
 
-    const complete = Array.from(container.querySelectorAll('ion-button')).find((button) => button.textContent?.includes('Complete'));
+    const complete = Array.from(container.querySelectorAll('ion-button')).find((button) => button.textContent?.includes('Send proof'));
     act(() => complete?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(start).toHaveBeenCalledOnce();
   });
@@ -71,7 +71,7 @@ describe('participant Today screen', () => {
     };
 
     act(() => root.render(<ChildDashboard state={base} active={pending} start={() => undefined} t={(key) => translate('en', key)} />));
-    expect(container.textContent).toContain("Today's tasks1");
+    expect(container.textContent).toContain('1 check to complete');
 
     const analyzing = { ...pending, status: 'analyzing' as const };
     act(() => root.render(<ChildDashboard state={{ ...base, events: [analyzing] }} start={() => undefined} t={(key) => translate('en', key)} />));
@@ -87,7 +87,7 @@ describe('participant Today screen', () => {
     });
     act(() => root.render(<ChildDashboard state={reloadedState} start={() => undefined} t={(key) => translate('en', key)} />));
 
-    expect(container.textContent).toContain("Today's tasks0");
+    expect(container.textContent).toContain('0 checks to complete');
     expect(container.textContent).toContain('Completed today3');
     expect(container.textContent).toContain('Missed');
     expect(container.textContent).toContain('Expired');

@@ -52,6 +52,7 @@ describe('participant routines navigation', () => {
   });
 
   it('shows the assigned routine frequency, completion and next task', async () => {
+    await import('./RoutineDetailScreen');
     const assignment = createDefaultRoutineAssignment('2026-07-02T08:00:00.000Z');
     const state: AppState = {
       role: 'child',
@@ -71,28 +72,56 @@ describe('participant routines navigation', () => {
 
     expect(container.textContent).toContain('Orthodontic Elastics');
     expect(container.textContent).toContain('3 checks each day');
-    expect(container.textContent).toContain('50% completion');
-    expect(container.textContent).toContain('Next task before');
-    expect(container.textContent).toContain('Active');
+    expect(container.textContent).toContain('50%');
+    expect(container.textContent).toContain('Next check');
 
-    const details = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('View details'));
+    const details = container.querySelector('button[aria-label*="View details"]');
     await act(async () => {
       details?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      await new Promise((resolve) => window.setTimeout(resolve, 25));
+      await new Promise((resolve) => window.setTimeout(resolve, 100));
     });
 
-    expect(container.textContent).toContain('Routine overview');
     expect(container.textContent).toContain('Progress');
-    expect(container.textContent).toContain('Schedule');
     expect(container.textContent).toContain('Instructions');
-    expect(container.textContent).toContain('Calendar');
-    expect(container.textContent).toContain('Recent submissions');
     expect(container.textContent).toContain('History');
-    expect(container.textContent).toContain('50%');
+    expect(container.textContent).toContain('Expected proof');
+
+    const instructions = Array.from(container.querySelectorAll('.routine-tabs button')).find((button) => button.textContent === 'Instructions');
+    act(() => instructions?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(container.textContent).toContain('Take a clear photo');
+
+    const history = Array.from(container.querySelectorAll('.routine-tabs button')).find((button) => button.textContent === 'History');
+    act(() => history?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(container.textContent).toContain('Recent history');
     expect(container.textContent).not.toContain('Other routine event');
 
-    const back = container.querySelector('.back-button');
+    const progress = Array.from(container.querySelectorAll('.routine-tabs button')).find((button) => button.textContent === 'Progress');
+    act(() => progress?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(container.textContent).toContain('Overall progress');
+    expect(container.textContent).toContain('Calendar');
+    expect(container.textContent).toContain('50%');
+
+    const back = container.querySelector('.detail-back');
     act(() => back?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(container.textContent).toContain('My routines');
+  });
+
+  it('uses custom routine presentation and localized content without new UI code', () => {
+    const assignment = createDefaultRoutineAssignment();
+    assignment.id = 'hydration';
+    assignment.routineId = 'hydration';
+    assignment.routine = {
+      id: 'hydration', name: 'Hydration', description: 'Daily water target', icon: '💧', accentColor: '#2387c9', proofType: 'Counter',
+      translations: { fr: { name: 'Hydratation', description: 'Objectif quotidien en eau' } },
+    };
+    const state: AppState = {
+      role: 'child', locale: 'fr', notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: false },
+      routineAssignments: [assignment], events: [],
+    };
+    act(() => root.render(<RoutinesScreen state={state} t={(key) => translate('fr', key)} />));
+    expect(container.textContent).toContain('Hydratation');
+    expect(container.textContent).toContain('💧');
+    expect(container.querySelector('.routine-card')?.getAttribute('style')).toContain('#2387c9');
   });
 });

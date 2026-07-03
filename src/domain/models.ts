@@ -25,11 +25,31 @@ export interface MonitoringPlan {
 
 export type RoutineStatus = 'active' | 'paused' | 'completed';
 
+export interface RoutineInstructionStep {
+  id: string;
+  icon: string;
+  title: string;
+  description: string;
+}
+
+export interface RoutineLocalizedContent {
+  name?: string;
+  description?: string;
+  instructions?: string;
+  instructionSteps?: RoutineInstructionStep[];
+}
+
 export interface Routine {
   id: string;
   name: string;
   description: string;
   instructions?: string;
+  icon?: string;
+  accentColor?: string;
+  proofType?: string;
+  responsibleName?: string;
+  instructionSteps?: RoutineInstructionStep[];
+  translations?: Partial<Record<Locale, RoutineLocalizedContent>>;
 }
 
 export interface RoutineAssignment {
@@ -106,6 +126,27 @@ export const defaultRoutine: Routine = {
   name: 'Orthodontic Elastics',
   description: 'Daily orthodontic elastic wear checks.',
   instructions: 'Wear your elastics as prescribed. When a check is ready, take a clear photo in good light.',
+  icon: '🦷',
+  accentColor: '#0d927d',
+  proofType: 'Photo',
+  responsibleName: 'Care team',
+  instructionSteps: [
+    { id: 'wear', icon: '🦷', title: 'Wear your elastics', description: 'Follow the instructions from your healthcare professional.' },
+    { id: 'photo', icon: '▣', title: 'Take a clear photo', description: 'Use good light and keep your mouth centered.' },
+    { id: 'send', icon: '➤', title: 'Send your proof', description: 'Submit it so the responsible person can review it.' },
+  ],
+  translations: {
+    fr: {
+      name: 'Élastiques orthodontiques',
+      description: 'Contrôles quotidiens du port des élastiques orthodontiques.',
+      instructions: 'Porte tes élastiques selon les consignes de ton praticien et envoie une photo claire pour chaque contrôle.',
+      instructionSteps: [
+        { id: 'wear', icon: '🦷', title: 'Mets tes élastiques', description: 'Suis les consignes de ton praticien.' },
+        { id: 'photo', icon: '▣', title: 'Prends une photo', description: 'Cadre bien ta bouche avec une lumière claire.' },
+        { id: 'send', icon: '➤', title: 'Envoie ta preuve', description: 'Le responsable pourra ensuite la vérifier.' },
+      ],
+    },
+  },
 };
 
 export const createDefaultRoutineAssignment = (assignedAt = new Date().toISOString()): RoutineAssignment => ({

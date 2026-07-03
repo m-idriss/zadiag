@@ -229,7 +229,7 @@ export function App() {
     const screen = tab === 'history'
       ? <HistoryScreen events={state.events} locale={state.locale} t={t} />
       : routineCentricUiEnabled && tab === 'routines' && role === 'child'
-        ? <RoutinesScreen state={state} t={t} />
+        ? <RoutinesScreen state={state} start={() => setRoute('camera')} t={t} />
       : tab === 'settings'
         ? <SettingsScreen
             enableNotifications={enableNotifications}
