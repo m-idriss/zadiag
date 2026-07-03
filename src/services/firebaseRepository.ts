@@ -166,6 +166,13 @@ export class FirebaseRepository implements AppRepository {
     }
   }
 
+  async updateRoutine(routineId: string, plan: MonitoringPlan) {
+    if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
+    const updateRoutine = httpsCallable<{ familyId: string; routineId: string; plan: MonitoringPlan }, void>(this.services.functions, 'updateRoutineAssignment');
+    try { await updateRoutine({ familyId: this.state.family.id, routineId, plan }); }
+    catch (error) { throw error; }
+  }
+
   async savePushSubscription(subscription: PushSubscriptionJSON) {
     if (!this.state.family.id || this.state.role !== 'child') throw new Error('permission_denied');
     const savePushSubscription = httpsCallable<{

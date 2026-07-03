@@ -129,6 +129,7 @@ const createFakeRepository = (): AppRepository => {
     async linkChild() {},
     async regenerateLinkCode() {},
     async requestCheckNow() {},
+    async updateRoutine() {},
     async savePushSubscription() {
       state = { ...state, notificationsEnabled: true };
       emit();

@@ -11,6 +11,7 @@ export interface AppRepository {
   linkChild(code: string): Promise<void>;
   regenerateLinkCode(): Promise<void>;
   requestCheckNow(): Promise<void>;
+  updateRoutine(routineId: string, plan: MonitoringPlan): Promise<void>;
   savePushSubscription(subscription: PushSubscriptionJSON): Promise<void>;
   savePlan(plan: MonitoringPlan, routineId?: string): Promise<void>;
   activeSession(): VerificationEvent | undefined;

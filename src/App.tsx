@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { IonApp } from '@ionic/react';
 import type { Role, VerificationEvent } from './domain/models';
+import { DEFAULT_ROUTINE_ID } from './domain/models';
 import { createRepository } from './services/repositoryFactory';
 import { translate, type MessageKey } from './services/i18n';
 import { WelcomeScreen } from './screens/WelcomeScreen';
@@ -18,8 +19,9 @@ import { WebPushGateway } from './services/webPush';
 import { firebaseEnabled } from './services/firebaseClient';
 import { InstallScreen } from './screens/InstallScreen';
 import { NotificationSetupScreen } from './screens/NotificationSetupScreen';
+import { RoutineEditScreen } from './screens/RoutineEditScreen';
 
-type Route = 'install' | 'welcome' | 'link' | 'notifications' | 'app' | 'camera' | 'result';
+type Route = 'install' | 'welcome' | 'link' | 'notifications' | 'app' | 'camera' | 'result' | 'routine-edit';
 
 const isLocalhost = /^(localhost|127\.0\.0\.1|::1)$/.test(window.location.hostname);
 const useFirebase = import.meta.env.VITE_USE_FIREBASE === 'true';
@@ -76,6 +78,8 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<VerificationEvent>();
   const [submitError, setSubmitError] = useState<string>();
+  const [editingRoutineId, setEditingRoutineId] = useState<string>();
+  const [isSavingRoutine, setIsSavingRoutine] = useState(false);
   const t = (key: MessageKey) => translate(state.locale, key);
 
   useEffect(() => {
@@ -224,6 +228,31 @@ export function App() {
     content = <CameraScreen busy={busy} submitError={submitError} back={() => setRoute('app')} submit={submit} t={t} />;
   } else if (route === 'result' && result) {
     content = <ResultScreen event={result} done={() => { setResult(undefined); setRoute('app'); }} t={t} />;
+  } else if (route === 'routine-edit' && editingRoutineId && state.role === 'parent') {
+    const assignment = state.routineAssignments.find((r) => r.routineId === editingRoutineId);
+    if (assignment) {
+      content = <RoutineEditScreen
+        plan={assignment.plan}
+        routineId={editingRoutineId}
+        onSave={async (plan) => {
+          setIsSavingRoutine(true);
+          try {
+            await repository.updateRoutine(editingRoutineId, plan);
+            sync();
+            setRoute('app');
+            setEditingRoutineId(undefined);
+          } finally {
+            setIsSavingRoutine(false);
+          }
+        }}
+        onCancel={() => {
+          setRoute('app');
+          setEditingRoutineId(undefined);
+        }}
+        busy={isSavingRoutine}
+        t={t}
+      />;
+    }
   } else {
     const role = state.role ?? 'child';
     const screen = tab === 'history'
@@ -255,6 +284,7 @@ export function App() {
               state={state}
               regenerateCode={async () => { await repository.regenerateLinkCode(); sync(); }}
               requestCheck={async () => { await repository.requestCheckNow(); sync(); }}
+              onEditMonitoringPlan={() => { const assignment = state.routineAssignments.find((r) => r.routineId === DEFAULT_ROUTINE_ID); if (assignment) { setEditingRoutineId(assignment.routineId); setRoute('routine-edit'); } }}
               t={t}
             />
           : <ChildDashboard state={state} active={repository.activeSession()} start={() => setRoute('camera')} t={t} />;

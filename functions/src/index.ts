@@ -517,13 +517,61 @@ export const requestCheckNow = onCall({
   return check;
 });
 
+export const updateRoutineAssignment = onCall({
+  region,
+  cors,
+  enforceAppCheck: true,
+}, async (request) => {
+  const uid = requireUid(request.auth);
+  const familyId = String(request.data?.familyId ?? '');
+  const routineId = String(request.data?.routineId ?? DEFAULT_ROUTINE_ID);
+  const plan = request.data?.plan;
+  
+  if (!plan || typeof plan !== 'object') {
+    throw new HttpsError('invalid-argument', 'Plan is required and must be an object.');
+  }
+
+  const userRef = db.collection('users').doc(uid);
+  const familyRef = db.collection('families').doc(familyId);
+  const assignmentRef = familyRef.collection('routineAssignments').doc(routineId);
+
+  // Check authorization
+  const authorizationProfile = await userRef.get();
+  if (!authorizationProfile.exists || authorizationProfile.data()?.familyId !== familyId || authorizationProfile.data()?.role !== 'parent') {
+    throw new HttpsError('permission-denied', 'Only the parent can update a routine.');
+  }
+
+  await ensureFamilyRoutineMigration(familyRef);
+  
+  // Update the assignment plan
+  await assignmentRef.update({
+    plan: {
+      checksPerDay: Number(plan.checksPerDay) || 1,
+      expiryMinutes: Number(plan.expiryMinutes) || 30,
+      timeZone: String(plan.timeZone) || 'UTC',
+      weekdays: Array.isArray(plan.weekdays) ? plan.weekdays : [],
+      windows: Array.isArray(plan.windows) ? plan.windows.map((w: any) => ({
+        id: String(w.id),
+        start: String(w.start),
+        end: String(w.end),
+      })) : [],
+    },
+    updatedAt: new Date().toISOString(),
+  });
+
+  return { success: true };
+});
+
 export const dispatchPlannedChecks = onSchedule({
   region,
-  schedule: 'every 5 minutes',
+  schedule: 'every 30 minutes',
   timeZone: 'UTC',
   secrets: [vapidPrivateKey, vapidPublicKey],
 }, async () => {
-  const families = await db.collection('families').get();
+  // Query only families that likely have active routines (have children and recent activity)
+  const families = await db.collection('families')
+    .where('members', '!=', {})
+    .get();
   if (families.empty) return;
 
   const now = new Date();

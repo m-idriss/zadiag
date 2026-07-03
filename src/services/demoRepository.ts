@@ -170,6 +170,14 @@ export class DemoRepository implements AppRepository {
     this.persist();
   }
 
+  async updateRoutine(routineId: string, plan: MonitoringPlan) {
+    const assignment = this.state.routineAssignments.find((r) => r.routineId === routineId);
+    if (assignment) {
+      assignment.plan = plan;
+      this.persist();
+    }
+  }
+
   async savePushSubscription(_subscription: PushSubscriptionJSON) {
     this.state.notificationsEnabled = true;
     this.persist();
