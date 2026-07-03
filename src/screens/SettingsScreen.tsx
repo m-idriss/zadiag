@@ -294,14 +294,6 @@ export function SettingsScreen({
           )}
         />
       ) : null}
-      {role === 'parent' && parentRecoveryCode ? (
-        <CodeBox
-          label={t('parentRecoveryCode')}
-          hint={t('parentRecoverHelp')}
-          value={parentRecoveryCode}
-          t={t}
-        />
-      ) : null}
       {role === 'child' && parentRecoveryCode ? (
         <CodeBox
           label={t('parentRecoveryCode')}
