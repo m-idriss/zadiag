@@ -40,7 +40,7 @@ export function App() {
   const [route, setRoute] = useState<AppRoute>(() => routeForState(state, browserRouteContext()));
   const [ready, setReady] = useState(false);
   const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [splashProgress, setSplashProgress] = useState(12);
+  const [splashProgress, setSplashProgress] = useState(40);
   const [splashMessage, setSplashMessage] = useState<MessageKey>('splashLoading');
   const [tab, setTab] = useState<Tab>('home');
   const [busy, setBusy] = useState(false);
@@ -57,13 +57,13 @@ export function App() {
     const startupProgressTicker = window.setInterval(() => {
       if (!alive) return;
       setSplashProgress((current) => {
-        const ceiling = 88;
+        const ceiling = 94;
         if (current >= ceiling) return current;
         const remaining = ceiling - current;
-        const step = remaining > 30 ? 2.4 : remaining > 16 ? 1.6 : 0.9;
+        const step = remaining > 30 ? 8 : remaining > 16 ? 4 : 1.8;
         return Math.min(ceiling, Number((current + step).toFixed(1)));
       });
-    }, 140);
+    }, 80);
     const setStartupStep = (progress: number, message: MessageKey) => {
       if (!alive) return;
       setSplashProgress(progress);
@@ -85,13 +85,10 @@ export function App() {
       setState(restored);
       setRoute(routeForState(restored, browserRouteContext()));
       setStartupStep(100, 'splashFinalizing');
-      window.setTimeout(() => {
-        if (!alive) return;
-        setReady(true);
-        runWhenStartupIsIdle(() => {
-          void checkForAppUpdate();
-        });
-      }, 0);
+      setReady(true);
+      runWhenStartupIsIdle(() => {
+        void checkForAppUpdate();
+      });
     }).catch((error) => {
       console.error(error);
       if (!alive) return;
