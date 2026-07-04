@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState } from 'react';
-import type { AppState, MonitoringPlan, RoutineAssignment, VerificationEvent } from '../domain/models';
-import { summarizeWeekdays } from '../domain/monitoringPlan';
+import type { AppState, MonitoringPlan, RoutineAssignment, ScheduleGroup, VerificationEvent } from '../domain/models';
+import { groupsFromLegacyPlan, summarizeWeekdays } from '../domain/monitoringPlan';
 import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
 import { presentRoutine } from '../domain/routinePresentation';
@@ -16,6 +16,13 @@ const completionRate = (assignment: RoutineAssignment, events: VerificationEvent
 };
 
 type RequestStatus = 'idle' | 'sent' | 'active' | 'error';
+
+const groupSummaryLabel = (group: ScheduleGroup, index: number, t: (key: MessageKey) => string) => {
+  const label = group.label?.trim();
+  const weekdaySummary = summarizeWeekdays(group.weekdays, t);
+  if (!label || label === weekdaySummary) return `${t('monitoringPeriod')} ${index + 1}`;
+  return label;
+};
 
 export function RoutinesScreen({
   state,
@@ -151,16 +158,16 @@ export function RoutinesScreen({
           const nextLabel = next
             ? `${t(dayPeriodLabelKey(next.expiresAt))} · ${t('before')} ${new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(new Date(next.expiresAt))}`
             : t('noPendingTask');
-          const planChips = assignment.plan.scheduleGroups?.length
-            ? assignment.plan.scheduleGroups.flatMap((group, groupIndex) =>
-                group.windows.map((window) => ({
-                  id: `${group.id}-${window.id}`,
-                  label: assignment.plan.scheduleGroups!.length > 1
-                    ? `${group.label?.trim() || `${t('monitoringPeriod')} ${groupIndex + 1}`} · ${summarizeWeekdays(group.weekdays, t)} · ${window.start}–${window.end}`
-                    : `${window.start}–${window.end}`,
-                })),
-              )
-            : assignment.plan.windows.map((window) => ({ id: window.id, label: `${window.start}–${window.end}` }));
+          const groups = groupsFromLegacyPlan(assignment.plan);
+          const planChips = groups.map((group, groupIndex) => {
+            const windows = group.windows.map((window) => `${window.start}–${window.end}`).join(', ');
+            return {
+              id: group.id,
+              label: groups.length > 1
+                ? `${groupSummaryLabel(group, groupIndex, t)} · ${summarizeWeekdays(group.weekdays, t)} · ${windows}`
+                : windows,
+            };
+          });
           const requestStatus = requestStatuses[assignment.routineId] ?? 'idle';
           const requesting = requestingRoutineId === assignment.routineId;
           return (

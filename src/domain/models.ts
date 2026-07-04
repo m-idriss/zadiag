@@ -138,7 +138,6 @@ export const defaultPlan: MonitoringPlan = {
   scheduleGroups: [
     {
       id: 'everyday',
-      label: 'Every day',
       weekdays: [1, 2, 3, 4, 5, 6, 7],
       windows: [
         { id: 'morning', start: '07:30', end: '09:30' },

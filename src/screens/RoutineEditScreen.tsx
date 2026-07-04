@@ -22,8 +22,11 @@ const dayOptions = [
   { label: 'sundayShort', longLabel: 'sunday', day: 7 },
 ] as const;
 
-const defaultGroupLabel = (index: number, group: ScheduleGroup, t: (key: MessageKey) => string) =>
-  group.label?.trim() || `${t('monitoringPeriod')} ${index + 1}`;
+const defaultGroupLabel = (index: number, group: ScheduleGroup, t: (key: MessageKey) => string) => {
+  const label = group.label?.trim();
+  if (!label || label === summarizeWeekdays(group.weekdays, t)) return `${t('monitoringPeriod')} ${index + 1}`;
+  return label;
+};
 
 const scheduleGroupsSignature = (groups: ScheduleGroup[]) => JSON.stringify(groups.map((group) => ({
   id: group.id,
