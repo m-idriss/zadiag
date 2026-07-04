@@ -1,4 +1,5 @@
 import type { MessageKey } from '../services/i18n';
+import { AppIcon, type AppIconName } from './Icon';
 
 export type Tab = 'home' | 'history' | 'routines' | 'settings';
 
@@ -15,20 +16,20 @@ export function BottomNav({
   onChange: (tab: Tab) => void;
   t: (key: MessageKey) => string;
 }) {
-  const items: { tab: Tab; icon: string; label: string }[] = role === 'parent'
+  const items: { tab: Tab; icon: AppIconName; label: string }[] = role === 'parent'
     ? [
-        { tab: 'home', icon: '▦', label: t('overview') },
-        { tab: 'history', icon: '◌', label: t('history') },
-        { tab: 'settings', icon: '⚙', label: t('settings') },
+        { tab: 'home', icon: 'home', label: t('overview') },
+        { tab: 'history', icon: 'stats', label: t('history') },
+        { tab: 'settings', icon: 'settings', label: t('settings') },
       ]
     : routineCentricEnabled ? [
-        { tab: 'home', icon: '☼', label: t('today') },
-        { tab: 'routines', icon: '□', label: t('routines') },
-        { tab: 'settings', icon: '⚙', label: t('settings') },
+        { tab: 'home', icon: 'today', label: t('today') },
+        { tab: 'routines', icon: 'routines', label: t('routines') },
+        { tab: 'settings', icon: 'settings', label: t('settings') },
       ] : [
-        { tab: 'home', icon: '☼', label: t('today') },
-        { tab: 'history', icon: '☷', label: t('progress') },
-        { tab: 'settings', icon: '⚙', label: t('settings') },
+        { tab: 'home', icon: 'today', label: t('today') },
+        { tab: 'history', icon: 'stats', label: t('progress') },
+        { tab: 'settings', icon: 'settings', label: t('settings') },
       ];
   return (
     <>
@@ -42,7 +43,7 @@ export function BottomNav({
             aria-current={tab === item.tab ? 'page' : undefined}
             onClick={() => onChange(item.tab)}
           >
-            <span aria-hidden="true">{item.icon}</span>{item.label}
+            <AppIcon name={item.icon} />{item.label}
           </button>
         ))}
       </nav>

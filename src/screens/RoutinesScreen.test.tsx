@@ -121,7 +121,7 @@ describe('participant routines navigation', () => {
     };
     act(() => root.render(<RoutinesScreen state={state} t={(key) => translate('fr', key)} />));
     expect(container.textContent).toContain('Hydratation');
-    expect(container.textContent).toContain('💧');
+    expect(container.querySelector('.routine-icon .app-icon')).not.toBeNull();
     expect(container.querySelector('.routine-card')?.getAttribute('style')).toContain('#2387c9');
   });
 });

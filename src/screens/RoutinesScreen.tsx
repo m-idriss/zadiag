@@ -1,6 +1,7 @@
 import { lazy, Suspense, useState } from 'react';
 import type { AppState, RoutineAssignment, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
+import { AppIcon, routineIconName } from '../components/Icon';
 import { presentRoutine } from '../domain/routinePresentation';
 
 const RoutineDetailScreen = lazy(() => import('./RoutineDetailScreen').then((module) => ({ default: module.RoutineDetailScreen })));
@@ -33,7 +34,7 @@ export function RoutinesScreen({ state, start, t }: { state: AppState; start?: (
             <section className="card routine-card" style={visual.style} key={assignment.id}>
               <button type="button" className="routine-card-link" onClick={() => setSelectedId(assignment.id)} aria-label={`${t('viewDetails')} — ${visual.name}`}>
                 <div className="routine-card-heading">
-                  <span className="routine-icon" aria-hidden="true">{visual.icon}</span>
+                  <span className="routine-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
                   <div><h2>{visual.name}</h2><p>{assignment.plan.checksPerDay} {t('checksDay')}</p></div>
                   <b className="routine-rate">{Math.round(rate * 100)}%</b>
                 </div>

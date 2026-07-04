@@ -13,7 +13,7 @@
   --ion-color-primary: #1d8a7a;
   --ion-color-primary-rgb: 29, 138, 122;
   --ion-font-family: 'Nunito', system-ui, sans-serif;
-  --icon-font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "Noto Sans Symbols", "Apple Symbols", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", 'Nunito', system-ui, sans-serif;
+  --icon-font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Apple Symbols", "Segoe UI Symbol", "Noto Sans Symbols 2", "Noto Sans Symbols", 'Nunito', system-ui, sans-serif;
   font-family: 'Nunito', system-ui, sans-serif;
   color: var(--navy);
   background:
@@ -25,6 +25,16 @@
 * { box-sizing: border-box; }
 body { margin: 0; background: inherit; color: var(--navy); }
 button, input { font: inherit; }
+
+.app-icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  flex: 0 0 auto;
+  background: currentColor;
+  -webkit-mask: var(--app-icon-url) center / contain no-repeat;
+  mask: var(--app-icon-url) center / contain no-repeat;
+}
 
 .role-symbol,
 .bottom-nav button > span,
@@ -295,7 +305,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .history-list { display: grid; gap: 0; }
 .bottom-nav { position: absolute; z-index: 10; bottom: 0; left: 0; right: 0; max-width: 640px; margin: auto; display: flex; justify-content: space-around; padding: 9px 12px calc(8px + env(safe-area-inset-bottom)); background: rgba(255,255,255,.92); border-top: 1px solid rgba(227, 235, 232, .9); box-shadow: 0 -10px 24px rgba(21, 50, 75, .04); backdrop-filter: blur(18px); }
 .bottom-nav button { flex: 1; border: 0; background: transparent; color: #78858d; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; font-weight: 800; }
-.bottom-nav button span { font-size: 21px; }
+.bottom-nav button .app-icon { font-size: 22px; }
 .bottom-nav button.active { color: var(--teal); }
 .bottom-nav button:focus-visible { outline: 3px solid rgba(29, 138, 122, .35); outline-offset: 2px; border-radius: 10px; }
 .routines-state { display: grid; place-items: center; text-align: center; }
@@ -315,6 +325,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .today-panel-heading small, .completed-panel-heading small { font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
 .today-panel-heading h2 { margin-top: 5px; color: white; font-size: 18px; }
 .today-panel-heading > span { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 14px; background: rgba(255,255,255,.92); color: var(--teal); font-size: 20px; }
+.today-panel-heading > span .app-icon { font-size: 24px; }
 .today-pending-panel .today-task { display: grid; gap: 13px; padding: 15px; border: 0; border-radius: 18px; background: white; box-shadow: none; }
 .today-pending-panel .today-task + .today-task { margin-top: 10px; }
 .today-task-copy { align-items: flex-start; }
@@ -322,6 +333,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .today-task-copy small { display: block; margin-top: 7px; color: var(--navy); font-size: 11px; font-weight: 900; }
 .today-task-copy p { margin-top: 1px; }
 .today-task-icon, .routine-icon, .routine-hero-icon { background: color-mix(in srgb, var(--routine-accent, var(--teal)) 12%, white); color: var(--routine-accent, var(--teal)); }
+.today-task-icon .app-icon { font-size: 19px; }
 .today-pending-panel .today-task .primary-action-button { width: 100%; min-width: 100%; margin: 0; border-radius: 10px; min-height: 42px; background: var(--routine-accent, var(--teal)); color: white; }
 .completed-panel-heading { margin: 20px 0 10px; padding: 14px; border-radius: 18px; background: linear-gradient(120deg, #eef6f3, #f8fbfa); }
 .completed-panel-heading p { margin: 4px 0 0; font-size: 13px; }
@@ -335,6 +347,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .routine-card-heading h2 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; }
 .routine-card-heading p { margin-top: 2px; color: var(--muted); font-size: 11px; }
 .routine-icon { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; font-size: 21px; }
+.routine-icon .app-icon { font-size: 23px; }
 .routine-rate { align-self: end; font-size: 12px; }
 .routine-progress-track { height: 4px; overflow: hidden; border-radius: 999px; background: #dce4e1; }
 .routine-progress-track span { display: block; height: 100%; border-radius: inherit; background: var(--routine-accent, var(--teal)); }
@@ -348,6 +361,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .detail-back { width: 38px; height: 38px; padding: 0; font-size: 30px; text-align: left; }
 .routine-detail-hero { display: grid; justify-items: center; margin: 4px 0 22px; text-align: center; }
 .routine-hero-icon { width: 72px; height: 72px; display: grid; place-items: center; margin-bottom: 15px; border-radius: 23px; font-size: 36px; }
+.routine-hero-icon .app-icon { font-size: 38px; }
 .routine-detail-hero h1 { margin: 0; color: var(--navy); font-size: 24px; }
 .routine-detail-hero p { margin: 6px 0 0; font-size: 13px; }
 .routine-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-bottom: 1px solid var(--line); }

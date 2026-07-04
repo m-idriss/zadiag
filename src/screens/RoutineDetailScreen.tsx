@@ -5,6 +5,7 @@ import { adherenceSummary } from '../domain/adherence';
 import { presentRoutine } from '../domain/routinePresentation';
 import type { AppState, RoutineAssignment, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
+import { AppIcon, routineIconName } from '../components/Icon';
 import { StatusPill } from '../components/StatusPill';
 
 type DetailTab = 'overview' | 'instructions' | 'history' | 'progress';
@@ -74,7 +75,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, t, edit, o
 
   const historyRow = (event: VerificationEvent) => (
     <article className="routine-history-row" key={event.id}>
-      <span className="submission-thumb" aria-hidden="true">{visual.icon}</span>
+      <span className="submission-thumb" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
       <div><strong>{formatDateTime(event.requestedAt)}</strong><small>{event.reason ?? t('noAnalysisYet')}</small></div>
       <StatusPill status={event.status} t={t} /><span aria-hidden="true"><IonIcon icon={chevronForwardOutline} /></span>
     </article>
@@ -84,7 +85,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, t, edit, o
     <div className="content-screen routine-detail-screen" style={visual.style}>
       <div className="routine-detail-topbar"><button type="button" className="detail-back" onClick={back} aria-label={t('backToRoutines')}>‹</button><button type="button" className="more-button" aria-label={t('moreOptions')}>•••</button></div>
       <header className="routine-detail-hero">
-        <span className="routine-hero-icon" aria-hidden="true">{visual.icon}</span>
+        <span className="routine-hero-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
         <h1>{visual.name}</h1><p>{assignment.plan.checksPerDay} {t('checksDay')}</p>
       </header>
       <nav className="routine-tabs" aria-label={t('routineSections')}>

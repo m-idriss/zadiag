@@ -2,6 +2,7 @@ import type { AppState, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { Disclaimer } from '../components/Disclaimer';
 import { StatusPill } from '../components/StatusPill';
+import { AppIcon, routineIconName } from '../components/Icon';
 import { presentRoutine } from '../domain/routinePresentation';
 
 const isToday = (value: string, now = new Date()) => {
@@ -30,23 +31,23 @@ export function ChildDashboard({
   }).format(new Date(value));
   const presentations = new Map(state.routineAssignments.map((assignment) => [assignment.routineId, presentRoutine(assignment.routine, state.locale)]));
   const presentationFor = (event: VerificationEvent) => {
-    return presentations.get(event.routineId) ?? { name: t('routine'), icon: '✦', style: {} };
+    return presentations.get(event.routineId) ?? { name: t('routine'), icon: undefined, style: {} };
   };
   return (
     <div className="content-screen child-home">
       <header className="screen-header participant-header"><div><h1>{t('hi')} {state.family.childName} 👋</h1><p>{t('todayIntro')}</p></div><button type="button" className="more-button" aria-label={t('moreOptions')}>•••</button></header>
       <section className="today-section" aria-labelledby="pending-tasks-title">
         <div className="today-pending-panel">
-          <div className="today-panel-heading"><div><small>{t('toDoToday')}</small><h2 id="pending-tasks-title">{pending.length} {t(pending.length === 1 ? 'checkToComplete' : 'checksToComplete')}</h2></div><span aria-hidden="true">✓</span></div>
+          <div className="today-panel-heading"><div><small>{t('toDoToday')}</small><h2 id="pending-tasks-title">{pending.length} {t(pending.length === 1 ? 'checkToComplete' : 'checksToComplete')}</h2></div><span aria-hidden="true"><AppIcon name="check" /></span></div>
           <div className="today-task-list">
           {pending.map((event) => (
             <article className={`today-task ${active?.id === event.id ? 'actionable' : ''}`} style={presentationFor(event).style} key={event.id}>
               <div className="today-task-copy">
-                <span className="today-task-icon" aria-hidden="true">{presentationFor(event).icon}</span>
+                <span className="today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(presentationFor(event).icon)} /></span>
                 <div><h3>{presentationFor(event).name}</h3><small>{t('thisEvening')}</small><p>{t('before')} {formatTime(event.expiresAt)}</p></div>
               </div>
               {active?.id === event.id
-                ? <button type="button" className="primary-action-button" onClick={start}><span aria-hidden="true">◉</span>{t('sendProof')}</button>
+                ? <button type="button" className="primary-action-button" onClick={start}><AppIcon name="camera" />{t('sendProof')}</button>
                 : <StatusPill status={event.status} t={t} />}
             </article>
           ))}
@@ -59,7 +60,7 @@ export function ChildDashboard({
         <div className="today-task-list">
           {completed.map((event) => (
             <article className="card today-task completed" style={presentationFor(event).style} key={event.id}>
-              <div className="today-task-copy"><span className="today-task-icon" aria-hidden="true">{presentationFor(event).icon}</span><div><h3>{presentationFor(event).name}</h3><p>{formatTime(event.capturedAt ?? event.expiresAt)}</p></div></div>
+              <div className="today-task-copy"><span className="today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(presentationFor(event).icon)} /></span><div><h3>{presentationFor(event).name}</h3><p>{formatTime(event.capturedAt ?? event.expiresAt)}</p></div></div>
               <StatusPill status={event.status} t={t} />
             </article>
           ))}
