@@ -19,7 +19,7 @@ export function BottomNav({
   const items: { tab: Tab; icon: AppIconName; label: string }[] = role === 'parent'
     ? [
         { tab: 'home', icon: 'home', label: t('overview') },
-        { tab: 'history', icon: 'stats', label: t('history') },
+        { tab: 'routines', icon: 'routines', label: t('routines') },
         { tab: 'settings', icon: 'settings', label: t('settings') },
       ]
     : routineCentricEnabled ? [

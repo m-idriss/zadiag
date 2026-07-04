@@ -153,13 +153,15 @@ export class DemoRepository implements AppRepository {
     this.persist();
   }
 
-  async requestCheckNow() {
+  async requestCheckNow(routineId?: string) {
     if (this.activeSession()) {
       this.persist();
       return;
     }
     const now = new Date();
-    const assignment = primaryRoutineAssignment(this.state);
+    const assignment = routineId
+      ? this.state.routineAssignments.find((routine) => routine.routineId === routineId)
+      : primaryRoutineAssignment(this.state);
     if (!assignment) throw new Error('routine_not_found');
     this.state.events.unshift({
       id: crypto.randomUUID(),

@@ -1,7 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType } from 'react';
 import { IonApp } from '@ionic/react';
 import type { Role, VerificationEvent } from './domain/models';
-import { DEFAULT_ROUTINE_ID } from './domain/models';
 import { routeForState, type AppRoute } from './domain/appRouting';
 import { createRepository } from './services/repositoryFactory';
 import { translate, type MessageKey } from './services/i18n';
@@ -293,8 +292,21 @@ export function App() {
     const role = state.role ?? 'child';
     const screen = tab === 'history'
       ? <HistoryScreen events={state.events} locale={state.locale} t={t} />
-      : routineCentricUiEnabled && tab === 'routines' && role === 'child'
-        ? <RoutinesScreen state={state} start={() => setRoute('camera')} t={t} />
+      : routineCentricUiEnabled && tab === 'routines'
+        ? <RoutinesScreen
+            state={state}
+            start={role === 'child' ? () => setRoute('camera') : undefined}
+            edit={role === 'parent'}
+            requestCheck={role === 'parent' ? async (routineId) => { await repository.requestCheckNow(routineId); sync(); } : undefined}
+            onEditMonitoringPlan={(routineId) => {
+              const assignment = state.routineAssignments.find((r) => r.routineId === routineId);
+              if (assignment) {
+                setEditingRoutineId(assignment.routineId);
+                setRoute('routine-edit');
+              }
+            }}
+            t={t}
+          />
       : tab === 'settings'
         ? <SettingsScreen
             enableNotifications={enableNotifications}
@@ -318,9 +330,6 @@ export function App() {
         : role === 'parent'
           ? <ParentDashboard
               state={state}
-              regenerateCode={async () => { await repository.regenerateLinkCode(); sync(); }}
-              requestCheck={async () => { await repository.requestCheckNow(); sync(); }}
-              onEditMonitoringPlan={() => { const assignment = state.routineAssignments.find((r) => r.routineId === DEFAULT_ROUTINE_ID); if (assignment) { setEditingRoutineId(assignment.routineId); setRoute('routine-edit'); } }}
               t={t}
             />
           : <ChildDashboard state={state} active={repository.activeSession()} start={() => setRoute('camera')} t={t} />;

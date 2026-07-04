@@ -1,106 +1,101 @@
-import { useState } from 'react';
-import { adherenceSummary } from '../domain/adherence';
-import { primaryRoutineAssignment, type AppState } from '../domain/models';
-import { summarizeWeekdays } from '../domain/monitoringPlan';
+import { useMemo, useState } from 'react';
+import type { AppState, RoutineAssignment, VerificationEvent, VerificationStatus } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
+import { AppIcon, routineIconName } from '../components/Icon';
 import { StatusPill } from '../components/StatusPill';
-import { CodeBox } from '../components/CodeBox';
+import { presentRoutine } from '../domain/routinePresentation';
+
+type StatusFilter = VerificationStatus | 'all';
+type RoutineFilter = string | 'all';
+
+const eventTimestamp = (event: VerificationEvent) =>
+  Date.parse(event.capturedAt ?? event.requestedAt);
+
+const statusLabelKey = (status: VerificationStatus): MessageKey => {
+  if (status === 'detected') return 'elasticsVisible';
+  if (status === 'not_detected') return 'notDetected';
+  if (status === 'uncertain') return 'uncertain';
+  if (status === 'missed') return 'missed';
+  if (status === 'pending') return 'pending';
+  if (status === 'analyzing') return 'analyzing';
+  return 'expired';
+};
+
+const routineForEvent = (event: VerificationEvent, assignments: RoutineAssignment[]) =>
+  assignments.find((assignment) => assignment.routineId === event.routineId);
 
 export function ParentDashboard({
   state,
-  regenerateCode,
-  requestCheck,
-  onEditMonitoringPlan,
   t,
 }: {
   state: AppState;
-  regenerateCode: () => Promise<void>;
-  requestCheck: () => Promise<void>;
-  onEditMonitoringPlan?: () => void;
   t: (key: MessageKey) => string;
 }) {
-  const summary = adherenceSummary(state.events);
-  const assignment = primaryRoutineAssignment(state);
-  const attention = state.events.filter((event) => ['uncertain', 'missed', 'expired', 'not_detected'].includes(event.status));
-  const hasActiveCheck = state.events.some((event) => event.status === 'pending' && Date.parse(event.expiresAt) > Date.now());
-  const [regenerating, setRegenerating] = useState(false);
-  const [codeError, setCodeError] = useState(false);
-  const [requesting, setRequesting] = useState(false);
-  const [requestStatus, setRequestStatus] = useState<'idle' | 'sent' | 'active' | 'error'>('idle');
-  const planChips = assignment?.plan.scheduleGroups?.length
-    ? assignment.plan.scheduleGroups.map((group, index) => ({
-        id: group.id,
-        text: `${group.label?.trim() || `${t('monitoringPeriod')} ${index + 1}`} · ${summarizeWeekdays(group.weekdays, t)} · ${group.windows.map((window) => `${window.start}–${window.end}`).join(', ')}`,
-      }))
-    : assignment?.plan.windows.map((window) => ({ id: window.id, text: `${window.start}–${window.end}` })) ?? [];
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [routineFilter, setRoutineFilter] = useState<RoutineFilter>('all');
+  const locale = state.locale === 'fr' ? 'fr-FR' : 'en-US';
+  const formatDateTime = (value: string) => new Intl.DateTimeFormat(locale, {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(new Date(value));
+  const events = useMemo(
+    () => [...state.events].sort((a, b) => eventTimestamp(b) - eventTimestamp(a)),
+    [state.events],
+  );
+  const statuses = useMemo<VerificationStatus[]>(
+    () => Array.from(new Set(events.map((event) => event.status))),
+    [events],
+  );
+  const filtered = events.filter((event) =>
+    (statusFilter === 'all' || event.status === statusFilter)
+    && (routineFilter === 'all' || event.routineId === routineFilter)
+  );
 
-  const regenerate = async () => {
-    if (!window.confirm(t('regenerateCodeConfirm'))) return;
-    setCodeError(false);
-    setRegenerating(true);
-    try { await regenerateCode(); }
-    catch { setCodeError(true); }
-    finally { setRegenerating(false); }
-  };
-
-  const requestNow = async () => {
-    setRequesting(true);
-    setRequestStatus('idle');
-    try { await requestCheck(); setRequestStatus('sent'); }
-    catch (error) {
-      setRequestStatus(String(error).includes('active_check_exists') ? 'active' : 'error');
-    } finally { setRequesting(false); }
-  };
   return (
-    <div className="content-screen">
+    <div className="content-screen parent-history-screen">
       <header className="screen-header">
-        <div><small>{t('overview')}</small><h1>{state.family.childName} · {t('routine')}</h1></div>
+        <div><small>{t('overview')}</small><h1>{t('responsibleHistoryTitle')}</h1><p>{t('responsibleHistoryHint')}</p></div>
         <div className="avatar">{state.family.childName.charAt(0)}</div>
       </header>
-      <section className="card summary-card">
-        <div className="progress-ring" style={{ '--progress': `${summary.rate * 360}deg` } as React.CSSProperties}>
-          <span>{Math.round(summary.rate * 100)}%</span>
-        </div>
-        <div><h2>{t('lastSeven')}</h2><p>{summary.successful} {t('clearChecks')} {summary.completed}</p><strong>{t('progressEncouragement')}</strong></div>
-      </section>
-      <section className="card plan-card">
-        <div className="card-title"><h2><span aria-hidden="true">☷</span>{t('monitoringPlan')}</h2><button onClick={onEditMonitoringPlan}>{t('edit')}</button></div>
-        {assignment && <p><b>{assignment.plan.checksPerDay}</b> {t('checksDay')} · <b>{assignment.plan.expiryMinutes}</b> {t('minutesRespond')}</p>}
-        <div className="chips">{planChips.map((chip) => <span key={chip.id}><i aria-hidden="true">◷</i>{chip.text}</span>)}</div>
-        <button className="request-check" disabled={requesting} onClick={() => { void requestNow(); }}>
-          {requesting ? t('requestingCheck') : hasActiveCheck ? t('requestCheckAgain') : t('requestCheckNow')}
-        </button>
-        {hasActiveCheck && <p role="status" className="request-feedback">{t('requestCheckActive')}</p>}
-        {requestStatus === 'sent' && <p role="status" aria-live="polite" className="request-feedback success">{t('requestCheckSent')}</p>}
-        {requestStatus === 'active' && !hasActiveCheck && <p role="status" aria-live="polite" className="request-feedback">{t('requestCheckActive')}</p>}
-        {requestStatus === 'error' && <p role="status" aria-live="polite" className="request-feedback error">{t('requestCheckError')}</p>}
-      </section>
-      {!state.family.childLinked && state.family.linkingCode ? (
-        <CodeBox
-          label={t('childLinkCode')}
-          hint={t('childLinkCodeHint')}
-          value={state.family.linkingCode}
-          t={t}
-          action={(
-            <>
-              <button type="button" className="regenerate-code" disabled={regenerating} onClick={() => { void regenerate(); }}>
-                {regenerating ? t('regeneratingCode') : t('regenerateCode')}
-              </button>
-              {codeError ? <span className="form-error">{t('regenerateCodeError')}</span> : null}
-            </>
-          )}
-        />
-      ) : null}
-      <div className="section-heading"><h2>{t('attention')}</h2><span>{attention.length}</span></div>
-      {attention.map((event) => (
-        <section className="card history-row" key={event.id}>
-          <div>
-            <strong>{new Intl.DateTimeFormat(state.locale === 'fr' ? 'fr-FR' : 'en-US', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(event.requestedAt))}</strong>
-            <small>{event.reason}</small>
+
+      <section className="card history-filter-card" aria-label={t('historyFilters')}>
+        <div className="filter-group">
+          <span>{t('filterByRoutine')}</span>
+          <div className="filter-chips">
+            <button type="button" className={routineFilter === 'all' ? 'active' : ''} onClick={() => setRoutineFilter('all')}>{t('allRoutines')}</button>
+            {state.routineAssignments.map((assignment) => {
+              const visual = presentRoutine(assignment.routine, state.locale);
+              return <button type="button" key={assignment.id} className={routineFilter === assignment.routineId ? 'active' : ''} onClick={() => setRoutineFilter(assignment.routineId)}>{visual.name}</button>;
+            })}
           </div>
-          <StatusPill status={event.status} t={t} />
-        </section>
-      ))}
+        </div>
+        <div className="filter-group">
+          <span>{t('filterByStatus')}</span>
+          <div className="filter-chips">
+            <button type="button" className={statusFilter === 'all' ? 'active' : ''} onClick={() => setStatusFilter('all')}>{t('allStatuses')}</button>
+            {statuses.map((status) => <button type="button" key={status} className={statusFilter === status ? 'active' : ''} onClick={() => setStatusFilter(status)}>{t(statusLabelKey(status))}</button>)}
+          </div>
+        </div>
+      </section>
+
+      <div className="section-heading"><h2>{t('recentHistory')}</h2><span>{filtered.length}</span></div>
+      <div className="history-list parent-history-list">
+        {filtered.map((event) => {
+          const assignment = routineForEvent(event, state.routineAssignments);
+          const visual = assignment ? presentRoutine(assignment.routine, state.locale) : undefined;
+          return (
+            <section className="card history-row parent-history-row" style={visual?.style} key={event.id}>
+              <div className="history-icon routine-history-icon"><AppIcon name={routineIconName(visual?.icon)} /></div>
+              <div>
+                <strong>{visual?.name ?? t('routine')}</strong>
+                <small>{formatDateTime(event.requestedAt)}{event.reason ? ` · ${event.reason}` : ''}</small>
+              </div>
+              <StatusPill status={event.status} t={t} />
+            </section>
+          );
+        })}
+        {!filtered.length && <p className="empty-state">{t('noHistoryMatches')}</p>}
+      </div>
     </div>
   );
 }

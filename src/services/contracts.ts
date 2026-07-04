@@ -10,7 +10,7 @@ export interface AppRepository {
   recoverParent(code: string): Promise<void>;
   linkChild(code: string): Promise<void>;
   regenerateLinkCode(): Promise<void>;
-  requestCheckNow(): Promise<void>;
+  requestCheckNow(routineId?: string): Promise<void>;
   updateRoutine(routineId: string, plan: MonitoringPlan): Promise<void>;
   savePushSubscription(subscription: PushSubscriptionJSON): Promise<void>;
   savePlan(plan: MonitoringPlan, routineId?: string): Promise<void>;

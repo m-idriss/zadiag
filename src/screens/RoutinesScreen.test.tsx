@@ -38,6 +38,14 @@ describe('participant routines navigation', () => {
     expect(container.textContent).not.toContain('Routines');
   });
 
+  it('uses the routine tab for responsible navigation too', () => {
+    act(() => root.render(<BottomNav tab="home" role="parent" onChange={() => undefined} t={(key) => translate('en', key)} />));
+    expect(container.textContent).toContain('Overview');
+    expect(container.textContent).toContain('Routines');
+    expect(container.textContent).toContain('Settings');
+    expect(container.textContent).not.toContain('History');
+  });
+
   it('announces routine loading and error states', () => {
     const state = {
       role: 'child' as const, locale: 'en' as const, notificationsEnabled: true,

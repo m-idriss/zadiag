@@ -69,8 +69,8 @@ class LazyFirebaseRepository implements AppRepository {
     return (await this.load()).regenerateLinkCode();
   }
 
-  async requestCheckNow() {
-    return (await this.load()).requestCheckNow();
+  async requestCheckNow(routineId?: string) {
+    return (await this.load()).requestCheckNow(routineId);
   }
 
   async updateRoutine(routineId: string, plan: MonitoringPlan) {
