@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType } from 'react';
+import { IonApp } from '@ionic/react';
 import type { Role, VerificationEvent } from './domain/models';
 import { DEFAULT_ROUTINE_ID } from './domain/models';
 import { routeForState, type AppRoute } from './domain/appRouting';
@@ -327,11 +328,11 @@ export function App() {
   }
 
   return (
-    <div className="app-root">
+    <IonApp className="app-root">
       <Suspense fallback={<SplashScreen progress={ready ? 96 : splashProgress} message={t(ready ? 'splashFinalizing' : splashMessage)} />}>
         {content}
       </Suspense>
       {!ready ? <SplashScreen progress={splashProgress} message={t(splashMessage)} /> : null}
-    </div>
+    </IonApp>
   );
 }
