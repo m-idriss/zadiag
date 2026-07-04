@@ -269,7 +269,7 @@ export class FirebaseRepository implements AppRepository {
     this.state.family.linkingCode = data.linkingCode ?? '';
     this.state.family.parentRecoveryCode = data.parentRecoveryCode ?? '';
     await this.attachFamily(data.familyId, data.role);
-    await this.syncPushSubscriptionLocale();
+    this.runInBackground('Unable to sync push subscription locale', () => this.syncPushSubscriptionLocale());
   }
 
   private async attachFamily(familyId: string, role: Role) {
@@ -282,22 +282,21 @@ export class FirebaseRepository implements AppRepository {
       childLinked: role === 'child',
       consented: role === 'parent',
     };
-    if (role === 'parent') try {
-      const ensureRecoveryCode = httpsCallable<{ familyId: string }, { recoveryCode: string }>(
-        this.services.functions,
-        'ensureParentRecoveryCode',
-      );
-      const recovery = await ensureRecoveryCode({ familyId });
-      this.state.family.parentRecoveryCode = recovery.data.recoveryCode;
-    } catch (error) {
-      console.error('Unable to refresh the parent recovery code', error);
+    if (role === 'parent') {
+      this.runInBackground('Unable to refresh the parent recovery code', async () => {
+        const ensureRecoveryCode = httpsCallable<{ familyId: string }, { recoveryCode: string }>(
+          this.services.functions,
+          'ensureParentRecoveryCode',
+        );
+        const recovery = await ensureRecoveryCode({ familyId });
+        this.state.family.parentRecoveryCode = recovery.data.recoveryCode;
+        this.emit();
+      });
     }
-    const migrateRoutines = httpsCallable<{ familyId: string }, void>(this.services.functions, 'migrateFamilyRoutines');
-    try {
+    this.runInBackground('Unable to migrate family routines', async () => {
+      const migrateRoutines = httpsCallable<{ familyId: string }, void>(this.services.functions, 'migrateFamilyRoutines');
       await migrateRoutines({ familyId });
-    } catch (error) {
-      console.error('Unable to migrate family routines', error);
-    }
+    });
     const familyRef = doc(this.services.db, 'families', familyId);
     this.remoteSubscriptions.push(onSnapshot(familyRef, async (snapshot) => {
       if (!snapshot.exists()) return;
@@ -307,14 +306,16 @@ export class FirebaseRepository implements AppRepository {
       this.state.family.childLinked = childLinked || this.state.family.childLinked;
       this.state.family.linkingCode = family.linkingCode ?? this.state.family.linkingCode;
       this.state.family.parentRecoveryCode = family.parentRecoveryCode ?? this.state.family.parentRecoveryCode;
-      
-      // For child role, fetch recovery code from parent profile
-      if (role === 'child' && !this.state.family.parentRecoveryCode && family.members) {
-        try {
-          const parentUids = Object.entries(family.members)
+
+      this.emit();
+
+      const familyMembers = family.members;
+      if (role === 'child' && !this.state.family.parentRecoveryCode && familyMembers) {
+        this.runInBackground('Unable to fetch parent recovery code from profile', async () => {
+          const parentUids = Object.entries(familyMembers)
             .filter(([, memberRole]) => memberRole === 'parent')
             .map(([uid]) => uid);
-          
+
           if (parentUids.length > 0) {
             const parentProfile = await getDoc(doc(this.services.db, 'users', parentUids[0]));
             if (parentProfile.exists()) {
@@ -325,11 +326,7 @@ export class FirebaseRepository implements AppRepository {
               }
             }
           }
-        } catch (error) {
-          console.error('Unable to fetch parent recovery code from profile', error);
-        }
-      } else {
-        this.emit();
+        });
       }
     }));
     const assignments = query(collection(familyRef, 'routineAssignments'), orderBy('assignedAt', 'asc'));
@@ -366,6 +363,10 @@ export class FirebaseRepository implements AppRepository {
     } catch (error) {
       console.error('Unable to update push subscription locale', error);
     }
+  }
+
+  private runInBackground(label: string, task: () => Promise<void>) {
+    void task().catch((error) => console.error(label, error));
   }
 
   private emit() { this.listeners.forEach((listener) => listener()); }
