@@ -14,8 +14,8 @@ test('builds the current French check notification payload', () => {
 
   assert.equal(payload.version, 2);
   assert.equal(payload.kind, 'check-ready');
-  assert.equal(payload.title, 'Contrôle prêt');
-  assert.equal(payload.body, 'Élastiques orthodontiques · envoie ta preuve.');
+  assert.equal(payload.title, 'Élastiques orthodontiques · prêt');
+  assert.equal(payload.body, 'Envoie ta preuve.');
   assert.equal(payload.tag, 'verification:session-1');
 });
 
@@ -30,7 +30,7 @@ test('builds the current English reminder notification payload', () => {
 
   assert.equal(payload.version, 2);
   assert.equal(payload.kind, 'check-reminder');
-  assert.equal(payload.title, 'Reminder');
-  assert.equal(payload.body, 'Orthodontic Elastics · check waiting.');
+  assert.equal(payload.title, 'Orthodontic Elastics · reminder');
+  assert.equal(payload.body, 'Check waiting.');
   assert.equal(payload.tag, 'reminder:session-2');
 });

@@ -35,11 +35,11 @@ export const buildCheckNotificationPayload = (input: CheckNotificationInput): Ch
     routineId: input.routineId,
     tag: input.resend ? `reminder:${input.sessionId}` : `verification:${input.sessionId}`,
     title: input.resend
-      ? (locale === 'fr' ? 'Rappel' : 'Reminder')
-      : (locale === 'fr' ? 'Contrôle prêt' : 'Check ready'),
+      ? (locale === 'fr' ? `${routineName} · rappel` : `${routineName} · reminder`)
+      : (locale === 'fr' ? `${routineName} · prêt` : `${routineName} · ready`),
     body: input.resend
-      ? (locale === 'fr' ? `${routineName} · contrôle attendu.` : `${routineName} · check waiting.`)
-      : (locale === 'fr' ? `${routineName} · envoie ta preuve.` : `${routineName} · send your proof.`),
+      ? (locale === 'fr' ? 'Contrôle attendu.' : 'Check waiting.')
+      : (locale === 'fr' ? 'Envoie ta preuve.' : 'Send your proof.'),
     path: '/?open=verification',
   };
 };
