@@ -2,9 +2,8 @@ import type { AppRepository } from './contracts';
 import { DemoRepository } from './demoRepository';
 import type { AppState, Locale, MonitoringPlan, Role } from '../domain/models';
 import { firebaseEnabled } from './firebaseConfig';
+import { isLocalDemoEnvironment } from './browserEnvironment';
 
-const isLocalhost = /^(localhost|127\.0\.0\.1|::1)$/.test(window.location.hostname);
-const useFirebase = import.meta.env.VITE_USE_FIREBASE === 'true';
 const PREFERENCES_KEY = 'zadiag.preferences.v1';
 
 const browserLocale = (): Locale => navigator.language?.startsWith('fr') ? 'fr' : 'en';
@@ -123,5 +122,5 @@ class LazyFirebaseRepository implements AppRepository {
 }
 
 export const createRepository = (): AppRepository => firebaseEnabled
-  ? (isLocalhost && !useFirebase ? new DemoRepository() : new LazyFirebaseRepository())
+  ? (isLocalDemoEnvironment() ? new DemoRepository() : new LazyFirebaseRepository())
   : new DemoRepository();

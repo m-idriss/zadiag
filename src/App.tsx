@@ -8,6 +8,8 @@ import { BottomNav, type Tab } from './components/BottomNav';
 import { SplashScreen } from './components/SplashScreen';
 import { WebPushGateway } from './services/webPush';
 import { firebaseEnabled } from './services/firebaseConfig';
+import { browserRouteContext, isLocalDemoEnvironment, routineCentricUiEnabled } from './services/browserEnvironment';
+import { refreshServiceWorkerRegistration, runWhenStartupIsIdle } from './services/appUpdate';
 import { InstallScreen } from './screens/InstallScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
 import { ChildDashboard } from './screens/ChildDashboard';
@@ -27,57 +29,9 @@ const SettingsScreen = lazyScreen(() => import('./screens/SettingsScreen'), 'Set
 const ParentDashboard = lazyScreen(() => import('./screens/ParentDashboard'), 'ParentDashboard');
 const RoutinesScreen = lazyScreen(() => import('./screens/RoutinesScreen'), 'RoutinesScreen');
 
-const isLocalhost = /^(localhost|127\.0\.0\.1|::1)$/.test(window.location.hostname);
-const useFirebase = import.meta.env.VITE_USE_FIREBASE === 'true';
-const routineCentricUiEnabled = import.meta.env.VITE_ROUTINE_CENTRIC_UI !== 'false';
-const useLocalDemo = isLocalhost && !useFirebase;
 const appBadgeApi = navigator as Navigator & {
   setAppBadge?: (contents?: number) => Promise<void>;
   clearAppBadge?: () => Promise<void>;
-};
-const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches
-  || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
-const isIos = () => /iPad|iPhone|iPod/.test(navigator.userAgent)
-  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-const setupPreviewRoute = (): Extract<AppRoute, 'install' | 'notifications'> | null => {
-  const setupPreview = import.meta.env.DEV ? new URLSearchParams(window.location.search).get('setup') : null;
-  return setupPreview === 'install' || setupPreview === 'notifications' ? setupPreview : null;
-};
-
-const browserRouteContext = () => {
-  return {
-    setupPreview: setupPreviewRoute(),
-    requiresInstall: isIos() && !isStandalone(),
-    useLocalDemo,
-  };
-};
-
-const waitForInstalledState = (worker: ServiceWorker) => new Promise<void>((resolve) => {
-  if (worker.state === 'installed') {
-    resolve();
-    return;
-  }
-  worker.addEventListener('statechange', () => {
-    if (worker.state === 'installed') resolve();
-  }, { once: true   });
-});
-
-const refreshServiceWorkerRegistration = async (): Promise<ServiceWorkerRegistration | undefined> => {
-  if (!('serviceWorker' in navigator)) return;
-  const registration = await navigator.serviceWorker.getRegistration();
-  if (!registration) return undefined;
-  await registration.update();
-  if (registration.installing) await waitForInstalledState(registration.installing);
-  return registration;
-};
-
-const runWhenStartupIsIdle = (task: () => void) => {
-  if ('requestIdleCallback' in window) {
-    window.requestIdleCallback(task, { timeout: 2500 });
-    return;
-  }
-  globalThis.setTimeout(task, 800);
 };
 
 export function App() {
@@ -94,6 +48,7 @@ export function App() {
   const [submitError, setSubmitError] = useState<string>();
   const [savingRoutineId, setSavingRoutineId] = useState<string>();
   const [selectedSessionId, setSelectedSessionId] = useState<string>();
+  const useLocalDemo = isLocalDemoEnvironment();
   const t = (key: MessageKey) => translate(state.locale, key);
 
   useEffect(() => {
