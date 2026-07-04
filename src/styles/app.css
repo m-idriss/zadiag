@@ -342,7 +342,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .bottom-nav button { flex: 1; border: 0; background: transparent; color: #78858d; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; font-weight: 800; }
 .bottom-nav button .app-icon { font-size: 22px; }
 .bottom-nav button.active { color: var(--teal); }
-.bottom-nav button:focus-visible { outline: 3px solid rgba(29, 138, 122, .35); outline-offset: 2px; border-radius: 10px; }
+.bottom-nav button:focus-visible { outline: 3px solid color-mix(in srgb, var(--navy) 34%, transparent); outline-offset: 2px; border-radius: 10px; }
 .routines-state { display: grid; place-items: center; text-align: center; }
 .routines-state p { max-width: 30ch; }
 
@@ -497,10 +497,22 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
   width: fit-content;
   min-height: 40px;
   margin: 0;
+  --background-hover: var(--navy);
+  --background-activated: color-mix(in srgb, var(--navy) 86%, white);
+  --background-focused: var(--navy);
   --padding-start: 14px;
   --padding-end: 14px;
   --border-radius: 12px;
   font-size: 12px;
+}
+.settings-inline-action.button-disabled {
+  --background: #edf0f2;
+  --background-hover: #edf0f2;
+  --background-activated: #edf0f2;
+  --background-focused: #edf0f2;
+  --color: #697983;
+  --box-shadow: none;
+  opacity: 1;
 }
 .settings-inline-action-contained { margin-top: 0; }
 .notification-note { color: var(--coral); font-size: 12px; font-weight: 800; margin-top: -8px; }
@@ -618,6 +630,9 @@ button, ion-button { -webkit-tap-highlight-color: transparent; }
 
 ion-button {
   --border-radius: var(--radius-control);
+  --background-hover: var(--navy);
+  --background-focused: var(--navy);
+  --background-activated: color-mix(in srgb, var(--navy) 86%, white);
   min-height: 50px;
   font-weight: 700;
   letter-spacing: -.01em;
@@ -886,7 +901,7 @@ ion-input {
 .plan-time-fields label { min-width: 0; display: grid; gap: 3px; }
 .plan-time-fields label span { color: var(--muted); font-size: 10px; font-weight: 900; letter-spacing: .02em; }
 .plan-time-button { width: 100%; min-height: 34px; padding: 0 11px; border: 1px solid transparent; border-radius: 12px; background: #f2f7f5; color: var(--navy); font-size: 14px; font-weight: 900; text-align: left; box-shadow: inset 0 0 0 1px rgba(227,235,232,.65); }
-.plan-time-button:focus-visible { outline: 3px solid color-mix(in srgb, var(--window-color) 18%, transparent); border-color: color-mix(in srgb, var(--window-color) 28%, #dce7e3); background: white; }
+.plan-time-button:focus-visible { outline: 3px solid color-mix(in srgb, var(--navy) 18%, transparent); border-color: color-mix(in srgb, var(--navy) 28%, #dce7e3); background: white; }
 .plan-remove-button { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 50%; background: #f2f7f5; color: #91a0a7; }
 .plan-remove-button span { margin-top: -1px; font-size: 21px; line-height: 1; font-weight: 900; }
 .plan-remove-button:disabled { visibility: hidden; }
