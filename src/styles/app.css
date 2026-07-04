@@ -36,9 +36,7 @@ button {
   width: 1em;
   height: 1em;
   flex: 0 0 auto;
-  background: currentColor;
-  -webkit-mask: var(--app-icon-url) center / contain no-repeat;
-  mask: var(--app-icon-url) center / contain no-repeat;
+  color: currentColor;
 }
 
 .role-symbol,
