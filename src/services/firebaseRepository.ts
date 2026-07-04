@@ -22,6 +22,7 @@ import {
   type RoutineAssignment,
   type VerificationEvent,
 } from '../domain/models';
+import { routineFromCatalog } from '../domain/routineCatalog';
 import { isFreshCapture } from '../domain/adherence';
 
 const PREFERENCES_KEY = 'zadiag.preferences.v1';
@@ -70,25 +71,29 @@ const asEvent = (id: string, data: DocumentData): VerificationEvent => ({
   reason: data.reason,
 });
 
-const asRoutineAssignment = (id: string, data: DocumentData): RoutineAssignment => ({
-  id,
-  routineId: String(data.routineId ?? id),
-  routine: {
-    id: String(data.routine?.id ?? data.routineId ?? id),
-    name: String(data.routine?.name ?? ''),
-    description: String(data.routine?.description ?? ''),
-    instructions: data.routine?.instructions ? String(data.routine.instructions) : undefined,
-    icon: data.routine?.icon ? String(data.routine.icon) : undefined,
-    accentColor: data.routine?.accentColor ? String(data.routine.accentColor) : undefined,
-    proofType: data.routine?.proofType ? String(data.routine.proofType) : undefined,
-    responsibleName: data.routine?.responsibleName ? String(data.routine.responsibleName) : undefined,
-    instructionSteps: Array.isArray(data.routine?.instructionSteps) ? data.routine.instructionSteps : undefined,
-    translations: data.routine?.translations,
-  },
-  plan: data.plan as MonitoringPlan,
-  status: data.status,
-  assignedAt: String(data.assignedAt),
-});
+const asRoutineAssignment = (id: string, data: DocumentData): RoutineAssignment => {
+  const routineId = String(data.routineId ?? id);
+  const catalogRoutine = routineFromCatalog(routineId);
+  return {
+    id,
+    routineId,
+    routine: catalogRoutine ?? {
+      id: String(data.routine?.id ?? routineId),
+      name: String(data.routine?.name ?? ''),
+      description: String(data.routine?.description ?? ''),
+      instructions: data.routine?.instructions ? String(data.routine.instructions) : undefined,
+      icon: data.routine?.icon ? String(data.routine.icon) : undefined,
+      accentColor: data.routine?.accentColor ? String(data.routine.accentColor) : undefined,
+      proofType: data.routine?.proofType ? String(data.routine.proofType) : undefined,
+      responsibleName: data.routine?.responsibleName ? String(data.routine.responsibleName) : undefined,
+      instructionSteps: Array.isArray(data.routine?.instructionSteps) ? data.routine.instructionSteps : undefined,
+      translations: data.routine?.translations,
+    },
+    plan: data.plan as MonitoringPlan,
+    status: data.status,
+    assignedAt: String(data.assignedAt),
+  };
+};
 
 export class FirebaseRepository implements AppRepository {
   private readonly services: FirebaseServices = getFirebaseServices();

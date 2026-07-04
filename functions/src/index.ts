@@ -42,7 +42,7 @@ const getRoutineAnalysisContext = (
   routineId: string,
   locale: 'en' | 'fr',
 ): RoutineAnalysisContext | undefined => {
-  const routine = assignment?.routine ?? routineFromCatalog(routineId) ?? routineFromCatalog(DEFAULT_ROUTINE_ID);
+  const routine = routineFromCatalog(routineId) ?? assignment?.routine ?? routineFromCatalog(DEFAULT_ROUTINE_ID);
   if (!routine) return undefined;
   const localized = routine.translations?.[locale];
   const analysis = {
