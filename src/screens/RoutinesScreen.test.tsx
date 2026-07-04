@@ -185,7 +185,7 @@ describe('participant routines navigation', () => {
     const hydrationCard = Array.from(container.querySelectorAll('.routine-card'))
       .find((card) => card.textContent?.includes('Hydration'));
     const deleteButton = Array.from(hydrationCard?.querySelectorAll('button') ?? [])
-      .find((button) => button.textContent === 'Delete');
+      .find((button) => button.getAttribute('aria-label') === 'Delete Hydration');
     await act(async () => {
       deleteButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       await Promise.resolve();
