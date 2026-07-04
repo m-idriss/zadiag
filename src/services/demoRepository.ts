@@ -12,6 +12,7 @@ import { isFreshCapture } from '../domain/adherence';
 import type { AppRepository } from './contracts';
 
 const STORAGE_KEY = 'zadiag.demo.v1';
+const HYDRATION_ROUTINE_ID = 'daily-hydration';
 
 const browserLocale = (): AppState['locale'] => navigator.language?.startsWith('fr') ? 'fr' : 'en';
 
@@ -25,6 +26,38 @@ function seedEvents(now = new Date()): VerificationEvent[] {
       sessionId: crypto.randomUUID(),
       requestedAt: minutes(-2),
       expiresAt: minutes(18),
+      status: 'pending',
+    },
+    {
+      id: 'expired-morning',
+      routineId: DEFAULT_ROUTINE_ID,
+      sessionId: 'expired-morning',
+      requestedAt: minutes(-150),
+      expiresAt: minutes(-110),
+      status: 'pending',
+    },
+    {
+      id: 'expired-midday',
+      routineId: DEFAULT_ROUTINE_ID,
+      sessionId: 'expired-midday',
+      requestedAt: minutes(-95),
+      expiresAt: minutes(-55),
+      status: 'pending',
+    },
+    {
+      id: 'hydration-expired-morning',
+      routineId: HYDRATION_ROUTINE_ID,
+      sessionId: 'hydration-expired-morning',
+      requestedAt: minutes(-180),
+      expiresAt: minutes(-140),
+      status: 'pending',
+    },
+    {
+      id: 'hydration-expired-midday',
+      routineId: HYDRATION_ROUTINE_ID,
+      sessionId: 'hydration-expired-midday',
+      requestedAt: minutes(-125),
+      expiresAt: minutes(-85),
       status: 'pending',
     },
     {
@@ -65,6 +98,8 @@ function seedEvents(now = new Date()): VerificationEvent[] {
 }
 
 function initialState(): AppState {
+  const defaultAssignment = createDefaultRoutineAssignment();
+  const hydrationRoutine = routineFromCatalog(HYDRATION_ROUTINE_ID);
   return {
     locale: browserLocale(),
     notificationsEnabled: false,
@@ -76,7 +111,17 @@ function initialState(): AppState {
       parentRecoveryCode: 'PR-2345-6789-ABCD',
       consented: false,
     },
-    routineAssignments: [createDefaultRoutineAssignment()],
+    routineAssignments: [
+      defaultAssignment,
+      ...(hydrationRoutine ? [{
+        id: hydrationRoutine.id,
+        routineId: hydrationRoutine.id,
+        routine: structuredClone(hydrationRoutine),
+        plan: structuredClone(defaultAssignment.plan),
+        status: 'active' as const,
+        assignedAt: new Date().toISOString(),
+      }] : []),
+    ],
     routinesLoaded: true,
     routinesError: false,
     events: seedEvents(),
