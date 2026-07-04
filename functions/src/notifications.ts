@@ -5,6 +5,7 @@ export interface CheckNotificationInput {
   routineId: string;
   routineName: string;
   routineNames?: Partial<Record<NotificationLocale, string>>;
+  routineIcon?: string;
   resend: boolean;
   locale?: string;
 }
@@ -28,6 +29,8 @@ export const buildCheckNotificationPayload = (input: CheckNotificationInput): Ch
   const kind = input.resend ? 'check-reminder' : 'check-ready';
   const routineName = (input.routineNames?.[locale] ?? input.routineName).trim()
     || (locale === 'fr' ? 'Routine' : 'Routine');
+  const routineIcon = input.routineIcon?.trim() || '✅';
+  const titlePrefix = `${routineIcon} ${routineName}`;
   return {
     version: 2,
     kind,
@@ -35,8 +38,8 @@ export const buildCheckNotificationPayload = (input: CheckNotificationInput): Ch
     routineId: input.routineId,
     tag: input.resend ? `reminder:${input.sessionId}` : `verification:${input.sessionId}`,
     title: input.resend
-      ? (locale === 'fr' ? `${routineName} · rappel` : `${routineName} · reminder`)
-      : (locale === 'fr' ? `${routineName} · prêt` : `${routineName} · ready`),
+      ? (locale === 'fr' ? `${titlePrefix} · rappel` : `${titlePrefix} · reminder`)
+      : (locale === 'fr' ? `${titlePrefix} · prêt` : `${titlePrefix} · ready`),
     body: input.resend
       ? (locale === 'fr' ? 'Contrôle attendu.' : 'Check waiting.')
       : (locale === 'fr' ? 'Envoie ta preuve.' : 'Send your proof.'),

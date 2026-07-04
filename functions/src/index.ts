@@ -30,6 +30,7 @@ const cors = [
 
 interface RoutineNotificationNames {
   routineName: string;
+  routineIcon?: string;
   routineNames: {
     en?: string;
     fr?: string;
@@ -127,6 +128,7 @@ const sendCheckPushNotifications = async (
         routineId: check.routineId,
         routineName: check.routineName,
         routineNames: check.routineNames,
+        routineIcon: check.routineIcon,
         resend,
         locale: subscription.locale,
       });
@@ -145,6 +147,7 @@ const getRoutineNotificationNames = (
 ): RoutineNotificationNames => {
   const routine = assignmentData?.routine as {
     name?: unknown;
+    icon?: unknown;
     translations?: {
       en?: { name?: unknown };
       fr?: { name?: unknown };
@@ -153,6 +156,7 @@ const getRoutineNotificationNames = (
   const englishName = typeof routine?.name === 'string' && routine.name.trim() ? routine.name : fallback;
   return {
     routineName: englishName,
+    routineIcon: typeof routine?.icon === 'string' && routine.icon.trim() ? routine.icon : undefined,
     routineNames: {
       en: typeof routine?.translations?.en?.name === 'string' ? routine.translations.en.name : englishName,
       fr: typeof routine?.translations?.fr?.name === 'string' ? routine.translations.fr.name : undefined,
