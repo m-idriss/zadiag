@@ -312,14 +312,14 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .parent-create-routine-card h2 { margin-top: 2px; font-size: 17px; }
 .parent-create-routine-card p { margin: 0; font-size: 12px; line-height: 1.35; }
 .parent-create-routine-card .request-check { grid-column: 1 / -1; min-height: 42px; margin-top: 2px; padding: 11px; border-radius: 12px; }
-.parent-history-heading { margin-top: 20px; margin-bottom: 10px; }
+.routine-history-panel { display: grid; gap: 12px; }
+.parent-history-heading { margin-top: 20px; margin-bottom: 0; }
 .parent-empty-history-card { display: grid; grid-template-columns: 46px minmax(0, 1fr); align-items: center; gap: 12px; padding: 16px; }
 .parent-empty-history-card h2 { font-size: 16px; }
 .parent-empty-history-card p { margin: 3px 0 0; font-size: 12px; line-height: 1.35; }
-.history-results-heading { margin-top: 14px; margin-bottom: 16px; }
-.parent-history-list { display: grid; gap: 18px; }
+.history-results-heading { margin-top: 2px; margin-bottom: 0; }
+.parent-history-list { display: grid; gap: 12px; }
 .parent-history-row { margin-bottom: 0; }
-.parent-history-row + .parent-history-row { margin-top: 8px; }
 .parent-history-row > div:nth-child(2) { min-width: 0; }
 .parent-history-row strong,
 .parent-history-row small { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -384,7 +384,6 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
   background: white;
   box-shadow: var(--shadow-sm);
 }
-.today-pending-panel .today-task + .today-task { margin-top: 10px; }
 .today-routine-main {
   display: grid;
   gap: 10px;
@@ -415,6 +414,9 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .completed-panel-heading { margin: 20px 0 10px; padding: 14px; border-radius: 18px; background: linear-gradient(120deg, #eef6f3, #f8fbfa); }
 .completed-panel-heading p { margin: 4px 0 0; font-size: 13px; }
 .today-task.completed { padding: 14px; }
+.participant-history-section { display: grid; gap: 14px; }
+.participant-history-section .summary-card { margin-bottom: 2px; }
+.participant-history-section .parent-history-heading { margin-top: 0; }
 
 @media (max-width: 430px) {
   .today-routine-primary { grid-template-columns: 1fr; }

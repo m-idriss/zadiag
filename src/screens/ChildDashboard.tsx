@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { adherenceSummary } from '../domain/adherence';
-import type { AppState, VerificationEvent, VerificationStatus } from '../domain/models';
+import type { AppState, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { Disclaimer } from '../components/Disclaimer';
 import { StatusPill } from '../components/StatusPill';
 import { AppIcon, routineIconName } from '../components/Icon';
+import { RoutineHistoryPanel } from '../components/RoutineHistoryPanel';
 import { presentRoutine } from '../domain/routinePresentation';
 import { dayPeriodLabelKey } from '../domain/taskTimeLabel';
 
@@ -18,22 +19,6 @@ const isToday = (value: string, now = new Date()) => {
 const displayStatusFor = (event: VerificationEvent, now: number): VerificationEvent['status'] =>
   event.status === 'pending' && Date.parse(event.expiresAt) <= now ? 'expired' : event.status;
 
-type StatusFilter = VerificationStatus | 'all';
-type RoutineFilter = string | 'all';
-
-const eventTimestamp = (event: VerificationEvent) =>
-  Date.parse(event.capturedAt ?? event.requestedAt);
-
-const statusLabelKey = (status: VerificationStatus): MessageKey => {
-  if (status === 'detected') return 'validated';
-  if (status === 'not_detected') return 'notDetected';
-  if (status === 'uncertain') return 'uncertain';
-  if (status === 'missed') return 'missed';
-  if (status === 'pending') return 'pending';
-  if (status === 'analyzing') return 'analyzing';
-  return 'expired';
-};
-
 export function ChildDashboard({
   state,
   active,
@@ -45,8 +30,6 @@ export function ChildDashboard({
   start: () => void;
   t: (key: MessageKey) => string;
 }) {
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [routineFilter, setRoutineFilter] = useState<RoutineFilter>('all');
   const now = Date.now();
   const today = state.events.filter((event) => isToday(event.requestedAt));
   const pending = today.filter((event) => (
@@ -58,24 +41,11 @@ export function ChildDashboard({
   const historyEvents = useMemo(
     () => [...state.events]
       .map((event) => ({ ...event, status: displayStatusFor(event, now) }))
-      .filter((event) => !['pending', 'analyzing'].includes(event.status))
-      .sort((a, b) => eventTimestamp(b) - eventTimestamp(a)),
+      .filter((event) => !['pending', 'analyzing'].includes(event.status)),
     [now, state.events],
   );
   const summary = adherenceSummary(historyEvents);
-  const statuses = useMemo<VerificationStatus[]>(
-    () => Array.from(new Set(historyEvents.map((event) => event.status))),
-    [historyEvents],
-  );
-  const filteredHistory = historyEvents.filter((event) =>
-    (statusFilter === 'all' || event.status === statusFilter)
-    && (routineFilter === 'all' || event.routineId === routineFilter)
-  );
   const formatTime = (value: string) => new Intl.DateTimeFormat(state.locale === 'fr' ? 'fr-FR' : 'en-US', {
-    timeStyle: 'short',
-  }).format(new Date(value));
-  const formatDateTime = (value: string) => new Intl.DateTimeFormat(state.locale === 'fr' ? 'fr-FR' : 'en-US', {
-    dateStyle: 'short',
     timeStyle: 'short',
   }).format(new Date(value));
   const presentations = new Map(state.routineAssignments.map((assignment) => [assignment.routineId, presentRoutine(assignment.routine, state.locale)]));
@@ -165,57 +135,7 @@ export function ChildDashboard({
         </div>
         <div><h2>{t('lastSeven')}</h2><p>{summary.successful} {t('clearChecks')} {summary.completed}</p><strong>{t('progressEncouragement')}</strong></div>
       </section>
-
-      <div className="section-heading parent-history-heading"><h2 id="participant-history-title">{t('recentHistory')}</h2></div>
-      {historyEvents.length ? (
-        <>
-          <section className="card history-filter-card" aria-label={t('historyFilters')}>
-            <div className="filter-group">
-              <span>{t('filterByRoutine')}</span>
-              <div className="filter-chips">
-                <button type="button" className={routineFilter === 'all' ? 'active' : ''} onClick={() => setRoutineFilter('all')}>{t('allRoutines')}</button>
-                {state.routineAssignments.map((assignment) => {
-                  const visual = presentRoutine(assignment.routine, state.locale);
-                  return <button type="button" key={assignment.id} className={routineFilter === assignment.routineId ? 'active' : ''} onClick={() => setRoutineFilter(assignment.routineId)}>{visual.name}</button>;
-                })}
-              </div>
-            </div>
-            <div className="filter-group">
-              <span>{t('filterByStatus')}</span>
-              <div className="filter-chips">
-                <button type="button" className={statusFilter === 'all' ? 'active' : ''} onClick={() => setStatusFilter('all')}>{t('allStatuses')}</button>
-                {statuses.map((status) => <button type="button" key={status} className={`filter-status-${status} ${statusFilter === status ? 'active' : ''}`} onClick={() => setStatusFilter(status)}>{t(statusLabelKey(status))}</button>)}
-              </div>
-            </div>
-          </section>
-
-          <div className="section-heading history-results-heading"><h2>{t('historyResults')}</h2><span>{filteredHistory.length}</span></div>
-          <div className="history-list parent-history-list">
-            {filteredHistory.map((event) => {
-              const visual = presentationFor(event);
-              return (
-                <section className="card history-row parent-history-row" style={visual.style} key={event.id}>
-                  <div className="history-icon routine-history-icon"><AppIcon name={routineIconName(visual.icon)} /></div>
-                  <div>
-                    <strong>{visual.name}</strong>
-                    <small>{formatDateTime(event.requestedAt)}{event.reason ? ` · ${event.reason}` : ''}</small>
-                  </div>
-                  <StatusPill status={event.status} t={t} />
-                </section>
-              );
-            })}
-            {!filteredHistory.length && <p className="empty-state">{t('noHistoryMatches')}</p>}
-          </div>
-        </>
-      ) : (
-        <section className="card parent-empty-history-card">
-          <AppIcon name="time" />
-          <div>
-            <h2>{t('noHistoryYet')}</h2>
-            <p>{t('noHistoryYetHint')}</p>
-          </div>
-        </section>
-      )}
+      <RoutineHistoryPanel assignments={state.routineAssignments} events={historyEvents} locale={state.locale} titleId="participant-history-title" t={t} />
     </section>
   );
   return (
