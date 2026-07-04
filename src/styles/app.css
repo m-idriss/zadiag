@@ -256,11 +256,11 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .summary-card { display: flex; align-items: center; gap: 18px; }
 .summary-card p { margin: 5px 0; }
 .summary-card strong { color: var(--teal); font-size: 13px; }
-.adherence-summary-card { align-items: stretch; }
-.adherence-summary-content { min-width: 0; flex: 1; display: grid; gap: 12px; align-content: center; }
+.adherence-summary-card { align-items: center; flex-wrap: wrap; }
+.adherence-summary-content { min-width: 0; flex: 1; display: grid; gap: 8px; align-content: center; }
 .adherence-summary-copy h2 { margin-bottom: 4px; }
-.summary-range-toggle { display: inline-flex; flex-wrap: wrap; gap: 5px; padding: 4px; border-radius: 999px; background: #f1f6f4; width: fit-content; max-width: 100%; }
-.summary-range-toggle button { min-height: 28px; padding: 6px 10px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 900; cursor: pointer; }
+.summary-range-toggle { flex: 1 0 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 16px; background: #f1f6f4; width: 100%; max-width: 100%; }
+.summary-range-toggle button { min-height: 30px; padding: 5px 7px; border: 0; border-radius: 12px; background: transparent; color: var(--muted); font-size: 11px; font-weight: 900; cursor: pointer; white-space: nowrap; }
 .summary-range-toggle button.active { background: var(--teal); color: white; box-shadow: 0 8px 18px rgba(0,137,118,.16); }
 .progress-ring { --summary-ring: #e8efed 0deg 360deg; width: 96px; height: 96px; flex: 0 0 96px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--summary-ring)); position: relative; }
 .progress-ring::after { content: ''; width: 74px; height: 74px; border-radius: 50%; background: white; position: absolute; }
@@ -352,7 +352,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .today-task-copy h3 { margin: 0; color: var(--navy); font-size: 16px; }
 .today-task-copy p { margin: 3px 0 0; font-size: 12px; }
 .today-task-icon { flex: 0 0 auto; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 11px; background: var(--mint); color: var(--teal); font-size: 18px; font-weight: 900; }
-.today-task.completed .today-task-icon { background: var(--teal); color: white; }
+.today-task.completed .today-task-icon { background: color-mix(in srgb, var(--routine-accent, var(--teal)) 12%, white); color: var(--routine-accent, var(--teal)); }
 .today-task .primary-action-button { flex: 0 0 auto; min-height: 40px; font-size: 12px; }
 .today-empty { padding: 20px; }
 .today-empty h2 { margin: 8px 0 0; font-size: 22px; }

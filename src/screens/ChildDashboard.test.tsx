@@ -79,8 +79,8 @@ describe('participant Today screen', () => {
   it('lets the participant send proof for any currently available routine', () => {
     const hydration = routineFromCatalog('daily-hydration');
     if (!hydration) throw new Error('missing_hydration_routine');
-    const elasticsPending = routineEvent('elastics-pending', 'orthodontic-elastics', 'pending', atToday(13), atToday(16));
-    const hydrationPending = routineEvent('hydration-pending', 'daily-hydration', 'pending', atToday(13), atToday(16));
+    const elasticsPending = routineEvent('elastics-pending', 'orthodontic-elastics', 'pending', atToday(13), atToday(23));
+    const hydrationPending = routineEvent('hydration-pending', 'daily-hydration', 'pending', atToday(13), atToday(23));
     const state: AppState = {
       role: 'child',
       locale: 'en',

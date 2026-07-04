@@ -74,18 +74,18 @@ export function AdherenceSummaryCard({
           <p>{summary.successful} {t('clearChecks')} {summary.completed}</p>
           <strong>{t('progressEncouragement')}</strong>
         </div>
-        <div className="summary-range-toggle" role="group" aria-label={t('summaryRange')}>
-          {ranges.map((item) => (
-            <button
-              type="button"
-              key={item.id}
-              className={range === item.id ? 'active' : ''}
-              onClick={() => onRangeChange(item.id)}
-            >
-              {t(item.labelKey)}
-            </button>
-          ))}
-        </div>
+      </div>
+      <div className="summary-range-toggle" role="group" aria-label={t('summaryRange')}>
+        {ranges.map((item) => (
+          <button
+            type="button"
+            key={item.id}
+            className={range === item.id ? 'active' : ''}
+            onClick={() => onRangeChange(item.id)}
+          >
+            {t(item.labelKey)}
+          </button>
+        ))}
       </div>
     </section>
   );
