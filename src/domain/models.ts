@@ -178,5 +178,17 @@ export const createDefaultRoutineAssignment = (assignedAt = new Date().toISOStri
   assignedAt,
 });
 
+export const createRoutineAssignment = (
+  routine: Routine,
+  assignedAt = new Date().toISOString(),
+): RoutineAssignment => ({
+  id: routine.id,
+  routineId: routine.id,
+  routine,
+  plan: structuredClone(defaultPlan),
+  status: 'active',
+  assignedAt,
+});
+
 export const primaryRoutineAssignment = (state: Pick<AppState, 'routineAssignments'>) =>
   state.routineAssignments.find((assignment) => assignment.status === 'active') ?? state.routineAssignments[0];

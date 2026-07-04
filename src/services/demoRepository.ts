@@ -7,6 +7,7 @@ import type {
   VerificationEvent,
 } from '../domain/models';
 import { createDefaultRoutineAssignment, DEFAULT_ROUTINE_ID, primaryRoutineAssignment } from '../domain/models';
+import { routineFromCatalog } from '../domain/routineCatalog';
 import { isFreshCapture } from '../domain/adherence';
 import type { AppRepository } from './contracts';
 
@@ -150,6 +151,35 @@ export class DemoRepository implements AppRepository {
 
   async regenerateLinkCode() {
     this.state.family.linkingCode = `ZD-${Math.floor(100000 + Math.random() * 900000)}`;
+    this.persist();
+  }
+
+  async assignRoutine(routineId: string) {
+    if (this.state.routineAssignments.some((assignment) => assignment.routineId === routineId)) {
+      throw new Error('routine_already_assigned');
+    }
+    const routine = routineFromCatalog(routineId);
+    if (!routine) throw new Error('routine_not_found');
+    this.state.routineAssignments.push({
+      id: routine.id,
+      routineId: routine.id,
+      routine: structuredClone(routine),
+      plan: structuredClone(this.state.routineAssignments[0]?.plan ?? createDefaultRoutineAssignment().plan),
+      status: 'active',
+      assignedAt: new Date().toISOString(),
+    });
+    this.persist();
+  }
+
+  async deleteRoutine(routineId: string) {
+    const assignment = this.state.routineAssignments.find((item) => item.routineId === routineId);
+    if (!assignment) throw new Error('routine_not_found');
+    const activeAssignments = this.state.routineAssignments.filter((item) => item.status === 'active');
+    if (assignment.status === 'active' && activeAssignments.length <= 1) {
+      throw new Error('last_routine');
+    }
+    this.state.routineAssignments = this.state.routineAssignments.filter((item) => item.routineId !== routineId);
+    this.state.events = this.state.events.filter((event) => event.routineId !== routineId);
     this.persist();
   }
 

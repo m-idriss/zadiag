@@ -43,6 +43,8 @@ class FakeFirebaseRepository implements AppRepository {
   async recoverParent() {}
   async linkChild() {}
   async regenerateLinkCode() {}
+  async assignRoutine() {}
+  async deleteRoutine() {}
   async requestCheckNow() {}
   async updateRoutine(_routineId: string, _plan: MonitoringPlan) {}
   async savePushSubscription() {}

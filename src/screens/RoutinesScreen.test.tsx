@@ -1,6 +1,6 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BottomNav } from '../components/BottomNav';
 import { createDefaultRoutineAssignment, type AppState } from '../domain/models';
 import { translate } from '../services/i18n';
@@ -131,5 +131,68 @@ describe('participant routines navigation', () => {
     expect(container.textContent).toContain('Hydratation');
     expect(container.querySelector('.routine-icon .app-icon')).not.toBeNull();
     expect(container.querySelector('.routine-card')?.getAttribute('style')).toContain('#2387c9');
+  });
+
+  it('opens a routine catalog and assigns a new routine', async () => {
+    const assignment = createDefaultRoutineAssignment();
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: false },
+      routineAssignments: [assignment], events: [],
+    };
+    const assignRoutine = vi.fn().mockResolvedValue(undefined);
+    act(() => root.render(<RoutinesScreen state={state} onAssignRoutine={assignRoutine} t={(key) => translate('en', key)} />));
+
+    const addButton = container.querySelector('.add-routine-button');
+    act(() => addButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+
+    expect(container.textContent).toContain('Choose a routine');
+    expect(container.textContent).toContain('Hydration');
+    expect(Array.from(container.querySelectorAll('.routine-catalog-add')).some((button) => button.textContent === 'Added')).toBe(true);
+
+    const hydrationButton = Array.from(container.querySelectorAll('.routine-catalog-item'))
+      .find((item) => item.textContent?.includes('Hydration'))
+      ?.querySelector('button');
+    await act(async () => {
+      hydrationButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(assignRoutine).toHaveBeenCalledWith('daily-hydration');
+  });
+
+  it('deletes an assigned routine after confirmation', async () => {
+    const elastics = createDefaultRoutineAssignment();
+    const hydration = createDefaultRoutineAssignment();
+    hydration.id = 'daily-hydration';
+    hydration.routineId = 'daily-hydration';
+    hydration.routine = {
+      id: 'daily-hydration',
+      name: 'Hydration',
+      description: 'Daily water target',
+      icon: '💧',
+      accentColor: '#2387c9',
+    };
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: false },
+      routineAssignments: [elastics, hydration], events: [],
+    };
+    const deleteRoutine = vi.fn().mockResolvedValue(undefined);
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    act(() => root.render(<RoutinesScreen state={state} edit onDeleteRoutine={deleteRoutine} t={(key) => translate('en', key)} />));
+
+    const hydrationCard = Array.from(container.querySelectorAll('.routine-card'))
+      .find((card) => card.textContent?.includes('Hydration'));
+    const deleteButton = Array.from(hydrationCard?.querySelectorAll('button') ?? [])
+      .find((button) => button.textContent === 'Delete');
+    await act(async () => {
+      deleteButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(confirm).toHaveBeenCalledWith('Delete Hydration? Related checks will be removed.');
+    expect(deleteRoutine).toHaveBeenCalledWith('daily-hydration');
+    confirm.mockRestore();
   });
 });

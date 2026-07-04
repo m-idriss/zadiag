@@ -4,6 +4,7 @@ import { summarizeWeekdays } from '../domain/monitoringPlan';
 import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
 import { presentRoutine } from '../domain/routinePresentation';
+import { availableRoutines, presentCatalogRoutine } from '../domain/routineCatalog';
 import { dayPeriodLabelKey } from '../domain/taskTimeLabel';
 
 const RoutineDetailScreen = lazy(() => import('./RoutineDetailScreen').then((module) => ({ default: module.RoutineDetailScreen })));
@@ -21,6 +22,8 @@ export function RoutinesScreen({
   start,
   edit,
   requestCheck,
+  onAssignRoutine,
+  onDeleteRoutine,
   onEditMonitoringPlan,
   t,
 }: {
@@ -28,12 +31,19 @@ export function RoutinesScreen({
   start?: () => void;
   edit?: boolean;
   requestCheck?: (routineId: string) => Promise<void>;
+  onAssignRoutine?: (routineId: string) => Promise<void>;
+  onDeleteRoutine?: (routineId: string) => Promise<void>;
   onEditMonitoringPlan?: (routineId: string) => void;
   t: (key: MessageKey) => string;
 }) {
   const [selectedId, setSelectedId] = useState<string>();
   const [requestingRoutineId, setRequestingRoutineId] = useState<string>();
   const [requestStatuses, setRequestStatuses] = useState<Record<string, RequestStatus>>({});
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const [assigningRoutineId, setAssigningRoutineId] = useState<string>();
+  const [assignError, setAssignError] = useState(false);
+  const [deletingRoutineId, setDeletingRoutineId] = useState<string>();
+  const [deleteErrorRoutineId, setDeleteErrorRoutineId] = useState<string>();
   const selected = state.routineAssignments.find((assignment) => assignment.id === selectedId);
   if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen assignment={selected} state={state} back={() => setSelectedId(undefined)} start={start} edit={edit} onEditMonitoringPlan={() => onEditMonitoringPlan?.(selected.routineId)} t={t} /></Suspense>;
 
@@ -55,14 +65,76 @@ export function RoutinesScreen({
     }
   };
 
+  const assignedRoutineIds = new Set(state.routineAssignments.map((assignment) => assignment.routineId));
+  const assignRoutine = async (routineId: string) => {
+    if (!onAssignRoutine || assignedRoutineIds.has(routineId)) return;
+    setAssigningRoutineId(routineId);
+    setAssignError(false);
+    try {
+      await onAssignRoutine(routineId);
+      setCatalogOpen(false);
+    } catch (error) {
+      console.error(error);
+      setAssignError(true);
+    } finally {
+      setAssigningRoutineId(undefined);
+    }
+  };
+  const deleteRoutine = async (assignment: RoutineAssignment, routineName: string) => {
+    if (!onDeleteRoutine || deletingRoutineId) return;
+    if (!window.confirm(t('confirmDeleteRoutine').replace('{routine}', routineName))) return;
+    setDeletingRoutineId(assignment.routineId);
+    setDeleteErrorRoutineId(undefined);
+    try {
+      await onDeleteRoutine(assignment.routineId);
+    } catch (error) {
+      console.error(error);
+      setDeleteErrorRoutineId(assignment.routineId);
+    } finally {
+      setDeletingRoutineId(undefined);
+    }
+  };
+
   if (state.routinesLoaded === false) return <div className="content-screen routines-state" role="status"><p>{t('loadingRoutines')}</p></div>;
   if (state.routinesError) return <div className="content-screen routines-state" role="alert"><p>{t('routinesLoadError')}</p></div>;
 
   return (
     <div className="content-screen routines-screen">
       <header className="screen-header participant-header">
-        <div><h1>{t('myRoutines')}</h1><p>{t('routinesHint')}</p></div><button type="button" className="add-routine-button" aria-label={t('addRoutine')}>＋</button>
+        <div><h1>{t('myRoutines')}</h1><p>{t('routinesHint')}</p></div>
+        {onAssignRoutine && <button type="button" className="add-routine-button" aria-label={t('addRoutine')} aria-expanded={catalogOpen} onClick={() => setCatalogOpen((open) => !open)}>＋</button>}
       </header>
+      {catalogOpen && (
+        <section className="card routine-catalog-card" aria-labelledby="routine-catalog-title">
+          <div className="routine-catalog-heading">
+            <div>
+              <small>{t('routineCatalogEyebrow')}</small>
+              <h2 id="routine-catalog-title">{t('chooseRoutine')}</h2>
+            </div>
+            <button type="button" className="routine-catalog-close" onClick={() => setCatalogOpen(false)} aria-label={t('close')}>×</button>
+          </div>
+          <div className="routine-catalog-list">
+            {availableRoutines.map((routine) => {
+              const visual = presentCatalogRoutine(routine, state.locale);
+              const assigned = assignedRoutineIds.has(routine.id);
+              const assigning = assigningRoutineId === routine.id;
+              return (
+                <article className="routine-catalog-item" style={visual.style} key={routine.id}>
+                  <span className="routine-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
+                  <div>
+                    <h3>{visual.name}</h3>
+                    <p>{visual.description}</p>
+                  </div>
+                  <button type="button" className="routine-catalog-add" disabled={assigned || assigning} onClick={() => { void assignRoutine(routine.id); }}>
+                    {assigned ? t('routineAlreadyAdded') : assigning ? t('addingRoutine') : t('add')}
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+          {assignError && <p role="alert" className="request-feedback error">{t('routineAddError')}</p>}
+        </section>
+      )}
       <div className="routine-list">
         {state.routineAssignments.map((assignment) => {
           const next = state.events.find((event) => event.routineId === assignment.routineId && event.status === 'pending' && Date.parse(event.expiresAt) > Date.now());
@@ -93,6 +165,17 @@ export function RoutinesScreen({
                 </button>
                 <button type="button" className="routine-list-detail-button" onClick={() => setSelectedId(assignment.id)}>{t('details')}</button>
                 {edit && <button type="button" className="routine-list-edit-button" onClick={() => onEditMonitoringPlan?.(assignment.routineId)}>{t('edit')}</button>}
+                {edit && onDeleteRoutine && (
+                  <button
+                    type="button"
+                    className="routine-list-delete-button"
+                    aria-label={t('deleteRoutine').replace('{routine}', visual.name)}
+                    disabled={deletingRoutineId === assignment.routineId}
+                    onClick={() => { void deleteRoutine(assignment, visual.name); }}
+                  >
+                    <span aria-hidden="true">×</span>
+                  </button>
+                )}
               </div>
               <div className="routine-progress-row">
                 <div className="routine-progress-track"><span style={{ width: `${Math.round(rate * 100)}%` }} /></div>
@@ -113,6 +196,7 @@ export function RoutinesScreen({
                   {requestStatus === 'error' && <p role="status" aria-live="polite" className="request-feedback error">{t('requestCheckError')}</p>}
                 </>
               )}
+              {deleteErrorRoutineId === assignment.routineId && <p role="alert" className="request-feedback error">{t('routineDeleteError')}</p>}
             </section>
           );
         })}

@@ -160,6 +160,18 @@ export class FirebaseRepository implements AppRepository {
     this.emit();
   }
 
+  async assignRoutine(routineId: string) {
+    if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
+    const assignRoutine = httpsCallable<{ familyId: string; routineId: string }, void>(this.services.functions, 'assignRoutine');
+    await assignRoutine({ familyId: this.state.family.id, routineId });
+  }
+
+  async deleteRoutine(routineId: string) {
+    if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
+    const deleteRoutine = httpsCallable<{ familyId: string; routineId: string }, void>(this.services.functions, 'deleteRoutine');
+    await deleteRoutine({ familyId: this.state.family.id, routineId });
+  }
+
   async requestCheckNow(routineId = DEFAULT_ROUTINE_ID) {
     if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
     const requestCheckNow = httpsCallable<{ familyId: string; routineId: string }, void>(this.services.functions, 'requestCheckNow');

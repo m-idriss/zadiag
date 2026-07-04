@@ -298,6 +298,8 @@ export function App() {
             start={role === 'child' ? () => setRoute('camera') : undefined}
             edit={role === 'parent'}
             requestCheck={role === 'parent' ? async (routineId) => { await repository.requestCheckNow(routineId); sync(); } : undefined}
+            onAssignRoutine={role === 'parent' ? async (routineId) => { await repository.assignRoutine(routineId); sync(); } : undefined}
+            onDeleteRoutine={role === 'parent' ? async (routineId) => { await repository.deleteRoutine(routineId); sync(); } : undefined}
             onEditMonitoringPlan={(routineId) => {
               const assignment = state.routineAssignments.find((r) => r.routineId === routineId);
               if (assignment) {

@@ -8,7 +8,7 @@ import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, normalizeLinkCode } from './helpers.js';
 import { analyzeWithGemini, localizeAnalysisReason, type AnalysisResult } from './analysis.js';
 import { getLocalDateKey, getWindowForDate, monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
-import { createDefaultRoutineAssignment, DEFAULT_ROUTINE_ID, type RoutineAssignmentDocument } from './routines.js';
+import { createDefaultRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, routineFromCatalog, type RoutineAssignmentDocument } from './routines.js';
 import { buildCheckNotificationPayload } from './notifications.js';
 
 initializeApp();
@@ -549,6 +549,87 @@ export const requestCheckNow = onCall({
   const routineNames = getRoutineNotificationNames(assignment.data(), routineId);
   await sendCheckPushNotifications(familyRef, { ...check, ...routineNames }, resend);
   return check;
+});
+
+export const assignRoutine = onCall({
+  region,
+  cors,
+  enforceAppCheck: true,
+}, async (request) => {
+  const uid = requireUid(request.auth);
+  const familyId = String(request.data?.familyId ?? '');
+  const routineId = String(request.data?.routineId ?? '');
+  const routine = routineFromCatalog(routineId);
+  if (!familyId) throw new HttpsError('invalid-argument', 'Family ID is required.');
+  if (!routine) throw new HttpsError('invalid-argument', 'Unknown routine.');
+
+  const userRef = db.collection('users').doc(uid);
+  const familyRef = db.collection('families').doc(familyId);
+  const assignmentRef = familyRef.collection('routineAssignments').doc(routine.id);
+
+  await ensureFamilyRoutineMigration(familyRef);
+  await db.runTransaction(async (transaction) => {
+    const [profile, family, assignment] = await Promise.all([
+      transaction.get(userRef),
+      transaction.get(familyRef),
+      transaction.get(assignmentRef),
+    ]);
+    if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'parent') {
+      throw new HttpsError('permission-denied', 'Only the parent can assign a routine.');
+    }
+    if (!family.exists || family.data()?.members?.[uid] !== 'parent') {
+      throw new HttpsError('not-found', 'The family could not be found.');
+    }
+    if (assignment.exists) throw new HttpsError('already-exists', 'This routine is already assigned.');
+
+    transaction.create(assignmentRef, createRoutineAssignment(routine, defaultPlan, new Date().toISOString()));
+  });
+
+  return { success: true };
+});
+
+export const deleteRoutine = onCall({
+  region,
+  cors,
+  enforceAppCheck: true,
+}, async (request) => {
+  const uid = requireUid(request.auth);
+  const familyId = String(request.data?.familyId ?? '');
+  const routineId = String(request.data?.routineId ?? '');
+  if (!familyId) throw new HttpsError('invalid-argument', 'Family ID is required.');
+  if (!routineId) throw new HttpsError('invalid-argument', 'Routine ID is required.');
+
+  const userRef = db.collection('users').doc(uid);
+  const familyRef = db.collection('families').doc(familyId);
+  const assignmentRef = familyRef.collection('routineAssignments').doc(routineId);
+  const activeAssignments = familyRef.collection('routineAssignments').where('status', '==', 'active');
+  const routineChecks = familyRef.collection('checks').where('routineId', '==', routineId).limit(450);
+
+  await ensureFamilyRoutineMigration(familyRef);
+  await db.runTransaction(async (transaction) => {
+    const [profile, family, assignment, active, checks] = await Promise.all([
+      transaction.get(userRef),
+      transaction.get(familyRef),
+      transaction.get(assignmentRef),
+      transaction.get(activeAssignments),
+      transaction.get(routineChecks),
+    ]);
+    if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'parent') {
+      throw new HttpsError('permission-denied', 'Only the parent can delete a routine.');
+    }
+    if (!family.exists || family.data()?.members?.[uid] !== 'parent') {
+      throw new HttpsError('not-found', 'The family could not be found.');
+    }
+    if (!assignment.exists) throw new HttpsError('not-found', 'The routine could not be found.');
+    if (assignment.data()?.status === 'active' && active.docs.length <= 1) {
+      throw new HttpsError('failed-precondition', 'At least one active routine is required.');
+    }
+
+    transaction.delete(assignmentRef);
+    checks.docs.forEach((check) => transaction.delete(check.ref));
+  });
+
+  return { success: true };
 });
 
 export const updateRoutineAssignment = onCall({

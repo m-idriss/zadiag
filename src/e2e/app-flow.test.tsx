@@ -128,6 +128,8 @@ const createFakeRepository = (): AppRepository => {
     async recoverParent() {},
     async linkChild() {},
     async regenerateLinkCode() {},
+    async assignRoutine() {},
+    async deleteRoutine() {},
     async requestCheckNow() {},
     async updateRoutine() {},
     async savePushSubscription() {
