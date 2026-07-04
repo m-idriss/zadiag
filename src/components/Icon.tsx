@@ -1,6 +1,7 @@
 import { IonIcon } from '@ionic/react';
 import {
   cameraOutline,
+  chevronDownOutline,
   checkmarkCircleOutline,
   closeCircleOutline,
   addCircleOutline,
@@ -20,6 +21,7 @@ import {
 
 export type AppIconName =
   | 'camera'
+  | 'chevron-down'
   | 'check'
   | 'close'
   | 'add'
@@ -41,6 +43,7 @@ const toothIcon = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/sv
 
 const icons: Record<AppIconName, string> = {
   camera: cameraOutline,
+  'chevron-down': chevronDownOutline,
   check: checkmarkCircleOutline,
   close: closeCircleOutline,
   add: addCircleOutline,

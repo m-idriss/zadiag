@@ -54,6 +54,7 @@ export function RoutinesScreen({
   const [deletingRoutineId, setDeletingRoutineId] = useState<string>();
   const [deleteErrorRoutineId, setDeleteErrorRoutineId] = useState<string>();
   const [detailInitialTab, setDetailInitialTab] = useState<'overview' | 'plan'>();
+  const [expandedScheduleIds, setExpandedScheduleIds] = useState<Set<string>>(() => new Set());
   const selected = state.routineAssignments.find((assignment) => assignment.id === selectedId);
   const openDetails = (assignmentId: string, initialTab?: 'overview' | 'plan') => {
     setDetailInitialTab(initialTab);
@@ -107,6 +108,14 @@ export function RoutinesScreen({
     } finally {
       setDeletingRoutineId(undefined);
     }
+  };
+  const toggleSchedule = (assignmentId: string) => {
+    setExpandedScheduleIds((current) => {
+      const next = new Set(current);
+      if (next.has(assignmentId)) next.delete(assignmentId);
+      else next.add(assignmentId);
+      return next;
+    });
   };
 
   if (state.routinesLoaded === false) return <div className="content-screen routines-state" role="status"><p>{t('loadingRoutines')}</p></div>;
@@ -170,6 +179,7 @@ export function RoutinesScreen({
           });
           const requestStatus = requestStatuses[assignment.routineId] ?? 'idle';
           const requesting = requestingRoutineId === assignment.routineId;
+          const scheduleExpanded = expandedScheduleIds.has(assignment.id);
           return (
             <section className="card routine-card routine-plan-list-card" style={visual.style} key={assignment.id}>
               <div className="routine-list-card-title">
@@ -194,10 +204,22 @@ export function RoutinesScreen({
                 <div className="routine-progress-track"><span style={{ width: `${Math.round(rate * 100)}%` }} /></div>
                 <b className="routine-rate">{Math.round(rate * 100)}%</b>
               </div>
+              <div className="routine-action-row">
+                <p>{visual.instructions}</p>
+                <button
+                  type="button"
+                  className="routine-schedule-toggle"
+                  aria-label={t(scheduleExpanded ? 'hideSchedule' : 'showSchedule')}
+                  aria-expanded={scheduleExpanded}
+                  onClick={() => toggleSchedule(assignment.id)}
+                >
+                  <AppIcon name="chevron-down" className={scheduleExpanded ? 'expanded' : undefined} />
+                </button>
+              </div>
               <div className="routine-plan-stats">
                 <div><small>{t('nextCheck')}</small><strong>{nextLabel}</strong></div>
               </div>
-              <div className="chips">{planChips.map((chip) => <span key={chip.id}><i aria-hidden="true">◷</i>{chip.label}</span>)}</div>
+              {scheduleExpanded && <div className="chips routine-schedule-chips">{planChips.map((chip) => <span key={chip.id}><i aria-hidden="true">◷</i>{chip.label}</span>)}</div>}
               {edit && requestCheck && (
                 <>
                   <button className="request-check routine-list-request" disabled={requesting} onClick={() => { void requestNow(assignment.routineId); }}>

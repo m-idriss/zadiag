@@ -479,6 +479,31 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .routine-progress-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; }
 .routine-progress-track { height: 4px; overflow: hidden; border-radius: 999px; background: #dce4e1; }
 .routine-progress-track span { display: block; height: 100%; border-radius: inherit; background: var(--routine-accent, var(--teal)); }
+.routine-action-row { display: grid; grid-template-columns: minmax(0, 1fr) 34px; align-items: center; gap: 10px; margin-top: -3px; }
+.routine-action-row p {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.routine-schedule-toggle {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  justify-self: end;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--routine-accent, var(--teal)) 10%, white);
+  color: var(--routine-accent, var(--teal));
+}
+.routine-schedule-toggle .app-icon { font-size: 19px; transition: transform .2s cubic-bezier(.22,1,.36,1); }
+.routine-schedule-toggle .app-icon.expanded { transform: rotate(180deg); }
+.routine-schedule-chips { margin-top: -2px; }
 .routine-list-request { margin-top: 0; }
 .routine-card-next { display: flex; align-items: flex-end; justify-content: space-between; padding-top: 2px; }
 .routine-card-next small { color: var(--muted); font-size: 10px; }

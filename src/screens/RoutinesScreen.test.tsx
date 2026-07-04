@@ -94,7 +94,14 @@ describe('participant routines navigation', () => {
     expect(container.textContent).toContain('Orthodontic Elastics');
     expect(container.textContent).toContain('3 checks each day');
     expect(container.textContent).toContain('50%');
+    expect(container.textContent).toContain('Wear your elastics as prescribed');
     expect(container.textContent).toContain('Next check');
+    expect(container.textContent).not.toContain('07:30–09:30');
+
+    const scheduleToggle = container.querySelector('button[aria-label="Show schedule"]');
+    act(() => scheduleToggle?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(scheduleToggle?.getAttribute('aria-expanded')).toBe('true');
+    expect(container.textContent).toContain('07:30–09:30');
 
     const details = container.querySelector('button[aria-label*="View details"]');
     await act(async () => {
