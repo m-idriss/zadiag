@@ -27,7 +27,7 @@ export function ChildDashboard({
 }: {
   state: AppState;
   active?: VerificationEvent;
-  start: () => void;
+  start: (event: VerificationEvent) => void;
   t: (key: MessageKey) => string;
 }) {
   const now = Date.now();
@@ -77,7 +77,7 @@ export function ChildDashboard({
           const main = group.events.find((event) => event.id === active?.id) ?? group.events[0];
           const stacked = group.events.filter((event) => event.id !== main.id);
           const presentation = presentationFor(main);
-          const actionable = active?.id === main.id;
+          const actionable = main.status === 'pending' && Date.parse(main.expiresAt) > now;
           return (
             <article className={`today-task today-routine-card ${actionable ? 'actionable' : 'expired-only'}`} style={presentation.style} key={group.routineId}>
               <div className="today-routine-main">
@@ -91,7 +91,7 @@ export function ChildDashboard({
                     </div>
                   </div>
                   {actionable
-                    ? <button type="button" className="primary-action-button" onClick={start}><AppIcon name="camera" />{t('sendProof')}</button>
+                    ? <button type="button" className="primary-action-button" onClick={() => start(main)}><AppIcon name="camera" />{t('sendProof')}</button>
                     : <StatusPill status={displayStatusFor(main, now)} t={t} />}
                 </div>
                 {stacked.length > 0 && (

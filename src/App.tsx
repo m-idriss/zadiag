@@ -92,6 +92,7 @@ export function App() {
   const [result, setResult] = useState<VerificationEvent>();
   const [submitError, setSubmitError] = useState<string>();
   const [savingRoutineId, setSavingRoutineId] = useState<string>();
+  const [selectedSessionId, setSelectedSessionId] = useState<string>();
   const t = (key: MessageKey) => translate(state.locale, key);
 
   useEffect(() => {
@@ -163,7 +164,9 @@ export function App() {
   };
 
   const submit = async (capturedAt: Date, imageDataUrl: string) => {
-    const session = repository.activeSession();
+    const session = selectedSessionId
+      ? state.events.find((event) => event.sessionId === selectedSessionId)
+      : repository.activeSession();
     if (!session) return;
     setSubmitError(undefined);
     setBusy(true);
@@ -171,6 +174,7 @@ export function App() {
       const event = await repository.submitCapture(session.sessionId, capturedAt, imageDataUrl);
       sync();
       setResult(event);
+      setSelectedSessionId(undefined);
       setRoute('result');
     } catch (error) {
       console.error(error);
@@ -178,6 +182,11 @@ export function App() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const startCapture = (event?: VerificationEvent) => {
+    setSelectedSessionId(event?.sessionId);
+    setRoute('camera');
   };
 
   const reset = async () => {
@@ -255,7 +264,7 @@ export function App() {
       />
     );
   } else if (route === 'camera') {
-    content = <CameraScreen busy={busy} submitError={submitError} back={() => setRoute('app')} submit={submit} t={t} />;
+    content = <CameraScreen busy={busy} submitError={submitError} back={() => { setSelectedSessionId(undefined); setRoute('app'); }} submit={submit} t={t} />;
   } else if (route === 'result' && result) {
     content = <ResultScreen event={result} done={() => { setResult(undefined); setRoute('app'); }} t={t} />;
   } else {
@@ -265,7 +274,7 @@ export function App() {
       : routineCentricUiEnabled && tab === 'routines'
         ? <RoutinesScreen
             state={state}
-            start={role === 'child' ? () => setRoute('camera') : undefined}
+            start={role === 'child' ? () => startCapture() : undefined}
             edit={role === 'parent'}
             requestCheck={role === 'parent' ? async (routineId) => { await repository.requestCheckNow(routineId); sync(); } : undefined}
             onAssignRoutine={role === 'parent' ? async (routineId) => { await repository.assignRoutine(routineId); sync(); } : undefined}
@@ -312,7 +321,7 @@ export function App() {
               onCreateRoutine={() => setTab('routines')}
               t={t}
             />
-          : <ChildDashboard state={state} active={repository.activeSession()} start={() => setRoute('camera')} t={t} />;
+          : <ChildDashboard state={state} active={repository.activeSession()} start={startCapture} t={t} />;
     content = <div className="app-shell">{screen}<BottomNav tab={tab} role={role} routineCentricEnabled={routineCentricUiEnabled} onChange={setTab} t={t} /></div>;
   }
 

@@ -1,7 +1,8 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createDefaultRoutineAssignment, type AppState, type VerificationEvent } from '../domain/models';
+import { createDefaultRoutineAssignment, createRoutineAssignment, type AppState, type VerificationEvent } from '../domain/models';
+import { routineFromCatalog } from '../domain/routineCatalog';
 import { translate } from '../services/i18n';
 import { ChildDashboard } from './ChildDashboard';
 
@@ -19,6 +20,17 @@ const event = (id: string, status: VerificationEvent['status'], requestedAt: str
   expiresAt,
   capturedAt: status === 'detected' ? atToday(8) : undefined,
   status,
+});
+
+const routineEvent = (
+  id: string,
+  routineId: string,
+  status: VerificationEvent['status'],
+  requestedAt: string,
+  expiresAt = atToday(20),
+): VerificationEvent => ({
+  ...event(id, status, requestedAt, expiresAt),
+  routineId,
 });
 
 describe('participant Today screen', () => {
@@ -61,6 +73,30 @@ describe('participant Today screen', () => {
     const complete = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Send proof'));
     act(() => complete?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(start).toHaveBeenCalledOnce();
+    expect(start).toHaveBeenCalledWith(pending);
+  });
+
+  it('lets the participant send proof for any currently available routine', () => {
+    const hydration = routineFromCatalog('daily-hydration');
+    if (!hydration) throw new Error('missing_hydration_routine');
+    const elasticsPending = routineEvent('elastics-pending', 'orthodontic-elastics', 'pending', atToday(13), atToday(16));
+    const hydrationPending = routineEvent('hydration-pending', 'daily-hydration', 'pending', atToday(13), atToday(16));
+    const state: AppState = {
+      role: 'child',
+      locale: 'en',
+      notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: false },
+      routineAssignments: [createDefaultRoutineAssignment(), createRoutineAssignment(hydration)],
+      events: [elasticsPending, hydrationPending],
+    };
+    const start = vi.fn();
+
+    act(() => root.render(<ChildDashboard state={state} active={elasticsPending} start={start} t={(key) => translate('en', key)} />));
+
+    const actions = Array.from(container.querySelectorAll('button')).filter((button) => button.textContent?.includes('Send proof'));
+    expect(actions).toHaveLength(2);
+    act(() => actions[1]?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(start).toHaveBeenCalledWith(hydrationPending);
   });
 
   it('keeps task state correct after synchronization and reload reconstruction', () => {
