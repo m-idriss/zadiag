@@ -99,7 +99,7 @@ export function ChildDashboard({
                     </div>
                   </div>
                   {actionable
-                    ? <button type="button" className="primary-action-button" onClick={() => start(main)}><AppIcon name="camera" />{t('sendProof')}</button>
+                    ? <button type="button" className="primary-action-button today-proof-button" onClick={() => start(main)}><AppIcon name="camera" />{t('sendProofShort')}</button>
                     : <StatusPill status={displayStatusFor(main, now)} t={t} />}
                 </div>
                 {stacked.length > 0 && (

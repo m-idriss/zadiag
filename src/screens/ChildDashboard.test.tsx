@@ -70,7 +70,7 @@ describe('participant Today screen', () => {
     expect(container.textContent).not.toContain('This week');
     expect(container.querySelectorAll('.today-task')).toHaveLength(2);
 
-    const complete = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Send proof'));
+    const complete = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Proof'));
     act(() => complete?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(start).toHaveBeenCalledOnce();
     expect(start).toHaveBeenCalledWith(pending);
@@ -93,7 +93,7 @@ describe('participant Today screen', () => {
 
     act(() => root.render(<ChildDashboard state={state} active={elasticsPending} start={start} t={(key) => translate('en', key)} />));
 
-    const actions = Array.from(container.querySelectorAll('button')).filter((button) => button.textContent?.includes('Send proof'));
+    const actions = Array.from(container.querySelectorAll('button')).filter((button) => button.textContent?.includes('Proof'));
     expect(actions).toHaveLength(2);
     act(() => actions[1]?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(start).toHaveBeenCalledWith(hydrationPending);
