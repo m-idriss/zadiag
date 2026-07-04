@@ -27,6 +27,8 @@ body { margin: 0; background: inherit; color: var(--navy); }
 button, input { font: inherit; }
 
 .role-symbol,
+.bottom-nav button > span,
+.primary-action-button > span,
 .section-icon,
 .setup-progress li > span,
 .setup-hero-icon,
@@ -56,7 +58,8 @@ button, input { font: inherit; }
   font-variant-emoji: emoji;
 }
 
-ion-app {
+.app-root {
+  min-height: 100dvh;
   background: transparent;
   overflow: hidden;
 }
@@ -109,7 +112,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .installed-badge span { width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; background: var(--teal); color: white; font-size: 11px; }
 .welcome-page .role-help { margin: -8px 0 15px; font-size: 13px; }
 .role-grid { display: grid; gap: 12px; }
-.role-button { width: 100%; margin: 0; --background: white; --color: var(--navy); --padding-start: 16px; --padding-end: 16px; min-height: 92px; border-radius: 24px; border: 1px solid var(--line); box-shadow: 0 12px 30px rgba(21, 50, 75, .05); }
+.role-button { width: 100%; margin: 0; display: flex; align-items: center; justify-content: flex-start; padding: 0 16px; background: white; color: var(--navy); min-height: 92px; border-radius: 24px; border: 1px solid var(--line); box-shadow: 0 12px 30px rgba(21, 50, 75, .05); cursor: pointer; }
 .role-button::part(native) { justify-content: flex-start; }
 .role-button > span { display: flex; flex-direction: column; align-items: flex-start; margin-left: 14px; text-align: left; }
 .role-button strong { font-size: 19px; }
@@ -243,16 +246,18 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .plan-card { margin-top: 14px; }
 .request-check { width: 100%; margin-top: 16px; padding: 13px; border: 0; border-radius: 14px; background: var(--teal); color: white; font-weight: 900; }
 .request-check:disabled { opacity: .55; }
+.primary-action-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 12px 14px; border: 0; font-weight: 900; cursor: pointer; }
+.primary-action-button:active { transform: scale(.985); filter: brightness(.97); }
 .request-feedback { margin: 9px 2px 0 !important; font-size: 12px; font-weight: 800; }
 .request-feedback.success { color: var(--teal) !important; }
 .request-feedback.error { color: var(--coral) !important; }
 .card-title, .section-heading { display: flex; justify-content: space-between; align-items: center; }
 .card-title h2 { display: inline-flex; align-items: center; gap: 7px; }
-.card-title h2 ion-icon { font-size: 18px; }
+.card-title h2 span { font-family: var(--icon-font-family); font-size: 18px; }
 .card-title button { border: 0; color: var(--teal); background: transparent; font-weight: 900; }
 .chips { display: flex; flex-wrap: wrap; gap: 7px; }
 .chips span { display: inline-flex; align-items: center; gap: 4px; padding: 7px 9px; background: #f1f6f4; border-radius: 99px; font-size: 12px; font-weight: 800; }
-.chips span ion-icon { font-size: 12px; }
+.chips span i { font-family: var(--icon-font-family); font-style: normal; font-size: 12px; }
 .section-heading { margin: 25px 2px 10px; }
 .section-heading span { background: #fdebe7; color: var(--coral); min-width: 27px; height: 27px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; }
 .history-row { display: flex; align-items: center; gap: 12px; padding: 15px; margin-bottom: 10px; }
@@ -282,7 +287,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .today-task-copy p { margin: 3px 0 0; font-size: 12px; }
 .today-task-icon { flex: 0 0 auto; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 11px; background: var(--mint); color: var(--teal); font-size: 18px; font-weight: 900; }
 .today-task.completed .today-task-icon { background: var(--teal); color: white; }
-.today-task ion-button { flex: 0 0 auto; min-height: 40px; font-size: 12px; }
+.today-task .primary-action-button { flex: 0 0 auto; min-height: 40px; font-size: 12px; }
 .today-empty { padding: 20px; }
 .today-empty h2 { margin: 8px 0 0; font-size: 22px; }
 .today-empty p { margin-bottom: 0; }
@@ -317,7 +322,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .today-task-copy small { display: block; margin-top: 7px; color: var(--navy); font-size: 11px; font-weight: 900; }
 .today-task-copy p { margin-top: 1px; }
 .today-task-icon, .routine-icon, .routine-hero-icon { background: color-mix(in srgb, var(--routine-accent, var(--teal)) 12%, white); color: var(--routine-accent, var(--teal)); }
-.today-pending-panel .today-task ion-button { display: block; width: 100%; min-width: 100%; margin: 0; --background: var(--routine-accent, var(--teal)); --border-radius: 10px; min-height: 42px; }
+.today-pending-panel .today-task .primary-action-button { width: 100%; min-width: 100%; margin: 0; border-radius: 10px; min-height: 42px; background: var(--routine-accent, var(--teal)); color: white; }
 .completed-panel-heading { margin: 20px 0 10px; padding: 14px; border-radius: 18px; background: linear-gradient(120deg, #eef6f3, #f8fbfa); }
 .completed-panel-heading p { margin: 4px 0 0; font-size: 13px; }
 .today-task.completed { padding: 14px; }
@@ -673,7 +678,7 @@ ion-input {
   font-weight: 620;
   transition: color .2s ease, background .2s ease, transform .16s ease;
 }
-.bottom-nav button ion-icon { font-size: 22px; }
+.bottom-nav button > span { font-size: 22px; line-height: 1; }
 .bottom-nav button.active { background: #fff; color: var(--teal); box-shadow: 0 5px 16px rgba(16,42,67,.065); }
 .bottom-nav button:active { transform: scale(.95); }
 

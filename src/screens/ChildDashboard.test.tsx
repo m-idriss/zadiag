@@ -57,7 +57,7 @@ describe('participant Today screen', () => {
     expect(container.textContent).not.toContain('This week');
     expect(container.querySelectorAll('.today-task')).toHaveLength(2);
 
-    const complete = Array.from(container.querySelectorAll('ion-button')).find((button) => button.textContent?.includes('Send proof'));
+    const complete = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Send proof'));
     act(() => complete?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(start).toHaveBeenCalledOnce();
   });

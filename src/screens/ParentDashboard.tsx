@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { IonIcon } from '@ionic/react';
-import { clipboardOutline, timeOutline } from 'ionicons/icons';
 import { adherenceSummary } from '../domain/adherence';
 import { primaryRoutineAssignment, type AppState } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
@@ -59,9 +57,9 @@ export function ParentDashboard({
         <div><h2>{t('lastSeven')}</h2><p>{summary.successful} {t('clearChecks')} {summary.completed}</p><strong>{t('progressEncouragement')}</strong></div>
       </section>
       <section className="card plan-card">
-        <div className="card-title"><h2><IonIcon icon={clipboardOutline} aria-hidden="true" />{t('monitoringPlan')}</h2><button onClick={onEditMonitoringPlan}>{t('edit')}</button></div>
+        <div className="card-title"><h2><span aria-hidden="true">☷</span>{t('monitoringPlan')}</h2><button onClick={onEditMonitoringPlan}>{t('edit')}</button></div>
         {assignment && <p><b>{assignment.plan.checksPerDay}</b> {t('checksDay')} · <b>{assignment.plan.expiryMinutes}</b> {t('minutesRespond')}</p>}
-        <div className="chips">{assignment?.plan.windows.map((window) => <span key={window.id}><IonIcon icon={timeOutline} aria-hidden="true" />{window.start}–{window.end}</span>)}</div>
+        <div className="chips">{assignment?.plan.windows.map((window) => <span key={window.id}><i aria-hidden="true">◷</i>{window.start}–{window.end}</span>)}</div>
         <button className="request-check" disabled={requesting} onClick={() => { void requestNow(); }}>
           {requesting ? t('requestingCheck') : hasActiveCheck ? t('requestCheckAgain') : t('requestCheckNow')}
         </button>

@@ -1,4 +1,3 @@
-import { IonButton } from '@ionic/react';
 import type { Locale, Role } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { Disclaimer } from '../components/Disclaimer';
@@ -29,16 +28,16 @@ export function WelcomeScreen({
       <h2>{t('continueAs')}</h2>
       <p className="role-help">{t('setupRoleHelp')}</p>
       <div className="role-grid">
-        <IonButton className="role-button" fill="clear" onClick={() => chooseRole('parent')}>
+        <button type="button" className="role-button" onClick={() => chooseRole('parent')}>
           <span className="role-symbol">⌂</span>
           <span><strong>{t('parent')}</strong><small>{t('parentRoleHint')}</small></span>
           <b>›</b>
-        </IonButton>
-        <IonButton className="role-button" fill="clear" onClick={() => chooseRole('child')}>
+        </button>
+        <button type="button" className="role-button" onClick={() => chooseRole('child')}>
           <span className="role-symbol">☺</span>
           <span><strong>{t('child')}</strong><small>{t('childRoleHint')}</small></span>
           <b>›</b>
-        </IonButton>
+        </button>
       </div>
       <Disclaimer t={t} />
       <small className="demo-label">{t('demo')}</small>
