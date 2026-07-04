@@ -9,6 +9,7 @@ import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, isFr
 import { analyzeWithGemini, localizeAnalysisReason, type AnalysisResult } from './analysis.js';
 import { getLocalDateKey, getWindowForDate, monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
 import { createDefaultRoutineAssignment, DEFAULT_ROUTINE_ID, type RoutineAssignmentDocument } from './routines.js';
+import { buildCheckNotificationPayload } from './notifications.js';
 
 initializeApp();
 const db = getFirestore();
@@ -112,17 +113,15 @@ const sendCheckPushNotifications = async (
   webpush.setVapidDetails('https://www.zadiag.com', vapidPublicKey.value(), vapidPrivateKey.value());
   await Promise.allSettled(subscriptions.docs.map(async (document) => {
     const subscription = document.data() as PushSubscription & { locale?: string };
-    const isFrench = subscription.locale === 'fr';
     try {
-      await webpush.sendNotification(subscription, JSON.stringify({
+      const payload = buildCheckNotificationPayload({
         sessionId: check.sessionId,
         routineId: check.routineId,
-        tag: resend ? `reminder:${check.sessionId}` : `verification:${check.sessionId}`,
-        title: 'Zadiag',
-        body: resend
-          ? (isFrench ? `Le rappel « ${check.routineName} » est prêt.` : `${check.routineName} reminder is ready.`)
-          : (isFrench ? `Un contrôle « ${check.routineName} » est prêt.` : `${check.routineName} check is ready.`),
-      }), { TTL: 120 });
+        routineName: check.routineName,
+        resend,
+        locale: subscription.locale,
+      });
+      await webpush.sendNotification(subscription, JSON.stringify(payload), { TTL: 120 });
     } catch (error) {
       const statusCode = (error as { statusCode?: number }).statusCode;
       if (statusCode === 404 || statusCode === 410) await document.ref.delete();

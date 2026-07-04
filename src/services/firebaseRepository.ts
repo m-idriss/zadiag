@@ -6,6 +6,7 @@ import {
   onSnapshot,
   orderBy,
   query,
+  updateDoc,
   type DocumentData,
   type Unsubscribe,
 } from 'firebase/firestore';
@@ -125,6 +126,13 @@ export class FirebaseRepository implements AppRepository {
     this.state.locale = locale;
     this.persistPreferences();
     this.emit();
+    if (this.state.role === 'child' && this.user && this.state.family.id && this.state.notificationsEnabled) {
+      try {
+        await updateDoc(doc(this.services.db, 'families', this.state.family.id, 'pushSubscriptions', this.user.uid), { locale });
+      } catch (error) {
+        console.error('Unable to update push subscription locale', error);
+      }
+    }
   }
 
   async linkParent(childName: string) {
