@@ -221,14 +221,14 @@ export function SettingsScreen({
               <span className={notificationEnabled ? 'status-pill status-detected' : 'status-pill status-missed'}>
                 {t(notificationStatusKey)}
               </span>
-              {!notificationEnabled ? <IonButton
+              {!notificationEnabled ? <button
+                type="button"
                 className="settings-inline-action settings-inline-action-contained"
-                size="small"
                 disabled={!standalone || notificationState === 'saving'}
                 onClick={() => { void requestNotifications(); }}
               >
                 {notificationState === 'saving' ? t('enablingReminders') : t('enableReminders')}
-              </IonButton> : null}
+              </button> : null}
             </div>
           </div> : null}
           <div className="settings-row">
@@ -254,9 +254,9 @@ export function SettingsScreen({
               <small>{t('settingsDebugMailDetail')}</small>
               {mailError ? <small className="settings-action-error">{t('settingsDebugMailError')}</small> : null}
             </div>
-            <IonButton className="settings-inline-action settings-inline-action-contained" size="small" onClick={sendDiagnosticsEmail}>
+            <button type="button" className="settings-inline-action settings-inline-action-contained" onClick={sendDiagnosticsEmail}>
               {t('settingsDebugMailSend')}
-            </IonButton>
+            </button>
           </div>
           <div className="settings-row">
             <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={informationCircleOutline} /></span>
@@ -265,14 +265,14 @@ export function SettingsScreen({
               <small>{t('settingsVersionLabel')} {import.meta.env.VITE_APP_VERSION} · {t('settingsUpdatedLabel')} {appUpdated}</small>
               {updateError ? <small className="settings-action-error">{t('settingsUpdateError')}</small> : null}
             </div>
-            <IonButton
+            <button
+              type="button"
               className="settings-inline-action settings-inline-action-contained"
-              size="small"
               disabled={updatingApp || !updateAvailable}
               onClick={() => { void forceUpdate(); }}
             >
               {updatingApp ? t('settingsUpdateChecking') : t('settingsUpdateAction')}
-            </IonButton>
+            </button>
           </div>
         </div>
       </section>
