@@ -2,9 +2,13 @@ import type { CSSProperties } from 'react';
 import {
   cameraOutline,
   checkmarkCircleOutline,
+  closeCircleOutline,
+  addCircleOutline,
+  calendarOutline,
   homeOutline,
   listOutline,
   medicalOutline,
+  notificationsOutline,
   sendOutline,
   settingsOutline,
   sparklesOutline,
@@ -17,8 +21,12 @@ import {
 export type AppIconName =
   | 'camera'
   | 'check'
+  | 'close'
+  | 'add'
+  | 'calendar'
   | 'home'
   | 'medical'
+  | 'notifications'
   | 'routines'
   | 'send'
   | 'settings'
@@ -31,8 +39,12 @@ export type AppIconName =
 const icons: Record<AppIconName, string> = {
   camera: cameraOutline,
   check: checkmarkCircleOutline,
+  close: closeCircleOutline,
+  add: addCircleOutline,
+  calendar: calendarOutline,
   home: homeOutline,
   medical: medicalOutline,
+  notifications: notificationsOutline,
   routines: listOutline,
   send: sendOutline,
   settings: settingsOutline,

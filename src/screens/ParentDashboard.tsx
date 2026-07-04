@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { adherenceSummary } from '../domain/adherence';
 import { primaryRoutineAssignment, type AppState } from '../domain/models';
+import { summarizeWeekdays } from '../domain/monitoringPlan';
 import type { MessageKey } from '../services/i18n';
 import { StatusPill } from '../components/StatusPill';
 import { CodeBox } from '../components/CodeBox';
@@ -26,6 +27,12 @@ export function ParentDashboard({
   const [codeError, setCodeError] = useState(false);
   const [requesting, setRequesting] = useState(false);
   const [requestStatus, setRequestStatus] = useState<'idle' | 'sent' | 'active' | 'error'>('idle');
+  const planChips = assignment?.plan.scheduleGroups?.length
+    ? assignment.plan.scheduleGroups.map((group, index) => ({
+        id: group.id,
+        text: `${group.label?.trim() || `${t('monitoringPeriod')} ${index + 1}`} · ${summarizeWeekdays(group.weekdays, t)} · ${group.windows.map((window) => `${window.start}–${window.end}`).join(', ')}`,
+      }))
+    : assignment?.plan.windows.map((window) => ({ id: window.id, text: `${window.start}–${window.end}` })) ?? [];
 
   const regenerate = async () => {
     if (!window.confirm(t('regenerateCodeConfirm'))) return;
@@ -59,7 +66,7 @@ export function ParentDashboard({
       <section className="card plan-card">
         <div className="card-title"><h2><span aria-hidden="true">☷</span>{t('monitoringPlan')}</h2><button onClick={onEditMonitoringPlan}>{t('edit')}</button></div>
         {assignment && <p><b>{assignment.plan.checksPerDay}</b> {t('checksDay')} · <b>{assignment.plan.expiryMinutes}</b> {t('minutesRespond')}</p>}
-        <div className="chips">{assignment?.plan.windows.map((window) => <span key={window.id}><i aria-hidden="true">◷</i>{window.start}–{window.end}</span>)}</div>
+        <div className="chips">{planChips.map((chip) => <span key={chip.id}><i aria-hidden="true">◷</i>{chip.text}</span>)}</div>
         <button className="request-check" disabled={requesting} onClick={() => { void requestNow(); }}>
           {requesting ? t('requestingCheck') : hasActiveCheck ? t('requestCheckAgain') : t('requestCheckNow')}
         </button>

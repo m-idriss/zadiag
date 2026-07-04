@@ -103,3 +103,38 @@ test('evaluates active checks and dispatch keys independently per routine', () =
   }], now, plan.timeZone, false);
   assert.equal(retriedMedication.reason, 'already_dispatched');
 });
+
+test('dispatches grouped schedules on their own weekdays', () => {
+  const groupedPlan = {
+    ...plan,
+    checksPerDay: 2,
+    weekdays: [1, 2, 3, 4, 5, 6, 7],
+    windows: [
+      { id: 'weekday_morning', start: '07:30', end: '09:30' },
+      { id: 'weekend_late', start: '10:00', end: '12:00' },
+    ],
+    scheduleGroups: [
+      {
+        id: 'weekday',
+        weekdays: [1, 2, 3, 4, 5],
+        windows: [{ id: 'morning', start: '07:30', end: '09:30' }],
+      },
+      {
+        id: 'weekend',
+        weekdays: [6, 7],
+        windows: [{ id: 'late', start: '10:00', end: '12:00' }],
+      },
+    ],
+  };
+
+  const weekday = shouldAutoDispatchCheck(groupedPlan, [], new Date('2026-07-03T06:45:00.000Z'), 'Europe/Paris', false);
+  assert.equal(weekday.shouldDispatch, true);
+  assert.equal(weekday.windowId, 'weekday_morning');
+
+  const weekendMorning = shouldAutoDispatchCheck(groupedPlan, [], new Date('2026-07-04T06:45:00.000Z'), 'Europe/Paris', false);
+  assert.equal(weekendMorning.reason, 'outside_window');
+
+  const weekendLate = shouldAutoDispatchCheck(groupedPlan, [], new Date('2026-07-04T09:30:00.000Z'), 'Europe/Paris', false);
+  assert.equal(weekendLate.shouldDispatch, true);
+  assert.equal(weekendLate.windowId, 'weekend_late');
+});

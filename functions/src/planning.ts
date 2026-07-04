@@ -4,6 +4,12 @@ export interface MonitoringPlan {
   checksPerDay: number;
   weekdays: number[];
   windows: Array<{ id: string; start: string; end: string }>;
+  scheduleGroups?: Array<{
+    id: string;
+    label?: string;
+    weekdays: number[];
+    windows: Array<{ id: string; start: string; end: string }>;
+  }>;
   expiryMinutes: number;
   timeZone: string;
 }
@@ -22,11 +28,21 @@ const timeWindowSchema = z.object({
   message: 'Window end must be after its start.',
 });
 
+const weekdaySchema = z.array(z.number().int().min(1).max(7)).min(1).max(7)
+  .refine((days) => new Set(days).size === days.length, { message: 'Weekdays must be unique.' });
+
+const scheduleGroupSchema = z.object({
+  id: z.string().trim().min(1).max(40).regex(/^[a-z0-9_-]+$/i),
+  label: z.string().trim().min(1).max(60).optional(),
+  weekdays: weekdaySchema,
+  windows: z.array(timeWindowSchema).min(1).max(12),
+}).strict();
+
 export const monitoringPlanSchema = z.object({
   checksPerDay: z.number().int().min(1).max(12),
-  weekdays: z.array(z.number().int().min(1).max(7)).min(1).max(7)
-    .refine((days) => new Set(days).size === days.length, { message: 'Weekdays must be unique.' }),
+  weekdays: weekdaySchema,
   windows: z.array(timeWindowSchema).min(1).max(12),
+  scheduleGroups: z.array(scheduleGroupSchema).min(1).max(12).optional(),
   expiryMinutes: z.number().int().min(1).max(120),
   timeZone: z.string().min(1).max(100).refine((timeZone) => {
     try {
@@ -42,6 +58,9 @@ export const monitoringPlanSchema = z.object({
   }
   if (new Set(plan.windows.map((window) => window.id)).size !== plan.windows.length) {
     context.addIssue({ code: 'custom', path: ['windows'], message: 'Window IDs must be unique.' });
+  }
+  if (plan.scheduleGroups && new Set(plan.scheduleGroups.map((group) => group.id)).size !== plan.scheduleGroups.length) {
+    context.addIssue({ code: 'custom', path: ['scheduleGroups'], message: 'Schedule group IDs must be unique.' });
   }
 });
 
@@ -126,9 +145,32 @@ export const getWindowForMinutes = (plan: MonitoringPlan, minutes: number) => {
   return undefined;
 };
 
+export const getWindowsForWeekday = (plan: MonitoringPlan, weekday: number) => {
+  if (!plan.scheduleGroups?.length) return plan.weekdays.includes(weekday) ? plan.windows : [];
+  return plan.scheduleGroups
+    .filter((group) => group.weekdays.includes(weekday))
+    .flatMap((group) => group.windows.map((window) => ({
+      ...window,
+      id: `${group.id}_${window.id}`,
+    })));
+};
+
+export const getWindowForMinutesAndWeekday = (plan: MonitoringPlan, minutes: number, weekday: number) => {
+  for (const window of getWindowsForWeekday(plan, weekday)) {
+    const [startHour, startMinute] = window.start.split(':').map(Number);
+    const [endHour, endMinute] = window.end.split(':').map(Number);
+    const start = (startHour * 60) + startMinute;
+    const end = (endHour * 60) + endMinute;
+    if (minutes >= start && minutes < end) return window;
+  }
+  return undefined;
+};
+
 export const getWindowForDate = (plan: MonitoringPlan, date: Date, timeZone: string) => {
-  const minutes = getLocalTimeMinutes(date, timeZone);
-  return getWindowForMinutes(plan, minutes);
+  const parts = getLocalDateParts(date, timeZone);
+  return plan.scheduleGroups?.length
+    ? getWindowForMinutesAndWeekday(plan, (parts.hour * 60) + parts.minute, parts.weekday)
+    : getWindowForMinutes(plan, (parts.hour * 60) + parts.minute);
 };
 
 export const shouldAutoDispatchCheck = (
@@ -143,7 +185,8 @@ export const shouldAutoDispatchCheck = (
   }
 
   const localParts = getLocalDateParts(now, timeZone);
-  if (!plan.weekdays.includes(localParts.weekday)) {
+  const windowsForToday = getWindowsForWeekday(plan, localParts.weekday);
+  if (!windowsForToday.length) {
     return { shouldDispatch: false, reason: 'weekday_blocked' };
   }
 

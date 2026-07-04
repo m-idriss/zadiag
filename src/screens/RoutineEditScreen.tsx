@@ -1,15 +1,39 @@
 import { useState } from 'react';
-import { IonButton, IonIcon } from '@ionic/react';
-import { addCircleOutline, closeCircleOutline, timeOutline, calendarOutline, eyeOutline } from 'ionicons/icons';
-import type { MonitoringPlan, TimeWindow } from '../domain/models';
+import type { MonitoringPlan, ScheduleGroup } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
-import { nextWindowId, normalizeWeekdays, summarizeWeekdays, validateMonitoringPlanDraft } from '../domain/monitoringPlan';
+import {
+  flattenScheduleGroups,
+  groupsFromLegacyPlan,
+  maxChecksPerActiveDay,
+  nextScheduleGroupId,
+  nextWindowId,
+  normalizeWeekdays,
+  summarizeWeekdays,
+  validateScheduleGroupsDraft,
+} from '../domain/monitoringPlan';
 
-const WINDOW_COLORS: Record<string, string> = {
-  morning: '#F59E0B',
-  midday: '#3B82F6',
-  evening: '#8B5CF6',
-  night: '#1F2937',
+const dayOptions = [
+  { label: 'mondayShort', longLabel: 'monday', day: 1 },
+  { label: 'tuesdayShort', longLabel: 'tuesday', day: 2 },
+  { label: 'wednesdayShort', longLabel: 'wednesday', day: 3 },
+  { label: 'thursdayShort', longLabel: 'thursday', day: 4 },
+  { label: 'fridayShort', longLabel: 'friday', day: 5 },
+  { label: 'saturdayShort', longLabel: 'saturday', day: 6 },
+  { label: 'sundayShort', longLabel: 'sunday', day: 7 },
+] as const;
+
+const defaultGroupLabel = (index: number, group: ScheduleGroup, t: (key: MessageKey) => string) =>
+  group.label?.trim() || `${t('monitoringPeriod')} ${index + 1}`;
+
+const timeHours = Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, '0'));
+const timeMinutes = Array.from({ length: 12 }, (_, index) => String(index * 5).padStart(2, '0'));
+
+type TimePickerState = {
+  groupId: string;
+  windowId: string;
+  field: 'start' | 'end';
+  hour: string;
+  minute: string;
 };
 
 export function RoutineEditScreen({
@@ -27,45 +51,78 @@ export function RoutineEditScreen({
   t: (key: MessageKey) => string;
   busy: boolean;
 }) {
-  const [windows, setWindows] = useState<TimeWindow[]>(plan.windows);
-  const [weekdays, setWeekdays] = useState<number[]>(plan.weekdays);
+  const [groups, setGroups] = useState<ScheduleGroup[]>(groupsFromLegacyPlan(plan));
   const [error, setError] = useState<string>();
+  const [timePicker, setTimePicker] = useState<TimePickerState>();
+  const flattened = flattenScheduleGroups(groups);
+  const checksPerDay = maxChecksPerActiveDay(groups);
 
-  const handleWindowChange = (index: number, field: 'start' | 'end', value: string) => {
-    const newWindows = [...windows];
-    newWindows[index] = { ...newWindows[index], [field]: value };
-    setWindows(newWindows);
+  const updateGroup = (groupId: string, updater: (group: ScheduleGroup) => ScheduleGroup) => {
+    setGroups((current) => current.map((group) => group.id === groupId ? updater(group) : group));
   };
 
-  const addWindow = () => {
-    setWindows([...windows, { id: nextWindowId(windows), start: '09:00', end: '17:00' }]);
+  const addGroup = () => {
+    setGroups((current) => [...current, {
+      id: nextScheduleGroupId(current),
+      weekdays: [6, 7],
+      windows: [{ id: 'w1', start: '10:00', end: '12:00' }],
+    }]);
   };
 
-  const removeWindow = (index: number) => {
-    setWindows(windows.filter((_, i) => i !== index));
+  const removeGroup = (groupId: string) => {
+    setGroups((current) => current.length === 1 ? current : current.filter((group) => group.id !== groupId));
   };
 
-  const toggleWeekday = (day: number) => {
-    if (weekdays.includes(day)) {
-      setWeekdays(weekdays.filter((d) => d !== day));
-    } else {
-      setWeekdays(normalizeWeekdays([...weekdays, day]));
-    }
+  const addWindow = (groupId: string) => {
+    updateGroup(groupId, (group) => ({
+      ...group,
+      windows: [...group.windows, { id: nextWindowId(group.windows), start: '09:00', end: '17:00' }],
+    }));
   };
 
-  const dayOptions = [
-    { label: 'mondayShort', day: 1 },
-    { label: 'tuesdayShort', day: 2 },
-    { label: 'wednesdayShort', day: 3 },
-    { label: 'thursdayShort', day: 4 },
-    { label: 'fridayShort', day: 5 },
-    { label: 'saturdayShort', day: 6 },
-    { label: 'sundayShort', day: 7 },
-  ] as const;
+  const removeWindow = (groupId: string, windowId: string) => {
+    updateGroup(groupId, (group) => ({
+      ...group,
+      windows: group.windows.length === 1 ? group.windows : group.windows.filter((window) => window.id !== windowId),
+    }));
+  };
+
+  const updateWindow = (groupId: string, windowId: string, field: 'start' | 'end', value: string) => {
+    updateGroup(groupId, (group) => ({
+      ...group,
+      windows: group.windows.map((window) => window.id === windowId ? { ...window, [field]: value } : window),
+    }));
+  };
+
+  const openTimePicker = (groupId: string, windowId: string, field: 'start' | 'end', value: string) => {
+    const [hour = '09', minute = '00'] = value.split(':');
+    setTimePicker({
+      groupId,
+      windowId,
+      field,
+      hour: hour.padStart(2, '0'),
+      minute: minute.padStart(2, '0'),
+    });
+  };
+
+  const confirmTimePicker = () => {
+    if (!timePicker) return;
+    updateWindow(timePicker.groupId, timePicker.windowId, timePicker.field, `${timePicker.hour}:${timePicker.minute}`);
+    setTimePicker(undefined);
+  };
+
+  const toggleWeekday = (groupId: string, day: number) => {
+    updateGroup(groupId, (group) => ({
+      ...group,
+      weekdays: group.weekdays.includes(day)
+        ? group.weekdays.filter((currentDay) => currentDay !== day)
+        : normalizeWeekdays([...group.weekdays, day]),
+    }));
+  };
 
   const handleSave = async () => {
     setError(undefined);
-    const validationError = validateMonitoringPlanDraft(windows, weekdays);
+    const validationError = validateScheduleGroupsDraft(groups);
     if (validationError) {
       setError(t(validationError));
       return;
@@ -73,9 +130,13 @@ export function RoutineEditScreen({
     try {
       await onSave({
         ...plan,
-        checksPerDay: windows.length,
-        windows,
-        weekdays: normalizeWeekdays(weekdays),
+        checksPerDay,
+        weekdays: flattened.weekdays,
+        windows: flattened.windows,
+        scheduleGroups: groups.map((group) => ({
+          ...group,
+          weekdays: normalizeWeekdays(group.weekdays),
+        })),
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -84,141 +145,153 @@ export function RoutineEditScreen({
     }
   };
 
-  const startTime = windows.length > 0 ? windows[0].start : '-';
-  const endTime = windows.length > 0 ? windows[windows.length - 1].end : '-';
-  const activeDaysLabel = summarizeWeekdays(weekdays, t);
-
-  const colors = [WINDOW_COLORS.morning, WINDOW_COLORS.midday, WINDOW_COLORS.evening];
-
   return (
-    <div className="content-screen routine-edit-screen">
-      <header className="routine-edit-header">
-        <button type="button" className="back-btn" onClick={onCancel}>‹</button>
+    <div className="content-screen routine-edit-screen" data-routine-id={routineId}>
+      <header className="screen-header routine-edit-header">
+        <button type="button" className="edit-back-button" onClick={onCancel} aria-label={t('cancel')}>‹</button>
         <div>
+          <small>{t('monitoringPlan')}</small>
           <h1>{t('editMonitoringPlan')}</h1>
-          <p>{t('configureMonitoring')}</p>
         </div>
       </header>
 
-      <section className="routine-edit-card">
-        <div className="card-header-with-action">
-          <div className="card-header">
-            <span className="card-icon"><IonIcon icon={timeOutline} /></span>
-            <h2>{t('timeWindows')}</h2>
-          </div>
-          <button type="button" className="add-btn" onClick={addWindow}>
-            <IonIcon icon={addCircleOutline} /> {t('addWindow')}
-          </button>
+      <section className="card plan-card routine-edit-summary" aria-labelledby="plan-summary-title">
+        <div className="card-title">
+          <h2 id="plan-summary-title"><span aria-hidden="true">☷</span>{t('monitoringPlan')}</h2>
         </div>
-
-        <div className="windows-container">
-          {windows.map((window, index) => (
-            <div key={window.id} className="window-row">
-              <div className="window-bar" style={{ backgroundColor: colors[index % colors.length] }}></div>
-              <div className="window-inputs">
-                <div className="time-group">
-                  <label>{t('start')}</label>
-                  <input
-                    type="time"
-                    value={window.start}
-                    onChange={(e) => handleWindowChange(index, 'start', e.target.value)}
-                  />
-                </div>
-                <div className="time-group">
-                  <label>{t('end')}</label>
-                  <input
-                    type="time"
-                    value={window.end}
-                    onChange={(e) => handleWindowChange(index, 'end', e.target.value)}
-                  />
-                </div>
+        <p><b>{groups.length}</b> {groups.length > 1 ? t('monitoringPeriodsConfigured') : t('monitoringPeriodConfigured')} · <b>{plan.expiryMinutes}</b> {t('minutesRespond')}</p>
+        <div className="routine-edit-summary-groups">
+          {groups.map((group, index) => (
+            <article key={group.id}>
+              <div>
+                <strong>{defaultGroupLabel(index, group, t)}</strong>
+                <small>{summarizeWeekdays(group.weekdays, t)}</small>
               </div>
-              <button
-                type="button"
-                className="remove-btn"
-                onClick={() => removeWindow(index)}
-                aria-label={t('removeWindow')}
-              >
-                <IonIcon icon={closeCircleOutline} />
-              </button>
-            </div>
+              <div className="chips">
+                {group.windows.map((window) => <span key={window.id}><i aria-hidden="true">◷</i>{window.start}–{window.end}</span>)}
+              </div>
+            </article>
           ))}
         </div>
-
-        {windows.length > 0 && (
-          <div className="windows-info">
-            <span className="info-icon"><IonIcon icon={eyeOutline} /></span>
-            <div>
-              <strong>{windows.length} {t('windowsConfigured')}</strong>
-              <p>{t('youllBeReminded')} {windows.length} {t('remindersPerDay')}</p>
-            </div>
-          </div>
-        )}
       </section>
 
-      <section className="routine-edit-card">
-        <div className="card-header">
-          <span className="card-icon"><IonIcon icon={calendarOutline} /></span>
-          <h2>{t('activeDays')}</h2>
-        </div>
-        <p className="card-hint">{t('onWhichDays')}</p>
-
-        <div className="days-grid">
-          {dayOptions.map(({ label, day }) => (
-            <button
-              key={day}
-              type="button"
-              className={`day-btn ${weekdays.includes(day) ? 'active' : ''}`}
-              onClick={() => toggleWeekday(day)}
-            >
-              {t(label)}
-              {weekdays.includes(day) && <span className="check">✓</span>}
+      {groups.map((group, groupIndex) => (
+        <section className="card plan-editor-section schedule-group-card" key={group.id}>
+          <div className="card-title routine-edit-card-title">
+            <h2><span aria-hidden="true">◷</span>{defaultGroupLabel(groupIndex, group, t)}</h2>
+            <button type="button" className="schedule-group-remove" disabled={groups.length === 1} onClick={() => removeGroup(group.id)} aria-label={t('removeScheduleGroup')}>
+              <span aria-hidden="true">×</span>
             </button>
-          ))}
-        </div>
-      </section>
+          </div>
 
-      <section className="routine-edit-card">
-        <div className="card-header">
-          <span className="card-icon"><IonIcon icon={eyeOutline} /></span>
-          <h2>{t('summaryPreview')}</h2>
-        </div>
-        <p className="card-hint">{t('thisIsHowYourPlanLooks')}</p>
+          <div className="plan-days-grid schedule-group-days">
+            {dayOptions.map(({ label, longLabel, day }) => {
+              const active = group.weekdays.includes(day);
+              return (
+                <button
+                  type="button"
+                  className={active ? 'active' : ''}
+                  aria-pressed={active}
+                  aria-label={t(longLabel)}
+                  onClick={() => toggleWeekday(group.id, day)}
+                  key={day}
+                >
+                  <span>{t(label)}</span>
+                </button>
+              );
+            })}
+          </div>
 
-        <div className="summary-items">
-          <div className="summary-row">
-            <span className="summary-icon">🔔</span>
-            <div className="summary-text">
-              <span className="summary-label">{windows.length} {t('remindersPerDay')}</span>
-            </div>
+          <div className="schedule-group-heading">
+            <span>{t('timeWindows')}</span>
           </div>
-          <div className="summary-row">
-            <span className="summary-icon">🕐</span>
-            <div className="summary-text">
-              <span className="summary-label">{startTime} – {endTime}</span>
-              <span className="summary-detail">{t('monitoringPeriod')}</span>
-            </div>
+
+          <div className="plan-window-list">
+            {group.windows.map((window, windowIndex) => (
+              <article className="plan-window-card" key={window.id}>
+                <div className="plan-window-index">
+                  <span>{windowIndex + 1}</span>
+                </div>
+                <div className="plan-time-fields">
+                  <label>
+                    <span>{t('start')}</span>
+                    <button type="button" className="plan-time-button" onClick={() => openTimePicker(group.id, window.id, 'start', window.start)}>
+                      {window.start}
+                    </button>
+                  </label>
+                  <label>
+                    <span>{t('end')}</span>
+                    <button type="button" className="plan-time-button" onClick={() => openTimePicker(group.id, window.id, 'end', window.end)}>
+                      {window.end}
+                    </button>
+                  </label>
+                </div>
+                <button type="button" className="plan-remove-button" onClick={() => removeWindow(group.id, window.id)} aria-label={t('removeWindow')} disabled={group.windows.length === 1}>
+                  <span aria-hidden="true">×</span>
+                </button>
+              </article>
+            ))}
           </div>
-          <div className="summary-row">
-            <span className="summary-icon">📅</span>
-            <div className="summary-text">
-              <span className="summary-label">{activeDaysLabel}</span>
-              <span className="summary-detail">{t('activeDays')}</span>
-            </div>
-          </div>
-        </div>
-      </section>
+          <button type="button" className="plan-add-button schedule-add-window" onClick={() => addWindow(group.id)}>
+            <span className="schedule-add-symbol" aria-hidden="true">+</span>{t('addTimeSlot')}
+          </button>
+        </section>
+      ))}
+
+      <button type="button" className="plan-add-button schedule-add-group" onClick={addGroup}>
+        <span className="schedule-add-symbol" aria-hidden="true">+</span>{t('addScheduleGroup')}
+      </button>
 
       {error && <p className="form-error">{error}</p>}
 
       <div className="routine-edit-actions">
-        <IonButton expand="block" fill="outline" onClick={onCancel} disabled={busy}>
+        <button type="button" className="regenerate-code routine-edit-cancel" onClick={onCancel} disabled={busy}>
           {t('cancel')}
-        </IonButton>
-        <IonButton expand="block" onClick={handleSave} disabled={busy}>
+        </button>
+        <button type="button" className="request-check routine-edit-save" onClick={handleSave} disabled={busy}>
           {busy ? t('saving') : t('save')}
-        </IonButton>
+        </button>
       </div>
+
+      {timePicker ? (
+        <div className="time-picker-backdrop" role="presentation" onClick={() => setTimePicker(undefined)}>
+          <section className="time-picker-sheet" role="dialog" aria-modal="true" aria-label={t('chooseTime')} onClick={(event) => event.stopPropagation()}>
+            <div className="time-picker-header">
+              <div>
+                <small>{timePicker.field === 'start' ? t('start') : t('end')}</small>
+                <h2>{t('chooseTime')}</h2>
+              </div>
+              <strong>{timePicker.hour}:{timePicker.minute}</strong>
+            </div>
+            <div className="time-picker-columns">
+              <div>
+                <span>{t('hours')}</span>
+                <div className="time-picker-grid hours">
+                  {timeHours.map((hour) => (
+                    <button type="button" className={timePicker.hour === hour ? 'active' : ''} onClick={() => setTimePicker((current) => current ? { ...current, hour } : current)} key={hour}>
+                      {hour}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <span>{t('minutes')}</span>
+                <div className="time-picker-grid minutes">
+                  {timeMinutes.map((minute) => (
+                    <button type="button" className={timePicker.minute === minute ? 'active' : ''} onClick={() => setTimePicker((current) => current ? { ...current, minute } : current)} key={minute}>
+                      {minute}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="time-picker-actions">
+              <button type="button" className="regenerate-code" onClick={() => setTimePicker(undefined)}>{t('cancel')}</button>
+              <button type="button" className="request-check" onClick={confirmTimePicker}>{t('confirm')}</button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }

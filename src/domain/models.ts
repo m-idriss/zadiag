@@ -15,10 +15,18 @@ export interface TimeWindow {
   end: string;
 }
 
+export interface ScheduleGroup {
+  id: string;
+  label?: string;
+  weekdays: number[];
+  windows: TimeWindow[];
+}
+
 export interface MonitoringPlan {
   checksPerDay: number;
   weekdays: number[];
   windows: TimeWindow[];
+  scheduleGroups?: ScheduleGroup[];
   expiryMinutes: number;
   timeZone: string;
 }
@@ -114,6 +122,18 @@ export const defaultPlan: MonitoringPlan = {
     { id: 'morning', start: '07:30', end: '09:30' },
     { id: 'midday', start: '12:00', end: '14:00' },
     { id: 'evening', start: '17:00', end: '20:00' },
+  ],
+  scheduleGroups: [
+    {
+      id: 'everyday',
+      label: 'Every day',
+      weekdays: [1, 2, 3, 4, 5, 6, 7],
+      windows: [
+        { id: 'morning', start: '07:30', end: '09:30' },
+        { id: 'midday', start: '12:00', end: '14:00' },
+        { id: 'evening', start: '17:00', end: '20:00' },
+      ],
+    },
   ],
   expiryMinutes: 20,
   timeZone: 'Europe/Paris',
