@@ -173,7 +173,7 @@ const requestGeminiAnalysis = async (
       ],
       generationConfig: {
         temperature: 0,
-        maxOutputTokens: 2048,
+        maxOutputTokens: 256,
         responseMimeType: 'application/json',
       },
     }),

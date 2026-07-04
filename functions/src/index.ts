@@ -6,7 +6,7 @@ import { GoogleAuth } from 'google-auth-library';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, normalizeLinkCode } from './helpers.js';
-import { analyzeWithGemini, localizeAnalysisReason, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
+import { analyzeWithGemini, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
 import { getLocalDateKey, getWindowForDate, monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
 import { createDefaultRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, routineFromCatalog, type RoutineAssignmentDocument } from './routines.js';
 import { buildCheckNotificationPayload } from './notifications.js';
@@ -85,6 +85,13 @@ const createRecoveryRecord = (familyId: string, expiresAt: Date) => ({
 
 const ensureFamilyRoutineMigration = async (familyRef: FirebaseFirestore.DocumentReference) => {
   const assignmentRef = familyRef.collection('routineAssignments').doc(DEFAULT_ROUTINE_ID);
+  const [currentFamily, currentAssignment] = await Promise.all([
+    familyRef.get(),
+    assignmentRef.get(),
+  ]);
+  if (!currentFamily.exists) throw new HttpsError('not-found', 'The family could not be found.');
+  if (Number(currentFamily.data()?.routineMigrationVersion ?? 0) >= 1 && currentAssignment.exists) return currentAssignment;
+
   await db.runTransaction(async (transaction) => {
     const [family, assignment] = await Promise.all([
       transaction.get(familyRef),
@@ -93,8 +100,6 @@ const ensureFamilyRoutineMigration = async (familyRef: FirebaseFirestore.Documen
     if (!family.exists) throw new HttpsError('not-found', 'The family could not be found.');
     if (assignment.exists) return;
     const legacyPlan = monitoringPlanSchema.safeParse(family.data()?.plan);
-    const migrationVersion = Number(family.data()?.routineMigrationVersion ?? 0);
-    if (migrationVersion >= 1 && !legacyPlan.success) return;
     const assignedAt = String(family.data()?.createdAt ?? new Date().toISOString());
     transaction.create(assignmentRef, createDefaultRoutineAssignment(
       legacyPlan.success ? legacyPlan.data : defaultPlan,
@@ -213,6 +218,7 @@ export const createFamily = onCall({ region, cors, enforceAppCheck: true }, asyn
       routineMigrationVersion: 1,
       createdAt: now.toISOString(),
     });
+    transaction.create(familyRef.collection('routineAssignments').doc(DEFAULT_ROUTINE_ID), createDefaultRoutineAssignment(defaultPlan, now.toISOString()));
     transaction.create(userRef, {
       familyId: familyRef.id,
       role: 'parent',
@@ -518,15 +524,11 @@ export const requestCheckNow = onCall({
     .limit(10);
 
   const { check, resend } = await db.runTransaction(async (transaction): Promise<RequestCheckResult> => {
-    const [profile, family, assignment, pending] = await Promise.all([
-      transaction.get(userRef),
+    const [family, assignment, pending] = await Promise.all([
       transaction.get(familyRef),
       transaction.get(assignmentRef),
       transaction.get(pendingChecks),
     ]);
-    if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'parent') {
-      throw new HttpsError('permission-denied', 'Only the parent can request a check.');
-    }
     if (!family.exists || family.data()?.members?.[uid] !== 'parent') {
       throw new HttpsError('not-found', 'The family could not be found.');
     }
@@ -856,18 +858,6 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
       locale,
       routineAnalysis,
     });
-    if (result.reason && result.reason !== 'analysis_unavailable' && locale === 'fr') {
-      const reasonRaw = result.reason;
-      result = {
-        ...result,
-        reasonRaw,
-        reason: await localizeAnalysisReason(reasonRaw, {
-          model: geminiModel,
-          getAccessToken: () => geminiAuth.getAccessToken(),
-          locale,
-        }),
-      };
-    }
   } catch (error) {
     console.error('AI analysis failed, returning fallback result', error);
   }
