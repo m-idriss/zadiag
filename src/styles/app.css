@@ -498,13 +498,19 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
   justify-self: end;
   border: 0;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--routine-accent, var(--teal)) 10%, white);
+  background: color-mix(in srgb, var(--routine-accent, var(--teal)) 11%, white);
   color: var(--routine-accent, var(--teal));
 }
 .routine-schedule-toggle .app-icon { font-size: 19px; transition: transform .2s cubic-bezier(.22,1,.36,1); }
 .routine-schedule-toggle .app-icon.expanded { transform: rotate(180deg); }
 .routine-schedule-chips { margin-top: -2px; }
+.routine-schedule-chips span {
+  background: color-mix(in srgb, var(--routine-accent, var(--teal)) 8%, white);
+  color: var(--navy);
+}
+.routine-schedule-chips span i { color: var(--routine-accent, var(--teal)); }
 .routine-list-request { margin-top: 0; }
+.routine-plan-list-card .routine-list-request { background: var(--routine-accent, var(--teal)); }
 .routine-card-next { display: flex; align-items: flex-end; justify-content: space-between; padding-top: 2px; }
 .routine-card-next small { color: var(--muted); font-size: 10px; }
 .routine-card-next p { margin: 2px 0 0; color: var(--navy); font-size: 12px; font-weight: 800; }
@@ -563,7 +569,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .routine-plan-card > p { margin: 0; font-size: 16px; }
 .routine-plan-card .request-check { margin-top: 4px; }
 .routine-plan-stats { display: grid; gap: 9px; }
-.routine-plan-stats > div { display: grid; gap: 4px; padding: 11px 12px; border-radius: 16px; background: #f5faf8; border: 1px solid rgba(16,42,67,.04); }
+.routine-plan-stats > div { display: grid; gap: 4px; padding: 11px 12px; border-radius: 16px; background: color-mix(in srgb, var(--routine-accent, var(--teal)) 5%, white); border: 1px solid color-mix(in srgb, var(--routine-accent, var(--teal)) 9%, white); }
 .routine-plan-stats small { color: var(--muted); font-size: 10px; font-weight: 900; letter-spacing: .05em; text-transform: uppercase; }
 .routine-plan-stats strong { overflow: hidden; color: var(--navy); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
 .routine-meta-card { display: grid; }
