@@ -3,6 +3,7 @@ import type { AppState, RoutineAssignment, VerificationEvent } from '../domain/m
 import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
 import { presentRoutine } from '../domain/routinePresentation';
+import { dayPeriodLabelKey } from '../domain/taskTimeLabel';
 
 const RoutineDetailScreen = lazy(() => import('./RoutineDetailScreen').then((module) => ({ default: module.RoutineDetailScreen })));
 
@@ -39,7 +40,7 @@ export function RoutinesScreen({ state, start, t }: { state: AppState; start?: (
                   <b className="routine-rate">{Math.round(rate * 100)}%</b>
                 </div>
                 <div className="routine-progress-track"><span style={{ width: `${Math.round(rate * 100)}%` }} /></div>
-                <div className="routine-card-next"><div><small>{t('nextCheck')}</small><p>{next ? `${t('thisEvening')} · ${t('before')} ${new Intl.DateTimeFormat(state.locale === 'fr' ? 'fr-FR' : 'en-US', { timeStyle: 'short' }).format(new Date(next.expiresAt))}` : t('noPendingTask')}</p></div><span aria-hidden="true">›</span></div>
+                <div className="routine-card-next"><div><small>{t('nextCheck')}</small><p>{next ? `${t(dayPeriodLabelKey(next.expiresAt))} · ${t('before')} ${new Intl.DateTimeFormat(state.locale === 'fr' ? 'fr-FR' : 'en-US', { timeStyle: 'short' }).format(new Date(next.expiresAt))}` : t('noPendingTask')}</p></div><span aria-hidden="true">›</span></div>
               </button>
             </section>
           );

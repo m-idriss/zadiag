@@ -4,6 +4,7 @@ import { Disclaimer } from '../components/Disclaimer';
 import { StatusPill } from '../components/StatusPill';
 import { AppIcon, routineIconName } from '../components/Icon';
 import { presentRoutine } from '../domain/routinePresentation';
+import { dayPeriodLabelKey } from '../domain/taskTimeLabel';
 
 const isToday = (value: string, now = new Date()) => {
   const date = new Date(value);
@@ -44,7 +45,7 @@ export function ChildDashboard({
             <article className={`today-task ${active?.id === event.id ? 'actionable' : ''}`} style={presentationFor(event).style} key={event.id}>
               <div className="today-task-copy">
                 <span className="today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(presentationFor(event).icon)} /></span>
-                <div><h3>{presentationFor(event).name}</h3><small>{t('thisEvening')}</small><p>{t('before')} {formatTime(event.expiresAt)}</p></div>
+                <div><h3>{presentationFor(event).name}</h3><small>{t(dayPeriodLabelKey(event.expiresAt))}</small><p>{t('before')} {formatTime(event.expiresAt)}</p></div>
               </div>
               {active?.id === event.id
                 ? <button type="button" className="primary-action-button" onClick={start}><AppIcon name="camera" />{t('sendProof')}</button>

@@ -11,12 +11,12 @@ const atToday = (hours: number) => {
   return date.toISOString();
 };
 
-const event = (id: string, status: VerificationEvent['status'], requestedAt: string): VerificationEvent => ({
+const event = (id: string, status: VerificationEvent['status'], requestedAt: string, expiresAt = atToday(20)): VerificationEvent => ({
   id,
   routineId: 'orthodontic-elastics',
   sessionId: `session-${id}`,
   requestedAt,
-  expiresAt: atToday(20),
+  expiresAt,
   capturedAt: status === 'detected' ? atToday(8) : undefined,
   status,
 });
@@ -91,5 +91,22 @@ describe('participant Today screen', () => {
     expect(container.textContent).toContain('Completed today3');
     expect(container.textContent).toContain('Missed');
     expect(container.textContent).toContain('Expired');
+  });
+
+  it('labels morning checks without calling them evening', () => {
+    const pending = event('pending', 'pending', atToday(4), atToday(5));
+    const state: AppState = {
+      role: 'child',
+      locale: 'en',
+      notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: false },
+      routineAssignments: [createDefaultRoutineAssignment()],
+      events: [pending],
+    };
+
+    act(() => root.render(<ChildDashboard state={state} active={pending} start={() => undefined} t={(key) => translate('en', key)} />));
+
+    expect(container.textContent).toContain('This morning');
+    expect(container.textContent).not.toContain('This evening');
   });
 });

@@ -7,6 +7,7 @@ import type { AppState, RoutineAssignment, VerificationEvent } from '../domain/m
 import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
 import { StatusPill } from '../components/StatusPill';
+import { dayPeriodLabelKey } from '../domain/taskTimeLabel';
 
 type DetailTab = 'overview' | 'instructions' | 'history' | 'progress';
 
@@ -93,7 +94,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, t, edit, o
       </nav>
 
       {tab === 'overview' && <div className="routine-tab-panel">
-        <section className="next-check-card"><div><small>{t('nextCheck')}</small><h2>{next ? t('thisEvening') : t('noPendingTask')}</h2>{next && <p>{t('before')} {formatTime(next.expiresAt)}</p>}</div><span aria-hidden="true"><IonIcon icon={timeOutline} /></span></section>
+        <section className="next-check-card"><div><small>{t('nextCheck')}</small><h2>{next ? t(dayPeriodLabelKey(next.expiresAt)) : t('noPendingTask')}</h2>{next && <p>{t('before')} {formatTime(next.expiresAt)}</p>}</div><span aria-hidden="true"><IonIcon icon={timeOutline} /></span></section>
         <section className="routine-copy"><h2>{t('overviewTab')}</h2><p>{visual.description}</p></section>
         <section className="routine-meta-card">
           <div><span aria-hidden="true"><IonIcon icon={timeOutline} /></span><b>{t('monitoringPlan')}</b><p>{assignment.plan.checksPerDay} {t('timesPerDay')}</p>{edit && <button type="button" onClick={onEditMonitoringPlan} className="edit-button">{t('edit')}</button>}</div>
