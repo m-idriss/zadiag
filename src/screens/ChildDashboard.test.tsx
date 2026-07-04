@@ -32,6 +32,7 @@ describe('participant Today screen', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     act(() => root.unmount());
     container.remove();
   });
@@ -94,6 +95,10 @@ describe('participant Today screen', () => {
   });
 
   it('labels morning checks without calling them evening', () => {
+    vi.useFakeTimers();
+    const now = new Date();
+    now.setHours(4, 30, 0, 0);
+    vi.setSystemTime(now);
     const pending = event('pending', 'pending', atToday(4), atToday(5));
     const state: AppState = {
       role: 'child',
@@ -108,5 +113,25 @@ describe('participant Today screen', () => {
 
     expect(container.textContent).toContain('This morning');
     expect(container.textContent).not.toContain('This evening');
+    vi.useRealTimers();
+  });
+
+  it('shows completed checks before expired pending checks when no action is available', () => {
+    const expiredPending = event('expired-pending', 'pending', atToday(8), atToday(9));
+    const state: AppState = {
+      role: 'child',
+      locale: 'en',
+      notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: false },
+      routineAssignments: [createDefaultRoutineAssignment()],
+      events: [expiredPending, event('completed', 'detected', atToday(10))],
+    };
+
+    act(() => root.render(<ChildDashboard state={state} start={() => undefined} t={(key) => translate('en', key)} />));
+
+    const content = container.textContent ?? '';
+    expect(content).toContain('0 checks to complete');
+    expect(content.indexOf('Completed today1')).toBeLessThan(content.indexOf('Recent history'));
+    expect(content.indexOf('Validated')).toBeLessThan(content.indexOf('Expired'));
   });
 });
