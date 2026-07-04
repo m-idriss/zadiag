@@ -282,7 +282,7 @@ export function SettingsScreen({
         <h2>{t('privacyDefaults')}</h2>
         <ul><li>{t('noFaceRecognition')}</li><li>{t('noModelTraining')}</li><li>{t('noPhotoUpload')}</li><li>{t('immediateDeletion')}</li></ul>
       </section>
-      {(role === 'parent' ? childLinkingCode : parentRecoveryCode) ? (
+      {(role === 'parent' ? (!childInstalled && childLinkingCode) : parentRecoveryCode) ? (
         <CodeBox
           label={t(role === 'parent' ? 'childLinkCode' : 'parentRecoveryCode')}
           hint={t(role === 'parent' ? 'childLinkCodeHint' : 'childRecoveryHelp')}

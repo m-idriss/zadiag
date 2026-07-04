@@ -63,4 +63,20 @@ describe('ParentDashboard', () => {
     act(() => Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Choose a routine')?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(openRoutines).toHaveBeenCalled();
   });
+
+  it('hides the participant linking code once the participant is linked', () => {
+    const state: AppState = {
+      role: 'parent',
+      locale: 'en',
+      notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: 'ZD-123456', parentRecoveryCode: '', consented: true },
+      routineAssignments: [createDefaultRoutineAssignment()],
+      events: [],
+    };
+
+    act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
+
+    expect(container.textContent).not.toContain('Participant linking code');
+    expect(container.textContent).not.toContain('ZD-123456');
+  });
 });

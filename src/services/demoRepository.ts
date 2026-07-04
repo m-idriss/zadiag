@@ -182,6 +182,7 @@ export class DemoRepository implements AppRepository {
     }
     this.state.role = 'parent';
     this.state.family.linked = true;
+    this.state.family.childLinked = true;
     this.state.family.consented = true;
     this.state.family.parentRecoveryCode = 'PR-EFGH-JKLM-NPQR';
     this.persist();

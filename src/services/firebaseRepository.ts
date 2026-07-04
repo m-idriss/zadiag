@@ -144,6 +144,9 @@ export class FirebaseRepository implements AppRepository {
     const result = await recoverParent({ code: code.trim().toUpperCase() });
     this.state.family.parentRecoveryCode = result.data.recoveryCode;
     await this.attachFamily(result.data.familyId, 'parent');
+    this.state.family.childLinked = true;
+    this.state.family.childName = result.data.childName;
+    this.emit();
   }
 
   async linkChild(code: string) {
@@ -296,7 +299,7 @@ export class FirebaseRepository implements AppRepository {
       const family = snapshot.data() as FamilyDocument;
       const childLinked = Object.values(family.members ?? {}).some((memberRole) => memberRole === 'child');
       this.state.family.childName = family.childName;
-      this.state.family.childLinked = childLinked;
+      this.state.family.childLinked = childLinked || this.state.family.childLinked;
       this.state.family.linkingCode = family.linkingCode ?? this.state.family.linkingCode;
       this.state.family.parentRecoveryCode = family.parentRecoveryCode ?? this.state.family.parentRecoveryCode;
       

@@ -50,6 +50,14 @@ describe('DemoRepository compatibility', () => {
     expect(new DemoRepository().snapshot().notificationsEnabled).toBe(true);
   });
 
+  test('marks the participant as already linked after parent recovery', async () => {
+    const repository = new DemoRepository();
+
+    await repository.recoverParent(repository.snapshot().family.parentRecoveryCode);
+
+    expect(repository.snapshot().family.childLinked).toBe(true);
+  });
+
   test('migrates legacy local state to the default routine idempotently', () => {
     localStorage.setItem('zadiag.demo.v1', JSON.stringify({
       locale: 'en',
