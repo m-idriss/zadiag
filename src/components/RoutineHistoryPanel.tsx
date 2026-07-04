@@ -4,6 +4,7 @@ import type { MessageKey } from '../services/i18n';
 import { presentRoutine } from '../domain/routinePresentation';
 import { AppIcon, routineIconName } from './Icon';
 import { StatusPill } from './StatusPill';
+import { canRetakeCapture } from '../domain/adherence';
 
 type StatusFilter = VerificationStatus | 'all';
 type RoutineFilter = string | 'all';
@@ -26,12 +27,16 @@ export function RoutineHistoryPanel({
   events,
   locale,
   titleId = 'routine-history-panel-title',
+  retryEvents,
+  onRetake,
   t,
 }: {
   assignments: RoutineAssignment[];
   events: VerificationEvent[];
   locale: Locale;
   titleId?: string;
+  retryEvents?: VerificationEvent[];
+  onRetake?: (event: VerificationEvent) => void;
   t: (key: MessageKey) => string;
 }) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -87,6 +92,7 @@ export function RoutineHistoryPanel({
           <div className="history-list parent-history-list">
             {filtered.map((event) => {
               const visual = presentationFor(event);
+              const canRetake = Boolean(onRetake) && canRetakeCapture(event, retryEvents ?? events, new Date());
               return (
                 <section className="card history-row parent-history-row" style={visual?.style} key={event.id}>
                   <div className="history-icon routine-history-icon"><AppIcon name={routineIconName(visual?.icon)} /></div>
@@ -94,7 +100,10 @@ export function RoutineHistoryPanel({
                     <strong>{visual?.name ?? t('routine')}</strong>
                     <small>{formatDateTime(event.requestedAt)}{event.reason ? ` · ${event.reason}` : ''}</small>
                   </div>
-                  <StatusPill status={event.status} t={t} />
+                  <div className="history-row-actions">
+                    <StatusPill status={event.status} t={t} />
+                    {canRetake ? <button type="button" className="history-retake-button" onClick={() => onRetake?.(event)}>{t('retakeShort')}</button> : null}
+                  </div>
                 </section>
               );
             })}

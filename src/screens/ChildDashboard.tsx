@@ -23,11 +23,13 @@ export function ChildDashboard({
   state,
   active,
   start,
+  retake,
   t,
 }: {
   state: AppState;
   active?: VerificationEvent;
   start: (event: VerificationEvent) => void;
+  retake?: (event: VerificationEvent) => void;
   t: (key: MessageKey) => string;
 }) {
   const [summaryRange, setSummaryRange] = useState<SummaryRange>('week');
@@ -138,7 +140,7 @@ export function ChildDashboard({
   const historySection = (
     <section className="today-section participant-history-section" aria-labelledby="participant-history-title">
       <AdherenceSummaryCard events={historyEvents} range={summaryRange} onRangeChange={setSummaryRange} t={t} />
-      <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedHistoryEvents} locale={state.locale} titleId="participant-history-title" t={t} />
+      <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedHistoryEvents} retryEvents={state.events} locale={state.locale} titleId="participant-history-title" onRetake={retake} t={t} />
     </section>
   );
   return (

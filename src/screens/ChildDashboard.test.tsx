@@ -38,6 +38,8 @@ describe('participant Today screen', () => {
   let root: Root;
 
   beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-04T12:00:00.000Z'));
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
@@ -97,6 +99,31 @@ describe('participant Today screen', () => {
     expect(actions).toHaveLength(2);
     act(() => actions[1]?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(start).toHaveBeenCalledWith(hydrationPending);
+  });
+
+  it('lets the participant retake a recent non-validated result from history', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-30T12:08:00.000Z'));
+    const failed = {
+      ...event('retryable', 'not_detected', '2026-06-30T12:00:00.000Z', '2026-06-30T12:20:00.000Z'),
+      capturedAt: '2026-06-30T12:04:00.000Z',
+    };
+    const state: AppState = {
+      role: 'child',
+      locale: 'en',
+      notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: false },
+      routineAssignments: [createDefaultRoutineAssignment()],
+      events: [failed],
+    };
+    const retake = vi.fn();
+
+    act(() => root.render(<ChildDashboard state={state} start={() => undefined} retake={retake} t={(key) => translate('en', key)} />));
+
+    const button = Array.from(container.querySelectorAll('button')).find((item) => item.textContent?.includes('Retake'));
+    expect(button).toBeTruthy();
+    act(() => button?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(retake).toHaveBeenCalledWith(failed);
   });
 
   it('keeps task state correct after synchronization and reload reconstruction', () => {

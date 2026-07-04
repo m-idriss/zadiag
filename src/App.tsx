@@ -11,6 +11,7 @@ import { firebaseEnabled } from './services/firebaseConfig';
 import { InstallScreen } from './screens/InstallScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
 import { ChildDashboard } from './screens/ChildDashboard';
+import { canRetakeCapture } from './domain/adherence';
 
 const lazyScreen = <TProps extends object>(
   load: () => Promise<Record<string, ComponentType<TProps>>>,
@@ -270,7 +271,7 @@ export function App() {
   } else if (route === 'camera') {
     content = <CameraScreen busy={busy} submitError={submitError} back={() => { setSelectedSessionId(undefined); setRoute('app'); }} submit={submit} t={t} />;
   } else if (route === 'result' && result) {
-    const canRetake = ['not_detected', 'uncertain'].includes(result.status) && Date.parse(result.expiresAt) > Date.now();
+    const canRetake = canRetakeCapture(result, state.events);
     content = <ResultScreen event={result} retake={canRetake ? () => retryCapture(result) : undefined} done={() => { setResult(undefined); setRoute('app'); }} t={t} />;
   } else {
     const role = state.role ?? 'child';
@@ -326,7 +327,7 @@ export function App() {
               onCreateRoutine={() => setTab('routines')}
               t={t}
             />
-          : <ChildDashboard state={state} active={repository.activeSession()} start={startCapture} t={t} />;
+          : <ChildDashboard state={state} active={repository.activeSession()} start={startCapture} retake={retryCapture} t={t} />;
     content = <div className="app-shell">{screen}<BottomNav tab={tab} role={role} routineCentricEnabled={routineCentricUiEnabled} onChange={setTab} t={t} /></div>;
   }
 

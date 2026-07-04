@@ -41,3 +41,21 @@ export function isFreshCapture(
     (isNewSubmission || isRetake)
   );
 }
+
+export function canRetakeCapture(
+  event: VerificationEvent,
+  events: VerificationEvent[] = [],
+  now = new Date(),
+) {
+  if (!['not_detected', 'uncertain'].includes(event.status) || !event.capturedAt) return false;
+  const requestedAt = Date.parse(event.requestedAt);
+  const expiresAt = Date.parse(event.expiresAt);
+  const nowTime = now.getTime();
+  const nextRoutineCheck = events
+    .filter((candidate) => candidate.routineId === event.routineId && Date.parse(candidate.requestedAt) > requestedAt)
+    .sort((a, b) => Date.parse(a.requestedAt) - Date.parse(b.requestedAt))[0];
+  const nextCheckAt = nextRoutineCheck ? Date.parse(nextRoutineCheck.requestedAt) : undefined;
+  const retryUntil = nextCheckAt ? Math.min(expiresAt, nextCheckAt) : expiresAt;
+  if (!Number.isFinite(retryUntil)) return false;
+  return nextCheckAt && nextCheckAt <= expiresAt ? nowTime < retryUntil : nowTime <= retryUntil;
+}
