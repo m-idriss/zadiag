@@ -242,7 +242,7 @@ export function App() {
         code={state.family.linkingCode}
         childName={state.family.childName}
         back={() => setRoute('welcome')}
-        onParentLink={async (name) => { await repository.linkParent(name); sync(); setRoute('app'); }}
+        onParentLink={async (name) => { await repository.linkParent(name); sync(); setTab('home'); setRoute('app'); }}
         onParentRecover={async (code) => { await repository.recoverParent(code); sync(); setRoute('app'); }}
         onChildLink={async (code) => { await repository.linkChild(code); sync(); setRoute(useLocalDemo ? 'app' : 'notifications'); }}
         t={t}
@@ -333,6 +333,7 @@ export function App() {
           ? <ParentDashboard
               state={state}
               regenerateCode={async () => { await repository.regenerateLinkCode(); sync(); }}
+              onCreateRoutine={() => setTab('routines')}
               t={t}
             />
           : <ChildDashboard state={state} active={repository.activeSession()} start={() => setRoute('camera')} t={t} />;

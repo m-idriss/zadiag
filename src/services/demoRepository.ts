@@ -126,6 +126,8 @@ export class DemoRepository implements AppRepository {
       parentRecoveryCode: 'PR-2345-6789-ABCD',
       consented: true,
     };
+    this.state.routineAssignments = [];
+    this.state.events = [];
     this.persist();
   }
 
@@ -258,11 +260,13 @@ export class DemoRepository implements AppRepository {
   }
 
   private ensureActiveSession() {
+    const assignment = primaryRoutineAssignment(this.state);
+    if (!assignment) return;
     if (this.activeSession()) return;
     const now = new Date();
     this.state.events.unshift({
       id: crypto.randomUUID(),
-      routineId: primaryRoutineAssignment(this.state)?.routineId ?? DEFAULT_ROUTINE_ID,
+      routineId: assignment.routineId,
       sessionId: crypto.randomUUID(),
       requestedAt: new Date(now.getTime() - 60_000).toISOString(),
       expiresAt: new Date(now.getTime() + 19 * 60_000).toISOString(),

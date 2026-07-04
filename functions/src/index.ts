@@ -71,6 +71,8 @@ const ensureFamilyRoutineMigration = async (familyRef: FirebaseFirestore.Documen
     if (!family.exists) throw new HttpsError('not-found', 'The family could not be found.');
     if (assignment.exists) return;
     const legacyPlan = monitoringPlanSchema.safeParse(family.data()?.plan);
+    const migrationVersion = Number(family.data()?.routineMigrationVersion ?? 0);
+    if (migrationVersion >= 1 && !legacyPlan.success) return;
     const assignedAt = String(family.data()?.createdAt ?? new Date().toISOString());
     transaction.create(assignmentRef, createDefaultRoutineAssignment(
       legacyPlan.success ? legacyPlan.data : defaultPlan,
@@ -172,8 +174,6 @@ export const createFamily = onCall({ region, cors, enforceAppCheck: true }, asyn
 
   const familyRef = db.collection('families').doc();
   const userRef = db.collection('users').doc(uid);
-  const checkRef = familyRef.collection('checks').doc();
-  const assignmentRef = familyRef.collection('routineAssignments').doc(DEFAULT_ROUTINE_ID);
   const code = createLinkCode();
   const linkRef = db.collection('linkCodes').doc(hashLinkCode(code));
   const recoveryCode = createRecoveryCode();
@@ -181,7 +181,6 @@ export const createFamily = onCall({ region, cors, enforceAppCheck: true }, asyn
   const recoveryExpiresAt = new Date(now.getTime() + recoveryLifetimeMs);
   const recoveryRef = db.collection('parentRecoveryCodes').doc(hashLinkCode(recoveryCode));
   const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-  const checkExpiresAt = new Date(now.getTime() + defaultPlan.expiryMinutes * 60 * 1000);
 
   await db.runTransaction(async (transaction) => {
     const existing = await transaction.get(userRef);
@@ -208,14 +207,6 @@ export const createFamily = onCall({ region, cors, enforceAppCheck: true }, asyn
       consumedAt: null,
     });
     transaction.create(recoveryRef, createRecoveryRecord(familyRef.id, recoveryExpiresAt));
-    transaction.create(assignmentRef, createDefaultRoutineAssignment(defaultPlan, now.toISOString()));
-    transaction.create(checkRef, {
-      routineId: DEFAULT_ROUTINE_ID,
-      sessionId: crypto.randomUUID(),
-      requestedAt: now.toISOString(),
-      expiresAt: checkExpiresAt.toISOString(),
-      status: 'pending',
-    });
   });
   return { familyId: familyRef.id, code, recoveryCode, expiresAt: expiresAt.toISOString() };
 });

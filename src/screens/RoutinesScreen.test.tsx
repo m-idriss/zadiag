@@ -59,6 +59,19 @@ describe('participant routines navigation', () => {
     expect(container.querySelector('[role="alert"]')?.textContent).toContain('could not be loaded');
   });
 
+  it('opens the routine catalog when the responsible view is empty', () => {
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true,
+      family: { linked: true, childLinked: false, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      routineAssignments: [], events: [], routinesLoaded: true, routinesError: false,
+    };
+    act(() => root.render(<RoutinesScreen state={state} onAssignRoutine={async () => undefined} t={(key) => translate('en', key)} />));
+
+    expect(container.textContent).toContain('Choose a routine');
+    expect(container.textContent).toContain('Hydration');
+    expect(container.querySelector('.add-routine-button')).not.toBeNull();
+  });
+
   it('shows the assigned routine frequency, completion and next task', async () => {
     await import('./RoutineDetailScreen');
     const assignment = createDefaultRoutineAssignment('2026-07-02T08:00:00.000Z');

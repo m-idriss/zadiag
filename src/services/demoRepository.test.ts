@@ -14,6 +14,8 @@ describe('DemoRepository compatibility', () => {
     await repository.linkParent('Maya');
 
     expect(repository.snapshot().family).toMatchObject({ linked: true, childName: 'Maya', consented: true });
+    expect(repository.snapshot().routineAssignments).toHaveLength(0);
+    expect(repository.snapshot().events).toHaveLength(0);
     expect(listener).toHaveBeenCalled();
   });
 

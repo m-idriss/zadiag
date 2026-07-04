@@ -39,7 +39,7 @@ export function RoutinesScreen({
   const [selectedId, setSelectedId] = useState<string>();
   const [requestingRoutineId, setRequestingRoutineId] = useState<string>();
   const [requestStatuses, setRequestStatuses] = useState<Record<string, RequestStatus>>({});
-  const [catalogOpen, setCatalogOpen] = useState(false);
+  const [catalogOpen, setCatalogOpen] = useState(() => Boolean(onAssignRoutine && !state.routineAssignments.length));
   const [assigningRoutineId, setAssigningRoutineId] = useState<string>();
   const [assignError, setAssignError] = useState(false);
   const [deletingRoutineId, setDeletingRoutineId] = useState<string>();
@@ -200,7 +200,12 @@ export function RoutinesScreen({
             </section>
           );
         })}
-        {!state.routineAssignments.length && <p className="empty-state">{t('noRoutines')}</p>}
+        {!state.routineAssignments.length && !catalogOpen && (
+          <section className="card routines-empty-card">
+            <h2>{t('noRoutines')}</h2>
+            <p>{onAssignRoutine ? t('noRoutinesAddHint') : t('noRoutinesWaitHint')}</p>
+          </section>
+        )}
       </div>
     </div>
   );

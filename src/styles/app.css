@@ -300,6 +300,11 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .filter-chips .filter-status-pending.active,
 .filter-chips .filter-status-analyzing.active { background: #697983; color: white; }
 .filter-chips .filter-status-not_detected.active { background: var(--coral); color: white; }
+.parent-create-routine-card { display: grid; gap: 14px; margin-top: 14px; padding: 18px; }
+.parent-create-routine-card small { color: var(--muted); font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.parent-create-routine-card h2 { margin-top: 4px; font-size: 18px; }
+.parent-create-routine-card p { margin: 5px 0 0; font-size: 13px; }
+.parent-create-routine-card .request-check { margin-top: 0; }
 .parent-history-heading { margin-bottom: 10px; }
 .history-results-heading { margin-top: 14px; margin-bottom: 16px; }
 .parent-history-list { display: grid; gap: 18px; }
@@ -386,6 +391,9 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .routine-catalog-item p { display: -webkit-box; margin: 2px 0 0; overflow: hidden; color: var(--muted); font-size: 11px; line-height: 1.35; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .routine-catalog-add { min-height: 34px; padding: 7px 11px; border: 0; border-radius: 999px; background: var(--routine-accent, var(--teal)); color: white; font-size: 12px; font-weight: 900; white-space: nowrap; }
 .routine-catalog-add:disabled { background: #e8eeee; color: #7d8a92; }
+.routines-empty-card { display: grid; gap: 6px; padding: 18px; text-align: center; }
+.routines-empty-card h2 { font-size: 18px; }
+.routines-empty-card p { max-width: 28ch; margin: 0 auto; font-size: 13px; }
 .routine-card { padding: 0; overflow: hidden; border-radius: 18px; }
 .routine-plan-list-card { display: grid; gap: 13px; padding: 16px; }
 .routine-card-link { width: 100%; display: grid; gap: 12px; padding: 16px; border: 0; background: white; color: inherit; text-align: left; }

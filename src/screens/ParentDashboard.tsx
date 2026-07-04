@@ -29,10 +29,12 @@ const routineForEvent = (event: VerificationEvent, assignments: RoutineAssignmen
 export function ParentDashboard({
   state,
   regenerateCode,
+  onCreateRoutine,
   t,
 }: {
   state: AppState;
   regenerateCode: () => Promise<void>;
+  onCreateRoutine?: () => void;
   t: (key: MessageKey) => string;
 }) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -100,6 +102,17 @@ export function ParentDashboard({
             </>
           )}
         />
+      ) : null}
+
+      {!state.routineAssignments.length && onCreateRoutine ? (
+        <section className="card parent-create-routine-card">
+          <div>
+            <small>{t('routineSetupEyebrow')}</small>
+            <h2>{t('createFirstRoutine')}</h2>
+            <p>{t('createFirstRoutineHint')}</p>
+          </div>
+          <button type="button" className="request-check" onClick={onCreateRoutine}>{t('chooseRoutine')}</button>
+        </section>
       ) : null}
 
       <div className="section-heading parent-history-heading"><h2>{t('recentHistory')}</h2></div>
