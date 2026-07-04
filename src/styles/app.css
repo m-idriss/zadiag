@@ -370,44 +370,58 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .add-routine-button { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: var(--mint); color: var(--teal); font-size: 25px; }
 
 .today-section { margin-top: 16px; }
-.today-pending-panel { padding: 17px 12px 12px; border-radius: 25px; background: linear-gradient(145deg, #0b8f7a, #13aa8e); box-shadow: 0 16px 34px rgba(13, 146, 125, .2); }
-.today-panel-heading { display: flex; align-items: center; justify-content: space-between; padding: 0 4px 13px; color: white; }
+.today-pending-panel { padding: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.today-panel-heading { display: flex; align-items: center; justify-content: space-between; padding: 0 4px 13px; color: var(--navy); }
 .today-panel-heading small, .completed-panel-heading small { font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
-.today-panel-heading h2 { margin-top: 5px; color: white; font-size: 18px; }
-.today-panel-heading > span { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 14px; background: rgba(255,255,255,.92); color: var(--teal); font-size: 20px; }
-.today-panel-heading > span .app-icon { font-size: 24px; }
-.today-pending-panel .today-task { display: grid; gap: 13px; padding: 15px; border: 0; border-radius: 18px; background: white; box-shadow: none; }
+.today-panel-heading h2 { margin-top: 5px; color: var(--navy); font-size: 18px; }
+.today-pending-panel .today-task { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; justify-content: stretch; gap: 13px; padding: 15px; border: 0; border-radius: 18px; background: white; box-shadow: none; }
 .today-pending-panel .today-routine-card {
   position: relative;
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--routine-accent, var(--teal)) 24%, white);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--routine-accent, var(--teal)) 10%, white) 0%, white 78%);
-}
-.today-pending-panel .today-routine-card::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 5px;
-  background: var(--routine-accent, var(--teal));
-}
-.today-pending-panel .today-routine-card.expired-only {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--routine-accent, var(--teal)) 8%, white) 0%, white 84%);
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid rgba(255,255,255,.94);
+  border-radius: 21px;
+  background: white;
+  box-shadow: var(--shadow-sm);
 }
 .today-pending-panel .today-task + .today-task { margin-top: 10px; }
+.today-routine-main {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  justify-self: stretch;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.today-routine-primary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(210px, 34%);
+  align-items: center;
+  gap: 12px;
+}
 .today-task-copy { align-items: flex-start; }
 .today-task-copy h3 { font-size: 15px; }
 .today-task-copy small { display: block; margin-top: 7px; color: var(--navy); font-size: 11px; font-weight: 900; }
 .today-task-copy p { margin-top: 1px; }
 .today-task-icon, .routine-icon, .routine-hero-icon { background: color-mix(in srgb, var(--routine-accent, var(--teal)) 12%, white); color: var(--routine-accent, var(--teal)); }
 .today-task-icon .app-icon { font-size: 19px; }
-.today-pending-panel .today-task .primary-action-button { width: 100%; min-width: 100%; margin: 0; border-radius: 10px; min-height: 42px; background: var(--routine-accent, var(--teal)); color: white; }
-.today-task-stack { display: grid; gap: 7px; padding: 9px; border: 1px solid color-mix(in srgb, var(--routine-accent, var(--teal)) 14%, white); border-radius: 12px; background: color-mix(in srgb, var(--routine-accent, var(--teal)) 6%, white); }
+.today-pending-panel .today-task .primary-action-button { width: 100%; min-width: 0; margin: 0; border-radius: 14px; min-height: 46px; background: var(--routine-accent, var(--teal)); color: white; }
+.today-routine-primary > .status-pill { justify-self: stretch; align-self: center; text-align: center; padding-block: 13px; border-radius: 14px; }
+.today-task-stack { width: 100%; justify-self: stretch; display: grid; gap: 7px; padding: 10px; border: 1px solid color-mix(in srgb, var(--routine-accent, var(--teal)) 10%, white); border-radius: 15px; background: color-mix(in srgb, var(--routine-accent, var(--teal)) 5%, #f8fbfa); }
 .today-task-stack-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; }
 .today-task-stack-row span:first-child { min-width: 0; overflow: hidden; color: var(--muted); font-size: 12px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
-.today-task-stack-row .status-pill { flex: 0 0 auto; padding: 6px 9px; font-size: 10px; }
+.today-task-stack-row .status-pill { flex: 0 0 96px; padding: 6px 9px; font-size: 10px; text-align: center; }
 .completed-panel-heading { margin: 20px 0 10px; padding: 14px; border-radius: 18px; background: linear-gradient(120deg, #eef6f3, #f8fbfa); }
 .completed-panel-heading p { margin: 4px 0 0; font-size: 13px; }
 .today-task.completed { padding: 14px; }
+
+@media (max-width: 430px) {
+  .today-routine-primary { grid-template-columns: 1fr; }
+  .today-pending-panel .today-task .primary-action-button { width: 100%; min-width: 0; }
+  .today-task-stack-row { align-items: flex-start; flex-direction: column; }
+  .today-task-stack-row .status-pill { flex-basis: auto; min-width: 108px; }
+}
 
 .routine-list { gap: 11px; }
 .routine-catalog-card { display: grid; gap: 14px; margin-bottom: 13px; padding: 16px; }
@@ -760,12 +774,12 @@ ion-input {
 .disclaimer { border-radius: 18px; }
 
 .today-pending-panel {
-  border: 1px solid rgba(255,255,255,.34);
-  border-radius: 26px;
-  background: linear-gradient(145deg, #087f6d 0%, #10a187 100%);
-  box-shadow: 0 20px 44px rgba(8,127,109,.2);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
-.today-pending-panel .today-task { border-radius: 19px; box-shadow: 0 8px 20px rgba(0,45,38,.08); }
+.today-pending-panel .today-task { border-radius: 19px; box-shadow: 0 10px 24px color-mix(in srgb, var(--routine-accent, var(--teal)) 18%, transparent); }
 .completed-panel-heading { border: 1px solid rgba(255,255,255,.76); box-shadow: inset 0 1px rgba(255,255,255,.62); }
 
 .routine-card {

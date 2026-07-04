@@ -60,7 +60,7 @@ export function ChildDashboard({
       <header className="screen-header participant-header"><div><h1>{t('hi')} {state.family.childName} 👋</h1><p>{t('todayIntro')}</p></div><button type="button" className="more-button" aria-label={t('moreOptions')}>•••</button></header>
       <section className="today-section" aria-labelledby="pending-tasks-title">
         <div className="today-pending-panel">
-          <div className="today-panel-heading"><div><small>{t('toDoToday')}</small><h2 id="pending-tasks-title">{actionableCount} {t(actionableCount === 1 ? 'checkToComplete' : 'checksToComplete')}</h2></div><span aria-hidden="true"><AppIcon name="check" /></span></div>
+          <div className="today-panel-heading"><div><small>{t('toDoToday')}</small><h2 id="pending-tasks-title">{actionableCount} {t(actionableCount === 1 ? 'checkToComplete' : 'checksToComplete')}</h2></div></div>
           <div className="today-task-list">
           {pendingGroups.map((group) => {
             const main = group.events.find((event) => event.id === active?.id) ?? group.events[0];
@@ -69,27 +69,31 @@ export function ChildDashboard({
             const actionable = active?.id === main.id;
             return (
               <article className={`today-task today-routine-card ${actionable ? 'actionable' : 'expired-only'}`} style={presentation.style} key={group.routineId}>
-                <div className="today-task-copy">
-                  <span className="today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(presentation.icon)} /></span>
-                  <div>
-                    <h3>{presentation.name}</h3>
-                    <small>{t(dayPeriodLabelKey(main.expiresAt))}</small>
-                    <p>{t('before')} {formatTime(main.expiresAt)}</p>
-                  </div>
-                </div>
-                {actionable
-                  ? <button type="button" className="primary-action-button" onClick={start}><AppIcon name="camera" />{t('sendProof')}</button>
-                  : <StatusPill status={displayStatusFor(main, now)} t={t} />}
-                {stacked.length > 0 && (
-                  <div className="today-task-stack">
-                    {stacked.map((event) => (
-                      <div className="today-task-stack-row" key={event.id}>
-                        <span>{t(dayPeriodLabelKey(event.expiresAt))} · {t('before')} {formatTime(event.expiresAt)}</span>
-                        <StatusPill status={displayStatusFor(event, now)} t={t} />
+                <div className="today-routine-main">
+                  <div className="today-routine-primary">
+                    <div className="today-task-copy">
+                      <span className="today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(presentation.icon)} /></span>
+                      <div>
+                        <h3>{presentation.name}</h3>
+                        <small>{t(dayPeriodLabelKey(main.expiresAt))}</small>
+                        <p>{t('before')} {formatTime(main.expiresAt)}</p>
                       </div>
-                    ))}
+                    </div>
+                    {actionable
+                      ? <button type="button" className="primary-action-button" onClick={start}><AppIcon name="camera" />{t('sendProof')}</button>
+                      : <StatusPill status={displayStatusFor(main, now)} t={t} />}
                   </div>
-                )}
+                  {stacked.length > 0 && (
+                    <div className="today-task-stack">
+                      {stacked.map((event) => (
+                        <div className="today-task-stack-row" key={event.id}>
+                          <span>{t(dayPeriodLabelKey(event.expiresAt))} · {t('before')} {formatTime(event.expiresAt)}</span>
+                          <StatusPill status={displayStatusFor(event, now)} t={t} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </article>
             );
           })}
