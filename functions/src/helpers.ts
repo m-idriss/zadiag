@@ -33,7 +33,8 @@ export const isFreshCheckSubmission = (
   const capturedAtMs = Date.parse(String(capturedAt ?? ''));
   const isNewSubmission = check.status === 'pending' && !check.capturedAt;
   const isLegacySubmission = check.status === 'analyzing' && String(check.capturedAt) === String(capturedAt);
-  return (isNewSubmission || isLegacySubmission)
+  const isRetakeSubmission = ['not_detected', 'uncertain'].includes(String(check.status)) && Boolean(check.capturedAt);
+  return (isNewSubmission || isLegacySubmission || isRetakeSubmission)
     && Number.isFinite(requestedAtMs)
     && Number.isFinite(expiresAtMs)
     && Number.isFinite(capturedAtMs)

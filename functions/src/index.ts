@@ -832,7 +832,7 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
     if (!check.exists || !checkData || !isFreshCheckSubmission(checkData, capturedAt)) {
       throw new HttpsError('failed-precondition', 'This check is expired, completed, or invalid.');
     }
-    if (checkData.status !== 'pending') {
+    if (checkData.status === 'analyzing') {
       throw new HttpsError('already-exists', 'This check is already being analyzed.');
     }
     transaction.update(checkRef, {

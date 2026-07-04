@@ -282,7 +282,8 @@ export class DemoRepository implements AppRepository {
   async submitCapture(sessionId: string, capturedAt: Date, _imageDataUrl: string): Promise<VerificationEvent> {
     const event = this.state.events.find((item) => item.sessionId === sessionId);
     if (!event) throw new Error('unknown_session');
-    if (this.consumedSessions.has(sessionId) || !isFreshCapture(event, capturedAt)) {
+    const isRetake = ['not_detected', 'uncertain'].includes(event.status);
+    if ((!isRetake && this.consumedSessions.has(sessionId)) || !isFreshCapture(event, capturedAt)) {
       throw new Error('invalid_or_replayed_capture');
     }
     this.consumedSessions.add(sessionId);

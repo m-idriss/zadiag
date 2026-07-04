@@ -32,11 +32,12 @@ export function isFreshCapture(
 ) {
   const requestedAt = new Date(event.requestedAt);
   const expiresAt = new Date(event.expiresAt);
+  const isNewSubmission = event.status === 'pending' && !event.capturedAt;
+  const isRetake = ['not_detected', 'uncertain'].includes(event.status) && Boolean(event.capturedAt);
   return (
     capturedAt >= requestedAt &&
     capturedAt <= now &&
     now <= expiresAt &&
-    event.status === 'pending' &&
-    !event.capturedAt
+    (isNewSubmission || isRetake)
   );
 }

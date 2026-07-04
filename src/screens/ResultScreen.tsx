@@ -6,10 +6,12 @@ import { StatusPill } from '../components/StatusPill';
 
 export function ResultScreen({
   event,
+  retake,
   done,
   t,
 }: {
   event: VerificationEvent;
+  retake?: () => void;
   done: () => void;
   t: (key: MessageKey) => string;
   }) {
@@ -32,7 +34,8 @@ export function ResultScreen({
       ) : null}
       {quality != null && quality <= 60 ? <p className="result-reason">{t('analysisQualityHint')}</p> : null}
       <Disclaimer t={t} />
-      <IonButton expand="block" onClick={done}>{t('backToday')}</IonButton>
+      {retake ? <IonButton expand="block" onClick={retake}>{t('retakeProof')}</IonButton> : null}
+      <IonButton expand="block" fill={retake ? 'outline' : 'solid'} onClick={done}>{t('backToday')}</IonButton>
     </main>
   );
 }

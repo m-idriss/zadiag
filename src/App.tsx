@@ -188,6 +188,10 @@ export function App() {
     setSelectedSessionId(event?.sessionId);
     setRoute('camera');
   };
+  const retryCapture = (event: VerificationEvent) => {
+    setResult(undefined);
+    startCapture(event);
+  };
 
   const reset = async () => {
     await repository.reset();
@@ -266,7 +270,8 @@ export function App() {
   } else if (route === 'camera') {
     content = <CameraScreen busy={busy} submitError={submitError} back={() => { setSelectedSessionId(undefined); setRoute('app'); }} submit={submit} t={t} />;
   } else if (route === 'result' && result) {
-    content = <ResultScreen event={result} done={() => { setResult(undefined); setRoute('app'); }} t={t} />;
+    const canRetake = ['not_detected', 'uncertain'].includes(result.status) && Date.parse(result.expiresAt) > Date.now();
+    content = <ResultScreen event={result} retake={canRetake ? () => retryCapture(result) : undefined} done={() => { setResult(undefined); setRoute('app'); }} t={t} />;
   } else {
     const role = state.role ?? 'child';
     const screen = tab === 'history'

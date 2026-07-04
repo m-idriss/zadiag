@@ -32,4 +32,14 @@ describe('isFreshCapture', () => {
     expect(isFreshCapture(pending, new Date('2026-06-30T11:59:00.000Z'), new Date('2026-06-30T12:06:00.000Z'))).toBe(false);
     expect(isFreshCapture({ ...pending, capturedAt: '2026-06-30T12:03:00.000Z' }, new Date('2026-06-30T12:05:00.000Z'), new Date('2026-06-30T12:06:00.000Z'))).toBe(false);
   });
+
+  it('allows a retake for non-positive results while the check window is still open', () => {
+    const failed = { ...event('not_detected'), capturedAt: '2026-06-30T12:04:00.000Z' };
+    const unclear = { ...event('uncertain'), capturedAt: '2026-06-30T12:04:00.000Z' };
+    const success = { ...event('detected'), capturedAt: '2026-06-30T12:04:00.000Z' };
+    expect(isFreshCapture(failed, new Date('2026-06-30T12:07:00.000Z'), new Date('2026-06-30T12:08:00.000Z'))).toBe(true);
+    expect(isFreshCapture(unclear, new Date('2026-06-30T12:07:00.000Z'), new Date('2026-06-30T12:08:00.000Z'))).toBe(true);
+    expect(isFreshCapture(success, new Date('2026-06-30T12:07:00.000Z'), new Date('2026-06-30T12:08:00.000Z'))).toBe(false);
+    expect(isFreshCapture(failed, new Date('2026-06-30T12:07:00.000Z'), new Date('2026-06-30T12:21:00.000Z'))).toBe(false);
+  });
 });
