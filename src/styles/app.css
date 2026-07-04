@@ -279,15 +279,32 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .history-row small { color: var(--muted); }
 .history-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 14px; background: var(--mint); color: var(--teal); font-size: 22px; }
 .history-icon ion-icon { font-size: 20px; }
-.history-filter-card { display: grid; gap: 16px; margin-bottom: 4px; }
+.history-filter-card { display: grid; gap: 16px; margin-bottom: 14px; }
 .filter-group { display: grid; gap: 9px; }
 .filter-group > span { color: var(--muted); font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
 .filter-chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
 .filter-chips::-webkit-scrollbar { display: none; }
 .filter-chips button { flex: 0 0 auto; min-height: 36px; padding: 8px 12px; border: 0; border-radius: 99px; background: #f1f6f4; color: var(--navy); font-weight: 900; }
 .filter-chips button.active { background: var(--teal); color: white; box-shadow: 0 8px 18px rgba(8,127,109,.16); }
-.parent-history-list { display: grid; gap: 10px; }
+.filter-chips .filter-status-detected { background: var(--mint); color: var(--teal); }
+.filter-chips .filter-status-uncertain { background: #fff0d9; color: #b87218; }
+.filter-chips .filter-status-missed,
+.filter-chips .filter-status-expired,
+.filter-chips .filter-status-pending,
+.filter-chips .filter-status-analyzing { background: #edf0f2; color: #697983; }
+.filter-chips .filter-status-not_detected { background: #fdebe7; color: var(--coral); }
+.filter-chips .filter-status-detected.active { background: var(--teal); color: white; }
+.filter-chips .filter-status-uncertain.active { background: #b87218; color: white; }
+.filter-chips .filter-status-missed.active,
+.filter-chips .filter-status-expired.active,
+.filter-chips .filter-status-pending.active,
+.filter-chips .filter-status-analyzing.active { background: #697983; color: white; }
+.filter-chips .filter-status-not_detected.active { background: var(--coral); color: white; }
+.parent-history-heading { margin-bottom: 10px; }
+.history-results-heading { margin-top: 14px; margin-bottom: 16px; }
+.parent-history-list { display: grid; gap: 18px; }
 .parent-history-row { margin-bottom: 0; }
+.parent-history-row + .parent-history-row { margin-top: 8px; }
 .parent-history-row > div:nth-child(2) { min-width: 0; }
 .parent-history-row strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .parent-history-row small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

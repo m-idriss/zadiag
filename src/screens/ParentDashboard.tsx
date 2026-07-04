@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
+import { adherenceSummary } from '../domain/adherence';
 import type { AppState, RoutineAssignment, VerificationEvent, VerificationStatus } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
+import { CodeBox } from '../components/CodeBox';
 import { StatusPill } from '../components/StatusPill';
 import { presentRoutine } from '../domain/routinePresentation';
 
@@ -12,7 +14,7 @@ const eventTimestamp = (event: VerificationEvent) =>
   Date.parse(event.capturedAt ?? event.requestedAt);
 
 const statusLabelKey = (status: VerificationStatus): MessageKey => {
-  if (status === 'detected') return 'elasticsVisible';
+  if (status === 'detected') return 'validated';
   if (status === 'not_detected') return 'notDetected';
   if (status === 'uncertain') return 'uncertain';
   if (status === 'missed') return 'missed';
@@ -26,13 +28,18 @@ const routineForEvent = (event: VerificationEvent, assignments: RoutineAssignmen
 
 export function ParentDashboard({
   state,
+  regenerateCode,
   t,
 }: {
   state: AppState;
+  regenerateCode: () => Promise<void>;
   t: (key: MessageKey) => string;
 }) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [routineFilter, setRoutineFilter] = useState<RoutineFilter>('all');
+  const [regenerating, setRegenerating] = useState(false);
+  const [codeError, setCodeError] = useState(false);
+  const summary = adherenceSummary(state.events);
   const locale = state.locale === 'fr' ? 'fr-FR' : 'en-US';
   const formatDateTime = (value: string) => new Intl.DateTimeFormat(locale, {
     dateStyle: 'short',
@@ -51,13 +58,51 @@ export function ParentDashboard({
     && (routineFilter === 'all' || event.routineId === routineFilter)
   );
 
+  const regenerate = async () => {
+    if (!window.confirm(t('regenerateCodeConfirm'))) return;
+    setCodeError(false);
+    setRegenerating(true);
+    try {
+      await regenerateCode();
+    } catch {
+      setCodeError(true);
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   return (
-    <div className="content-screen parent-history-screen">
+    <div className="content-screen parent-overview-screen">
       <header className="screen-header">
-        <div><small>{t('overview')}</small><h1>{t('responsibleHistoryTitle')}</h1><p>{t('responsibleHistoryHint')}</p></div>
+        <div><small>{t('overview')}</small><h1>{state.family.childName} · {t('routine')}</h1></div>
         <div className="avatar">{state.family.childName.charAt(0)}</div>
       </header>
 
+      <section className="card summary-card">
+        <div className="progress-ring" style={{ '--progress': `${summary.rate * 360}deg` } as React.CSSProperties}>
+          <span>{Math.round(summary.rate * 100)}%</span>
+        </div>
+        <div><h2>{t('lastSeven')}</h2><p>{summary.successful} {t('clearChecks')} {summary.completed}</p><strong>{t('progressEncouragement')}</strong></div>
+      </section>
+
+      {!state.family.childLinked && state.family.linkingCode ? (
+        <CodeBox
+          label={t('childLinkCode')}
+          hint={t('childLinkCodeHint')}
+          value={state.family.linkingCode}
+          t={t}
+          action={(
+            <>
+              <button type="button" className="regenerate-code" disabled={regenerating} onClick={() => { void regenerate(); }}>
+                {regenerating ? t('regeneratingCode') : t('regenerateCode')}
+              </button>
+              {codeError ? <span className="form-error">{t('regenerateCodeError')}</span> : null}
+            </>
+          )}
+        />
+      ) : null}
+
+      <div className="section-heading parent-history-heading"><h2>{t('recentHistory')}</h2></div>
       <section className="card history-filter-card" aria-label={t('historyFilters')}>
         <div className="filter-group">
           <span>{t('filterByRoutine')}</span>
@@ -73,12 +118,12 @@ export function ParentDashboard({
           <span>{t('filterByStatus')}</span>
           <div className="filter-chips">
             <button type="button" className={statusFilter === 'all' ? 'active' : ''} onClick={() => setStatusFilter('all')}>{t('allStatuses')}</button>
-            {statuses.map((status) => <button type="button" key={status} className={statusFilter === status ? 'active' : ''} onClick={() => setStatusFilter(status)}>{t(statusLabelKey(status))}</button>)}
+            {statuses.map((status) => <button type="button" key={status} className={`filter-status-${status} ${statusFilter === status ? 'active' : ''}`} onClick={() => setStatusFilter(status)}>{t(statusLabelKey(status))}</button>)}
           </div>
         </div>
       </section>
 
-      <div className="section-heading"><h2>{t('recentHistory')}</h2><span>{filtered.length}</span></div>
+      <div className="section-heading history-results-heading"><h2>{t('historyResults')}</h2><span>{filtered.length}</span></div>
       <div className="history-list parent-history-list">
         {filtered.map((event) => {
           const assignment = routineForEvent(event, state.routineAssignments);

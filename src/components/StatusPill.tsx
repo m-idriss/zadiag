@@ -9,7 +9,7 @@ export function StatusPill({
   t: (key: MessageKey) => string;
 }) {
   const label = status === 'detected'
-    ? t('elasticsVisible')
+    ? t('validated')
     : status === 'not_detected'
       ? t('notDetected')
     : status === 'uncertain'

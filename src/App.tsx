@@ -330,6 +330,7 @@ export function App() {
         : role === 'parent'
           ? <ParentDashboard
               state={state}
+              regenerateCode={async () => { await repository.regenerateLinkCode(); sync(); }}
               t={t}
             />
           : <ChildDashboard state={state} active={repository.activeSession()} start={() => setRoute('camera')} t={t} />;
