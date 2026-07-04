@@ -28,6 +28,14 @@ const cors = [
   'http://localhost:5173',
 ];
 
+interface RoutineNotificationNames {
+  routineName: string;
+  routineNames: {
+    en?: string;
+    fr?: string;
+  };
+}
+
 const requireUid = (auth: { uid: string } | undefined) => {
   if (!auth) throw new HttpsError('unauthenticated', 'Authentication is required.');
   return auth.uid;
@@ -105,7 +113,7 @@ const recordRecoveryAttempt = async (uid: string) => {
 
 const sendCheckPushNotifications = async (
   familyRef: FirebaseFirestore.DocumentReference,
-  check: { sessionId: string; routineId: string; routineName: string },
+  check: { sessionId: string; routineId: string } & RoutineNotificationNames,
   resend: boolean,
 ) => {
   const subscriptions = await familyRef.collection('pushSubscriptions').get();
@@ -118,6 +126,7 @@ const sendCheckPushNotifications = async (
         sessionId: check.sessionId,
         routineId: check.routineId,
         routineName: check.routineName,
+        routineNames: check.routineNames,
         resend,
         locale: subscription.locale,
       });
@@ -128,6 +137,27 @@ const sendCheckPushNotifications = async (
       else console.error('Unable to send Web Push notification', error);
     }
   }));
+};
+
+const getRoutineNotificationNames = (
+  assignmentData: FirebaseFirestore.DocumentData | undefined,
+  fallback: string,
+): RoutineNotificationNames => {
+  const routine = assignmentData?.routine as {
+    name?: unknown;
+    translations?: {
+      en?: { name?: unknown };
+      fr?: { name?: unknown };
+    };
+  } | undefined;
+  const englishName = typeof routine?.name === 'string' && routine.name.trim() ? routine.name : fallback;
+  return {
+    routineName: englishName,
+    routineNames: {
+      en: typeof routine?.translations?.en?.name === 'string' ? routine.translations.en.name : englishName,
+      fr: typeof routine?.translations?.fr?.name === 'string' ? routine.translations.fr.name : undefined,
+    },
+  };
 };
 
 export const createFamily = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
@@ -512,8 +542,8 @@ export const requestCheckNow = onCall({
   });
 
   const assignment = await assignmentRef.get();
-  const routineName = String(assignment.data()?.routine?.name ?? routineId);
-  await sendCheckPushNotifications(familyRef, { ...check, routineName }, resend);
+  const routineNames = getRoutineNotificationNames(assignment.data(), routineId);
+  await sendCheckPushNotifications(familyRef, { ...check, ...routineNames }, resend);
   return check;
 });
 
@@ -659,7 +689,7 @@ export const dispatchPlannedChecks = onSchedule({
       if (created) await sendCheckPushNotifications(familyDoc.ref, {
         sessionId: check.sessionId,
         routineId,
-        routineName: String(assignmentData.routine?.name ?? routineId),
+        ...getRoutineNotificationNames(assignmentData, routineId),
       }, false);
     }));
   }));

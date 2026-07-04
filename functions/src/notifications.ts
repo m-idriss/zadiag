@@ -4,6 +4,7 @@ export interface CheckNotificationInput {
   sessionId: string;
   routineId: string;
   routineName: string;
+  routineNames?: Partial<Record<NotificationLocale, string>>;
   resend: boolean;
   locale?: string;
 }
@@ -25,7 +26,8 @@ export const normalizeNotificationLocale = (locale?: string): NotificationLocale
 export const buildCheckNotificationPayload = (input: CheckNotificationInput): CheckNotificationPayload => {
   const locale = normalizeNotificationLocale(input.locale);
   const kind = input.resend ? 'check-reminder' : 'check-ready';
-  const routineName = input.routineName.trim() || (locale === 'fr' ? 'routine' : 'routine');
+  const routineName = (input.routineNames?.[locale] ?? input.routineName).trim()
+    || (locale === 'fr' ? 'Routine' : 'Routine');
   return {
     version: 2,
     kind,
@@ -33,15 +35,11 @@ export const buildCheckNotificationPayload = (input: CheckNotificationInput): Ch
     routineId: input.routineId,
     tag: input.resend ? `reminder:${input.sessionId}` : `verification:${input.sessionId}`,
     title: input.resend
-      ? (locale === 'fr' ? 'Rappel Zadiag' : 'Zadiag reminder')
+      ? (locale === 'fr' ? 'Rappel' : 'Reminder')
       : (locale === 'fr' ? 'Contrôle prêt' : 'Check ready'),
     body: input.resend
-      ? (locale === 'fr'
-          ? `Un rappel t’attend pour ${routineName}.`
-          : `A reminder is waiting for ${routineName}.`)
-      : (locale === 'fr'
-          ? `Tu peux envoyer ta preuve pour ${routineName}.`
-          : `You can send your proof for ${routineName}.`),
+      ? (locale === 'fr' ? `${routineName} · contrôle attendu.` : `${routineName} · check waiting.`)
+      : (locale === 'fr' ? `${routineName} · envoie ta preuve.` : `${routineName} · send your proof.`),
     path: '/?open=verification',
   };
 };

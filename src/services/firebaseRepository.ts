@@ -26,6 +26,8 @@ import { isFreshCapture } from '../domain/adherence';
 
 const PREFERENCES_KEY = 'zadiag.preferences.v1';
 
+const browserLocale = (): Locale => navigator.language?.startsWith('fr') ? 'fr' : 'en';
+
 interface UserProfile {
   familyId: string;
   role: Role;
@@ -43,7 +45,7 @@ interface FamilyDocument {
 const initialState = (): AppState => {
   const preferences = JSON.parse(localStorage.getItem(PREFERENCES_KEY) ?? '{}') as { locale?: Locale; role?: Role };
   return {
-    locale: preferences.locale ?? 'en',
+    locale: preferences.locale ?? browserLocale(),
     notificationsEnabled: false,
     role: preferences.role,
     family: { linked: false, childLinked: false, childName: '', linkingCode: '', parentRecoveryCode: '', consented: false },
@@ -126,13 +128,7 @@ export class FirebaseRepository implements AppRepository {
     this.state.locale = locale;
     this.persistPreferences();
     this.emit();
-    if (this.state.role === 'child' && this.user && this.state.family.id && this.state.notificationsEnabled) {
-      try {
-        await updateDoc(doc(this.services.db, 'families', this.state.family.id, 'pushSubscriptions', this.user.uid), { locale });
-      } catch (error) {
-        console.error('Unable to update push subscription locale', error);
-      }
-    }
+    await this.syncPushSubscriptionLocale();
   }
 
   async linkParent(childName: string) {
@@ -253,6 +249,7 @@ export class FirebaseRepository implements AppRepository {
     this.state.family.linkingCode = data.linkingCode ?? '';
     this.state.family.parentRecoveryCode = data.parentRecoveryCode ?? '';
     await this.attachFamily(data.familyId, data.role);
+    await this.syncPushSubscriptionLocale();
   }
 
   private async attachFamily(familyId: string, role: Role) {
@@ -338,6 +335,17 @@ export class FirebaseRepository implements AppRepository {
 
   private persistPreferences() {
     localStorage.setItem(PREFERENCES_KEY, JSON.stringify({ locale: this.state.locale, role: this.state.role }));
+  }
+
+  private async syncPushSubscriptionLocale() {
+    if (this.state.role !== 'child' || !this.user || !this.state.family.id || !this.state.notificationsEnabled) return;
+    try {
+      await updateDoc(doc(this.services.db, 'families', this.state.family.id, 'pushSubscriptions', this.user.uid), {
+        locale: this.state.locale,
+      });
+    } catch (error) {
+      console.error('Unable to update push subscription locale', error);
+    }
   }
 
   private emit() { this.listeners.forEach((listener) => listener()); }

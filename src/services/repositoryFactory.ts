@@ -7,10 +7,12 @@ const isLocalhost = /^(localhost|127\.0\.0\.1|::1)$/.test(window.location.hostna
 const useFirebase = import.meta.env.VITE_USE_FIREBASE === 'true';
 const PREFERENCES_KEY = 'zadiag.preferences.v1';
 
+const browserLocale = (): Locale => navigator.language?.startsWith('fr') ? 'fr' : 'en';
+
 const initialRemoteState = (): AppState => {
   const preferences = JSON.parse(localStorage.getItem(PREFERENCES_KEY) ?? '{}') as { locale?: Locale; role?: Role };
   return {
-    locale: preferences.locale ?? 'en',
+    locale: preferences.locale ?? browserLocale(),
     notificationsEnabled: false,
     role: preferences.role,
     family: { linked: false, childLinked: false, childName: '', linkingCode: '', parentRecoveryCode: '', consented: false },

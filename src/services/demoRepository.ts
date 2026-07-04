@@ -12,6 +12,8 @@ import type { AppRepository } from './contracts';
 
 const STORAGE_KEY = 'zadiag.demo.v1';
 
+const browserLocale = (): AppState['locale'] => navigator.language?.startsWith('fr') ? 'fr' : 'en';
+
 function seedEvents(now = new Date()): VerificationEvent[] {
   const minutes = (value: number) => new Date(now.getTime() + value * 60_000).toISOString();
   const days = (value: number) => new Date(now.getTime() + value * 86_400_000).toISOString();
@@ -63,7 +65,7 @@ function seedEvents(now = new Date()): VerificationEvent[] {
 
 function initialState(): AppState {
   return {
-    locale: 'en',
+    locale: browserLocale(),
     notificationsEnabled: false,
     family: {
       linked: false,
