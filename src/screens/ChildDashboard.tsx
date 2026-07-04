@@ -8,6 +8,7 @@ import { RoutineHistoryPanel } from '../components/RoutineHistoryPanel';
 import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } from '../components/AdherenceSummaryCard';
 import { presentRoutine } from '../domain/routinePresentation';
 import { dayPeriodLabelKey } from '../domain/taskTimeLabel';
+import { canRetakeCapture } from '../domain/adherence';
 
 const isToday = (value: string, now = new Date()) => {
   const date = new Date(value);
@@ -127,12 +128,18 @@ export function ChildDashboard({
     <section className="today-section" aria-labelledby="completed-tasks-title">
       <div className="completed-panel-heading"><div><small id="completed-tasks-title">{t('completedToday')}</small><p>{completed.length} {t(completed.length === 1 ? 'checkCompleted' : 'checksCompleted')}</p></div></div>
       <div className="today-task-list">
-        {completed.map((event) => (
-          <article className="card today-task completed" style={presentationFor(event).style} key={event.id}>
-            <div className="today-task-copy"><span className="today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(presentationFor(event).icon)} /></span><div><h3>{presentationFor(event).name}</h3><p>{formatTime(event.capturedAt ?? event.expiresAt)}</p></div></div>
-            <StatusPill status={event.status} t={t} />
-          </article>
-        ))}
+        {completed.map((event) => {
+          const canRetake = Boolean(retake) && canRetakeCapture(event, state.events, new Date(now));
+          return (
+            <article className="card today-task completed" style={presentationFor(event).style} key={event.id}>
+              <div className="today-task-copy"><span className="today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(presentationFor(event).icon)} /></span><div><h3>{presentationFor(event).name}</h3><p>{formatTime(event.capturedAt ?? event.expiresAt)}</p></div></div>
+              <div className="today-task-actions">
+                <StatusPill status={event.status} t={t} />
+                {canRetake ? <button type="button" className="history-retake-button today-retake-button" onClick={() => retake?.(event)}>{t('retakeShort')}</button> : null}
+              </div>
+            </article>
+          );
+        })}
         {!completed.length && <p className="today-empty-copy">{t('nothingCompletedYet')}</p>}
       </div>
     </section>

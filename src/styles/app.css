@@ -356,6 +356,8 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .today-task-copy p { margin: 3px 0 0; font-size: 12px; }
 .today-task-icon { flex: 0 0 auto; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 11px; background: var(--mint); color: var(--teal); font-size: 18px; font-weight: 900; }
 .today-task.completed .today-task-icon { background: color-mix(in srgb, var(--routine-accent, var(--teal)) 12%, white); color: var(--routine-accent, var(--teal)); }
+.today-task-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+.today-retake-button { background: var(--routine-accent, var(--teal)); }
 .today-task .primary-action-button { flex: 0 0 auto; min-height: 40px; font-size: 12px; }
 .today-empty { padding: 20px; }
 .today-empty h2 { margin: 8px 0 0; font-size: 22px; }

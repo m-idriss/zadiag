@@ -101,7 +101,7 @@ describe('participant Today screen', () => {
     expect(start).toHaveBeenCalledWith(hydrationPending);
   });
 
-  it('lets the participant retake a recent non-validated result from history', () => {
+  it('lets the participant retake a recent non-validated result from today and history', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-06-30T12:08:00.000Z'));
     const failed = {
@@ -120,9 +120,9 @@ describe('participant Today screen', () => {
 
     act(() => root.render(<ChildDashboard state={state} start={() => undefined} retake={retake} t={(key) => translate('en', key)} />));
 
-    const button = Array.from(container.querySelectorAll('button')).find((item) => item.textContent?.includes('Retake'));
-    expect(button).toBeTruthy();
-    act(() => button?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    const todayButton = container.querySelector<HTMLButtonElement>('.today-retake-button');
+    expect(todayButton).toBeTruthy();
+    act(() => todayButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(retake).toHaveBeenCalledWith(failed);
   });
 
