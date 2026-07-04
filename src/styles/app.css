@@ -427,19 +427,47 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .routine-card-next p { margin: 2px 0 0; color: var(--navy); font-size: 12px; font-weight: 800; }
 .routine-card-next > span { color: var(--muted); font-size: 22px; }
 
-.routine-detail-screen { --teal: var(--routine-accent, #0d927d); }
-.routine-detail-topbar { display: flex; justify-content: space-between; align-items: center; }
-.detail-back { width: 38px; height: 38px; padding: 0; font-size: 30px; text-align: left; }
-.routine-detail-hero { display: grid; justify-items: center; margin: 4px 0 22px; text-align: center; }
-.routine-hero-icon { width: 72px; height: 72px; display: grid; place-items: center; margin-bottom: 15px; border-radius: 23px; font-size: 36px; }
-.routine-hero-icon .app-icon { font-size: 38px; }
-.routine-detail-hero h1 { margin: 0; color: var(--navy); font-size: 24px; }
-.routine-detail-hero p { margin: 6px 0 0; font-size: 13px; }
-.routine-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-bottom: 1px solid var(--line); }
-.routine-tabs button { position: relative; padding: 11px 3px; border: 0; background: transparent; color: var(--muted); font-size: 11px; font-weight: 800; }
+.routine-detail-screen { --teal: var(--routine-accent, #0d927d); padding-top: calc(16px + env(safe-area-inset-top)); }
+.routine-detail-topbar { display: flex; justify-content: space-between; align-items: center; min-height: 38px; margin-bottom: 8px; }
+.detail-back,
+.routine-detail-topbar .more-button {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(255,255,255,.78);
+  border-radius: 50%;
+  background: rgba(255,255,255,.72);
+  color: var(--navy);
+  box-shadow: 0 8px 22px rgba(16,42,67,.055);
+}
+.detail-back ion-icon,
+.routine-detail-topbar .more-button ion-icon { font-size: 20px; }
+.routine-detail-hero {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+  gap: 13px;
+  margin: 0 0 15px;
+  padding: 11px 12px;
+  border: 1px solid rgba(255,255,255,.78);
+  border-radius: 22px;
+  background: rgba(255,255,255,.62);
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+}
+.routine-hero-icon { width: 58px; height: 58px; display: grid; place-items: center; margin-bottom: 0; border-radius: 18px; font-size: 30px; }
+.routine-hero-icon .app-icon { font-size: 31px; }
+.routine-detail-title { min-width: 0; }
+.routine-detail-hero h1 { overflow: hidden; margin: 0; color: var(--navy); font-size: 22px; line-height: 1.08; text-overflow: ellipsis; white-space: nowrap; }
+.routine-detail-hero p { margin: 5px 0 0; font-size: 12px; line-height: 1.2; }
+.routine-tabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); border-bottom: 1px solid var(--line); }
+.routine-tabs button { position: relative; padding: 9px 3px; border: 0; background: transparent; color: var(--muted); font-size: 11px; font-weight: 800; }
 .routine-tabs button.active { color: var(--navy); }
 .routine-tabs button.active::after { content: ''; position: absolute; left: 6px; right: 6px; bottom: -1px; height: 2px; border-radius: 99px; background: var(--routine-accent, var(--teal)); }
-.routine-tab-panel { display: grid; gap: 16px; padding-top: 17px; }
+.routine-tab-panel { display: grid; gap: 14px; padding-top: 14px; }
+.routine-plan-tab-panel { gap: 0; padding-top: 10px; }
 .routine-tab-panel > h2, .routine-copy h2 { font-size: 17px; }
 .next-check-card { display: flex; align-items: center; justify-content: space-between; padding: 17px; border-radius: 18px; background: linear-gradient(120deg, color-mix(in srgb, var(--routine-accent) 12%, white), #f5fbf9); }
 .next-check-card small { color: var(--muted); }
@@ -843,6 +871,17 @@ ion-input {
   padding-inline: clamp(20px, 3.6vw, 46px);
   padding-bottom: calc(20px + env(safe-area-inset-bottom));
 }
+.routine-edit-embedded {
+  gap: 9px;
+  padding: 0;
+  background: transparent;
+  animation: none;
+}
+.routine-edit-embedded::before { display: none; }
+.routine-edit-embedded .routine-edit-summary {
+  margin-top: 0;
+}
+.routine-edit-embedded .routine-edit-actions { margin-top: 4px; }
 .routine-edit-header {
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr);
@@ -878,23 +917,23 @@ ion-input {
 .routine-edit-summary-groups small { color: var(--muted); font-size: 11px; font-weight: 800; text-align: right; }
 .routine-edit-summary-groups .chips { margin-top: 0; }
 
-.plan-editor-section { padding: 14px 16px; }
-.routine-edit-card-title { margin-bottom: 10px; }
+.plan-editor-section { padding: 12px 14px; }
+.routine-edit-card-title { margin-bottom: 8px; }
 .routine-edit-card-title button { flex: 0 0 auto; }
 .plan-section-copy { margin: -5px 0 14px; color: var(--muted); font-size: 13px; }
-.plan-add-button { min-height: 34px; display: inline-flex; align-items: center; gap: 6px; padding: 0 11px; border: 0; border-radius: 999px; background: var(--mint); color: var(--teal); font-size: 12px; font-weight: 900; white-space: nowrap; }
+.plan-add-button { min-height: 31px; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; border: 0; border-radius: 999px; background: var(--mint); color: var(--teal); font-size: 12px; font-weight: 900; white-space: nowrap; }
 .plan-add-button .app-icon { font-size: 18px; }
-.schedule-group-card { display: grid; gap: 10px; }
+.schedule-group-card { display: grid; gap: 8px; }
 .schedule-group-card:nth-of-type(3n + 1) { --window-color: var(--teal); }
 .schedule-group-card:nth-of-type(3n + 2) { --window-color: #2f80ed; }
 .schedule-group-card:nth-of-type(3n) { --window-color: #8b5cf6; }
-.schedule-group-remove { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 50%; background: #f2f7f5; color: #91a0a7; }
-.schedule-group-remove span { margin-top: -1px; font-size: 22px; line-height: 1; font-weight: 900; }
+.schedule-group-remove { width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 50%; background: #f2f7f5; color: #91a0a7; }
+.schedule-group-remove span { margin-top: -1px; font-size: 20px; line-height: 1; font-weight: 900; }
 .schedule-group-remove:disabled { visibility: hidden; }
 .schedule-group-days { margin-top: -2px; }
 .schedule-group-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 0; }
 .schedule-group-heading > span { color: var(--muted); font-size: 11px; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; }
-.schedule-add-window { width: 100%; min-height: 32px; justify-content: center; margin-top: 4px; border-radius: 12px; }
+.schedule-add-window { width: 100%; min-height: 30px; justify-content: center; margin-top: 2px; border-radius: 11px; }
 .schedule-add-window .schedule-add-symbol {
   width: 18px;
   height: 18px;
@@ -902,9 +941,9 @@ ion-input {
 }
 .schedule-add-group {
   width: 100%;
-  min-height: 42px;
+  min-height: 38px;
   justify-content: center;
-  margin: 1px 0 0;
+  margin: 0;
   border: 1px dashed rgba(29,138,122,.38);
   border-radius: 16px;
   background: rgba(233,247,243,.78);
@@ -924,23 +963,23 @@ ion-input {
   line-height: 1;
 }
 
-.plan-window-list { display: grid; gap: 6px; }
-.plan-window-card { display: grid; grid-template-columns: 34px minmax(0, 1fr) 30px; align-items: center; gap: 9px; padding: 9px 0; border-top: 1px solid var(--line); background: transparent; }
+.plan-window-list { display: grid; gap: 4px; }
+.plan-window-card { display: grid; grid-template-columns: 30px minmax(0, 1fr) 28px; align-items: center; gap: 8px; padding: 7px 0; border-top: 1px solid var(--line); background: transparent; }
 .plan-window-card:first-child { border-top: 0; padding-top: 0; }
 .plan-window-card:last-child { padding-bottom: 0; }
-.plan-window-index { width: 34px; min-height: 49px; display: grid; place-items: center; color: var(--window-color); }
-.plan-window-index span { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--window-color) 13%, white); color: var(--window-color); font-size: 12px; font-weight: 900; box-shadow: inset 0 1px 0 rgba(255,255,255,.82); }
-.plan-time-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.plan-time-fields label { min-width: 0; display: grid; gap: 3px; }
+.plan-window-index { width: 30px; min-height: 45px; display: grid; place-items: center; color: var(--window-color); }
+.plan-window-index span { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--window-color) 13%, white); color: var(--window-color); font-size: 12px; font-weight: 900; box-shadow: inset 0 1px 0 rgba(255,255,255,.82); }
+.plan-time-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.plan-time-fields label { min-width: 0; display: grid; gap: 2px; }
 .plan-time-fields label span { color: var(--muted); font-size: 10px; font-weight: 900; letter-spacing: .02em; }
-.plan-time-button { width: 100%; min-height: 34px; padding: 0 11px; border: 1px solid transparent; border-radius: 12px; background: #f2f7f5; color: var(--navy); font-size: 14px; font-weight: 900; text-align: left; box-shadow: inset 0 0 0 1px rgba(227,235,232,.65); }
+.plan-time-button { width: 100%; min-height: 31px; padding: 0 10px; border: 1px solid transparent; border-radius: 11px; background: #f2f7f5; color: var(--navy); font-size: 14px; font-weight: 900; text-align: left; box-shadow: inset 0 0 0 1px rgba(227,235,232,.65); }
 .plan-time-button:focus-visible { outline: 3px solid color-mix(in srgb, var(--navy) 18%, transparent); border-color: color-mix(in srgb, var(--navy) 28%, #dce7e3); background: white; }
-.plan-remove-button { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 50%; background: #f2f7f5; color: #91a0a7; }
-.plan-remove-button span { margin-top: -1px; font-size: 21px; line-height: 1; font-weight: 900; }
+.plan-remove-button { width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 50%; background: #f2f7f5; color: #91a0a7; }
+.plan-remove-button span { margin-top: -1px; font-size: 20px; line-height: 1; font-weight: 900; }
 .plan-remove-button:disabled { visibility: hidden; }
 
-.plan-days-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 7px; }
-.plan-days-grid button { min-width: 0; min-height: 37px; display: grid; place-items: center; align-content: center; gap: 1px; border: 1px solid #dfe9e6; border-radius: 12px; background: #f9fbfa; color: #7b8991; font-size: 11px; font-weight: 900; }
+.plan-days-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.plan-days-grid button { min-width: 0; min-height: 34px; display: grid; place-items: center; align-content: center; gap: 1px; border: 1px solid #dfe9e6; border-radius: 11px; background: #f9fbfa; color: #7b8991; font-size: 11px; font-weight: 900; }
 .plan-days-grid button.active { border-color: var(--teal); background: var(--teal); color: white; box-shadow: 0 8px 18px rgba(29,138,122,.13); }
 .plan-days-grid .app-icon { font-size: 11px; }
 
@@ -948,20 +987,34 @@ ion-input {
   display: grid;
   grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
   align-items: start;
-  gap: 10px;
-  margin-top: 1px;
+  gap: 8px;
+  margin-top: 0;
 }
 .routine-edit-cancel {
   min-height: 0;
-  padding: 13px;
+  padding: 11px;
   margin: 0;
-  border-radius: 14px;
+  border-radius: 13px;
   background: white;
   font-size: inherit;
   box-shadow: 0 8px 22px rgba(21,50,75,.055);
 }
-.routine-edit-save { min-height: 0; margin-top: 0; padding: 13px; border-radius: 14px; font-size: inherit; box-shadow: none; }
-.routine-edit-actions button:disabled { opacity: .55; }
+.routine-edit-save { min-height: 0; margin-top: 0; padding: 11px; border-radius: 13px; font-size: inherit; box-shadow: none; }
+.routine-edit-actions button:disabled {
+  opacity: 1;
+  cursor: default;
+  filter: grayscale(.15);
+  box-shadow: none;
+}
+.routine-edit-actions .routine-edit-cancel:disabled {
+  border-color: #dce3e0;
+  background: rgba(255,255,255,.58);
+  color: #96a2a8;
+}
+.routine-edit-actions .routine-edit-save:disabled {
+  background: #c5ccca;
+  color: rgba(255,255,255,.82);
+}
 .form-error { padding: 12px 16px; background: #fff0ef; border: 1px solid #f3b0a9; border-radius: 15px; color: #9b3329; font-size: 14px; font-weight: 800; }
 
 .time-picker-backdrop {

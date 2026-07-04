@@ -21,7 +21,6 @@ const LinkScreen = lazyScreen(() => import('./screens/LinkScreen'), 'LinkScreen'
 const NotificationSetupScreen = lazyScreen(() => import('./screens/NotificationSetupScreen'), 'NotificationSetupScreen');
 const CameraScreen = lazyScreen(() => import('./screens/CameraScreen'), 'CameraScreen');
 const ResultScreen = lazyScreen(() => import('./screens/ResultScreen'), 'ResultScreen');
-const RoutineEditScreen = lazyScreen(() => import('./screens/RoutineEditScreen'), 'RoutineEditScreen');
 const HistoryScreen = lazyScreen(() => import('./screens/HistoryScreen'), 'HistoryScreen');
 const SettingsScreen = lazyScreen(() => import('./screens/SettingsScreen'), 'SettingsScreen');
 const ParentDashboard = lazyScreen(() => import('./screens/ParentDashboard'), 'ParentDashboard');
@@ -92,8 +91,7 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<VerificationEvent>();
   const [submitError, setSubmitError] = useState<string>();
-  const [editingRoutineId, setEditingRoutineId] = useState<string>();
-  const [isSavingRoutine, setIsSavingRoutine] = useState(false);
+  const [savingRoutineId, setSavingRoutineId] = useState<string>();
   const t = (key: MessageKey) => translate(state.locale, key);
 
   useEffect(() => {
@@ -260,34 +258,6 @@ export function App() {
     content = <CameraScreen busy={busy} submitError={submitError} back={() => setRoute('app')} submit={submit} t={t} />;
   } else if (route === 'result' && result) {
     content = <ResultScreen event={result} done={() => { setResult(undefined); setRoute('app'); }} t={t} />;
-  } else if (route === 'routine-edit' && editingRoutineId && state.role === 'parent') {
-    const assignment = state.routineAssignments.find((r) => r.routineId === editingRoutineId);
-    if (assignment) {
-      content = <RoutineEditScreen
-        plan={assignment.plan}
-        routineId={editingRoutineId}
-        onSave={async (plan) => {
-          setIsSavingRoutine(true);
-          try {
-            await repository.updateRoutine(editingRoutineId, plan);
-            sync();
-            setRoute('app');
-            setEditingRoutineId(undefined);
-          } catch (error) {
-            console.error('Update routine error:', error);
-            throw error;
-          } finally {
-            setIsSavingRoutine(false);
-          }
-        }}
-        onCancel={() => {
-          setRoute('app');
-          setEditingRoutineId(undefined);
-        }}
-        busy={isSavingRoutine}
-        t={t}
-      />;
-    }
   } else {
     const role = state.role ?? 'child';
     const screen = tab === 'history'
@@ -300,13 +270,19 @@ export function App() {
             requestCheck={role === 'parent' ? async (routineId) => { await repository.requestCheckNow(routineId); sync(); } : undefined}
             onAssignRoutine={role === 'parent' ? async (routineId) => { await repository.assignRoutine(routineId); sync(); } : undefined}
             onDeleteRoutine={role === 'parent' ? async (routineId) => { await repository.deleteRoutine(routineId); sync(); } : undefined}
-            onEditMonitoringPlan={(routineId) => {
-              const assignment = state.routineAssignments.find((r) => r.routineId === routineId);
-              if (assignment) {
-                setEditingRoutineId(assignment.routineId);
-                setRoute('routine-edit');
+            onSaveMonitoringPlan={role === 'parent' ? async (routineId, plan) => {
+              setSavingRoutineId(routineId);
+              try {
+                await repository.updateRoutine(routineId, plan);
+                sync();
+              } catch (error) {
+                console.error('Update routine error:', error);
+                throw error;
+              } finally {
+                setSavingRoutineId(undefined);
               }
-            }}
+            } : undefined}
+            savingRoutineId={savingRoutineId}
             t={t}
           />
       : tab === 'settings'

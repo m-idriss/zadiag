@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { IonButton, IonIcon } from '@ionic/react';
-import { cameraOutline, chevronForwardOutline, peopleOutline, sendOutline, timeOutline } from 'ionicons/icons';
+import { cameraOutline, chevronBackOutline, chevronForwardOutline, ellipsisHorizontal, peopleOutline, sendOutline, timeOutline } from 'ionicons/icons';
 import { adherenceSummary } from '../domain/adherence';
 import { presentRoutine } from '../domain/routinePresentation';
 import type { AppState, RoutineAssignment, VerificationEvent } from '../domain/models';
@@ -8,8 +8,9 @@ import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
 import { StatusPill } from '../components/StatusPill';
 import { dayPeriodLabelKey } from '../domain/taskTimeLabel';
+import { RoutineEditScreen } from './RoutineEditScreen';
 
-type DetailTab = 'overview' | 'instructions' | 'history' | 'progress';
+type DetailTab = 'overview' | 'instructions' | 'history' | 'progress' | 'plan';
 
 const sameLocalDay = (value: string, day = new Date()) => {
   const date = new Date(value);
@@ -54,16 +55,18 @@ const renderRoutineStepIcon = (icon: string) => {
   return icon;
 };
 
-export function RoutineDetailScreen({ assignment, state, back, start, t, edit, onEditMonitoringPlan }: {
+export function RoutineDetailScreen({ assignment, state, back, start, t, edit, initialTab, onSaveMonitoringPlan, routinePlanBusy }: {
   assignment: RoutineAssignment;
   state: AppState;
   back: () => void;
   start?: () => void;
   t: (key: MessageKey) => string;
   edit?: boolean;
-  onEditMonitoringPlan?: () => void;
+  initialTab?: DetailTab;
+  onSaveMonitoringPlan?: (plan: RoutineAssignment['plan']) => Promise<void>;
+  routinePlanBusy?: boolean;
 }) {
-  const [tab, setTab] = useState<DetailTab>('overview');
+  const [tab, setTab] = useState<DetailTab>(initialTab ?? (edit ? 'plan' : 'overview'));
   const events = state.events.filter((event) => event.routineId === assignment.routineId);
   const summary = adherenceSummary(events);
   const locale = state.locale === 'fr' ? 'fr-FR' : 'en-US';
@@ -73,6 +76,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, t, edit, o
   const formatTime = (value: string) => new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(new Date(value));
   const days = calendarDays(events, locale);
   const currentStreak = streakFor(events);
+  const tabs: DetailTab[] = edit ? ['plan', 'overview', 'instructions', 'history', 'progress'] : ['overview', 'instructions', 'history', 'progress'];
 
   const historyRow = (event: VerificationEvent) => (
     <article className="routine-history-row" key={event.id}>
@@ -84,20 +88,26 @@ export function RoutineDetailScreen({ assignment, state, back, start, t, edit, o
 
   return (
     <div className="content-screen routine-detail-screen" style={visual.style}>
-      <div className="routine-detail-topbar"><button type="button" className="detail-back" onClick={back} aria-label={t('backToRoutines')}>‹</button><button type="button" className="more-button" aria-label={t('moreOptions')}>•••</button></div>
+      <div className="routine-detail-topbar">
+        <button type="button" className="detail-back" onClick={back} aria-label={t('backToRoutines')}><IonIcon icon={chevronBackOutline} /></button>
+        <button type="button" className="more-button" aria-label={t('moreOptions')}><IonIcon icon={ellipsisHorizontal} /></button>
+      </div>
       <header className="routine-detail-hero">
         <span className="routine-hero-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
-        <h1>{visual.name}</h1><p>{assignment.plan.checksPerDay} {t('checksDay')}</p>
+        <div className="routine-detail-title">
+          <h1>{visual.name}</h1>
+          <p>{assignment.plan.checksPerDay} {t('checksDay')}</p>
+        </div>
       </header>
       <nav className="routine-tabs" aria-label={t('routineSections')}>
-        {(['overview', 'instructions', 'history', 'progress'] as DetailTab[]).map((item) => <button type="button" className={tab === item ? 'active' : ''} aria-current={tab === item ? 'page' : undefined} onClick={() => setTab(item)} key={item}>{t(item === 'overview' ? 'overviewTab' : item === 'instructions' ? 'instructions' : item === 'history' ? 'history' : 'routineProgress')}</button>)}
+        {tabs.map((item) => <button type="button" className={tab === item ? 'active' : ''} aria-current={tab === item ? 'page' : undefined} onClick={() => setTab(item)} key={item}>{t(item === 'overview' ? 'overviewTab' : item === 'instructions' ? 'instructions' : item === 'history' ? 'history' : item === 'plan' ? 'monitoringPlan' : 'routineProgress')}</button>)}
       </nav>
 
       {tab === 'overview' && <div className="routine-tab-panel">
         <section className="next-check-card"><div><small>{t('nextCheck')}</small><h2>{next ? t(dayPeriodLabelKey(next.expiresAt)) : t('noPendingTask')}</h2>{next && <p>{t('before')} {formatTime(next.expiresAt)}</p>}</div><span aria-hidden="true"><IonIcon icon={timeOutline} /></span></section>
         <section className="routine-copy"><h2>{t('overviewTab')}</h2><p>{visual.description}</p></section>
         <section className="routine-meta-card">
-          <div className="routine-plan-meta"><span aria-hidden="true"><IonIcon icon={timeOutline} /></span><b>{t('monitoringPlan')}</b><p>{assignment.plan.checksPerDay} {t('timesPerDay')}</p>{edit && <button type="button" onClick={onEditMonitoringPlan} className="routine-edit-plan-button">{t('edit')}</button>}</div>
+          <div className="routine-plan-meta"><span aria-hidden="true"><IonIcon icon={timeOutline} /></span><b>{t('monitoringPlan')}</b><p>{assignment.plan.checksPerDay} {t('timesPerDay')}</p>{edit && <button type="button" onClick={() => setTab('plan')} className="routine-edit-plan-button">{t('edit')}</button>}</div>
           <div><span aria-hidden="true"><IonIcon icon={cameraOutline} /></span><b>{t('expectedProof')}</b><p>{visual.proofType}</p><i><IonIcon icon={chevronForwardOutline} /></i></div>
           <div><span aria-hidden="true"><IonIcon icon={peopleOutline} /></span><b>{t('responsible')}</b><p>{visual.responsibleName}</p><i><IonIcon icon={chevronForwardOutline} /></i></div>
         </section>
@@ -113,6 +123,18 @@ export function RoutineDetailScreen({ assignment, state, back, start, t, edit, o
         <h2>{t('calendar')}</h2><div className="routine-calendar calendar-grid" aria-label={t('lastFourWeeks')}>{days.map((day) => <div className={day.completed ? 'completed' : day.attention ? 'attention' : day.missed ? 'missed' : ''} key={day.key}><small>{day.label}</small><span aria-hidden="true" /></div>)}</div>
         <div className="calendar-legend"><span className="completed">● {t('successful')}</span><span className="attention">● {t('toReview')}</span><span className="missed">● {t('missed')}</span></div>
         <h2>{t('streaks')}</h2><div className="streak-grid"><div><small>{t('currentStreak')}</small><b>{currentStreak}</b><span>{t('days')}</span></div><div><small>{t('bestStreak')}</small><b>{Math.max(currentStreak, summary.successful)}</b><span>{t('days')}</span></div></div>
+      </div>}
+
+      {tab === 'plan' && edit && onSaveMonitoringPlan && <div className="routine-tab-panel routine-plan-tab-panel">
+        <RoutineEditScreen
+          plan={assignment.plan}
+          routineId={assignment.routineId}
+          onSave={onSaveMonitoringPlan}
+          onCancel={() => setTab('overview')}
+          busy={Boolean(routinePlanBusy)}
+          t={t}
+          embedded
+        />
       </div>}
     </div>
   );

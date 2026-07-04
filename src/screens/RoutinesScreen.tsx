@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from 'react';
-import type { AppState, RoutineAssignment, VerificationEvent } from '../domain/models';
+import type { AppState, MonitoringPlan, RoutineAssignment, VerificationEvent } from '../domain/models';
 import { summarizeWeekdays } from '../domain/monitoringPlan';
 import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
@@ -24,7 +24,8 @@ export function RoutinesScreen({
   requestCheck,
   onAssignRoutine,
   onDeleteRoutine,
-  onEditMonitoringPlan,
+  onSaveMonitoringPlan,
+  savingRoutineId,
   t,
 }: {
   state: AppState;
@@ -33,7 +34,8 @@ export function RoutinesScreen({
   requestCheck?: (routineId: string) => Promise<void>;
   onAssignRoutine?: (routineId: string) => Promise<void>;
   onDeleteRoutine?: (routineId: string) => Promise<void>;
-  onEditMonitoringPlan?: (routineId: string) => void;
+  onSaveMonitoringPlan?: (routineId: string, plan: MonitoringPlan) => Promise<void>;
+  savingRoutineId?: string;
   t: (key: MessageKey) => string;
 }) {
   const [selectedId, setSelectedId] = useState<string>();
@@ -44,8 +46,13 @@ export function RoutinesScreen({
   const [assignError, setAssignError] = useState(false);
   const [deletingRoutineId, setDeletingRoutineId] = useState<string>();
   const [deleteErrorRoutineId, setDeleteErrorRoutineId] = useState<string>();
+  const [detailInitialTab, setDetailInitialTab] = useState<'overview' | 'plan'>();
   const selected = state.routineAssignments.find((assignment) => assignment.id === selectedId);
-  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen assignment={selected} state={state} back={() => setSelectedId(undefined)} start={start} edit={edit} onEditMonitoringPlan={() => onEditMonitoringPlan?.(selected.routineId)} t={t} /></Suspense>;
+  const openDetails = (assignmentId: string, initialTab?: 'overview' | 'plan') => {
+    setDetailInitialTab(initialTab);
+    setSelectedId(assignmentId);
+  };
+  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={() => setSelectedId(undefined)} start={start} edit={edit} initialTab={detailInitialTab} onSaveMonitoringPlan={onSaveMonitoringPlan ? (plan) => onSaveMonitoringPlan(selected.routineId, plan) : undefined} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
 
   const setRequestStatus = (routineId: string, status: RequestStatus) => {
     setRequestStatuses((current) => ({ ...current, [routineId]: status }));
@@ -159,12 +166,11 @@ export function RoutinesScreen({
           return (
             <section className="card routine-card routine-plan-list-card" style={visual.style} key={assignment.id}>
               <div className="routine-list-card-title">
-                <button type="button" className="routine-card-heading" onClick={() => setSelectedId(assignment.id)} aria-label={`${t('viewDetails')} — ${visual.name}`}>
+                <button type="button" className="routine-card-heading" onClick={() => openDetails(assignment.id)} aria-label={`${t('viewDetails')} — ${visual.name}`}>
                   <span className="routine-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
                   <div><h2>{visual.name}</h2><p><b>{assignment.plan.checksPerDay}</b> {t('checksDay')} · <b>{assignment.plan.expiryMinutes}</b> {t('minutesRespond')}</p></div>
                 </button>
-                <button type="button" className="routine-list-detail-button" onClick={() => setSelectedId(assignment.id)}>{t('details')}</button>
-                {edit && <button type="button" className="routine-list-edit-button" onClick={() => onEditMonitoringPlan?.(assignment.routineId)}>{t('edit')}</button>}
+                <button type="button" className="routine-list-detail-button" onClick={() => openDetails(assignment.id)}>{t('details')}</button>
                 {edit && onDeleteRoutine && (
                   <button
                     type="button"

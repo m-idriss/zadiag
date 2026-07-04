@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { MonitoringPlan, ScheduleGroup } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import {
@@ -25,6 +25,17 @@ const dayOptions = [
 const defaultGroupLabel = (index: number, group: ScheduleGroup, t: (key: MessageKey) => string) =>
   group.label?.trim() || `${t('monitoringPeriod')} ${index + 1}`;
 
+const scheduleGroupsSignature = (groups: ScheduleGroup[]) => JSON.stringify(groups.map((group) => ({
+  id: group.id,
+  label: group.label?.trim() ?? '',
+  weekdays: normalizeWeekdays(group.weekdays),
+  windows: group.windows.map((window) => ({
+    id: window.id,
+    start: window.start,
+    end: window.end,
+  })),
+})));
+
 const timeHours = Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, '0'));
 const timeMinutes = Array.from({ length: 12 }, (_, index) => String(index * 5).padStart(2, '0'));
 
@@ -43,6 +54,7 @@ export function RoutineEditScreen({
   onCancel,
   t,
   busy,
+  embedded = false,
 }: {
   plan: MonitoringPlan;
   routineId: string;
@@ -50,12 +62,26 @@ export function RoutineEditScreen({
   onCancel: () => void;
   t: (key: MessageKey) => string;
   busy: boolean;
+  embedded?: boolean;
 }) {
   const [groups, setGroups] = useState<ScheduleGroup[]>(groupsFromLegacyPlan(plan));
   const [error, setError] = useState<string>();
   const [timePicker, setTimePicker] = useState<TimePickerState>();
   const flattened = flattenScheduleGroups(groups);
   const checksPerDay = maxChecksPerActiveDay(groups);
+  const initialGroupsSignature = useMemo(() => scheduleGroupsSignature(groupsFromLegacyPlan(plan)), [plan]);
+  const currentGroupsSignature = useMemo(() => scheduleGroupsSignature(groups), [groups]);
+  const hasChanges = currentGroupsSignature !== initialGroupsSignature;
+
+  const resetDraft = () => {
+    setGroups(groupsFromLegacyPlan(plan));
+    setError(undefined);
+    setTimePicker(undefined);
+  };
+
+  useEffect(() => {
+    resetDraft();
+  }, [plan, routineId]);
 
   const updateGroup = (groupId: string, updater: (group: ScheduleGroup) => ScheduleGroup) => {
     setGroups((current) => current.map((group) => group.id === groupId ? updater(group) : group));
@@ -145,35 +171,25 @@ export function RoutineEditScreen({
     }
   };
 
-  return (
-    <div className="content-screen routine-edit-screen" data-routine-id={routineId}>
-      <header className="screen-header routine-edit-header">
-        <button type="button" className="edit-back-button" onClick={onCancel} aria-label={t('cancel')}>‹</button>
-        <div>
-          <small>{t('monitoringPlan')}</small>
-          <h1>{t('editMonitoringPlan')}</h1>
-        </div>
-      </header>
+  const handleCancel = () => {
+    if (embedded) {
+      resetDraft();
+      return;
+    }
+    onCancel();
+  };
 
-      <section className="card plan-card routine-edit-summary" aria-labelledby="plan-summary-title">
-        <div className="card-title">
-          <h2 id="plan-summary-title"><span aria-hidden="true">☷</span>{t('monitoringPlan')}</h2>
-        </div>
-        <p><b>{groups.length}</b> {groups.length > 1 ? t('monitoringPeriodsConfigured') : t('monitoringPeriodConfigured')} · <b>{plan.expiryMinutes}</b> {t('minutesRespond')}</p>
-        <div className="routine-edit-summary-groups">
-          {groups.map((group, index) => (
-            <article key={group.id}>
-              <div>
-                <strong>{defaultGroupLabel(index, group, t)}</strong>
-                <small>{summarizeWeekdays(group.weekdays, t)}</small>
-              </div>
-              <div className="chips">
-                {group.windows.map((window) => <span key={window.id}><i aria-hidden="true">◷</i>{window.start}–{window.end}</span>)}
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
+  return (
+    <div className={embedded ? 'routine-edit-screen routine-edit-embedded' : 'content-screen routine-edit-screen'} data-routine-id={routineId}>
+      {!embedded && (
+        <header className="screen-header routine-edit-header">
+          <button type="button" className="edit-back-button" onClick={onCancel} aria-label={t('cancel')}>‹</button>
+          <div>
+            <small>{t('monitoringPlan')}</small>
+            <h1>{t('editMonitoringPlan')}</h1>
+          </div>
+        </header>
+      )}
 
       {groups.map((group, groupIndex) => (
         <section className="card plan-editor-section schedule-group-card" key={group.id}>
@@ -245,10 +261,10 @@ export function RoutineEditScreen({
       {error && <p className="form-error">{error}</p>}
 
       <div className="routine-edit-actions">
-        <button type="button" className="regenerate-code routine-edit-cancel" onClick={onCancel} disabled={busy}>
+        <button type="button" className="regenerate-code routine-edit-cancel" onClick={handleCancel} disabled={busy || !hasChanges}>
           {t('cancel')}
         </button>
-        <button type="button" className="request-check routine-edit-save" onClick={handleSave} disabled={busy}>
+        <button type="button" className="request-check routine-edit-save" onClick={handleSave} disabled={busy || !hasChanges}>
           {busy ? t('saving') : t('save')}
         </button>
       </div>
