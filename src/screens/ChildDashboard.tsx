@@ -37,7 +37,11 @@ export function ChildDashboard({
     || (event.status === 'pending' && Date.parse(event.expiresAt) > now)
   ));
   const actionableCount = pending.length;
-  const completed = today.filter((event) => !['pending', 'analyzing'].includes(event.status));
+  const completed = state.events.filter((event) => (
+    event.capturedAt !== undefined
+    && isToday(event.capturedAt)
+    && !['pending', 'analyzing'].includes(event.status)
+  ));
   const historyEvents = useMemo(
     () => [...state.events]
       .map((event) => ({ ...event, status: displayStatusFor(event, now) }))

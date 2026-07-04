@@ -125,9 +125,30 @@ describe('participant Today screen', () => {
     act(() => root.render(<ChildDashboard state={reloadedState} start={() => undefined} t={(key) => translate('en', key)} />));
 
     expect(container.textContent).toContain('0 checks to complete');
-    expect(container.textContent).toContain('Completed today3');
+    expect(container.textContent).toContain('Completed today1');
     expect(container.textContent).toContain('Missed');
     expect(container.textContent).toContain('Expired');
+  });
+
+  it('counts a check as completed today when the proof was captured today', () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const submittedToday = {
+      ...event('submitted-today', 'detected', yesterday.toISOString(), atToday(12)),
+      capturedAt: atToday(14),
+    };
+    const state: AppState = {
+      role: 'child',
+      locale: 'en',
+      notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: false },
+      routineAssignments: [createDefaultRoutineAssignment()],
+      events: [submittedToday],
+    };
+
+    act(() => root.render(<ChildDashboard state={state} start={() => undefined} t={(key) => translate('en', key)} />));
+
+    expect(container.textContent).toContain('Completed today1');
   });
 
   it('labels morning checks without calling them evening', () => {
