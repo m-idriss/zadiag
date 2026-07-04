@@ -178,7 +178,7 @@ export function App() {
       setRoute('result');
     } catch (error) {
       console.error(error);
-      setSubmitError(t('requestCheckError'));
+      setSubmitError(t(selectedSessionId ? 'retakeProofError' : 'requestCheckError'));
     } finally {
       setBusy(false);
     }
