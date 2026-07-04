@@ -59,6 +59,7 @@ export function ParentDashboard({
     (statusFilter === 'all' || event.status === statusFilter)
     && (routineFilter === 'all' || event.routineId === routineFilter)
   );
+  const hasHistory = events.length > 0;
 
   const regenerate = async () => {
     if (!window.confirm(t('regenerateCodeConfirm'))) return;
@@ -106,9 +107,14 @@ export function ParentDashboard({
 
       {!state.routineAssignments.length && onCreateRoutine ? (
         <section className="card parent-create-routine-card">
-          <div>
-            <small>{t('routineSetupEyebrow')}</small>
-            <h2>{t('createFirstRoutine')}</h2>
+          <div className="parent-create-routine-icon" aria-hidden="true">
+            <AppIcon name="add" />
+          </div>
+          <div className="parent-create-routine-copy">
+            <div>
+              <small>{t('routineSetupEyebrow')}</small>
+              <h2>{t('createFirstRoutine')}</h2>
+            </div>
             <p>{t('createFirstRoutineHint')}</p>
           </div>
           <button type="button" className="request-check" onClick={onCreateRoutine}>{t('chooseRoutine')}</button>
@@ -116,44 +122,56 @@ export function ParentDashboard({
       ) : null}
 
       <div className="section-heading parent-history-heading"><h2>{t('recentHistory')}</h2></div>
-      <section className="card history-filter-card" aria-label={t('historyFilters')}>
-        <div className="filter-group">
-          <span>{t('filterByRoutine')}</span>
-          <div className="filter-chips">
-            <button type="button" className={routineFilter === 'all' ? 'active' : ''} onClick={() => setRoutineFilter('all')}>{t('allRoutines')}</button>
-            {state.routineAssignments.map((assignment) => {
-              const visual = presentRoutine(assignment.routine, state.locale);
-              return <button type="button" key={assignment.id} className={routineFilter === assignment.routineId ? 'active' : ''} onClick={() => setRoutineFilter(assignment.routineId)}>{visual.name}</button>;
-            })}
-          </div>
-        </div>
-        <div className="filter-group">
-          <span>{t('filterByStatus')}</span>
-          <div className="filter-chips">
-            <button type="button" className={statusFilter === 'all' ? 'active' : ''} onClick={() => setStatusFilter('all')}>{t('allStatuses')}</button>
-            {statuses.map((status) => <button type="button" key={status} className={`filter-status-${status} ${statusFilter === status ? 'active' : ''}`} onClick={() => setStatusFilter(status)}>{t(statusLabelKey(status))}</button>)}
-          </div>
-        </div>
-      </section>
-
-      <div className="section-heading history-results-heading"><h2>{t('historyResults')}</h2><span>{filtered.length}</span></div>
-      <div className="history-list parent-history-list">
-        {filtered.map((event) => {
-          const assignment = routineForEvent(event, state.routineAssignments);
-          const visual = assignment ? presentRoutine(assignment.routine, state.locale) : undefined;
-          return (
-            <section className="card history-row parent-history-row" style={visual?.style} key={event.id}>
-              <div className="history-icon routine-history-icon"><AppIcon name={routineIconName(visual?.icon)} /></div>
-              <div>
-                <strong>{visual?.name ?? t('routine')}</strong>
-                <small>{formatDateTime(event.requestedAt)}{event.reason ? ` · ${event.reason}` : ''}</small>
+      {hasHistory ? (
+        <>
+          <section className="card history-filter-card" aria-label={t('historyFilters')}>
+            <div className="filter-group">
+              <span>{t('filterByRoutine')}</span>
+              <div className="filter-chips">
+                <button type="button" className={routineFilter === 'all' ? 'active' : ''} onClick={() => setRoutineFilter('all')}>{t('allRoutines')}</button>
+                {state.routineAssignments.map((assignment) => {
+                  const visual = presentRoutine(assignment.routine, state.locale);
+                  return <button type="button" key={assignment.id} className={routineFilter === assignment.routineId ? 'active' : ''} onClick={() => setRoutineFilter(assignment.routineId)}>{visual.name}</button>;
+                })}
               </div>
-              <StatusPill status={event.status} t={t} />
-            </section>
-          );
-        })}
-        {!filtered.length && <p className="empty-state">{t('noHistoryMatches')}</p>}
-      </div>
+            </div>
+            <div className="filter-group">
+              <span>{t('filterByStatus')}</span>
+              <div className="filter-chips">
+                <button type="button" className={statusFilter === 'all' ? 'active' : ''} onClick={() => setStatusFilter('all')}>{t('allStatuses')}</button>
+                {statuses.map((status) => <button type="button" key={status} className={`filter-status-${status} ${statusFilter === status ? 'active' : ''}`} onClick={() => setStatusFilter(status)}>{t(statusLabelKey(status))}</button>)}
+              </div>
+            </div>
+          </section>
+
+          <div className="section-heading history-results-heading"><h2>{t('historyResults')}</h2><span>{filtered.length}</span></div>
+          <div className="history-list parent-history-list">
+            {filtered.map((event) => {
+              const assignment = routineForEvent(event, state.routineAssignments);
+              const visual = assignment ? presentRoutine(assignment.routine, state.locale) : undefined;
+              return (
+                <section className="card history-row parent-history-row" style={visual?.style} key={event.id}>
+                  <div className="history-icon routine-history-icon"><AppIcon name={routineIconName(visual?.icon)} /></div>
+                  <div>
+                    <strong>{visual?.name ?? t('routine')}</strong>
+                    <small>{formatDateTime(event.requestedAt)}{event.reason ? ` · ${event.reason}` : ''}</small>
+                  </div>
+                  <StatusPill status={event.status} t={t} />
+                </section>
+              );
+            })}
+            {!filtered.length && <p className="empty-state">{t('noHistoryMatches')}</p>}
+          </div>
+        </>
+      ) : (
+        <section className="card parent-empty-history-card">
+          <AppIcon name="time" />
+          <div>
+            <h2>{t('noHistoryYet')}</h2>
+            <p>{t('noHistoryYetHint')}</p>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

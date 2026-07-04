@@ -58,6 +58,8 @@ describe('ParentDashboard', () => {
     act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} onCreateRoutine={openRoutines} t={(key) => translate('en', key)} />));
 
     expect(container.textContent).toContain('Create the first routine');
+    expect(container.textContent).toContain('No history yet');
+    expect(container.textContent).not.toContain('StatusAll');
     act(() => Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Choose a routine')?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(openRoutines).toHaveBeenCalled();
   });
