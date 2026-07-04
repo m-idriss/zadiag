@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zadiag.app/schemas/routine.schema.json",
+  "title": "Zadiag Routine",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "description",
+    "instructions",
+    "proofType",
+    "analysis",
+    "instructionSteps"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 2
+    },
+    "description": {
+      "type": "string",
+      "minLength": 10
+    },
+    "instructions": {
+      "type": "string",
+      "minLength": 10
+    },
+    "icon": {
+      "type": "string"
+    },
+    "accentColor": {
+      "type": "string",
+      "pattern": "^#[0-9a-fA-F]{6}$"
+    },
+    "proofType": {
+      "type": "string"
+    },
+    "responsibleName": {
+      "type": "string"
+    },
+    "analysis": {
+      "$ref": "#/$defs/analysis"
+    },
+    "instructionSteps": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 4,
+      "items": {
+        "$ref": "#/$defs/instructionStep"
+      }
+    },
+    "translations": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fr": {
+          "$ref": "#/$defs/localizedContent"
+        },
+        "en": {
+          "$ref": "#/$defs/localizedContent"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expectedEvidence",
+        "detectedCriteria",
+        "notDetectedCriteria"
+      ],
+      "properties": {
+        "expectedEvidence": {
+          "type": "string",
+          "minLength": 20
+        },
+        "detectedCriteria": {
+          "type": "string",
+          "minLength": 20
+        },
+        "notDetectedCriteria": {
+          "type": "string",
+          "minLength": 20
+        },
+        "uncertaintyCriteria": {
+          "type": "string",
+          "minLength": 20
+        }
+      }
+    },
+    "instructionStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "icon",
+        "title",
+        "description"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 2
+        },
+        "description": {
+          "type": "string",
+          "minLength": 10
+        }
+      }
+    },
+    "localizedContent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "instructions": {
+          "type": "string"
+        },
+        "analysis": {
+          "$ref": "#/$defs/analysis"
+        },
+        "instructionSteps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/instructionStep"
+          }
+        }
+      }
+    }
+  }
+}

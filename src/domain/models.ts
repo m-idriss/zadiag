@@ -72,6 +72,19 @@ export interface Routine {
   translations?: Partial<Record<Locale, RoutineLocalizedContent>>;
 }
 
+export type RoutineTemplateVisibility = 'builtin' | 'private' | 'unlisted' | 'public';
+
+export interface RoutineTemplate {
+  id: string;
+  routine: Routine;
+  visibility: RoutineTemplateVisibility;
+  ownerFamilyId?: string;
+  sourceTemplateId?: string;
+  shareCode?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface RoutineAssignment {
   id: string;
   routineId: string;

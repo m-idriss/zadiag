@@ -1,6 +1,8 @@
 import { defaultRoutine, type Locale, type Routine } from './models';
 import { presentRoutine } from './routinePresentation';
 
+// Built-in routines shipped with the app. Shared/custom routines live in the
+// marketplace layer and are snapshotted into RoutineAssignment when assigned.
 export const availableRoutines: Routine[] = [
   defaultRoutine,
   {
