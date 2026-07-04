@@ -4,7 +4,7 @@ import { groupsFromLegacyPlan, summarizeWeekdays } from '../domain/monitoringPla
 import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
 import { presentRoutine } from '../domain/routinePresentation';
-import { availableRoutines, presentCatalogRoutine } from '../domain/routineCatalog';
+import { assignableRoutineTemplates, marketplaceFromTemplates, presentRoutineTemplate } from '../domain/routineMarketplace';
 import { dayPeriodLabelKey } from '../domain/taskTimeLabel';
 
 const RoutineDetailScreen = lazy(() => import('./RoutineDetailScreen').then((module) => ({ default: module.RoutineDetailScreen })));
@@ -56,6 +56,7 @@ export function RoutinesScreen({
   const [detailInitialTab, setDetailInitialTab] = useState<'overview' | 'plan'>();
   const [expandedScheduleIds, setExpandedScheduleIds] = useState<Set<string>>(() => new Set());
   const selected = state.routineAssignments.find((assignment) => assignment.id === selectedId);
+  const marketplace = marketplaceFromTemplates();
   const openDetails = (assignmentId: string, initialTab?: 'overview' | 'plan') => {
     setDetailInitialTab(initialTab);
     setSelectedId(assignmentId);
@@ -81,6 +82,7 @@ export function RoutinesScreen({
   };
 
   const assignedRoutineIds = new Set(state.routineAssignments.map((assignment) => assignment.routineId));
+  const assignableTemplates = assignableRoutineTemplates(marketplace, [...assignedRoutineIds]);
   const assignRoutine = async (routineId: string) => {
     if (!onAssignRoutine || assignedRoutineIds.has(routineId)) return;
     setAssigningRoutineId(routineId);
@@ -137,24 +139,26 @@ export function RoutinesScreen({
             <button type="button" className="routine-catalog-close" onClick={() => setCatalogOpen(false)} aria-label={t('close')}>×</button>
           </div>
           <div className="routine-catalog-list">
-            {availableRoutines.map((routine) => {
-              const visual = presentCatalogRoutine(routine, state.locale);
-              const assigned = assignedRoutineIds.has(routine.id);
-              const assigning = assigningRoutineId === routine.id;
+            {marketplace.templates.map((template) => {
+              const visual = presentRoutineTemplate(template, state.locale);
+              const routineId = template.routine.id;
+              const assigned = assignedRoutineIds.has(routineId);
+              const assigning = assigningRoutineId === routineId;
               return (
-                <article className="routine-catalog-item" style={visual.style} key={routine.id}>
+                <article className="routine-catalog-item" style={visual.style} key={template.id}>
                   <span className="routine-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
                   <div>
                     <h3>{visual.name}</h3>
                     <p>{visual.description}</p>
                   </div>
-                  <button type="button" className="routine-catalog-add" disabled={assigned || assigning} onClick={() => { void assignRoutine(routine.id); }}>
+                  <button type="button" className="routine-catalog-add" disabled={assigned || assigning} onClick={() => { void assignRoutine(routineId); }}>
                     {assigned ? t('routineAlreadyAdded') : assigning ? t('addingRoutine') : t('add')}
                   </button>
                 </article>
               );
             })}
           </div>
+          {!assignableTemplates.length && <p className="request-feedback">{t('allMarketplaceRoutinesAdded')}</p>}
           {assignError && <p role="alert" className="request-feedback error">{t('routineAddError')}</p>}
         </section>
       )}
