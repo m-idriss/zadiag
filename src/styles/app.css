@@ -445,6 +445,8 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .settings-pull-bar { height: 6px; border-radius: 999px; background: #e7efec; overflow: hidden; }
 .settings-pull-bar > div { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--teal), #41b6a2); transition: width .12s linear; }
 .settings-inline-action {
+  appearance: none;
+  -webkit-appearance: none;
   width: fit-content;
   min-height: 36px;
   margin: 0;
@@ -452,17 +454,22 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
   align-items: center;
   justify-content: center;
   padding: 0 14px;
-  border: 1px solid rgba(29,138,122,.14);
+  border: 1px solid rgba(29,138,122,.24);
   border-radius: 999px;
-  background: var(--mint);
+  background: rgba(255,255,255,.96);
   color: var(--teal);
+  font-family: inherit;
   font-size: 12px;
   font-weight: 900;
+  line-height: 1;
   text-transform: none;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.82), 0 6px 14px rgba(21,50,75,.04);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 7px 16px rgba(21,50,75,.055);
 }
+.settings-inline-action:hover { background: var(--mint); }
 .settings-inline-action:active { transform: translateY(1px); box-shadow: inset 0 1px 0 rgba(255,255,255,.82); }
 .settings-inline-action:disabled {
+  appearance: none;
+  -webkit-appearance: none;
   border-color: rgba(16,42,67,.05);
   background: #f3f4f3;
   color: #a9afb2;

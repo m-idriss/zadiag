@@ -223,7 +223,7 @@ export function SettingsScreen({
               </span>
               {!notificationEnabled ? <button
                 type="button"
-                className="settings-inline-action settings-inline-action-contained"
+                className="settings-inline-action"
                 disabled={!standalone || notificationState === 'saving'}
                 onClick={() => { void requestNotifications(); }}
               >
@@ -254,7 +254,7 @@ export function SettingsScreen({
               <small>{t('settingsDebugMailDetail')}</small>
               {mailError ? <small className="settings-action-error">{t('settingsDebugMailError')}</small> : null}
             </div>
-            <button type="button" className="settings-inline-action settings-inline-action-contained" onClick={sendDiagnosticsEmail}>
+            <button type="button" className="settings-inline-action" onClick={sendDiagnosticsEmail}>
               {t('settingsDebugMailSend')}
             </button>
           </div>
@@ -267,7 +267,7 @@ export function SettingsScreen({
             </div>
             <button
               type="button"
-              className="settings-inline-action settings-inline-action-contained"
+              className="settings-inline-action"
               disabled={updatingApp || !updateAvailable}
               onClick={() => { void forceUpdate(); }}
             >

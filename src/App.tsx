@@ -275,6 +275,7 @@ export function App() {
             setEditingRoutineId(undefined);
           } catch (error) {
             console.error('Update routine error:', error);
+            throw error;
           } finally {
             setIsSavingRoutine(false);
           }
