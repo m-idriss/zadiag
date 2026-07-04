@@ -112,6 +112,42 @@ test('asks Gemini to answer in the requested locale', async () => {
   assert.equal(result.reason, 'Les élastiques sont visibles.');
 });
 
+test('includes routine-specific evidence criteria in the Gemini prompt', async () => {
+  let bodyText = '';
+  await analyzeWithGemini('data:image/png;base64,AAAA', {
+    model: 'gemini-test-model',
+    getAccessToken: async () => 'token-123',
+    routineAnalysis: {
+      routineName: 'Hydration',
+      expectedEvidence: 'A water bottle, glass of water, or hydration tracker.',
+      detectedCriteria: 'hydration proof is clearly visible.',
+      notDetectedCriteria: 'no hydration proof is visible.',
+      uncertaintyCriteria: 'the object could be unrelated to hydration.',
+    },
+    fetchImpl: async (_input, init) => {
+      bodyText = String(init?.body ?? '');
+      return new Response(JSON.stringify({
+        candidates: [
+          {
+            finishReason: 'STOP',
+            content: {
+              parts: [
+                {
+                  text: '{"status":"detected","confidence":"0.9","imageQuality":"0.92","reason":"hydration proof visible"}',
+                },
+              ],
+            },
+          },
+        ],
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    },
+  });
+
+  assert.match(bodyText, /Routine: Hydration/);
+  assert.match(bodyText, /A water bottle, glass of water, or hydration tracker/);
+  assert.match(bodyText, /hydration proof is clearly visible/);
+});
+
 test('translates the reason when locale is French', async () => {
   let bodyText = '';
   const translated = await localizeAnalysisReason('No treatment aid is visible on the teeth.', {

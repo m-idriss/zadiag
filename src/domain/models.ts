@@ -45,6 +45,12 @@ export interface RoutineLocalizedContent {
   description?: string;
   instructions?: string;
   instructionSteps?: RoutineInstructionStep[];
+  analysis?: {
+    expectedEvidence?: string;
+    detectedCriteria?: string;
+    notDetectedCriteria?: string;
+    uncertaintyCriteria?: string;
+  };
 }
 
 export interface Routine {
@@ -57,6 +63,12 @@ export interface Routine {
   proofType?: string;
   responsibleName?: string;
   instructionSteps?: RoutineInstructionStep[];
+  analysis?: {
+    expectedEvidence: string;
+    detectedCriteria: string;
+    notDetectedCriteria: string;
+    uncertaintyCriteria?: string;
+  };
   translations?: Partial<Record<Locale, RoutineLocalizedContent>>;
 }
 
@@ -150,6 +162,12 @@ export const defaultRoutine: Routine = {
   accentColor: '#0d927d',
   proofType: 'Photo',
   responsibleName: 'Care team',
+  analysis: {
+    expectedEvidence: 'A clear view of the mouth showing whether orthodontic elastics are being worn.',
+    detectedCriteria: 'orthodontic elastics are clearly visible on the teeth or braces.',
+    notDetectedCriteria: 'the mouth or teeth are visible and orthodontic elastics are clearly absent.',
+    uncertaintyCriteria: 'the mouth is not visible enough, the image is blurry or dark, or it is impossible to tell whether elastics are present.',
+  },
   instructionSteps: [
     { id: 'wear', icon: '🦷', title: 'Wear your elastics', description: 'Follow the instructions from your healthcare professional.' },
     { id: 'photo', icon: '📷', title: 'Take a clear photo', description: 'Use good light and keep your mouth centered.' },
@@ -160,6 +178,12 @@ export const defaultRoutine: Routine = {
       name: 'Élastiques orthodontiques',
       description: 'Contrôles quotidiens du port des élastiques orthodontiques.',
       instructions: 'Porte tes élastiques selon les consignes de ton praticien et envoie une photo claire pour chaque contrôle.',
+      analysis: {
+        expectedEvidence: 'Une vue claire de la bouche montrant si les élastiques orthodontiques sont portés.',
+        detectedCriteria: 'les élastiques orthodontiques sont clairement visibles sur les dents ou l’appareil.',
+        notDetectedCriteria: 'la bouche ou les dents sont visibles et les élastiques orthodontiques sont clairement absents.',
+        uncertaintyCriteria: 'la bouche n’est pas assez visible, l’image est floue ou sombre, ou il est impossible de savoir si les élastiques sont présents.',
+      },
       instructionSteps: [
         { id: 'wear', icon: '🦷', title: 'Mets tes élastiques', description: 'Suis les consignes de ton praticien.' },
         { id: 'photo', icon: '📷', title: 'Prends une photo', description: 'Cadre bien ta bouche avec une lumière claire.' },

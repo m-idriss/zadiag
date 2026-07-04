@@ -6,7 +6,7 @@ import { GoogleAuth } from 'google-auth-library';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, normalizeLinkCode } from './helpers.js';
-import { analyzeWithGemini, localizeAnalysisReason, type AnalysisResult } from './analysis.js';
+import { analyzeWithGemini, localizeAnalysisReason, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
 import { getLocalDateKey, getWindowForDate, monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
 import { createDefaultRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, routineFromCatalog, type RoutineAssignmentDocument } from './routines.js';
 import { buildCheckNotificationPayload } from './notifications.js';
@@ -36,6 +36,28 @@ interface RoutineNotificationNames {
     fr?: string;
   };
 }
+
+const getRoutineAnalysisContext = (
+  assignment: Partial<RoutineAssignmentDocument> | undefined,
+  routineId: string,
+  locale: 'en' | 'fr',
+): RoutineAnalysisContext | undefined => {
+  const routine = assignment?.routine ?? routineFromCatalog(routineId) ?? routineFromCatalog(DEFAULT_ROUTINE_ID);
+  if (!routine) return undefined;
+  const localized = routine.translations?.[locale];
+  const analysis = {
+    ...routine.analysis,
+    ...localized?.analysis,
+  };
+  if (!analysis.expectedEvidence || !analysis.detectedCriteria || !analysis.notDetectedCriteria) return undefined;
+  return {
+    routineName: localized?.name ?? routine.name,
+    expectedEvidence: analysis.expectedEvidence,
+    detectedCriteria: analysis.detectedCriteria,
+    notDetectedCriteria: analysis.notDetectedCriteria,
+    uncertaintyCriteria: analysis.uncertaintyCriteria,
+  };
+};
 
 const requireUid = (auth: { uid: string } | undefined) => {
   if (!auth) throw new HttpsError('unauthenticated', 'Authentication is required.');
@@ -804,7 +826,7 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
     throw new HttpsError('invalid-argument', 'A valid image is required.');
   }
   const checkRef = db.collection('families').doc(familyId).collection('checks').doc(checkId);
-  await db.runTransaction(async (transaction) => {
+  const routineId = await db.runTransaction(async (transaction) => {
     const check = await transaction.get(checkRef);
     const checkData = check.data();
     if (!check.exists || !checkData || !isFreshCheckSubmission(checkData, capturedAt)) {
@@ -818,7 +840,10 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
       status: 'analyzing',
       analysisStartedAt: FieldValue.serverTimestamp(),
     });
+    return typeof checkData.routineId === 'string' && checkData.routineId ? checkData.routineId : DEFAULT_ROUTINE_ID;
   });
+  const assignment = await db.collection('families').doc(familyId).collection('routineAssignments').doc(routineId).get();
+  const routineAnalysis = getRoutineAnalysisContext(assignment.data() as Partial<RoutineAssignmentDocument> | undefined, routineId, locale);
   const fallbackResult: Partial<AnalysisResult> = {
     status: 'uncertain',
     reason: 'analysis_unavailable',
@@ -829,6 +854,7 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
       model: geminiModel,
       getAccessToken: () => geminiAuth.getAccessToken(),
       locale,
+      routineAnalysis,
     });
     if (result.reason && result.reason !== 'analysis_unavailable' && locale === 'fr') {
       const reasonRaw = result.reason;

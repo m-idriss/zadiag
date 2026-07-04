@@ -8,6 +8,14 @@ export type AnalysisResult = {
   reasonRaw?: string;
 };
 
+export type RoutineAnalysisContext = {
+  routineName: string;
+  expectedEvidence: string;
+  detectedCriteria: string;
+  notDetectedCriteria: string;
+  uncertaintyCriteria?: string;
+};
+
 const analysisSchema = z.object({
   status: z.unknown(),
   confidence: z.unknown(),
@@ -96,8 +104,20 @@ type GeminiGenerateContentResponse = {
 
 export type AnalysisLocale = 'en' | 'fr';
 
-const buildPrompt = (locale: AnalysisLocale, retry: boolean) => [
-  'Check whether the treatment aid is clearly visible in the photo.',
+const defaultRoutineAnalysis: RoutineAnalysisContext = {
+  routineName: 'Treatment adherence',
+  expectedEvidence: 'The expected treatment aid or adherence proof for this routine.',
+  detectedCriteria: 'The expected proof is clearly visible and matches the routine.',
+  notDetectedCriteria: 'The expected proof is not visible or clearly does not match the routine.',
+  uncertaintyCriteria: 'Use uncertain when the image is too dark, blurry, cropped, ambiguous, or does not allow a reliable decision.',
+};
+
+const buildPrompt = (locale: AnalysisLocale, retry: boolean, routineAnalysis = defaultRoutineAnalysis) => [
+  `Routine: ${routineAnalysis.routineName}.`,
+  `Expected evidence: ${routineAnalysis.expectedEvidence}`,
+  `Return detected only when: ${routineAnalysis.detectedCriteria}`,
+  `Return not_detected only when: ${routineAnalysis.notDetectedCriteria}`,
+  `Return uncertain when: ${routineAnalysis.uncertaintyCriteria ?? defaultRoutineAnalysis.uncertaintyCriteria}`,
   locale === 'fr' ? 'Reply in French.' : 'Reply in English.',
   retry ? 'This is a second pass. Re-check carefully before answering.' : '',
   'Return JSON only.',
@@ -107,9 +127,9 @@ const buildPrompt = (locale: AnalysisLocale, retry: boolean) => [
     ? 'The reason field must be a natural French sentence, with no English words.'
     : 'The reason field must be a natural English sentence, with no French words.',
   locale === 'fr'
-    ? 'Example reason: "Aucun appareil de traitement n’est visible sur les dents."'
-    : 'Example reason: "No treatment aid is visible on the teeth."',
-  retry ? 'Only use not_detected if you are genuinely confident the aid is not visible.' : '',
+    ? 'Example reason: "La preuve attendue n’est pas clairement visible."'
+    : 'Example reason: "The expected proof is not clearly visible."',
+  retry ? 'Only use not_detected if you are genuinely confident the expected evidence is missing.' : '',
 ].filter(Boolean).join(' ');
 
 const requestGeminiAnalysis = async (
@@ -119,6 +139,7 @@ const requestGeminiAnalysis = async (
     getAccessToken: () => Promise<string | null | undefined>;
     fetchImpl?: typeof fetch;
     locale?: AnalysisLocale;
+    routineAnalysis?: RoutineAnalysisContext;
   },
   retry: boolean,
 ): Promise<AnalysisResult> => {
@@ -139,7 +160,7 @@ const requestGeminiAnalysis = async (
           role: 'user',
           parts: [
             {
-              text: buildPrompt(options.locale ?? 'en', retry),
+              text: buildPrompt(options.locale ?? 'en', retry, options.routineAnalysis),
             },
             {
               inline_data: {
@@ -189,6 +210,7 @@ export const analyzeWithGemini = async (
     getAccessToken: () => Promise<string | null | undefined>;
     fetchImpl?: typeof fetch;
     locale?: AnalysisLocale;
+    routineAnalysis?: RoutineAnalysisContext;
   },
 ): Promise<AnalysisResult> => {
   const initialResult = await requestGeminiAnalysis(imageDataUrl, options, false);
