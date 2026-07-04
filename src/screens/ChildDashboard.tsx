@@ -1,11 +1,11 @@
-import { useMemo } from 'react';
-import { adherenceSummary } from '../domain/adherence';
+import { useMemo, useState } from 'react';
 import type { AppState, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { Disclaimer } from '../components/Disclaimer';
 import { StatusPill } from '../components/StatusPill';
 import { AppIcon, routineIconName } from '../components/Icon';
 import { RoutineHistoryPanel } from '../components/RoutineHistoryPanel';
+import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } from '../components/AdherenceSummaryCard';
 import { presentRoutine } from '../domain/routinePresentation';
 import { dayPeriodLabelKey } from '../domain/taskTimeLabel';
 
@@ -30,6 +30,7 @@ export function ChildDashboard({
   start: (event: VerificationEvent) => void;
   t: (key: MessageKey) => string;
 }) {
+  const [summaryRange, setSummaryRange] = useState<SummaryRange>('week');
   const now = Date.now();
   const today = state.events.filter((event) => isToday(event.requestedAt));
   const pending = today.filter((event) => (
@@ -48,7 +49,10 @@ export function ChildDashboard({
       .filter((event) => !['pending', 'analyzing'].includes(event.status)),
     [now, state.events],
   );
-  const summary = adherenceSummary(historyEvents);
+  const rangedHistoryEvents = useMemo(
+    () => filterEventsBySummaryRange(historyEvents, summaryRange, now),
+    [historyEvents, now, summaryRange],
+  );
   const formatTime = (value: string) => new Intl.DateTimeFormat(state.locale === 'fr' ? 'fr-FR' : 'en-US', {
     timeStyle: 'short',
   }).format(new Date(value));
@@ -133,13 +137,8 @@ export function ChildDashboard({
   );
   const historySection = (
     <section className="today-section participant-history-section" aria-labelledby="participant-history-title">
-      <section className="card summary-card">
-        <div className="progress-ring" style={{ '--progress': `${summary.rate * 360}deg` } as React.CSSProperties}>
-          <span>{Math.round(summary.rate * 100)}%</span>
-        </div>
-        <div><h2>{t('lastSeven')}</h2><p>{summary.successful} {t('clearChecks')} {summary.completed}</p><strong>{t('progressEncouragement')}</strong></div>
-      </section>
-      <RoutineHistoryPanel assignments={state.routineAssignments} events={historyEvents} locale={state.locale} titleId="participant-history-title" t={t} />
+      <AdherenceSummaryCard events={historyEvents} range={summaryRange} onRangeChange={setSummaryRange} t={t} />
+      <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedHistoryEvents} locale={state.locale} titleId="participant-history-title" t={t} />
     </section>
   );
   return (

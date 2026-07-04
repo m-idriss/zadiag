@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { adherenceSummary } from '../domain/adherence';
 import type { AppState } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { AppIcon } from '../components/Icon';
 import { CodeBox } from '../components/CodeBox';
 import { RoutineHistoryPanel } from '../components/RoutineHistoryPanel';
+import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } from '../components/AdherenceSummaryCard';
 
 export function ParentDashboard({
   state,
@@ -19,7 +19,8 @@ export function ParentDashboard({
 }) {
   const [regenerating, setRegenerating] = useState(false);
   const [codeError, setCodeError] = useState(false);
-  const summary = adherenceSummary(state.events);
+  const [summaryRange, setSummaryRange] = useState<SummaryRange>('week');
+  const rangedEvents = filterEventsBySummaryRange(state.events, summaryRange);
 
   const regenerate = async () => {
     if (!window.confirm(t('regenerateCodeConfirm'))) return;
@@ -41,12 +42,7 @@ export function ParentDashboard({
         <div className="avatar">{state.family.childName.charAt(0)}</div>
       </header>
 
-      <section className="card summary-card">
-        <div className="progress-ring" style={{ '--progress': `${summary.rate * 360}deg` } as React.CSSProperties}>
-          <span>{Math.round(summary.rate * 100)}%</span>
-        </div>
-        <div><h2>{t('lastSeven')}</h2><p>{summary.successful} {t('clearChecks')} {summary.completed}</p><strong>{t('progressEncouragement')}</strong></div>
-      </section>
+      <AdherenceSummaryCard events={state.events} range={summaryRange} onRangeChange={setSummaryRange} t={t} />
 
       {!state.family.childLinked && state.family.linkingCode ? (
         <CodeBox
@@ -81,7 +77,7 @@ export function ParentDashboard({
         </section>
       ) : null}
 
-      <RoutineHistoryPanel assignments={state.routineAssignments} events={state.events} locale={state.locale} t={t} />
+      <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedEvents} locale={state.locale} t={t} />
     </div>
   );
 }

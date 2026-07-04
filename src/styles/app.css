@@ -256,7 +256,13 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .summary-card { display: flex; align-items: center; gap: 18px; }
 .summary-card p { margin: 5px 0; }
 .summary-card strong { color: var(--teal); font-size: 13px; }
-.progress-ring { --progress: 0deg; width: 96px; height: 96px; flex: 0 0 96px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--teal) var(--progress), #e8efed 0); position: relative; }
+.adherence-summary-card { align-items: stretch; }
+.adherence-summary-content { min-width: 0; flex: 1; display: grid; gap: 12px; align-content: center; }
+.adherence-summary-copy h2 { margin-bottom: 4px; }
+.summary-range-toggle { display: inline-flex; flex-wrap: wrap; gap: 5px; padding: 4px; border-radius: 999px; background: #f1f6f4; width: fit-content; max-width: 100%; }
+.summary-range-toggle button { min-height: 28px; padding: 6px 10px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 900; cursor: pointer; }
+.summary-range-toggle button.active { background: var(--teal); color: white; box-shadow: 0 8px 18px rgba(0,137,118,.16); }
+.progress-ring { --summary-ring: #e8efed 0deg 360deg; width: 96px; height: 96px; flex: 0 0 96px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--summary-ring)); position: relative; }
 .progress-ring::after { content: ''; width: 74px; height: 74px; border-radius: 50%; background: white; position: absolute; }
 .progress-ring span { z-index: 1; font-weight: 900; font-size: 19px; }
 .plan-card { margin-top: 14px; }
