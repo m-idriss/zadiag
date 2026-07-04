@@ -70,9 +70,10 @@ export function AppIcon({ name, className }: { name: AppIconName; className?: st
 }
 
 export const routineIconName = (icon?: string): AppIconName => {
+  const normalizedIcon = icon?.trim().toLowerCase();
   if (icon === '💧') return 'water';
   if (icon === '📷' || icon === '▣') return 'camera';
   if (icon === '📤' || icon === '➤') return 'send';
-  if (icon === '🦷') return 'tooth';
+  if (icon === '🦷' || normalizedIcon === 'tooth' || normalizedIcon === 'teeth' || normalizedIcon === 'dental') return 'tooth';
   return 'sparkles';
 };

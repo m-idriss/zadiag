@@ -15,6 +15,17 @@ describe('routine presentation', () => {
     expect(visual.instructionSteps).toHaveLength(3);
   });
 
+  it('enriches persisted orthodontic routines even when their id changed', () => {
+    const visual = presentRoutine({
+      id: 'legacy-prod-id',
+      name: 'Élastiques orthodontiques',
+      description: '',
+    }, 'fr');
+
+    expect(visual.icon).toBe('🦷');
+    expect(visual.accent).toBe('#0d927d');
+  });
+
   it('sanitizes custom accent colors', () => {
     expect(presentRoutine({ id: 'custom', name: 'Custom', description: '', accentColor: 'url(evil)' }, 'en').accent).toBe('#0d927d');
   });
