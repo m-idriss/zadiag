@@ -20,6 +20,12 @@ const ranges: Array<{
 const eventTimestamp = (event: VerificationEvent) =>
   Date.parse(event.capturedAt ?? event.requestedAt);
 
+const startOfToday = (now: number) => {
+  const date = new Date(now);
+  date.setHours(0, 0, 0, 0);
+  return date.getTime();
+};
+
 const ringSegments: Array<{ status: VerificationStatus; color: string }> = [
   { status: 'detected', color: 'var(--teal)' },
   { status: 'not_detected', color: '#f5b8af' },
@@ -43,7 +49,9 @@ const summaryRing = (statusCounts: Record<string, number>, total: number) => {
 
 export const filterEventsBySummaryRange = (events: VerificationEvent[], range: SummaryRange, now = Date.now()) => {
   const selectedRange = ranges.find((item) => item.id === range) ?? ranges[1];
-  const cutoff = now - selectedRange.days * 24 * 60 * 60 * 1000;
+  const cutoff = range === 'day'
+    ? startOfToday(now)
+    : now - selectedRange.days * 24 * 60 * 60 * 1000;
   return events.filter((event) => eventTimestamp(event) >= cutoff);
 };
 
