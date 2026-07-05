@@ -58,6 +58,26 @@ describe('DemoRepository compatibility', () => {
     expect(repository.snapshot().family.childLinked).toBe(true);
   });
 
+  test('self-validates participant-created routines without AI analysis', async () => {
+    const repository = new DemoRepository();
+    await repository.selectRole('child');
+    await repository.deleteRoutine(DEFAULT_ROUTINE_ID);
+    await repository.deleteRoutine('daily-hydration');
+    await repository.assignRoutine('medication');
+
+    const assignment = repository.snapshot().routineAssignments[0];
+    expect(assignment).toMatchObject({ routineId: 'medication', createdBy: 'child', validationMode: 'auto' });
+
+    await repository.requestCheckNow('medication');
+    const sessionId = repository.snapshot().events.find((event) => event.routineId === 'medication' && event.status === 'pending')?.sessionId;
+    expect(sessionId).toBeTruthy();
+
+    const result = await repository.submitCapture(sessionId!, new Date(), 'data:image/png;base64,photo');
+
+    expect(result.status).toBe('detected');
+    expect(result.analysisSource).toBe('self');
+  });
+
   test('migrates legacy local state to the default routine idempotently', () => {
     localStorage.setItem('zadiag.demo.v1', JSON.stringify({
       locale: 'en',

@@ -4,6 +4,7 @@ import type {
   MonitoringPlan,
   Role,
   RoutineAssignment,
+  RoutineValidationMode,
   VerificationEvent,
 } from '../domain/models';
 import { createDefaultRoutineAssignment, DEFAULT_ROUTINE_ID, primaryRoutineAssignment } from '../domain/models';
@@ -120,6 +121,8 @@ function initialState(): AppState {
         plan: structuredClone(defaultAssignment.plan),
         status: 'active' as const,
         assignedAt: new Date().toISOString(),
+        createdBy: 'parent' as const,
+        validationMode: 'ai' as const,
       }] : []),
     ],
     routinesLoaded: true,
@@ -215,6 +218,8 @@ export class DemoRepository implements AppRepository {
       plan: structuredClone(this.state.routineAssignments[0]?.plan ?? createDefaultRoutineAssignment().plan),
       status: 'active',
       assignedAt: new Date().toISOString(),
+      createdBy: this.state.role === 'child' ? 'child' : 'parent',
+      validationMode: this.state.role === 'child' ? 'auto' : 'ai',
     });
     this.persist();
   }
@@ -222,10 +227,6 @@ export class DemoRepository implements AppRepository {
   async deleteRoutine(routineId: string) {
     const assignment = this.state.routineAssignments.find((item) => item.routineId === routineId);
     if (!assignment) throw new Error('routine_not_found');
-    const activeAssignments = this.state.routineAssignments.filter((item) => item.status === 'active');
-    if (assignment.status === 'active' && activeAssignments.length <= 1) {
-      throw new Error('last_routine');
-    }
     this.state.routineAssignments = this.state.routineAssignments.filter((item) => item.routineId !== routineId);
     this.state.events = this.state.events.filter((event) => event.routineId !== routineId);
     this.persist();
@@ -252,10 +253,11 @@ export class DemoRepository implements AppRepository {
     this.persist();
   }
 
-  async updateRoutine(routineId: string, plan: MonitoringPlan) {
+  async updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode) {
     const assignment = this.state.routineAssignments.find((r) => r.routineId === routineId);
     if (assignment) {
       assignment.plan = plan;
+      if (validationMode && assignment.createdBy === 'child') assignment.validationMode = validationMode;
       this.persist();
     }
   }
@@ -287,6 +289,17 @@ export class DemoRepository implements AppRepository {
       throw new Error('invalid_or_replayed_capture');
     }
     this.consumedSessions.add(sessionId);
+    const assignment = this.state.routineAssignments.find((item) => item.routineId === event.routineId);
+    if (assignment?.validationMode === 'auto') {
+      Object.assign(event, {
+        status: 'detected' as const,
+        capturedAt: capturedAt.toISOString(),
+        analysisSource: 'self' as const,
+        reason: 'self_validated',
+      });
+      this.persist();
+      return structuredClone(event);
+    }
     event.status = 'analyzing';
     this.persist();
     await new Promise((resolve) => window.setTimeout(resolve, 900));
@@ -330,7 +343,11 @@ export class DemoRepository implements AppRepository {
   private migrateState(state: AppState & { plan?: MonitoringPlan }): AppState {
     const legacyPlan = state.plan;
     const routineAssignments: RoutineAssignment[] = state.routineAssignments?.length
-      ? state.routineAssignments
+      ? state.routineAssignments.map((assignment) => ({
+          ...assignment,
+          createdBy: assignment.createdBy ?? 'parent',
+          validationMode: assignment.validationMode ?? 'ai',
+        }))
       : [{ ...createDefaultRoutineAssignment(), ...(legacyPlan ? { plan: legacyPlan } : {}) }];
     return {
       ...state,

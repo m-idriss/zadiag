@@ -233,14 +233,14 @@ export function App() {
         ? <RoutinesScreen
             state={state}
             start={role === 'child' ? () => startCapture() : undefined}
-            edit={role === 'parent'}
+            edit
             requestCheck={role === 'parent' ? async (routineId) => { await repository.requestCheckNow(routineId); sync(); } : undefined}
-            onAssignRoutine={role === 'parent' ? async (routineId) => { await repository.assignRoutine(routineId); sync(); } : undefined}
-            onDeleteRoutine={role === 'parent' ? async (routineId) => { await repository.deleteRoutine(routineId); sync(); } : undefined}
-            onSaveMonitoringPlan={role === 'parent' ? async (routineId, plan) => {
+            onAssignRoutine={async (routineId) => { await repository.assignRoutine(routineId); sync(); }}
+            onDeleteRoutine={async (routineId) => { await repository.deleteRoutine(routineId); sync(); }}
+            onSaveMonitoringPlan={async (routineId, plan, validationMode) => {
               setSavingRoutineId(routineId);
               try {
-                await repository.updateRoutine(routineId, plan);
+                await repository.updateRoutine(routineId, plan, validationMode);
                 sync();
               } catch (error) {
                 console.error('Update routine error:', error);
@@ -248,7 +248,7 @@ export function App() {
               } finally {
                 setSavingRoutineId(undefined);
               }
-            } : undefined}
+            }}
             savingRoutineId={savingRoutineId}
             t={t}
           />

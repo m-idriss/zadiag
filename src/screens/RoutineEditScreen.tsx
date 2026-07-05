@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { MonitoringPlan, ScheduleGroup } from '../domain/models';
+import type { MonitoringPlan, RoutineValidationMode, ScheduleGroup } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import {
   flattenScheduleGroups,
@@ -52,6 +52,8 @@ type TimePickerState = {
 
 export function RoutineEditScreen({
   plan,
+  validationMode = 'ai',
+  canEditValidationMode = false,
   routineId,
   onSave,
   onCancel,
@@ -60,31 +62,35 @@ export function RoutineEditScreen({
   embedded = false,
 }: {
   plan: MonitoringPlan;
+  validationMode?: RoutineValidationMode;
+  canEditValidationMode?: boolean;
   routineId: string;
-  onSave: (plan: MonitoringPlan) => Promise<void>;
+  onSave: (plan: MonitoringPlan, validationMode?: RoutineValidationMode) => Promise<void>;
   onCancel: () => void;
   t: (key: MessageKey) => string;
   busy: boolean;
   embedded?: boolean;
 }) {
   const [groups, setGroups] = useState<ScheduleGroup[]>(groupsFromLegacyPlan(plan));
+  const [draftValidationMode, setDraftValidationMode] = useState<RoutineValidationMode>(validationMode);
   const [error, setError] = useState<string>();
   const [timePicker, setTimePicker] = useState<TimePickerState>();
   const flattened = flattenScheduleGroups(groups);
   const checksPerDay = maxChecksPerActiveDay(groups);
   const initialGroupsSignature = useMemo(() => scheduleGroupsSignature(groupsFromLegacyPlan(plan)), [plan]);
   const currentGroupsSignature = useMemo(() => scheduleGroupsSignature(groups), [groups]);
-  const hasChanges = currentGroupsSignature !== initialGroupsSignature;
+  const hasChanges = currentGroupsSignature !== initialGroupsSignature || (canEditValidationMode && draftValidationMode !== validationMode);
 
   const resetDraft = () => {
     setGroups(groupsFromLegacyPlan(plan));
+    setDraftValidationMode(validationMode);
     setError(undefined);
     setTimePicker(undefined);
   };
 
   useEffect(() => {
     resetDraft();
-  }, [plan, routineId]);
+  }, [plan, routineId, validationMode]);
 
   const updateGroup = (groupId: string, updater: (group: ScheduleGroup) => ScheduleGroup) => {
     setGroups((current) => current.map((group) => group.id === groupId ? updater(group) : group));
@@ -166,7 +172,7 @@ export function RoutineEditScreen({
           ...group,
           weekdays: normalizeWeekdays(group.weekdays),
         })),
-      });
+      }, canEditValidationMode ? draftValidationMode : undefined);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error('Save error:', message);
@@ -193,6 +199,33 @@ export function RoutineEditScreen({
           </div>
         </header>
       )}
+
+      {canEditValidationMode && <section className="card plan-editor-section routine-validation-card">
+        <div className="card-title routine-edit-card-title">
+          <h2><span aria-hidden="true">✓</span>{t('routineValidation')}</h2>
+        </div>
+        <p>{t('routineValidationHint')}</p>
+        <div className="routine-validation-toggle" role="group" aria-label={t('routineValidation')}>
+          <button
+            type="button"
+            className={draftValidationMode === 'auto' ? 'active' : ''}
+            aria-pressed={draftValidationMode === 'auto'}
+            onClick={() => setDraftValidationMode('auto')}
+          >
+            <strong>{t('validationAuto')}</strong>
+            <span>{t('validationAutoHint')}</span>
+          </button>
+          <button
+            type="button"
+            className={draftValidationMode === 'ai' ? 'active' : ''}
+            aria-pressed={draftValidationMode === 'ai'}
+            onClick={() => setDraftValidationMode('ai')}
+          >
+            <strong>{t('validationAi')}</strong>
+            <span>{t('validationAiHint')}</span>
+          </button>
+        </div>
+      </section>}
 
       {groups.map((group, groupIndex) => (
         <section className="card plan-editor-section schedule-group-card" key={group.id}>

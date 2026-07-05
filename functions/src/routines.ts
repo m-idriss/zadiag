@@ -199,6 +199,8 @@ export interface RoutineAssignmentDocument {
   plan: MonitoringPlan;
   status: 'active' | 'paused' | 'completed';
   assignedAt: string;
+  createdBy?: 'parent' | 'child' | 'system';
+  validationMode?: 'ai' | 'auto';
 }
 
 export const routineFromCatalog = (routineId: string) =>
@@ -213,18 +215,23 @@ export const createDefaultRoutineAssignment = (
   plan,
   status: 'active',
   assignedAt,
+  createdBy: 'system',
+  validationMode: 'ai',
 });
 
 export const createRoutineAssignment = (
   routine: RoutineDocument,
   plan: MonitoringPlan,
   assignedAt = new Date().toISOString(),
+  createdBy: 'parent' | 'child' = 'parent',
 ): RoutineAssignmentDocument => ({
   routineId: routine.id,
   routine,
   plan,
   status: 'active',
   assignedAt,
+  createdBy,
+  validationMode: createdBy === 'child' ? 'auto' : 'ai',
 });
 
 export const migrateCheckRoutineId = <T extends Record<string, unknown>>(check: T): T & { routineId: string } => ({

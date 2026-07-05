@@ -1,4 +1,4 @@
-import type { AnalysisResult, AppState, Locale, MonitoringPlan, Role, VerificationEvent } from '../domain/models';
+import type { AnalysisResult, AppState, Locale, MonitoringPlan, Role, RoutineValidationMode, VerificationEvent } from '../domain/models';
 
 export interface AppRepository {
   initialize(): Promise<void>;
@@ -13,7 +13,7 @@ export interface AppRepository {
   assignRoutine(routineId: string): Promise<void>;
   deleteRoutine(routineId: string): Promise<void>;
   requestCheckNow(routineId?: string): Promise<void>;
-  updateRoutine(routineId: string, plan: MonitoringPlan): Promise<void>;
+  updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode): Promise<void>;
   savePushSubscription(subscription: PushSubscriptionJSON): Promise<void>;
   savePlan(plan: MonitoringPlan, routineId?: string): Promise<void>;
   activeSession(): VerificationEvent | undefined;

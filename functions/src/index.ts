@@ -589,15 +589,17 @@ export const assignRoutine = onCall({
       transaction.get(familyRef),
       transaction.get(assignmentRef),
     ]);
-    if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'parent') {
-      throw new HttpsError('permission-denied', 'Only the parent can assign a routine.');
+    const profileRole = profile.data()?.role;
+    const role = profileRole === 'parent' || profileRole === 'child' ? profileRole : undefined;
+    if (!profile.exists || profile.data()?.familyId !== familyId || !role) {
+      throw new HttpsError('permission-denied', 'Only family members can assign a routine.');
     }
-    if (!family.exists || family.data()?.members?.[uid] !== 'parent') {
+    if (!family.exists || family.data()?.members?.[uid] !== role) {
       throw new HttpsError('not-found', 'The family could not be found.');
     }
     if (assignment.exists) throw new HttpsError('already-exists', 'This routine is already assigned.');
 
-    transaction.create(assignmentRef, createRoutineAssignment(routine, defaultPlan, new Date().toISOString()));
+    transaction.create(assignmentRef, createRoutineAssignment(routine, defaultPlan, new Date().toISOString(), role));
   });
 
   return { success: true };
@@ -617,28 +619,25 @@ export const deleteRoutine = onCall({
   const userRef = db.collection('users').doc(uid);
   const familyRef = db.collection('families').doc(familyId);
   const assignmentRef = familyRef.collection('routineAssignments').doc(routineId);
-  const activeAssignments = familyRef.collection('routineAssignments').where('status', '==', 'active');
   const routineChecks = familyRef.collection('checks').where('routineId', '==', routineId).limit(450);
 
   await ensureFamilyRoutineMigration(familyRef);
   await db.runTransaction(async (transaction) => {
-    const [profile, family, assignment, active, checks] = await Promise.all([
+    const [profile, family, assignment, checks] = await Promise.all([
       transaction.get(userRef),
       transaction.get(familyRef),
       transaction.get(assignmentRef),
-      transaction.get(activeAssignments),
       transaction.get(routineChecks),
     ]);
-    if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'parent') {
-      throw new HttpsError('permission-denied', 'Only the parent can delete a routine.');
+    const profileRole = profile.data()?.role;
+    const role = profileRole === 'parent' || profileRole === 'child' ? profileRole : undefined;
+    if (!profile.exists || profile.data()?.familyId !== familyId || !role) {
+      throw new HttpsError('permission-denied', 'Only family members can delete a routine.');
     }
-    if (!family.exists || family.data()?.members?.[uid] !== 'parent') {
+    if (!family.exists || family.data()?.members?.[uid] !== role) {
       throw new HttpsError('not-found', 'The family could not be found.');
     }
     if (!assignment.exists) throw new HttpsError('not-found', 'The routine could not be found.');
-    if (assignment.data()?.status === 'active' && active.docs.length <= 1) {
-      throw new HttpsError('failed-precondition', 'At least one active routine is required.');
-    }
 
     transaction.delete(assignmentRef);
     checks.docs.forEach((check) => transaction.delete(check.ref));
@@ -657,6 +656,7 @@ export const updateRoutineAssignment = onCall({
     const familyId = String(request.data?.familyId ?? '');
     const routineId = String(request.data?.routineId ?? DEFAULT_ROUTINE_ID);
     const plan = request.data?.plan;
+    const validationMode = request.data?.validationMode === 'auto' ? 'auto' : request.data?.validationMode === 'ai' ? 'ai' : undefined;
 
     if (!familyId) throw new HttpsError('invalid-argument', 'Family ID is required.');
     if (!plan || typeof plan !== 'object') {
@@ -676,17 +676,26 @@ export const updateRoutineAssignment = onCall({
 
     // Check authorization
     const authorizationProfile = await userRef.get();
-    if (!authorizationProfile.exists || authorizationProfile.data()?.familyId !== familyId || authorizationProfile.data()?.role !== 'parent') {
-      throw new HttpsError('permission-denied', 'Only the parent can update a routine.');
+    const profileRole = authorizationProfile.data()?.role;
+    const role = profileRole === 'parent' || profileRole === 'child' ? profileRole : undefined;
+    if (!authorizationProfile.exists || authorizationProfile.data()?.familyId !== familyId || !role) {
+      throw new HttpsError('permission-denied', 'Only family members can update a routine.');
     }
 
     await ensureFamilyRoutineMigration(familyRef);
+    const assignment = await assignmentRef.get();
+    if (!assignment.exists) throw new HttpsError('not-found', 'The routine could not be found.');
+    if (validationMode === 'auto' && assignment.data()?.createdBy !== 'child') {
+      throw new HttpsError('failed-precondition', 'Auto-validation is only available for participant-created routines.');
+    }
 
     // Update the assignment plan
-    await assignmentRef.update({
+    const update: Record<string, unknown> = {
       plan: parsedPlan.data,
       updatedAt: new Date().toISOString(),
-    });
+    };
+    if (validationMode) update.validationMode = validationMode;
+    await assignmentRef.update(update);
 
     return { success: true };
   } catch (error) {
@@ -845,7 +854,26 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
     return typeof checkData.routineId === 'string' && checkData.routineId ? checkData.routineId : DEFAULT_ROUTINE_ID;
   });
   const assignment = await db.collection('families').doc(familyId).collection('routineAssignments').doc(routineId).get();
-  const routineAnalysis = getRoutineAnalysisContext(assignment.data() as Partial<RoutineAssignmentDocument> | undefined, routineId, locale);
+  const assignmentData = assignment.data() as Partial<RoutineAssignmentDocument> | undefined;
+  if (assignmentData?.validationMode === 'auto') {
+    const autoUpdate = {
+      capturedAt,
+      status: 'detected',
+      analysisSource: 'self',
+      reason: 'self_validated',
+    };
+    const response = await db.runTransaction(async (transaction) => {
+      const check = await transaction.get(checkRef);
+      const checkData = check.data();
+      if (!check.exists || !checkData || checkData.status !== 'analyzing' || checkData.capturedAt !== capturedAt) {
+        throw new HttpsError('failed-precondition', 'This check is no longer awaiting this analysis.');
+      }
+      transaction.update(checkRef, autoUpdate);
+      return { id: check.id, ...checkData, ...autoUpdate };
+    });
+    return response;
+  }
+  const routineAnalysis = getRoutineAnalysisContext(assignmentData, routineId, locale);
   const fallbackResult: Partial<AnalysisResult> = {
     status: 'uncertain',
     reason: 'analysis_unavailable',

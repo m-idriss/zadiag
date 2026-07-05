@@ -18,14 +18,19 @@ export function ResultScreen({
   const success = event.status === 'detected';
   const confidence = event.confidence != null ? Math.round(event.confidence * 100) : undefined;
   const quality = event.imageQuality != null ? Math.round(event.imageQuality * 100) : undefined;
+  const sourceLabel = event.analysisSource === 'ai'
+    ? t('analysisSourceAi')
+    : event.analysisSource === 'self'
+      ? t('analysisSourceSelf')
+      : t('analysisSourceFallback');
   return (
     <main className="page result-page">
       <div className={`result-icon ${success ? 'success' : ''}`}>{success ? '✓' : '↻'}</div>
       <h1>{success ? t('allSet') : t('uncertain')}</h1>
       <p className="hero-copy">{success ? t('visibleMessage') : t('unclearResult')}</p>
       <StatusPill status={event.status} t={t} />
-      {event.analysisSource ? <p className="result-reason"><strong>{t('analysisSource')}:</strong> {event.analysisSource === 'ai' ? t('analysisSourceAi') : t('analysisSourceFallback')}</p> : null}
-      {event.reason ? <p className="result-reason"><strong>{t('analysisReason')}:</strong> {event.reason}</p> : null}
+      {event.analysisSource ? <p className="result-reason"><strong>{t('analysisSource')}:</strong> {sourceLabel}</p> : null}
+      {event.reason && event.analysisSource !== 'self' ? <p className="result-reason"><strong>{t('analysisReason')}:</strong> {event.reason}</p> : null}
       {confidence || quality ? (
         <div className="result-metrics">
           {confidence ? <span>{t('analysisConfidence')} {confidence}%</span> : null}

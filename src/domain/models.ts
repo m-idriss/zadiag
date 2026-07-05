@@ -32,6 +32,8 @@ export interface MonitoringPlan {
 }
 
 export type RoutineStatus = 'active' | 'paused' | 'completed';
+export type RoutineAssignmentCreator = 'parent' | 'child' | 'system';
+export type RoutineValidationMode = 'ai' | 'auto';
 
 export interface RoutineInstructionStep {
   id: string;
@@ -92,6 +94,8 @@ export interface RoutineAssignment {
   plan: MonitoringPlan;
   status: RoutineStatus;
   assignedAt: string;
+  createdBy?: RoutineAssignmentCreator;
+  validationMode?: RoutineValidationMode;
 }
 
 export interface RoutineTask {
@@ -105,7 +109,7 @@ export interface RoutineTask {
 export interface VerificationEvent extends RoutineTask {
   sessionId: string;
   capturedAt?: string;
-  analysisSource?: 'ai' | 'fallback';
+  analysisSource?: 'ai' | 'fallback' | 'self';
   confidence?: number;
   imageQuality?: number;
   reason?: string;
@@ -212,6 +216,8 @@ export const createDefaultRoutineAssignment = (assignedAt = new Date().toISOStri
   plan: structuredClone(defaultPlan),
   status: 'active',
   assignedAt,
+  createdBy: 'system',
+  validationMode: 'ai',
 });
 
 export const createRoutineAssignment = (
@@ -224,6 +230,8 @@ export const createRoutineAssignment = (
   plan: structuredClone(defaultPlan),
   status: 'active',
   assignedAt,
+  createdBy: 'parent',
+  validationMode: 'ai',
 });
 
 export const primaryRoutineAssignment = (state: Pick<AppState, 'routineAssignments'>) =>

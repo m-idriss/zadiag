@@ -20,6 +20,8 @@ import {
   type MonitoringPlan,
   type Role,
   type RoutineAssignment,
+  type RoutineAssignmentCreator,
+  type RoutineValidationMode,
   type VerificationEvent,
 } from '../domain/models';
 import { routineFromCatalog } from '../domain/routineCatalog';
@@ -74,6 +76,8 @@ const asEvent = (id: string, data: DocumentData): VerificationEvent => ({
 const asRoutineAssignment = (id: string, data: DocumentData): RoutineAssignment => {
   const routineId = String(data.routineId ?? id);
   const catalogRoutine = routineFromCatalog(routineId);
+  const createdBy = ['parent', 'child', 'system'].includes(String(data.createdBy)) ? String(data.createdBy) as RoutineAssignmentCreator : undefined;
+  const validationMode = data.validationMode === 'auto' ? 'auto' : 'ai';
   return {
     id,
     routineId,
@@ -92,6 +96,8 @@ const asRoutineAssignment = (id: string, data: DocumentData): RoutineAssignment 
     plan: data.plan as MonitoringPlan,
     status: data.status,
     assignedAt: String(data.assignedAt),
+    createdBy,
+    validationMode,
   };
 };
 
@@ -169,13 +175,13 @@ export class FirebaseRepository implements AppRepository {
   }
 
   async assignRoutine(routineId: string) {
-    if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
+    if (!this.state.family.id || !['parent', 'child'].includes(String(this.state.role))) throw new Error('permission_denied');
     const assignRoutine = httpsCallable<{ familyId: string; routineId: string }, void>(this.services.functions, 'assignRoutine');
     await assignRoutine({ familyId: this.state.family.id, routineId });
   }
 
   async deleteRoutine(routineId: string) {
-    if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
+    if (!this.state.family.id || !['parent', 'child'].includes(String(this.state.role))) throw new Error('permission_denied');
     const deleteRoutine = httpsCallable<{ familyId: string; routineId: string }, void>(this.services.functions, 'deleteRoutine');
     await deleteRoutine({ familyId: this.state.family.id, routineId });
   }
@@ -190,10 +196,10 @@ export class FirebaseRepository implements AppRepository {
     }
   }
 
-  async updateRoutine(routineId: string, plan: MonitoringPlan) {
-    if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
-    const updateRoutine = httpsCallable<{ familyId: string; routineId: string; plan: MonitoringPlan }, void>(this.services.functions, 'updateRoutineAssignment');
-    try { await updateRoutine({ familyId: this.state.family.id, routineId, plan }); }
+  async updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode) {
+    if (!this.state.family.id || !['parent', 'child'].includes(String(this.state.role))) throw new Error('permission_denied');
+    const updateRoutine = httpsCallable<{ familyId: string; routineId: string; plan: MonitoringPlan; validationMode?: RoutineValidationMode }, void>(this.services.functions, 'updateRoutineAssignment');
+    try { await updateRoutine({ familyId: this.state.family.id, routineId, plan, validationMode }); }
     catch (error) { throw error; }
   }
 

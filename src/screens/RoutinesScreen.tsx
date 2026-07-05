@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from 'react';
-import type { AppState, MonitoringPlan, RoutineAssignment, ScheduleGroup, VerificationEvent } from '../domain/models';
+import type { AppState, MonitoringPlan, RoutineAssignment, RoutineValidationMode, ScheduleGroup, VerificationEvent } from '../domain/models';
 import { groupsFromLegacyPlan, summarizeWeekdays } from '../domain/monitoringPlan';
 import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
@@ -41,7 +41,7 @@ export function RoutinesScreen({
   requestCheck?: (routineId: string) => Promise<void>;
   onAssignRoutine?: (routineId: string) => Promise<void>;
   onDeleteRoutine?: (routineId: string) => Promise<void>;
-  onSaveMonitoringPlan?: (routineId: string, plan: MonitoringPlan) => Promise<void>;
+  onSaveMonitoringPlan?: (routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode) => Promise<void>;
   savingRoutineId?: string;
   t: (key: MessageKey) => string;
 }) {
@@ -61,7 +61,7 @@ export function RoutinesScreen({
     setDetailInitialTab(initialTab);
     setSelectedId(assignmentId);
   };
-  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={() => setSelectedId(undefined)} start={start} edit={edit} initialTab={detailInitialTab} onSaveMonitoringPlan={onSaveMonitoringPlan ? (plan) => onSaveMonitoringPlan(selected.routineId, plan) : undefined} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
+  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={() => setSelectedId(undefined)} start={start} edit={edit} initialTab={detailInitialTab} onSaveMonitoringPlan={onSaveMonitoringPlan ? (plan, validationMode) => onSaveMonitoringPlan(selected.routineId, plan, validationMode) : undefined} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
 
   const setRequestStatus = (routineId: string, status: RequestStatus) => {
     setRequestStatuses((current) => ({ ...current, [routineId]: status }));

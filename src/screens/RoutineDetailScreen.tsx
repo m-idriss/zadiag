@@ -3,7 +3,7 @@ import { IonButton, IonIcon } from '@ionic/react';
 import { cameraOutline, chevronBackOutline, chevronForwardOutline, ellipsisHorizontal, peopleOutline, sendOutline, timeOutline } from 'ionicons/icons';
 import { adherenceSummary } from '../domain/adherence';
 import { presentRoutine } from '../domain/routinePresentation';
-import type { AppState, RoutineAssignment, VerificationEvent } from '../domain/models';
+import type { AppState, RoutineAssignment, RoutineValidationMode, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
 import { StatusPill } from '../components/StatusPill';
@@ -63,7 +63,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, t, edit, i
   t: (key: MessageKey) => string;
   edit?: boolean;
   initialTab?: DetailTab;
-  onSaveMonitoringPlan?: (plan: RoutineAssignment['plan']) => Promise<void>;
+  onSaveMonitoringPlan?: (plan: RoutineAssignment['plan'], validationMode?: RoutineValidationMode) => Promise<void>;
   routinePlanBusy?: boolean;
 }) {
   const [tab, setTab] = useState<DetailTab>(initialTab ?? (edit ? 'plan' : 'overview'));
@@ -128,6 +128,8 @@ export function RoutineDetailScreen({ assignment, state, back, start, t, edit, i
       {tab === 'plan' && edit && onSaveMonitoringPlan && <div className="routine-tab-panel routine-plan-tab-panel">
         <RoutineEditScreen
           plan={assignment.plan}
+          validationMode={assignment.validationMode ?? 'ai'}
+          canEditValidationMode={assignment.createdBy === 'child'}
           routineId={assignment.routineId}
           onSave={onSaveMonitoringPlan}
           onCancel={() => setTab('overview')}
