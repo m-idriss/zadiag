@@ -209,12 +209,10 @@ export function RoutinesScreen({
               <div className="routine-progress-row">
                 <div className="routine-progress-track"><span style={{ width: `${Math.round(rate * 100)}%` }} /></div>
               </div>
+              <p className="routine-next-inline"><span>{t('nextCheck')}</span><strong>{nextLabel}</strong></p>
               {scheduleExpanded && (
                 <div className="routine-expanded-panel">
                   <p className="routine-instructions">{visual.instructions}</p>
-                  <div className="routine-plan-stats">
-                    <div><small>{t('nextCheck')}</small><strong>{nextLabel}</strong></div>
-                  </div>
                   <div className="chips routine-schedule-chips">{planChips.map((chip) => <span key={chip.id}><i aria-hidden="true">◷</i>{chip.label}</span>)}</div>
                   <div className="routine-card-actions">
                     <button type="button" className="routine-list-detail-button" onClick={() => openDetails(assignment.id)}>{t('details')}</button>

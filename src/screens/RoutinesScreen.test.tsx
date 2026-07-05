@@ -96,7 +96,7 @@ describe('participant routines navigation', () => {
     expect(container.textContent).toContain('3 checks each day');
     expect(container.textContent).toContain('50%');
     expect(container.textContent).not.toContain('Wear your elastics as prescribed');
-    expect(container.textContent).not.toContain('Next check');
+    expect(container.textContent).toContain('Next check');
     expect(container.textContent).not.toContain('07:30–09:30');
 
     const scheduleToggle = container.querySelector('button[aria-label="Show schedule"]');
