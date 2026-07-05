@@ -249,6 +249,31 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 
 .app-shell { position: relative; height: 100dvh; overflow: hidden; background: var(--cream); }
 .app-shell > .content-screen { height: 100%; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+.app-snackbar {
+  position: fixed;
+  z-index: 50;
+  right: max(14px, calc((100vw - 640px) / 2 + 14px));
+  bottom: calc(88px + env(safe-area-inset-bottom));
+  left: max(14px, calc((100vw - 640px) / 2 + 14px));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 10px 10px 10px 14px;
+  border: 1px solid rgba(255,255,255,.78);
+  border-radius: 16px;
+  background: rgba(21,50,75,.96);
+  color: #fff;
+  box-shadow: 0 16px 38px rgba(16,42,67,.22);
+  backdrop-filter: blur(16px);
+}
+.app-snackbar p { min-width: 0; margin: 0; color: inherit; font-size: 13px; font-weight: 800; line-height: 1.25; }
+.app-snackbar-action,
+.app-snackbar-close { border: 0; border-radius: 12px; font-weight: 900; }
+.app-snackbar-action { min-height: 34px; padding: 0 11px; background: #fff; color: var(--navy); font-size: 12px; white-space: nowrap; }
+.app-snackbar-action:disabled { opacity: .68; }
+.app-snackbar-close { width: 34px; height: 34px; display: grid; place-items: center; background: rgba(255,255,255,.12); color: #fff; font-size: 16px; line-height: 1; }
 .screen-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
 .screen-header small { color: var(--muted); }
 .screen-header p { margin: 0; }

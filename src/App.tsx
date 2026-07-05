@@ -6,6 +6,7 @@ import { createRepository } from './services/repositoryFactory';
 import { translate, type MessageKey } from './services/i18n';
 import { BottomNav, type Tab } from './components/BottomNav';
 import { SplashScreen } from './components/SplashScreen';
+import { Snackbar } from './components/Snackbar';
 import { WebPushGateway } from './services/webPush';
 import { firebaseEnabled } from './services/firebaseConfig';
 import { browserRouteContext, isLocalDemoEnvironment, routineCentricUiEnabled } from './services/browserEnvironment';
@@ -48,6 +49,8 @@ export function App() {
   const [splashMessage, setSplashMessage] = useState<MessageKey>('splashLoading');
   const [tab, setTab] = useState<Tab>('home');
   const [busy, setBusy] = useState(false);
+  const [updateActionBusy, setUpdateActionBusy] = useState(false);
+  const [dismissedUpdateId, setDismissedUpdateId] = useState<string>();
   const [result, setResult] = useState<VerificationEvent>();
   const [submitError, setSubmitError] = useState<string>();
   const [savingRoutineId, setSavingRoutineId] = useState<string>();
@@ -197,6 +200,25 @@ export function App() {
     window.location.reload();
     return true;
   };
+  const updateSnackbarId = appUpdateInfo.available
+    ? appUpdateInfo.latestVersion ?? appUpdateInfo.badgeLabel ?? 'waiting-service-worker'
+    : undefined;
+  const updateSnackbarMessage = appUpdateInfo.severity === 'major'
+    ? t('snackbarUpdateMajorAvailable')
+    : appUpdateInfo.severity === 'minor'
+      ? t('snackbarUpdateMinorAvailable')
+      : t('snackbarUpdateAvailable');
+  const showUpdateSnackbar = Boolean(ready && appUpdateInfo.available && updateSnackbarId && dismissedUpdateId !== updateSnackbarId);
+  const applySnackbarUpdate = async () => {
+    setUpdateActionBusy(true);
+    try {
+      await forceAppUpdate();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setUpdateActionBusy(false);
+    }
+  };
 
   let content: React.ReactNode;
   if (route === 'install') {
@@ -305,6 +327,16 @@ export function App() {
       <Suspense fallback={<SplashScreen progress={ready ? 96 : splashProgress} message={t(ready ? 'splashFinalizing' : splashMessage)} />}>
         {content}
       </Suspense>
+      {showUpdateSnackbar && updateSnackbarId ? (
+        <Snackbar
+          message={updateSnackbarMessage}
+          actionLabel={t('settingsUpdateAction')}
+          closeLabel={t('close')}
+          onAction={() => { void applySnackbarUpdate(); }}
+          onClose={() => setDismissedUpdateId(updateSnackbarId)}
+          busy={updateActionBusy}
+        />
+      ) : null}
       {!ready ? <SplashScreen progress={splashProgress} message={t(splashMessage)} /> : null}
     </IonApp>
   );
