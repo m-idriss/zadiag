@@ -23,11 +23,11 @@ export function BottomNav({
         { tab: 'settings', icon: 'settings', label: t('settings') },
       ]
     : routineCentricEnabled ? [
-        { tab: 'home', icon: 'today', label: t('today') },
+        { tab: 'home', icon: 'today', label: t('activity') },
         { tab: 'routines', icon: 'routines', label: t('routines') },
         { tab: 'settings', icon: 'settings', label: t('settings') },
       ] : [
-        { tab: 'home', icon: 'today', label: t('today') },
+        { tab: 'home', icon: 'today', label: t('activity') },
         { tab: 'history', icon: 'stats', label: t('progress') },
         { tab: 'settings', icon: 'settings', label: t('settings') },
       ];

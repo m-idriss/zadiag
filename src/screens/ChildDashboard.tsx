@@ -152,7 +152,7 @@ export function ChildDashboard({
   );
   return (
     <div className="content-screen child-home">
-      <header className="screen-header participant-header"><div><h1>{t('hi')} {state.family.childName}</h1><p>{t('todayIntro')}</p></div><button type="button" className="more-button" aria-label={t('moreOptions')}>•••</button></header>
+      <header className="screen-header participant-header"><div><h1>{t('activity')}</h1><p>{t('participantTodaySubtitle').replace('{name}', state.family.childName)}</p></div><button type="button" className="more-button" aria-label={t('moreOptions')}>•••</button></header>
       {pendingSection}
       {completedSection}
       {historySection}
