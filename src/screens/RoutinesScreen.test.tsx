@@ -126,7 +126,8 @@ describe('participant routines navigation', () => {
     const progress = Array.from(container.querySelectorAll('.routine-tabs button')).find((button) => button.textContent === 'Progress');
     act(() => progress?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(container.textContent).toContain('Overall progress');
-    expect(container.textContent).toContain('Calendar');
+    expect(container.textContent).toContain('Activity');
+    expect(container.querySelectorAll('.routine-heatmap-day')).toHaveLength(28);
     expect(container.textContent).toContain('50%');
 
     const back = container.querySelector('.detail-back');

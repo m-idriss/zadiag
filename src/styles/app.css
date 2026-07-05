@@ -611,16 +611,45 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .progress-summary dl { flex: 1; margin: 0; }
 .progress-summary dl div { display: flex; justify-content: space-between; gap: 15px; font-size: 12px; }
 .progress-summary dd { margin: 0; font-weight: 900; }
-.calendar-grid { grid-template-columns: repeat(7, 1fr); }
-.calendar-grid > div { gap: 5px; padding: 4px 1px; background: transparent; }
-.calendar-grid > div > span { width: 13px; height: 13px; background: #e2e7e5; }
-.calendar-grid .completed span { background: var(--routine-accent); }
-.calendar-grid .attention span { background: #f2a72b; }
-.calendar-grid .missed span { background: #e6c9c3; }
-.calendar-legend { display: flex; flex-wrap: wrap; gap: 10px; color: var(--muted); font-size: 10px; }
-.calendar-legend .completed { color: var(--routine-accent); }
-.calendar-legend .attention { color: #d88a12; }
-.calendar-legend .missed { color: #c89d94; }
+.routine-heatmap {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: start;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 14px;
+  overflow-x: auto;
+  border: 1px solid rgba(16,42,67,.07);
+  border-radius: 18px;
+  background: rgba(255,255,255,.72);
+}
+.routine-heatmap-weekdays,
+.routine-heatmap-week,
+.routine-heatmap-weeks { display: grid; gap: 5px; }
+.routine-heatmap-weekdays { grid-template-rows: repeat(7, 13px); color: var(--muted); font-size: 9px; font-weight: 900; line-height: 13px; text-align: center; text-transform: uppercase; }
+.routine-heatmap-weeks { grid-auto-flow: column; grid-auto-columns: 13px; grid-template-rows: repeat(1, auto); width: max-content; }
+.routine-heatmap-week { grid-template-rows: repeat(7, 13px); }
+.routine-heatmap-day {
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+  background: #e5ebe8;
+  box-shadow: inset 0 0 0 1px rgba(16,42,67,.04);
+}
+.routine-heatmap-day.completed.level-1 { background: color-mix(in srgb, var(--routine-accent, var(--teal)) 34%, white); }
+.routine-heatmap-day.completed.level-2 { background: color-mix(in srgb, var(--routine-accent, var(--teal)) 52%, white); }
+.routine-heatmap-day.completed.level-3 { background: color-mix(in srgb, var(--routine-accent, var(--teal)) 72%, white); }
+.routine-heatmap-day.completed.level-4 { background: var(--routine-accent, var(--teal)); }
+.routine-heatmap-day.attention { background: #f2a72b; }
+.routine-heatmap-day.missed { background: #d97a66; }
+.heatmap-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; color: var(--muted); font-size: 10px; font-weight: 800; }
+.heatmap-legend i { width: 11px; height: 11px; border-radius: 3px; background: #e5ebe8; }
+.heatmap-legend .level-1 { background: color-mix(in srgb, var(--routine-accent, var(--teal)) 34%, white); }
+.heatmap-legend .level-2 { background: color-mix(in srgb, var(--routine-accent, var(--teal)) 52%, white); }
+.heatmap-legend .level-3 { background: color-mix(in srgb, var(--routine-accent, var(--teal)) 72%, white); }
+.heatmap-legend .level-4 { background: var(--routine-accent, var(--teal)); }
+.heatmap-legend .attention { margin-left: 8px; color: #c9790d; }
+.heatmap-legend .missed { color: #c75f4d; }
 .streak-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; }
 .streak-grid > div { display: grid; padding: 14px; border-radius: 15px; background: linear-gradient(120deg, #eef6f3, #f8fbfa); }
 .streak-grid small { color: var(--muted); }

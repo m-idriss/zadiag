@@ -23,20 +23,37 @@ export const calendarDays = (events: VerificationEvent[], locale: string, refere
   const daysSinceMonday = (start.getDay() + 6) % 7;
   start.setDate(start.getDate() - daysSinceMonday - 21);
 
+  const dateFormatter = new Intl.DateTimeFormat(locale, { dateStyle: 'medium' });
+
   return Array.from({ length: 28 }, (_, index) => {
     const date = new Date(start);
     date.setDate(start.getDate() + index);
     const dayEvents = events.filter((event) => sameLocalDay(event.requestedAt, date));
+    const successful = dayEvents.filter((event) => event.status === 'detected').length;
+    const attention = dayEvents.filter((event) => ['not_detected', 'uncertain'].includes(event.status)).length;
+    const missed = dayEvents.filter((event) => ['missed', 'expired'].includes(event.status)).length;
+    const status = missed > 0
+      ? 'missed'
+      : attention > 0
+        ? 'attention'
+        : successful > 0
+          ? 'completed'
+          : 'empty';
     return {
       key: date.toISOString(),
       weekday: date.getDay(),
       label: new Intl.DateTimeFormat(locale, { weekday: 'narrow' }).format(date),
-      completed: dayEvents.some((event) => event.status === 'detected'),
-      attention: dayEvents.some((event) => ['not_detected', 'uncertain'].includes(event.status)),
-      missed: dayEvents.some((event) => ['missed', 'expired'].includes(event.status)),
+      dateLabel: dateFormatter.format(date),
+      successful,
+      attention,
+      missed,
+      status,
+      level: Math.min(4, successful),
     };
   });
 };
+
+const chunkWeeks = <T,>(days: T[]) => Array.from({ length: Math.ceil(days.length / 7) }, (_, index) => days.slice(index * 7, (index + 1) * 7));
 
 const streakFor = (events: VerificationEvent[]) => {
   let streak = 0;
@@ -75,6 +92,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, t, edit, i
   const formatDateTime = (value: string) => new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
   const formatTime = (value: string) => new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(new Date(value));
   const days = calendarDays(events, locale);
+  const weeks = chunkWeeks(days);
   const currentStreak = streakFor(events);
   const tabs: DetailTab[] = edit ? ['plan', 'overview', 'instructions', 'history', 'progress'] : ['overview', 'instructions', 'history', 'progress'];
 
@@ -120,8 +138,24 @@ export function RoutineDetailScreen({ assignment, state, back, start, t, edit, i
 
       {tab === 'progress' && <div className="routine-tab-panel">
         <h2>{t('globalProgress')}</h2><section className="card progress-summary"><div className="progress-ring" style={{ '--progress': `${summary.rate * 360}deg` } as React.CSSProperties}><span>{Math.round(summary.rate * 100)}%</span></div><dl><div><dt>{t('checksSuccessful')}</dt><dd>{summary.successful}</dd></div><div><dt>{t('toReview')}</dt><dd>{summary.attention}</dd></div><div><dt>{t('missed')}</dt><dd>{events.filter((event) => ['missed', 'expired'].includes(event.status)).length}</dd></div></dl></section>
-        <h2>{t('calendar')}</h2><div className="routine-calendar calendar-grid" aria-label={t('lastFourWeeks')}>{days.map((day) => <div className={day.completed ? 'completed' : day.attention ? 'attention' : day.missed ? 'missed' : ''} key={day.key}><small>{day.label}</small><span aria-hidden="true" /></div>)}</div>
-        <div className="calendar-legend"><span className="completed">● {t('successful')}</span><span className="attention">● {t('toReview')}</span><span className="missed">● {t('missed')}</span></div>
+        <h2>{t('activityHeatmap')}</h2><div className="routine-heatmap" aria-label={t('lastFourWeeks')}>
+          <div className="routine-heatmap-weekdays" aria-hidden="true">{days.slice(0, 7).map((day) => <span key={day.weekday}>{day.label}</span>)}</div>
+          <div className="routine-heatmap-weeks">
+            {weeks.map((week, weekIndex) => (
+              <div className="routine-heatmap-week" key={week[0]?.key ?? weekIndex}>
+                {week.map((day) => (
+                  <span
+                    className={`routine-heatmap-day ${day.status} level-${day.level}`}
+                    key={day.key}
+                    title={`${day.dateLabel}: ${day.successful} ${t('successful')}, ${day.attention} ${t('toReview')}, ${day.missed} ${t('missed')}`}
+                    aria-label={`${day.dateLabel}: ${day.successful} ${t('successful')}, ${day.attention} ${t('toReview')}, ${day.missed} ${t('missed')}`}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="heatmap-legend" aria-hidden="true"><span>{t('less')}</span><i className="level-0" /><i className="level-1" /><i className="level-2" /><i className="level-3" /><i className="level-4" /><span>{t('more')}</span><span className="attention">{t('toReview')}</span><span className="missed">{t('missed')}</span></div>
         <h2>{t('streaks')}</h2><div className="streak-grid"><div><small>{t('currentStreak')}</small><b>{currentStreak}</b><span>{t('days')}</span></div><div><small>{t('bestStreak')}</small><b>{Math.max(currentStreak, summary.successful)}</b><span>{t('days')}</span></div></div>
       </div>}
 
