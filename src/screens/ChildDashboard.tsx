@@ -36,6 +36,7 @@ export function ChildDashboard({
 }) {
   const [summaryRange, setSummaryRange] = useState<SummaryRange>('day');
   const now = Date.now();
+  const participantInitial = state.family.childName.trim().charAt(0).toUpperCase() || '?';
   const today = state.events.filter((event) => isToday(event.requestedAt));
   const pending = today.filter((event) => (
     event.status === 'analyzing'
@@ -189,7 +190,10 @@ export function ChildDashboard({
   );
   return (
     <div className="content-screen child-home">
-      <header className="screen-header participant-header"><div><h1>{t('activity')}</h1><p>{t('participantTodaySubtitle').replace('{name}', state.family.childName)}</p></div><button type="button" className="more-button" aria-label={t('moreOptions')}>•••</button></header>
+      <header className="screen-header participant-header">
+        <div><h1>{t('activity')}</h1><p>{t('participantTodaySubtitle').replace('{name}', state.family.childName)}</p></div>
+        <div className="avatar" aria-hidden="true">{participantInitial}</div>
+      </header>
       {pendingSection}
       {upcomingSection}
       {completedSection}
