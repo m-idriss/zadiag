@@ -95,16 +95,19 @@ describe('participant routines navigation', () => {
     expect(container.textContent).toContain('Orthodontic Elastics');
     expect(container.textContent).toContain('3 checks each day');
     expect(container.textContent).toContain('50%');
-    expect(container.textContent).toContain('Wear your elastics as prescribed');
-    expect(container.textContent).toContain('Next check');
+    expect(container.textContent).not.toContain('Wear your elastics as prescribed');
+    expect(container.textContent).not.toContain('Next check');
     expect(container.textContent).not.toContain('07:30–09:30');
 
     const scheduleToggle = container.querySelector('button[aria-label="Show schedule"]');
     act(() => scheduleToggle?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(scheduleToggle?.getAttribute('aria-expanded')).toBe('true');
+    expect(container.textContent).toContain('Wear your elastics as prescribed');
+    expect(container.textContent).toContain('Next check');
     expect(container.textContent).toContain('07:30–09:30');
 
-    const details = container.querySelector('button[aria-label*="View details"]');
+    const details = Array.from(container.querySelectorAll('button'))
+      .find((button) => button.textContent === 'Details');
     await act(async () => {
       details?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       await new Promise((resolve) => window.setTimeout(resolve, 100));
@@ -169,6 +172,9 @@ describe('participant routines navigation', () => {
 
     act(() => root.render(<RoutinesScreen state={state} t={(key) => translate('en', key)} />));
 
+    const scheduleToggle = container.querySelector('button[aria-label="Show schedule"]');
+    act(() => scheduleToggle?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+
     expect(container.textContent).toContain('Next check');
     expect(container.textContent).toContain('Before');
     expect(container.textContent).not.toContain('No task is waiting right now.');
@@ -225,6 +231,9 @@ describe('participant routines navigation', () => {
 
     const hydrationCard = Array.from(container.querySelectorAll('.routine-card'))
       .find((card) => card.textContent?.includes('Hydration'));
+    const scheduleToggle = hydrationCard?.querySelector('button[aria-label="Show schedule"]');
+    act(() => scheduleToggle?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+
     const deleteButton = Array.from(hydrationCard?.querySelectorAll('button') ?? [])
       .find((button) => button.getAttribute('aria-label') === 'Delete Hydration');
     await act(async () => {
