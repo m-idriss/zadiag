@@ -191,29 +191,11 @@ export function RoutinesScreen({
           return (
             <section className="card routine-card routine-plan-list-card" style={visual.style} key={assignment.id}>
               <div className="routine-list-card-title">
-                <button type="button" className="routine-card-heading" onClick={() => openDetails(assignment.id)} aria-label={`${t('viewDetails')} — ${visual.name}`}>
+                <div className="routine-card-heading">
                   <span className="settings-row-icon routine-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
                   <div><h2>{visual.name}</h2><p><b>{assignment.plan.checksPerDay}</b> {t('checksDay')} · <b>{assignment.plan.expiryMinutes}</b> {t('minutesRespond')}</p></div>
-                </button>
-                <button type="button" className="routine-list-detail-button" onClick={() => openDetails(assignment.id)}>{t('details')}</button>
-                {edit && onDeleteRoutine && (
-                  <button
-                    type="button"
-                    className="routine-list-delete-button"
-                    aria-label={t('deleteRoutine').replace('{routine}', visual.name)}
-                    disabled={deletingRoutineId === assignment.routineId}
-                    onClick={() => { void deleteRoutine(assignment, visual.name); }}
-                  >
-                    <span aria-hidden="true">×</span>
-                  </button>
-                )}
-              </div>
-              <div className="routine-progress-row">
-                <div className="routine-progress-track"><span style={{ width: `${Math.round(rate * 100)}%` }} /></div>
+                </div>
                 <b className="routine-rate">{Math.round(rate * 100)}%</b>
-              </div>
-              <div className="routine-action-row">
-                <p>{visual.instructions}</p>
                 <button
                   type="button"
                   className="routine-schedule-toggle"
@@ -224,20 +206,42 @@ export function RoutinesScreen({
                   <AppIcon name="chevron-down" className={scheduleExpanded ? 'expanded' : undefined} />
                 </button>
               </div>
-              <div className="routine-plan-stats">
-                <div><small>{t('nextCheck')}</small><strong>{nextLabel}</strong></div>
+              <div className="routine-progress-row">
+                <div className="routine-progress-track"><span style={{ width: `${Math.round(rate * 100)}%` }} /></div>
               </div>
-              {scheduleExpanded && <div className="chips routine-schedule-chips">{planChips.map((chip) => <span key={chip.id}><i aria-hidden="true">◷</i>{chip.label}</span>)}</div>}
-              {edit && requestCheck && (
-                <>
-                  <button className="request-check routine-list-request" disabled={requesting} onClick={() => { void requestNow(assignment.routineId); }}>
-                    {requesting ? t('requestingCheck') : next ? t('requestCheckAgain') : t('requestCheckNow')}
-                  </button>
-                  {next && <p role="status" className="request-feedback">{t('requestCheckActive')}</p>}
-                  {requestStatus === 'sent' && <p role="status" aria-live="polite" className="request-feedback success">{t('requestCheckSent')}</p>}
-                  {requestStatus === 'active' && !next && <p role="status" aria-live="polite" className="request-feedback">{t('requestCheckActive')}</p>}
-                  {requestStatus === 'error' && <p role="status" aria-live="polite" className="request-feedback error">{t('requestCheckError')}</p>}
-                </>
+              {scheduleExpanded && (
+                <div className="routine-expanded-panel">
+                  <p className="routine-instructions">{visual.instructions}</p>
+                  <div className="routine-plan-stats">
+                    <div><small>{t('nextCheck')}</small><strong>{nextLabel}</strong></div>
+                  </div>
+                  <div className="chips routine-schedule-chips">{planChips.map((chip) => <span key={chip.id}><i aria-hidden="true">◷</i>{chip.label}</span>)}</div>
+                  <div className="routine-card-actions">
+                    <button type="button" className="routine-list-detail-button" onClick={() => openDetails(assignment.id)}>{t('details')}</button>
+                    {edit && onDeleteRoutine && (
+                      <button
+                        type="button"
+                        className="routine-list-delete-button"
+                        aria-label={t('deleteRoutine').replace('{routine}', visual.name)}
+                        disabled={deletingRoutineId === assignment.routineId}
+                        onClick={() => { void deleteRoutine(assignment, visual.name); }}
+                      >
+                        <span aria-hidden="true">×</span>
+                      </button>
+                    )}
+                  </div>
+                  {edit && requestCheck && (
+                    <>
+                      <button className="request-check routine-list-request" disabled={requesting} onClick={() => { void requestNow(assignment.routineId); }}>
+                        {requesting ? t('requestingCheck') : next ? t('requestCheckAgain') : t('requestCheckNow')}
+                      </button>
+                      {next && <p role="status" className="request-feedback">{t('requestCheckActive')}</p>}
+                      {requestStatus === 'sent' && <p role="status" aria-live="polite" className="request-feedback success">{t('requestCheckSent')}</p>}
+                      {requestStatus === 'active' && !next && <p role="status" aria-live="polite" className="request-feedback">{t('requestCheckActive')}</p>}
+                      {requestStatus === 'error' && <p role="status" aria-live="polite" className="request-feedback error">{t('requestCheckError')}</p>}
+                    </>
+                  )}
+                </div>
               )}
               {deleteErrorRoutineId === assignment.routineId && <p role="alert" className="request-feedback error">{t('routineDeleteError')}</p>}
             </section>
