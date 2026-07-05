@@ -1266,20 +1266,47 @@ ion-input {
 .routine-validation-toggle strong { font-size: 12px; font-weight: 900; }
 .routine-validation-toggle span { color: inherit; opacity: .72; font-size: 10px; font-weight: 750; line-height: 1.25; }
 .plan-section-copy { margin: -5px 0 14px; color: var(--muted); font-size: 13px; }
-.plan-add-button { min-height: 31px; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; border: 0; border-radius: 999px; background: var(--mint); color: var(--teal); font-size: 12px; font-weight: 900; white-space: nowrap; }
+.plan-add-button {
+  --plan-action: var(--routine-accent, var(--teal));
+  --plan-action-bg: color-mix(in srgb, var(--plan-action) 10%, white);
+  min-height: 31px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--plan-action) 18%, white);
+  border-radius: 999px;
+  background: var(--plan-action-bg);
+  color: var(--plan-action);
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+}
 .plan-add-button:disabled { background: #edf0f2; color: #8c9aa2; cursor: not-allowed; }
 .plan-add-button .app-icon { font-size: 18px; }
 .schedule-group-card { display: grid; gap: 8px; }
-.schedule-group-card:nth-of-type(3n + 1) { --window-color: var(--teal); }
-.schedule-group-card:nth-of-type(3n + 2) { --window-color: #2f80ed; }
-.schedule-group-card:nth-of-type(3n) { --window-color: #8b5cf6; }
+.schedule-group-card { --window-color: var(--routine-accent, var(--teal)); }
+.schedule-group-card:nth-of-type(3n + 2) { --window-color: color-mix(in srgb, var(--routine-accent, var(--teal)) 82%, #2f80ed); }
+.schedule-group-card:nth-of-type(3n) { --window-color: color-mix(in srgb, var(--routine-accent, var(--teal)) 82%, #8b5cf6); }
 .schedule-group-remove { width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 50%; background: #f2f7f5; color: #91a0a7; }
 .schedule-group-remove span { margin-top: -1px; font-size: 20px; line-height: 1; font-weight: 900; }
 .schedule-group-remove:disabled { visibility: hidden; }
 .schedule-group-days { margin-top: -2px; }
 .schedule-group-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 0; }
 .schedule-group-heading > span { color: var(--muted); font-size: 11px; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; }
-.schedule-add-window { width: 100%; min-height: 30px; justify-content: center; margin-top: 2px; border-radius: 11px; }
+.schedule-add-window {
+  width: 100%;
+  min-height: 30px;
+  justify-content: center;
+  margin-top: 2px;
+  border-radius: 11px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--plan-action) 7%, white),
+    color-mix(in srgb, var(--plan-action) 13%, white)
+  );
+}
 .schedule-add-window .schedule-add-symbol {
   width: 18px;
   height: 18px;
@@ -1290,10 +1317,14 @@ ion-input {
   min-height: 38px;
   justify-content: center;
   margin: 0;
-  border: 1px dashed rgba(29,138,122,.38);
+  border: 1px dashed color-mix(in srgb, var(--plan-action) 36%, white);
   border-radius: 16px;
-  background: rgba(233,247,243,.78);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--plan-action) 7%, white),
+    color-mix(in srgb, var(--plan-action) 13%, white)
+  );
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.88), 0 10px 24px color-mix(in srgb, var(--plan-action) 7%, transparent);
   font-size: 14px;
 }
 .schedule-add-symbol {
@@ -1302,7 +1333,7 @@ ion-input {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: var(--teal);
+  background: var(--plan-action, #8b5cf6);
   color: white;
   font-size: 19px;
   font-weight: 900;
