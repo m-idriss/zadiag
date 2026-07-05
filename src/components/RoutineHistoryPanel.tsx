@@ -95,7 +95,7 @@ export function RoutineHistoryPanel({
               const canRetake = Boolean(onRetake) && canRetakeCapture(event, retryEvents ?? events, new Date());
               return (
                 <section className="card history-row parent-history-row" style={visual?.style} key={event.id}>
-                  <div className="history-icon routine-history-icon"><AppIcon name={routineIconName(visual?.icon)} /></div>
+                  <div className="settings-row-icon history-icon routine-history-icon"><AppIcon name={routineIconName(visual?.icon)} /></div>
                   <div>
                     <strong>{visual?.name ?? t('routine')}</strong>
                     <small>{formatDateTime(event.requestedAt)}{event.reason ? ` · ${event.reason}` : ''}</small>

@@ -146,7 +146,7 @@ export function RoutinesScreen({
               const assigning = assigningRoutineId === routineId;
               return (
                 <article className="routine-catalog-item" style={visual.style} key={template.id}>
-                  <span className="routine-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
+                  <span className="settings-row-icon routine-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
                   <div>
                     <h3>{visual.name}</h3>
                     <p>{visual.description}</p>
@@ -192,7 +192,7 @@ export function RoutinesScreen({
             <section className="card routine-card routine-plan-list-card" style={visual.style} key={assignment.id}>
               <div className="routine-list-card-title">
                 <button type="button" className="routine-card-heading" onClick={() => openDetails(assignment.id)} aria-label={`${t('viewDetails')} — ${visual.name}`}>
-                  <span className="routine-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
+                  <span className="settings-row-icon routine-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
                   <div><h2>{visual.name}</h2><p><b>{assignment.plan.checksPerDay}</b> {t('checksDay')} · <b>{assignment.plan.expiryMinutes}</b> {t('minutesRespond')}</p></div>
                 </button>
                 <button type="button" className="routine-list-detail-button" onClick={() => openDetails(assignment.id)}>{t('details')}</button>

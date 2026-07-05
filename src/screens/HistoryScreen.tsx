@@ -16,7 +16,7 @@ export function HistoryScreen({ events, locale, t }: { events: VerificationEvent
       <div className="history-list">
         {closed.map((event) => (
           <section className="card history-row" key={event.id}>
-            <div className="history-icon"><IonIcon icon={timeOutline} aria-hidden="true" /></div>
+            <div className="settings-row-icon history-icon"><IonIcon icon={timeOutline} aria-hidden="true" /></div>
             <div><strong>{formatDateTime(event.requestedAt)}</strong><small>{event.imageQuality != null ? `${t('imageQuality')} ${Math.round(event.imageQuality * 100)}%` : ''}</small></div>
             <StatusPill status={event.status} t={t} />
           </section>

@@ -111,7 +111,7 @@ export function ChildDashboard({
               <div className="today-routine-main">
                 <div className="today-routine-primary">
                   <div className="today-task-copy">
-                    <span className="today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(presentation.icon)} /></span>
+                    <span className="settings-row-icon today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(presentation.icon)} /></span>
                     <div>
                       <h3>{presentation.name}</h3>
                       <small>{t(dayPeriodLabelKey(main.expiresAt))}</small>
@@ -149,7 +149,7 @@ export function ChildDashboard({
           const canRetake = Boolean(retake) && canRetakeCapture(event, state.events, new Date(now));
           return (
             <article className="card today-task completed" style={presentationFor(event).style} key={event.id}>
-              <div className="today-task-copy"><span className="today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(presentationFor(event).icon)} /></span><div><h3>{presentationFor(event).name}</h3><p>{formatTime(event.capturedAt ?? event.expiresAt)}</p></div></div>
+              <div className="today-task-copy"><span className="settings-row-icon today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(presentationFor(event).icon)} /></span><div><h3>{presentationFor(event).name}</h3><p>{formatTime(event.capturedAt ?? event.expiresAt)}</p></div></div>
               <div className="today-task-actions">
                 <StatusPill status={event.status} t={t} />
                 {canRetake ? <button type="button" className="history-retake-button today-retake-button" onClick={() => retake?.(event)}>{t('retakeShort')}</button> : null}
@@ -172,7 +172,7 @@ export function ChildDashboard({
       <div className="upcoming-checks-list">
         {upcomingChecks.map((item) => (
           <article className="upcoming-check-card" style={item.presentation.style} key={item.id}>
-            <span className="today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(item.presentation.icon)} /></span>
+            <span className="settings-row-icon today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(item.presentation.icon)} /></span>
             <div>
               <h3>{item.presentation.name}</h3>
               <p>{plannedWindowLabel(item.planned.end, new Date(now), locale, t)}</p>
