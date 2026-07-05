@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { DemoRepository } from './demoRepository';
-import { DEFAULT_ROUTINE_ID, defaultPlan } from '../domain/models';
+import { createDefaultRoutineAssignment, DEFAULT_ROUTINE_ID, defaultPlan } from '../domain/models';
 
 describe('DemoRepository compatibility', () => {
   beforeEach(() => localStorage.clear());
@@ -48,6 +48,24 @@ describe('DemoRepository compatibility', () => {
     await repository.savePushSubscription({ endpoint: 'https://push.example/subscription' });
 
     expect(new DemoRepository().snapshot().notificationsEnabled).toBe(true);
+  });
+
+  test('adds demo progress events to existing local states so the heatmap is visible', () => {
+    localStorage.setItem('zadiag.demo.v1', JSON.stringify({
+      locale: 'en',
+      role: 'child',
+      notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      routineAssignments: [createDefaultRoutineAssignment()],
+      events: [],
+    }));
+
+    const events = new DemoRepository().snapshot().events;
+
+    expect(events.filter((event) => event.id.startsWith('demo-progress-')).length).toBeGreaterThan(0);
+    expect(events.some((event) => event.status === 'detected')).toBe(true);
+    expect(events.some((event) => event.status === 'uncertain')).toBe(true);
+    expect(events.some((event) => event.status === 'missed')).toBe(true);
   });
 
   test('marks the participant as already linked after parent recovery', async () => {

@@ -14,12 +14,61 @@ import type { AppRepository } from './contracts';
 
 const STORAGE_KEY = 'zadiag.demo.v1';
 const HYDRATION_ROUTINE_ID = 'daily-hydration';
+const DEMO_PROGRESS_EVENT_PREFIX = 'demo-progress-';
 
 const browserLocale = (): AppState['locale'] => navigator.language?.startsWith('fr') ? 'fr' : 'en';
+
+const dayInMonth = (now: Date, monthOffset: number, dayOfMonth: number, hour: number) => {
+  const year = now.getFullYear();
+  const month = now.getMonth() + monthOffset;
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  return new Date(year, month, Math.min(dayOfMonth, lastDay), hour, 0, 0, 0);
+};
+
+const progressEvent = (
+  requestedAt: Date,
+  slot: number,
+  status: VerificationEvent['status'],
+): VerificationEvent => {
+  const expiresAt = new Date(requestedAt);
+  expiresAt.setHours(expiresAt.getHours() + 1);
+  const dayKey = requestedAt.toISOString().slice(0, 10);
+  const id = `${DEMO_PROGRESS_EVENT_PREFIX}${dayKey}-${slot}-${status}`;
+  return {
+    id,
+    routineId: DEFAULT_ROUTINE_ID,
+    sessionId: id,
+    requestedAt: requestedAt.toISOString(),
+    expiresAt: expiresAt.toISOString(),
+    capturedAt: ['detected', 'not_detected', 'uncertain'].includes(status) ? requestedAt.toISOString() : undefined,
+    status,
+    confidence: status === 'detected' ? 0.9 : status === 'uncertain' ? 0.58 : undefined,
+    imageQuality: status === 'detected' ? 0.88 : status === 'uncertain' ? 0.64 : undefined,
+    reason: status === 'uncertain' ? 'demo_mixed_day' : undefined,
+  };
+};
+
+function demoProgressEvents(now = new Date()): VerificationEvent[] {
+  const currentDay = now.getDate();
+  const specs: Array<{ monthOffset: number; day: number; statuses: VerificationEvent['status'][] }> = [
+    { monthOffset: -1, day: 3, statuses: ['detected', 'uncertain'] },
+    { monthOffset: -1, day: 7, statuses: ['detected', 'detected', 'missed'] },
+    { monthOffset: -1, day: 14, statuses: ['detected', 'uncertain', 'missed'] },
+    { monthOffset: -1, day: 21, statuses: ['detected', 'detected', 'detected', 'uncertain'] },
+    { monthOffset: -1, day: 27, statuses: ['missed'] },
+    { monthOffset: 0, day: Math.max(1, currentDay - 4), statuses: ['detected', 'detected', 'uncertain'] },
+    { monthOffset: 0, day: Math.max(1, currentDay - 2), statuses: ['detected', 'missed'] },
+    { monthOffset: 0, day: currentDay, statuses: ['detected', 'uncertain', 'missed'] },
+  ];
+
+  return specs.flatMap(({ monthOffset, day, statuses }) =>
+    statuses.map((status, slot) => progressEvent(dayInMonth(now, monthOffset, day, 8 + slot * 2), slot, status)));
+}
 
 function seedEvents(now = new Date()): VerificationEvent[] {
   const minutes = (value: number) => new Date(now.getTime() + value * 60_000).toISOString();
   const days = (value: number) => new Date(now.getTime() + value * 86_400_000).toISOString();
+
   return [
     {
       id: 'active',
@@ -95,6 +144,7 @@ function seedEvents(now = new Date()): VerificationEvent[] {
       confidence: 0.9,
       imageQuality: 0.87,
     },
+    ...demoProgressEvents(now),
   ];
 }
 
@@ -141,6 +191,7 @@ export class DemoRepository implements AppRepository {
     this.state = saved ? this.migrateState(JSON.parse(saved) as AppState & { plan?: MonitoringPlan }) : initialState();
     if (saved) localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
     this.state.family.childLinked ??= this.state.role === 'child';
+    this.ensureDemoProgressEvents();
     this.ensureActiveSession();
   }
 
@@ -332,6 +383,15 @@ export class DemoRepository implements AppRepository {
       expiresAt: new Date(now.getTime() + 19 * 60_000).toISOString(),
       status: 'pending',
     });
+    this.persist();
+  }
+
+  private ensureDemoProgressEvents() {
+    if (!this.state.routineAssignments.some((assignment) => assignment.routineId === DEFAULT_ROUTINE_ID)) return;
+    const existingIds = new Set(this.state.events.map((event) => event.id));
+    const missingEvents = demoProgressEvents().filter((event) => !existingIds.has(event.id));
+    if (!missingEvents.length) return;
+    this.state.events.push(...missingEvents);
     this.persist();
   }
 

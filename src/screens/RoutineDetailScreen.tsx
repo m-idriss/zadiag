@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { IonButton, IonIcon } from '@ionic/react';
 import { cameraOutline, chevronBackOutline, chevronForwardOutline, ellipsisHorizontal, peopleOutline, sendOutline, timeOutline } from 'ionicons/icons';
 import { adherenceSummary } from '../domain/adherence';
@@ -17,21 +17,32 @@ const sameLocalDay = (value: string, day = new Date()) => {
   return date.getFullYear() === day.getFullYear() && date.getMonth() === day.getMonth() && date.getDate() === day.getDate();
 };
 
+const sameDate = (date: Date, day = new Date()) => date.getFullYear() === day.getFullYear() && date.getMonth() === day.getMonth() && date.getDate() === day.getDate();
+
+const monthKey = (date: Date) => `${date.getFullYear()}-${date.getMonth()}`;
+
 export const calendarDays = (events: VerificationEvent[], locale: string, referenceDate = new Date()) => {
-  const start = new Date(referenceDate);
-  start.setHours(0, 0, 0, 0);
+  const start = new Date(referenceDate.getFullYear(), referenceDate.getMonth() - 1, 1);
   const daysSinceMonday = (start.getDay() + 6) % 7;
-  start.setDate(start.getDate() - daysSinceMonday - 21);
+  start.setDate(start.getDate() - daysSinceMonday);
+  const end = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0);
+  const daysUntilSunday = (7 - end.getDay()) % 7;
+  end.setDate(end.getDate() + daysUntilSunday);
 
   const dateFormatter = new Intl.DateTimeFormat(locale, { dateStyle: 'medium' });
+  const today = new Date(referenceDate);
+  today.setHours(0, 0, 0, 0);
+  const days = [];
 
-  return Array.from({ length: 28 }, (_, index) => {
-    const date = new Date(start);
-    date.setDate(start.getDate() + index);
-    const dayEvents = events.filter((event) => sameLocalDay(event.requestedAt, date));
+  for (const date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+    const day = new Date(date);
+    const dayStart = new Date(day);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEvents = events.filter((event) => sameLocalDay(event.requestedAt, day));
     const successful = dayEvents.filter((event) => event.status === 'detected').length;
     const attention = dayEvents.filter((event) => ['not_detected', 'uncertain'].includes(event.status)).length;
     const missed = dayEvents.filter((event) => ['missed', 'expired'].includes(event.status)).length;
+    const total = successful + attention + missed;
     const status = missed > 0
       ? 'missed'
       : attention > 0
@@ -39,21 +50,62 @@ export const calendarDays = (events: VerificationEvent[], locale: string, refere
         : successful > 0
           ? 'completed'
           : 'empty';
-    return {
-      key: date.toISOString(),
-      weekday: date.getDay(),
-      label: new Intl.DateTimeFormat(locale, { weekday: 'narrow' }).format(date),
-      dateLabel: dateFormatter.format(date),
+    days.push({
+      key: day.toISOString(),
+      weekday: day.getDay(),
+      label: new Intl.DateTimeFormat(locale, { weekday: 'narrow' }).format(day),
+      dayOfMonth: day.getDate(),
+      dateLabel: dateFormatter.format(day),
+      monthKey: monthKey(day),
+      isToday: sameDate(day, referenceDate),
+      isFuture: dayStart > today,
       successful,
       attention,
       missed,
+      total,
+      successfulShare: total > 0 ? Math.round((successful / total) * 100) : 0,
+      attentionShare: total > 0 ? Math.round((attention / total) * 100) : 0,
+      missedShare: total > 0 ? Math.round((missed / total) * 100) : 0,
       status,
       level: Math.min(4, successful),
+    });
+  }
+
+  return days;
+};
+
+const capitalize = (value: string) => value.length > 0 ? `${value.charAt(0).toLocaleUpperCase()}${value.slice(1)}` : value;
+
+const chunkWeeks = <T,>(days: T[]) => Array.from({ length: Math.ceil(days.length / 7) }, (_, index) => days.slice(index * 7, (index + 1) * 7));
+
+export const calendarMonthSections = (days: ReturnType<typeof calendarDays>, locale: string, referenceDate = new Date()) => {
+  const monthFormatter = new Intl.DateTimeFormat(locale, { month: 'long' });
+  return [-1, 0].map((offset) => {
+    const month = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + offset, 1);
+    const targetMonthKey = monthKey(month);
+    const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
+    const firstWeekOffset = (firstDay.getDay() + 6) % 7;
+    const start = new Date(firstDay);
+    start.setDate(start.getDate() - firstWeekOffset);
+    const lastDay = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+    const lastWeekOffset = (7 - lastDay.getDay()) % 7;
+    const end = new Date(lastDay);
+    end.setDate(end.getDate() + lastWeekOffset);
+
+    const sectionDays = days
+      .filter((day) => {
+        const date = new Date(day.key);
+        return date >= start && date <= end;
+      })
+      .map((day) => ({ ...day, isOutsideMonth: day.monthKey !== targetMonthKey }));
+
+    return {
+      key: targetMonthKey,
+      label: capitalize(monthFormatter.format(month)),
+      weeks: chunkWeeks(sectionDays),
     };
   });
 };
-
-const chunkWeeks = <T,>(days: T[]) => Array.from({ length: Math.ceil(days.length / 7) }, (_, index) => days.slice(index * 7, (index + 1) * 7));
 
 const streakFor = (events: VerificationEvent[]) => {
   let streak = 0;
@@ -84,6 +136,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, t, edit, i
   routinePlanBusy?: boolean;
 }) {
   const [tab, setTab] = useState<DetailTab>(initialTab ?? (edit ? 'plan' : 'overview'));
+  const todayHeatmapRef = useRef<HTMLSpanElement | null>(null);
   const events = state.events.filter((event) => event.routineId === assignment.routineId);
   const summary = adherenceSummary(events);
   const locale = state.locale === 'fr' ? 'fr-FR' : 'en-US';
@@ -92,9 +145,14 @@ export function RoutineDetailScreen({ assignment, state, back, start, t, edit, i
   const formatDateTime = (value: string) => new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
   const formatTime = (value: string) => new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(new Date(value));
   const days = calendarDays(events, locale);
-  const weeks = chunkWeeks(days);
+  const monthSections = calendarMonthSections(days, locale);
   const currentStreak = streakFor(events);
   const tabs: DetailTab[] = edit ? ['plan', 'overview', 'instructions', 'history', 'progress'] : ['overview', 'instructions', 'history', 'progress'];
+
+  useEffect(() => {
+    if (tab !== 'progress') return;
+    todayHeatmapRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }, [tab]);
 
   const historyRow = (event: VerificationEvent) => (
     <article className="routine-history-row" key={event.id}>
@@ -138,24 +196,39 @@ export function RoutineDetailScreen({ assignment, state, back, start, t, edit, i
 
       {tab === 'progress' && <div className="routine-tab-panel">
         <h2>{t('globalProgress')}</h2><section className="card progress-summary"><div className="progress-ring" style={{ '--progress': `${summary.rate * 360}deg` } as React.CSSProperties}><span>{Math.round(summary.rate * 100)}%</span></div><dl><div><dt>{t('checksSuccessful')}</dt><dd>{summary.successful}</dd></div><div><dt>{t('toReview')}</dt><dd>{summary.attention}</dd></div><div><dt>{t('missed')}</dt><dd>{events.filter((event) => ['missed', 'expired'].includes(event.status)).length}</dd></div></dl></section>
-        <h2>{t('activityHeatmap')}</h2><div className="routine-heatmap" aria-label={t('lastFourWeeks')}>
-          <div className="routine-heatmap-weekdays" aria-hidden="true">{days.slice(0, 7).map((day) => <span key={day.weekday}>{day.label}</span>)}</div>
-          <div className="routine-heatmap-weeks">
-            {weeks.map((week, weekIndex) => (
-              <div className="routine-heatmap-week" key={week[0]?.key ?? weekIndex}>
-                {week.map((day) => (
-                  <span
-                    className={`routine-heatmap-day ${day.status} level-${day.level}`}
-                    key={day.key}
-                    title={`${day.dateLabel}: ${day.successful} ${t('successful')}, ${day.attention} ${t('toReview')}, ${day.missed} ${t('missed')}`}
-                    aria-label={`${day.dateLabel}: ${day.successful} ${t('successful')}, ${day.attention} ${t('toReview')}, ${day.missed} ${t('missed')}`}
-                  />
-                ))}
-              </div>
-            ))}
+        <h2>{t('activityHeatmap')}</h2><div className="routine-heatmap" aria-label={t('activityHeatmap')}>
+          <div className="routine-heatmap-body">
+            <div className="routine-heatmap-weekdays" aria-hidden="true">{days.slice(0, 7).map((day) => <span key={day.weekday}>{day.label}</span>)}</div>
+            <div className="routine-heatmap-months">
+              {monthSections.map((month) => (
+                <section className="routine-heatmap-month" key={month.key} aria-label={month.label}>
+                  <h3>{month.label}</h3>
+                  <div className="routine-heatmap-weeks">
+                    {month.weeks.map((week, weekIndex) => (
+                      <div className="routine-heatmap-week" key={week[0]?.key ?? weekIndex}>
+                        {week.map((day) => (
+                          <span
+                            className={`routine-heatmap-day ${day.status} level-${day.level} ${day.total > 0 && !day.isFuture ? 'has-activity' : ''} ${day.isToday ? 'is-today' : ''} ${day.isFuture ? 'is-future' : ''} ${day.isOutsideMonth ? 'is-outside-month' : ''}`}
+                            key={`${month.key}-${day.key}`}
+                            ref={day.isToday && !day.isOutsideMonth ? todayHeatmapRef : undefined}
+                            style={{
+                              '--success-share': `${day.successfulShare}%`,
+                              '--attention-end': `${day.successfulShare + day.attentionShare}%`,
+                            } as React.CSSProperties}
+                            title={day.isOutsideMonth ? undefined : `${day.dateLabel}: ${day.successful} ${t('successful')}, ${day.attention} ${t('toReview')}, ${day.missed} ${t('missed')}`}
+                            aria-hidden={day.isOutsideMonth ? true : undefined}
+                            aria-label={day.isOutsideMonth ? undefined : `${day.dateLabel}: ${day.successful} ${t('successful')}, ${day.attention} ${t('toReview')}, ${day.missed} ${t('missed')}`}
+                          ><b>{day.isOutsideMonth ? '' : day.dayOfMonth}</b></span>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
           </div>
         </div>
-        <div className="heatmap-legend" aria-hidden="true"><span>{t('less')}</span><i className="level-0" /><i className="level-1" /><i className="level-2" /><i className="level-3" /><i className="level-4" /><span>{t('more')}</span><span className="attention">{t('toReview')}</span><span className="missed">{t('missed')}</span></div>
+        <div className="heatmap-legend" aria-hidden="true"><span><i className="success" />{t('successful')}</span><span><i className="attention" />{t('toReview')}</span><span><i className="missed" />{t('missed')}</span></div>
         <h2>{t('streaks')}</h2><div className="streak-grid"><div><small>{t('currentStreak')}</small><b>{currentStreak}</b><span>{t('days')}</span></div><div><small>{t('bestStreak')}</small><b>{Math.max(currentStreak, summary.successful)}</b><span>{t('days')}</span></div></div>
       </div>}
 

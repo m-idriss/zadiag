@@ -19,7 +19,7 @@ export function ParentDashboard({
 }) {
   const [regenerating, setRegenerating] = useState(false);
   const [codeError, setCodeError] = useState(false);
-  const [summaryRange, setSummaryRange] = useState<SummaryRange>('day');
+  const [summaryRange, setSummaryRange] = useState<SummaryRange>('week');
   const rangedEvents = filterEventsBySummaryRange(state.events, summaryRange);
 
   const regenerate = async () => {
