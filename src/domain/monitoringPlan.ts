@@ -90,6 +90,51 @@ export const groupsFromLegacyPlan = (plan: { weekdays: number[]; windows: TimeWi
         windows: plan.windows,
       }];
 
+export type PlannedWindow = {
+  start: Date;
+  end: Date;
+};
+
+const planWeekdayForDate = (date: Date) => {
+  const day = date.getDay();
+  return day === 0 ? 7 : day;
+};
+
+const dateWithTime = (date: Date, value: string) => {
+  const next = new Date(date);
+  const [hours, minutes] = value.split(':').map(Number);
+  next.setHours(hours, minutes, 0, 0);
+  return next;
+};
+
+export const nextPlannedWindow = (
+  plan: Pick<MonitoringPlan, 'weekdays' | 'windows' | 'scheduleGroups'>,
+  now = new Date(),
+): PlannedWindow | undefined => {
+  const dayStart = new Date(now);
+  dayStart.setHours(0, 0, 0, 0);
+
+  const candidates: PlannedWindow[] = [];
+  const groups = groupsFromLegacyPlan(plan);
+
+  for (let offset = 0; offset < 14; offset += 1) {
+    const date = new Date(dayStart);
+    date.setDate(dayStart.getDate() + offset);
+    const weekday = planWeekdayForDate(date);
+
+    groups.forEach((group) => {
+      if (!normalizeWeekdays(group.weekdays).includes(weekday)) return;
+      group.windows.filter(isValidWindow).forEach((window) => {
+        const start = dateWithTime(date, window.start);
+        const end = dateWithTime(date, window.end);
+        if (start.getTime() > now.getTime()) candidates.push({ start, end });
+      });
+    });
+  }
+
+  return candidates.sort((a, b) => a.start.getTime() - b.start.getTime())[0];
+};
+
 export const flattenScheduleGroups = (groups: ScheduleGroup[]) => {
   const windows = groups.flatMap((group) => group.windows.map((window) => ({
     ...window,

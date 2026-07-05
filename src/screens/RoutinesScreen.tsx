@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState } from 'react';
 import type { AppState, MonitoringPlan, RoutineAssignment, RoutineValidationMode, ScheduleGroup, VerificationEvent } from '../domain/models';
-import { groupsFromLegacyPlan, summarizeWeekdays } from '../domain/monitoringPlan';
+import { groupsFromLegacyPlan, nextPlannedWindow, summarizeWeekdays } from '../domain/monitoringPlan';
 import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
 import { presentRoutine } from '../domain/routinePresentation';
@@ -22,6 +22,31 @@ const groupSummaryLabel = (group: ScheduleGroup, index: number, t: (key: Message
   const weekdaySummary = summarizeWeekdays(group.weekdays, t);
   if (!label || label === weekdaySummary) return `${t('monitoringPeriod')} ${index + 1}`;
   return label;
+};
+
+const isSameLocalDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear()
+  && a.getMonth() === b.getMonth()
+  && a.getDate() === b.getDate();
+
+const nextDay = (date: Date) => {
+  const next = new Date(date);
+  next.setDate(date.getDate() + 1);
+  return next;
+};
+
+const plannedWindowLabel = (
+  windowEnd: Date,
+  now: Date,
+  locale: string,
+  t: (key: MessageKey) => string,
+) => {
+  const dayLabel = isSameLocalDay(windowEnd, now)
+    ? t(dayPeriodLabelKey(windowEnd.toISOString()))
+    : isSameLocalDay(windowEnd, nextDay(now))
+      ? t('tomorrow')
+      : new Intl.DateTimeFormat(locale, { weekday: 'long' }).format(windowEnd);
+  return `${dayLabel} · ${t('before')} ${new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(windowEnd)}`;
 };
 
 export function RoutinesScreen({
@@ -164,12 +189,16 @@ export function RoutinesScreen({
       )}
       <div className="routine-list">
         {state.routineAssignments.map((assignment) => {
-          const next = state.events.find((event) => event.routineId === assignment.routineId && event.status === 'pending' && Date.parse(event.expiresAt) > Date.now());
+          const now = new Date();
+          const next = state.events.find((event) => event.routineId === assignment.routineId && event.status === 'pending' && Date.parse(event.expiresAt) > now.getTime());
           const rate = completionRate(assignment, state.events);
           const visual = presentRoutine(assignment.routine, state.locale);
           const locale = state.locale === 'fr' ? 'fr-FR' : 'en-US';
+          const planned = next ? undefined : nextPlannedWindow(assignment.plan, now);
           const nextLabel = next
             ? `${t(dayPeriodLabelKey(next.expiresAt))} · ${t('before')} ${new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(new Date(next.expiresAt))}`
+            : planned
+              ? plannedWindowLabel(planned.end, now, locale, t)
             : t('noPendingTask');
           const groups = groupsFromLegacyPlan(assignment.plan);
           const planChips = groups.map((group, groupIndex) => {

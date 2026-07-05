@@ -5,6 +5,7 @@ import {
   flattenScheduleGroups,
   groupsFromLegacyPlan,
   maxChecksPerActiveDay,
+  nextPlannedWindow,
   nextWindowId,
   normalizeWeekdays,
   summarizeWeekdays,
@@ -84,5 +85,25 @@ describe('monitoring plan helpers', () => {
       weekdays: [1, 7],
       windows: [{ id: 'morning', start: '07:30', end: '09:30' }],
     });
+  });
+
+  it('finds the next planned window when no check is currently pending', () => {
+    const plan = buildMonitoringPlanFromGroups({}, [{
+      id: 'g1',
+      weekdays: [1, 2, 3, 4, 5],
+      windows: [
+        { id: 'morning', start: '07:30', end: '09:30' },
+        { id: 'lunch', start: '12:00', end: '14:00' },
+      ],
+    }]);
+
+    const nextToday = nextPlannedWindow(plan, new Date(2026, 6, 6, 10, 0));
+    expect(nextToday?.start.getHours()).toBe(12);
+    expect(nextToday?.end.getHours()).toBe(14);
+
+    const nextTomorrow = nextPlannedWindow(plan, new Date(2026, 6, 6, 21, 0));
+    expect(nextTomorrow?.start.getDate()).toBe(7);
+    expect(nextTomorrow?.start.getHours()).toBe(7);
+    expect(nextTomorrow?.start.getMinutes()).toBe(30);
   });
 });

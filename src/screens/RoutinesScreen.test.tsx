@@ -18,6 +18,7 @@ describe('participant routines navigation', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     act(() => root.unmount());
     container.remove();
   });
@@ -152,6 +153,23 @@ describe('participant routines navigation', () => {
     expect(container.textContent).toContain('Hydratation');
     expect(container.querySelector('.routine-icon .app-icon')).not.toBeNull();
     expect(container.querySelector('.routine-card')?.getAttribute('style')).toContain('#2387c9');
+  });
+
+  it('shows the next planned check when no task is pending', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 6, 6, 10, 0));
+    const assignment = createDefaultRoutineAssignment();
+    const state: AppState = {
+      role: 'child', locale: 'en', notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: false },
+      routineAssignments: [assignment], events: [],
+    };
+
+    act(() => root.render(<RoutinesScreen state={state} t={(key) => translate('en', key)} />));
+
+    expect(container.textContent).toContain('Next check');
+    expect(container.textContent).toContain('Before');
+    expect(container.textContent).not.toContain('No task is waiting right now.');
   });
 
   it('opens a routine catalog and assigns a new routine', async () => {
