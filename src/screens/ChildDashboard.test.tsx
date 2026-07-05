@@ -178,6 +178,24 @@ describe('participant Today screen', () => {
     expect(container.textContent).toContain('Completed today1');
   });
 
+  it('shows upcoming checks when no task is currently waiting', () => {
+    const state: AppState = {
+      role: 'child',
+      locale: 'en',
+      notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: false },
+      routineAssignments: [createDefaultRoutineAssignment()],
+      events: [],
+    };
+
+    act(() => root.render(<ChildDashboard state={state} start={() => undefined} t={(key) => translate('en', key)} />));
+
+    expect(container.textContent).toContain('0 checks to complete');
+    expect(container.textContent).toContain('Upcoming checks');
+    expect(container.textContent).toContain('Orthodontic Elastics');
+    expect(container.textContent).toContain('Before');
+  });
+
   it('labels morning checks without calling them evening', () => {
     vi.useFakeTimers();
     const now = new Date();

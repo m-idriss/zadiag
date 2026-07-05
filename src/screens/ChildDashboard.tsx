@@ -7,8 +7,9 @@ import { AppIcon, routineIconName } from '../components/Icon';
 import { RoutineHistoryPanel } from '../components/RoutineHistoryPanel';
 import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } from '../components/AdherenceSummaryCard';
 import { presentRoutine } from '../domain/routinePresentation';
-import { dayPeriodLabelKey } from '../domain/taskTimeLabel';
+import { dayPeriodLabelKey, plannedWindowLabel } from '../domain/taskTimeLabel';
 import { canRetakeCapture } from '../domain/adherence';
+import { nextPlannedWindow } from '../domain/monitoringPlan';
 
 const isToday = (value: string, now = new Date()) => {
   const date = new Date(value);
@@ -59,6 +60,7 @@ export function ChildDashboard({
   const formatTime = (value: string) => new Intl.DateTimeFormat(state.locale === 'fr' ? 'fr-FR' : 'en-US', {
     timeStyle: 'short',
   }).format(new Date(value));
+  const locale = state.locale === 'fr' ? 'fr-FR' : 'en-US';
   const presentations = new Map(state.routineAssignments.map((assignment) => [assignment.routineId, presentRoutine(assignment.routine, state.locale)]));
   const presentationFor = (event: VerificationEvent) => {
     return presentations.get(event.routineId) ?? { name: t('routine'), icon: undefined, style: {} };
@@ -79,6 +81,20 @@ export function ChildDashboard({
       if (aActive !== bActive) return aActive ? -1 : 1;
       return Date.parse(a.events[0]?.expiresAt ?? '') - Date.parse(b.events[0]?.expiresAt ?? '');
     });
+  const upcomingChecks = state.routineAssignments
+    .map((assignment) => {
+      const planned = nextPlannedWindow(assignment.plan, new Date(now));
+      if (!planned) return undefined;
+      return {
+        id: assignment.id,
+        routineId: assignment.routineId,
+        planned,
+        presentation: presentRoutine(assignment.routine, state.locale),
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
+    .sort((a, b) => a.planned.start.getTime() - b.planned.start.getTime())
+    .slice(0, 3);
   const pendingSection = (
     <section className="today-section" aria-labelledby="pending-tasks-title">
       <div className="today-pending-panel">
@@ -144,6 +160,27 @@ export function ChildDashboard({
       </div>
     </section>
   );
+  const upcomingSection = upcomingChecks.length > 0 && (
+    <section className="today-section upcoming-checks-section" aria-labelledby="upcoming-checks-title">
+      <div className="upcoming-checks-heading">
+        <div>
+          <small>{t('upcomingChecks')}</small>
+          <h2 id="upcoming-checks-title">{t('nextControls')}</h2>
+        </div>
+      </div>
+      <div className="upcoming-checks-list">
+        {upcomingChecks.map((item) => (
+          <article className="upcoming-check-card" style={item.presentation.style} key={item.id}>
+            <span className="today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(item.presentation.icon)} /></span>
+            <div>
+              <h3>{item.presentation.name}</h3>
+              <p>{plannedWindowLabel(item.planned.end, new Date(now), locale, t)}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
   const historySection = (
     <section className="today-section participant-history-section" aria-labelledby="participant-history-title">
       <AdherenceSummaryCard events={historyEvents} range={summaryRange} onRangeChange={setSummaryRange} t={t} />
@@ -154,6 +191,7 @@ export function ChildDashboard({
     <div className="content-screen child-home">
       <header className="screen-header participant-header"><div><h1>{t('activity')}</h1><p>{t('participantTodaySubtitle').replace('{name}', state.family.childName)}</p></div><button type="button" className="more-button" aria-label={t('moreOptions')}>•••</button></header>
       {pendingSection}
+      {upcomingSection}
       {completedSection}
       {historySection}
       <Disclaimer t={t} />
