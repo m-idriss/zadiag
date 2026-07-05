@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { IonButton, IonIcon } from '@ionic/react';
 import {
   informationCircleOutline,
@@ -12,6 +12,7 @@ import {
 import type { Locale, Role, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { buildDiagnosticsEmailBody, createCorrelationId } from '../services/appLogs';
+import type { AppUpdateInfo } from '../services/appUpdate';
 import { Disclaimer } from '../components/Disclaimer';
 import { CodeBox } from '../components/CodeBox';
 
@@ -21,7 +22,7 @@ export function SettingsScreen({
   t,
   locale,
   setLocale,
-  updateAvailable,
+  updateInfo,
   forceAppUpdate,
   reset,
   role,
@@ -39,7 +40,7 @@ export function SettingsScreen({
   t: (key: MessageKey) => string;
   locale: Locale;
   setLocale: (locale: Locale) => Promise<void>;
-  updateAvailable: boolean;
+  updateInfo: AppUpdateInfo;
   forceAppUpdate: () => Promise<boolean>;
   reset: () => void;
   role: Role;
@@ -64,9 +65,6 @@ export function SettingsScreen({
   const [updateError, setUpdateError] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [codeError, setCodeError] = useState(false);
-  const pullStartY = useRef<number | null>(null);
-  const [pullDistance, setPullDistance] = useState(0);
-  const pullThreshold = 72;
 
   const requestNotifications = async () => {
     setNotificationState('saving');
@@ -140,30 +138,6 @@ export function SettingsScreen({
       setUpdatingApp(false);
     }
   };
-  const startPull = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (updatingApp || event.currentTarget.scrollTop > 0 || event.touches.length !== 1) {
-      pullStartY.current = null;
-      return;
-    }
-    pullStartY.current = event.touches[0].clientY;
-    setPullDistance(0);
-  };
-  const movePull = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (pullStartY.current === null || updatingApp) return;
-    if (event.currentTarget.scrollTop > 0) {
-      setPullDistance(0);
-      return;
-    }
-    const distance = event.touches[0].clientY - pullStartY.current;
-    setPullDistance(Math.max(0, Math.min(110, distance)));
-  };
-  const endPull = () => {
-    if (pullStartY.current === null || updatingApp) return;
-    const shouldUpdate = pullDistance >= pullThreshold;
-    pullStartY.current = null;
-    setPullDistance(0);
-    if (shouldUpdate) void forceUpdate();
-  };
   const notificationEnabled = notificationState === 'enabled';
   const notificationStatusKey = notificationState === 'enabled'
     ? 'settingsNotificationsStatusEnabled'
@@ -187,23 +161,20 @@ export function SettingsScreen({
       dateStyle: 'short',
       timeStyle: 'short',
     }).format(updatedAt);
-  const pullProgress = updatingApp
-    ? 100
-    : Math.max(0, Math.min(100, Math.round((pullDistance / pullThreshold) * 100)));
-  const pullLabel = updatingApp
-    ? t('settingsPullUpdateChecking')
-    : pullDistance >= pullThreshold
-      ? t('settingsPullUpdateRelease')
-      : t('settingsPullUpdatePull');
-  const pullVisible = updatingApp || pullDistance > 0;
+  const updateSeverity = updateInfo.available ? updateInfo.severity : 'none';
+  const updateDetail = updateInfo.available
+    ? updateInfo.severity === 'major'
+      ? t('settingsUpdateMajorAvailable')
+      : updateInfo.severity === 'minor'
+        ? t('settingsUpdateMinorAvailable')
+        : updateInfo.patchCount
+          ? t('settingsUpdatePatchAvailable')
+          : t('settingsUpdateAvailable')
+    : t('settingsUpdateDetail');
 
   return (
-    <div className="content-screen settings-screen" onTouchStart={startPull} onTouchMove={movePull} onTouchEnd={endPull} onTouchCancel={endPull}>
+    <div className="content-screen settings-screen">
       <header className="screen-header"><div><h1>{t('settings')}</h1><p>{t('settingsHint')}</p></div></header>
-      <div className={`settings-pull-indicator ${pullVisible ? 'visible' : ''}`} aria-live="polite">
-        <small>{pullLabel}</small>
-        <div className="settings-pull-bar" aria-hidden="true"><div style={{ width: `${pullProgress}%` }} /></div>
-      </div>
       <section className="settings-section" aria-labelledby="settings-device-heading">
         <h2 id="settings-device-heading">{t('settingsDeviceSection')}</h2>
         <div className="card settings-list">
@@ -278,16 +249,20 @@ export function SettingsScreen({
             <div className="settings-row-copy">
               <strong>{t('settingsAppInfoTitle')}</strong>
               <small>{t('settingsVersionLabel')} {import.meta.env.VITE_APP_VERSION} · {t('settingsUpdatedLabel')} {appUpdated}</small>
+              <small>{updateDetail}</small>
               {updateError ? <small className="settings-action-error">{t('settingsUpdateError')}</small> : null}
             </div>
-            <IonButton
-              className="settings-inline-action settings-inline-action-contained"
-              size="small"
-              disabled={updatingApp || !updateAvailable}
-              onClick={() => { void forceUpdate(); }}
-            >
-              {updatingApp ? t('settingsUpdateChecking') : t('settingsUpdateAction')}
-            </IonButton>
+            <div className="settings-row-control">
+              {updateInfo.badgeLabel ? <span className={`settings-update-badge ${updateSeverity}`}>{updateInfo.badgeLabel}</span> : null}
+              <IonButton
+                className={`settings-inline-action settings-inline-action-contained settings-update-action ${updateSeverity}`}
+                size="small"
+                disabled={updatingApp || !updateInfo.available}
+                onClick={() => { void forceUpdate(); }}
+              >
+                {updatingApp ? t('settingsUpdateChecking') : t('settingsUpdateAction')}
+              </IonButton>
+            </div>
           </div>
         </div>
       </section>

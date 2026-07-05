@@ -15,11 +15,21 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    {
+      name: 'zadiag-app-version-manifest',
+      generateBundle() {
+        this.emitFile({
+          type: 'asset',
+          fileName: 'app-version.json',
+          source: `${JSON.stringify({ version: appVersion, updatedAt: appUpdatedAt }, null, 2)}\n`,
+        });
+      },
+    },
     VitePWA({
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.ts',
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['icons/icon.svg'],
       manifest: {
         id: '/zadiag',

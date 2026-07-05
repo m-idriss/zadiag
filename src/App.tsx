@@ -9,7 +9,7 @@ import { SplashScreen } from './components/SplashScreen';
 import { WebPushGateway } from './services/webPush';
 import { firebaseEnabled } from './services/firebaseConfig';
 import { browserRouteContext, isLocalDemoEnvironment, routineCentricUiEnabled } from './services/browserEnvironment';
-import { refreshServiceWorkerRegistration, runWhenStartupIsIdle } from './services/appUpdate';
+import { describeAppUpdate, fetchLatestAppVersion, refreshServiceWorkerRegistration, runWhenStartupIsIdle, type AppUpdateInfo } from './services/appUpdate';
 import { InstallScreen } from './screens/InstallScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
 import { ChildDashboard } from './screens/ChildDashboard';
@@ -39,7 +39,11 @@ export function App() {
   const [state, setState] = useState(repository.snapshot());
   const [route, setRoute] = useState<AppRoute>(() => routeForState(state, browserRouteContext()));
   const [ready, setReady] = useState(false);
-  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [appUpdateInfo, setAppUpdateInfo] = useState<AppUpdateInfo>(() => ({
+    available: false,
+    currentVersion: import.meta.env.VITE_APP_VERSION,
+    severity: 'unknown',
+  }));
   const [splashProgress, setSplashProgress] = useState(40);
   const [splashMessage, setSplashMessage] = useState<MessageKey>('splashLoading');
   const [tab, setTab] = useState<Tab>('home');
@@ -71,9 +75,22 @@ export function App() {
     };
     const checkForAppUpdate = async () => {
       try {
-        const registration = await refreshServiceWorkerRegistration();
+        const [registration, latestVersion] = await Promise.all([
+          refreshServiceWorkerRegistration(),
+          fetchLatestAppVersion().catch((error) => {
+            console.error(error);
+            return undefined;
+          }),
+        ]);
         if (!alive) return;
-        setUpdateAvailable(Boolean(registration?.waiting));
+        const versionUpdate = describeAppUpdate(import.meta.env.VITE_APP_VERSION, latestVersion);
+        const waiting = Boolean(registration?.waiting);
+        setAppUpdateInfo(versionUpdate ?? {
+          available: waiting,
+          currentVersion: import.meta.env.VITE_APP_VERSION,
+          latestVersion,
+          severity: waiting ? 'unknown' : 'patch',
+        });
       } catch (error) {
         console.error(error);
       }
@@ -167,7 +184,7 @@ export function App() {
   const forceAppUpdate = async (): Promise<boolean> => {
     const registration = await refreshServiceWorkerRegistration();
     const available = Boolean(registration?.waiting);
-    setUpdateAvailable(available);
+    setAppUpdateInfo((current) => ({ ...current, available }));
     if (!registration?.waiting) return false;
     registration.waiting.postMessage({ type: 'SKIP_WAITING' });
     await new Promise<void>((resolve) => {
@@ -266,7 +283,7 @@ export function App() {
             regenerateLinkCode={async () => { await repository.regenerateLinkCode(); sync(); }}
             locale={state.locale}
             setLocale={async (locale) => { await repository.setLocale(locale); sync(); }}
-            updateAvailable={updateAvailable}
+            updateInfo={appUpdateInfo}
             forceAppUpdate={forceAppUpdate}
             reset={() => { void reset(); }}
             role={role}
