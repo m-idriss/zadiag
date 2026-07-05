@@ -40,6 +40,7 @@ export function App() {
   const [state, setState] = useState(repository.snapshot());
   const [route, setRoute] = useState<AppRoute>(() => routeForState(state, browserRouteContext()));
   const [ready, setReady] = useState(false);
+  const [startupError, setStartupError] = useState(false);
   const [appUpdateInfo, setAppUpdateInfo] = useState<AppUpdateInfo>(() => ({
     available: false,
     currentVersion: import.meta.env.VITE_APP_VERSION,
@@ -105,6 +106,7 @@ export function App() {
       setState(restored);
       setRoute(routeForState(restored, browserRouteContext()));
       setStartupStep(100, 'splashFinalizing');
+      setStartupError(false);
       setReady(true);
       runWhenStartupIsIdle(() => {
         void checkForAppUpdate();
@@ -114,7 +116,8 @@ export function App() {
       if (!alive) return;
       window.clearInterval(startupProgressTicker);
       setSplashProgress(100);
-      setReady(true);
+      setSplashMessage('startupRestoreError');
+      setStartupError(true);
     });
     return () => {
       alive = false;
@@ -219,6 +222,32 @@ export function App() {
       setUpdateActionBusy(false);
     }
   };
+
+  if (startupError) {
+    return (
+      <IonApp className="app-root">
+        <main className="page startup-recovery-page">
+          <section className="startup-recovery-card" aria-live="polite">
+            <img src="/icons/icon-192.png" alt="" />
+            <p className="eyebrow">{t('startupRestoreEyebrow')}</p>
+            <h1>{t('startupRestoreTitle')}</h1>
+            <p>{t('startupRestoreBody')}</p>
+            <button type="button" className="primary-action-button startup-recovery-action" onClick={() => window.location.reload()}>
+              {t('startupRestoreRetry')}
+            </button>
+          </section>
+        </main>
+      </IonApp>
+    );
+  }
+
+  if (!ready) {
+    return (
+      <IonApp className="app-root">
+        <SplashScreen progress={splashProgress} message={t(splashMessage)} />
+      </IonApp>
+    );
+  }
 
   let content: React.ReactNode;
   if (route === 'install') {
@@ -337,7 +366,6 @@ export function App() {
           busy={updateActionBusy}
         />
       ) : null}
-      {!ready ? <SplashScreen progress={splashProgress} message={t(splashMessage)} /> : null}
     </IonApp>
   );
 }

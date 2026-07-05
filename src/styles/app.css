@@ -96,6 +96,56 @@ ion-app.app-root {
 .app-splash-card span { color: var(--muted); font-size: 13px; font-weight: 700; }
 .app-splash-progress { width: min(240px, 70vw); height: 7px; border-radius: 999px; background: #e4ece8; overflow: hidden; }
 .app-splash-progress > div { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--teal), #41b6a2); transition: width .2s ease; }
+.startup-recovery-page {
+  display: grid;
+  place-items: center;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+}
+.startup-recovery-card {
+  width: min(100%, 420px);
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 34px 26px;
+  border: 1px solid rgba(214, 225, 221, .9);
+  border-radius: 34px;
+  background:
+    radial-gradient(circle at 18% 8%, rgba(225, 246, 240, .85), transparent 38%),
+    rgba(255, 255, 255, .86);
+  box-shadow: 0 24px 70px rgba(16, 42, 67, .11);
+  text-align: center;
+}
+.startup-recovery-card img { width: 76px; height: 76px; }
+.startup-recovery-card .eyebrow {
+  margin: 0;
+  background: rgba(21, 145, 128, .1);
+  color: var(--teal-dark);
+}
+.startup-recovery-card h1 {
+  max-width: 360px;
+  margin: 0;
+  color: var(--navy);
+  font-size: clamp(28px, 8vw, 38px);
+  line-height: 1.02;
+  font-weight: 940;
+}
+.startup-recovery-card p:not(.eyebrow) {
+  max-width: 350px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.45;
+  font-weight: 650;
+}
+.startup-recovery-action {
+  width: 100%;
+  min-height: 54px;
+  margin-top: 8px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--teal), #0f8f7f);
+  color: #fff;
+  box-shadow: 0 16px 30px rgba(21, 145, 128, .22);
+}
 ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-transform: none; letter-spacing: 0; }
 
 .page, .content-screen { position: relative; isolation: isolate; min-height: 100dvh; max-width: 640px; margin: 0 auto; padding: calc(20px + env(safe-area-inset-top)) 22px calc(100px + env(safe-area-inset-bottom)); background: transparent; scrollbar-width: none; -ms-overflow-style: none; }
@@ -912,11 +962,14 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
   min-height: 54px;
   margin-top: 4px;
   --border-radius: 18px;
-  --background: linear-gradient(135deg, #e97862 0%, #d85b48 100%);
-  --background-hover: linear-gradient(135deg, #df6b55 0%, #c94f3e 100%);
-  --background-activated: linear-gradient(135deg, #cf5d49 0%, #b94737 100%);
-  --box-shadow: 0 14px 28px rgba(217, 91, 72, .2), inset 0 1px rgba(255,255,255,.24);
-  --color: #fff;
+  --background: color-mix(in srgb, var(--coral) 9%, white);
+  --background-hover: color-mix(in srgb, var(--coral) 13%, white);
+  --background-activated: color-mix(in srgb, var(--coral) 17%, white);
+  --border-color: color-mix(in srgb, var(--coral) 18%, white);
+  --border-style: solid;
+  --border-width: 1px;
+  --box-shadow: inset 0 1px rgba(255,255,255,.82);
+  --color: color-mix(in srgb, var(--coral) 82%, var(--navy));
   font-weight: 850;
 }
 .settings-reset-button ion-icon { font-size: 20px; }

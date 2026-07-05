@@ -38,6 +38,10 @@ vi.mock('../screens/ChildDashboard', () => ({
   ),
 }));
 
+vi.mock('../screens/LinkScreen', () => ({
+  LinkScreen: () => <div data-testid="link-screen">Link account flow</div>,
+}));
+
 vi.mock('../screens/CameraScreen', () => ({
   CameraScreen: ({ submit }: { submit: (capturedAt: Date, imageDataUrl: string) => Promise<void> }) => (
     <div>
@@ -111,6 +115,21 @@ const makeState = (): AppState => ({
   events: [makeActiveEvent()],
 });
 
+const makeUnrestoredState = (): AppState => ({
+  ...makeState(),
+  notificationsEnabled: false,
+  family: {
+    linked: false,
+    childLinked: false,
+    childName: '',
+    linkingCode: '',
+    parentRecoveryCode: '',
+    consented: false,
+  },
+  routineAssignments: [],
+  events: [],
+});
+
 const createFakeRepository = (): AppRepository => {
   let state = makeState();
   const listeners = new Set<() => void>();
@@ -162,6 +181,23 @@ const createFakeRepository = (): AppRepository => {
       return structuredClone(event);
     },
     async reset() {},
+  };
+};
+
+const createFailingStartupRepository = (): AppRepository => {
+  const state = makeUnrestoredState();
+  return {
+    ...createFakeRepository(),
+    async initialize() {
+      throw new Error('firebase_restore_failed');
+    },
+    snapshot() { return structuredClone(state); },
+    subscribe() {
+      return () => {};
+    },
+    activeSession() {
+      return undefined;
+    },
   };
 };
 
@@ -239,5 +275,18 @@ describe('Zadiag smoke flow', () => {
 
     backButton?.click();
     await waitForText('Ready for a quick photo?');
+  }, 15000);
+
+  it('does not expose the account linking flow when startup restore fails', async () => {
+    fakeRepository = createFailingStartupRepository();
+    const { App } = await import('../App');
+
+    root.render(<App />);
+
+    await waitForText('We could not restart Zadiag correctly');
+
+    expect(document.body.textContent).not.toContain('Link account flow');
+    expect(document.body.textContent).toContain('Your account has not been reset.');
+    expect(document.body.textContent).toContain('Restart Zadiag');
   }, 15000);
 });
