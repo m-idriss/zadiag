@@ -329,12 +329,12 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .parent-history-row > div:nth-child(2) { min-width: 0; }
 .parent-history-row strong,
 .parent-history-row small { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.history-row-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 7px; min-width: 0; }
+.history-row-actions { display: flex; flex: 0 0 auto; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: 7px; min-width: max-content; }
 .history-retake-button { min-height: 31px; padding: 7px 10px; border: 0; border-radius: 99px; background: var(--routine-accent, var(--teal)); color: white; font-size: 11px; font-weight: 900; white-space: nowrap; }
 .history-retake-button:active { transform: scale(.985); filter: brightness(.97); }
 .routine-history-icon { background: color-mix(in srgb, var(--routine-accent, var(--teal)) 12%, white); color: var(--routine-accent, var(--teal)); }
 .routine-history-icon .app-icon { font-size: 22px; }
-.status-pill { white-space: nowrap; padding: 7px 10px; border-radius: 99px; background: #eef2f4; color: var(--navy); font-weight: 900; font-size: 11px; text-transform: capitalize; }
+.status-pill { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; white-space: nowrap; padding: 7px 10px; border-radius: 99px; background: #eef2f4; color: var(--navy); font-weight: 900; font-size: 11px; text-transform: capitalize; }
 .status-detected { background: var(--mint); color: var(--teal); }
 .status-uncertain { background: #fff0d9; color: #b87218; }
 .status-missed, .status-expired { background: #edf0f2; color: #697983; }
@@ -450,8 +450,8 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
   .today-routine-primary { grid-template-columns: minmax(0, 1fr) auto; gap: 9px; }
   .today-task-stack-row { align-items: flex-start; flex-direction: column; }
   .today-task-stack-row .status-pill { flex-basis: auto; min-width: 108px; }
-  .history-row { grid-template-columns: 42px minmax(0, 1fr); }
-  .history-row-actions { grid-column: 2; justify-content: flex-start; }
+  .history-row { grid-template-columns: 42px minmax(0, 1fr) max-content; gap: 10px; }
+  .history-row-actions { grid-column: auto; justify-content: flex-end; }
 }
 
 .routine-list { gap: 11px; }
