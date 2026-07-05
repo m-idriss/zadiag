@@ -7,12 +7,15 @@ import {
   mailOutline,
   notificationsOutline,
   phonePortraitOutline,
+  trashOutline,
 } from 'ionicons/icons';
 import type { Locale, Role, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { buildDiagnosticsEmailBody, createCorrelationId } from '../services/appLogs';
 import { Disclaimer } from '../components/Disclaimer';
 import { CodeBox } from '../components/CodeBox';
+
+const SUPPORT_EMAIL = 'contact@3dime.com';
 
 export function SettingsScreen({
   t,
@@ -56,6 +59,7 @@ export function SettingsScreen({
     notificationsEnabled ? 'enabled' : 'idle',
   );
   const [mailError, setMailError] = useState(false);
+  const [contactMailError, setContactMailError] = useState(false);
   const [updatingApp, setUpdatingApp] = useState(false);
   const [updateError, setUpdateError] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
@@ -106,11 +110,22 @@ export function SettingsScreen({
         totalChecks,
         events,
       });
-      const mailto = `mailto:contact@3dime.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      const mailto = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
       window.location.href = mailto;
     } catch (error) {
       console.error(error);
       setMailError(true);
+    }
+  };
+  const contactSupport = () => {
+    setContactMailError(false);
+    try {
+      const subject = 'Zadiag contact';
+      const mailto = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}`;
+      window.location.href = mailto;
+    } catch (error) {
+      console.error(error);
+      setContactMailError(true);
     }
   };
   const forceUpdate = async () => {
@@ -302,7 +317,15 @@ export function SettingsScreen({
         />
       ) : null}
       <Disclaimer t={t} />
-      <IonButton className="settings-reset-button" expand="block" fill="outline" color="danger" onClick={confirmReset}>{t('resetDemo')}</IonButton>
+      {contactMailError ? <small className="settings-action-error">{t('settingsContactError')}</small> : null}
+      <IonButton className="settings-contact-button" expand="block" onClick={contactSupport}>
+        <IonIcon slot="start" icon={mailOutline} />
+        {t('settingsContactButton')}
+      </IonButton>
+      <IonButton className="settings-reset-button" expand="block" onClick={confirmReset}>
+        <IonIcon slot="start" icon={trashOutline} />
+        {t('resetDemo')}
+      </IonButton>
       </section>
     </div>
   );

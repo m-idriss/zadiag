@@ -679,7 +679,30 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .privacy-card ul { display: grid; gap: 10px; margin: 14px 0 0; padding: 0; color: var(--muted); list-style: none; }
 .privacy-card li { display: flex; gap: 9px; font-size: 13px; line-height: 1.35; }
 .privacy-card li::before { content: '✓'; flex: 0 0 auto; color: var(--teal); font-weight: 900; }
-.settings-reset-button { min-height: 50px; margin-top: 2px; --border-radius: 16px; font-weight: 750; }
+.settings-contact-button {
+  min-height: 54px;
+  margin-top: 4px;
+  --border-radius: 18px;
+  --background: var(--navy);
+  --background-hover: color-mix(in srgb, var(--navy) 92%, white);
+  --background-activated: color-mix(in srgb, var(--navy) 84%, white);
+  --box-shadow: 0 14px 28px rgba(16, 42, 67, .16), inset 0 1px rgba(255,255,255,.2);
+  --color: #fff;
+  font-weight: 850;
+}
+.settings-contact-button ion-icon { font-size: 20px; }
+.settings-reset-button {
+  min-height: 54px;
+  margin-top: 4px;
+  --border-radius: 18px;
+  --background: linear-gradient(135deg, #e97862 0%, #d85b48 100%);
+  --background-hover: linear-gradient(135deg, #df6b55 0%, #c94f3e 100%);
+  --background-activated: linear-gradient(135deg, #cf5d49 0%, #b94737 100%);
+  --box-shadow: 0 14px 28px rgba(217, 91, 72, .2), inset 0 1px rgba(255,255,255,.24);
+  --color: #fff;
+  font-weight: 850;
+}
+.settings-reset-button ion-icon { font-size: 20px; }
 
 @media (max-width: 430px) {
   .welcome-page { gap: 15px; }
