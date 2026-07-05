@@ -33,7 +33,7 @@ export function ChildDashboard({
   retake?: (event: VerificationEvent) => void;
   t: (key: MessageKey) => string;
 }) {
-  const [summaryRange, setSummaryRange] = useState<SummaryRange>('week');
+  const [summaryRange, setSummaryRange] = useState<SummaryRange>('day');
   const now = Date.now();
   const today = state.events.filter((event) => isToday(event.requestedAt));
   const pending = today.filter((event) => (

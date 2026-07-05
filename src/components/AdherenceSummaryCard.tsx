@@ -48,7 +48,7 @@ const summaryRing = (statusCounts: Record<string, number>, total: number) => {
 };
 
 export const filterEventsBySummaryRange = (events: VerificationEvent[], range: SummaryRange, now = Date.now()) => {
-  const selectedRange = ranges.find((item) => item.id === range) ?? ranges[1];
+  const selectedRange = ranges.find((item) => item.id === range) ?? ranges[0];
   const cutoff = range === 'day'
     ? startOfToday(now)
     : now - selectedRange.days * 24 * 60 * 60 * 1000;
@@ -66,7 +66,7 @@ export function AdherenceSummaryCard({
   onRangeChange: (range: SummaryRange) => void;
   t: (key: MessageKey) => string;
 }) {
-  const selectedRange = ranges.find((item) => item.id === range) ?? ranges[1];
+  const selectedRange = ranges.find((item) => item.id === range) ?? ranges[0];
   const summaryEvents = useMemo(() => filterEventsBySummaryRange(events, range), [events, range]);
   const summary = adherenceSummary(summaryEvents);
   const ring = summaryRing(summary.statusCounts, summary.completed);
