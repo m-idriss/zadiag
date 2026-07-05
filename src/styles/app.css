@@ -384,9 +384,25 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .today-task-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
 .today-retake-button { background: var(--routine-accent, var(--teal)); }
 .today-task .primary-action-button { flex: 0 0 auto; min-height: 40px; font-size: 12px; }
-.today-empty { padding: 20px; }
-.today-empty h2 { margin: 8px 0 0; font-size: 22px; }
-.today-empty p { margin-bottom: 0; }
+.check-card.today-empty {
+  display: grid;
+  gap: 7px;
+  padding: 15px 16px;
+  border: 1px solid rgba(255,255,255,.86);
+  border-radius: 19px;
+  background: linear-gradient(135deg, rgba(238, 248, 245, .96), rgba(255,255,255,.88));
+  box-shadow: var(--shadow-sm);
+}
+.check-card.today-empty .eyebrow {
+  width: fit-content;
+  padding: 5px 9px;
+  background: color-mix(in srgb, var(--teal) 12%, white);
+  color: var(--teal);
+  font-size: 9px;
+  letter-spacing: .08em;
+}
+.today-empty h2 { margin: 0; color: var(--navy); font-size: 18px; }
+.today-empty p { max-width: 28ch; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.35; }
 .today-empty-copy { margin: 0; padding: 14px 4px; font-size: 13px; }
 .history-list { display: grid; gap: 0; }
 .bottom-nav { position: absolute; z-index: 10; bottom: 0; left: 0; right: 0; max-width: 640px; margin: auto; display: flex; justify-content: space-around; padding: 9px 12px calc(8px + env(safe-area-inset-bottom)); background: rgba(255,255,255,.92); border-top: 1px solid rgba(227, 235, 232, .9); box-shadow: 0 -10px 24px rgba(21, 50, 75, .04); backdrop-filter: blur(18px); }
