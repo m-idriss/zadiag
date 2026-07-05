@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import type { MonitoringPlan, RoutineValidationMode, ScheduleGroup } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import {
+  buildMonitoringPlanFromGroups,
   flattenScheduleGroups,
   groupsFromLegacyPlan,
   MAX_SCHEDULE_GROUPS,
   MAX_TIME_WINDOWS,
-  maxChecksPerActiveDay,
   nextScheduleGroupId,
   nextWindowId,
   normalizeWeekdays,
@@ -79,7 +79,6 @@ export function RoutineEditScreen({
   const [timePicker, setTimePicker] = useState<TimePickerState>();
   const flattened = flattenScheduleGroups(groups);
   const totalWindowCount = flattened.windows.length;
-  const checksPerDay = maxChecksPerActiveDay(groups);
   const initialGroupsSignature = useMemo(() => scheduleGroupsSignature(groupsFromLegacyPlan(plan)), [plan]);
   const currentGroupsSignature = useMemo(() => scheduleGroupsSignature(groups), [groups]);
   const hasChanges = currentGroupsSignature !== initialGroupsSignature || (canEditValidationMode && draftValidationMode !== validationMode);
@@ -178,16 +177,7 @@ export function RoutineEditScreen({
       return;
     }
     try {
-      await onSave({
-        ...plan,
-        checksPerDay,
-        weekdays: flattened.weekdays,
-        windows: flattened.windows,
-        scheduleGroups: groups.map((group) => ({
-          ...group,
-          weekdays: normalizeWeekdays(group.weekdays),
-        })),
-      }, canEditValidationMode ? draftValidationMode : undefined);
+      await onSave(buildMonitoringPlanFromGroups(plan, groups), canEditValidationMode ? draftValidationMode : undefined);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error('Save error:', message);

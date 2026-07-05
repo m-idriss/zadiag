@@ -1,4 +1,4 @@
-import type { ScheduleGroup, TimeWindow } from './models';
+import type { MonitoringPlan, ScheduleGroup, TimeWindow } from './models';
 
 const weekdayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
 type MonitoringPlanMessageKey =
@@ -7,11 +7,43 @@ type MonitoringPlanMessageKey =
   | 'weekdaysOnly'
   | 'addTimeWindowError'
   | 'selectDayError'
+  | 'invalidInput'
   | 'maxScheduleGroupsError'
   | 'maxTimeWindowsError';
 
 export const MAX_SCHEDULE_GROUPS = 12;
 export const MAX_TIME_WINDOWS = 12;
+const DEFAULT_EXPIRY_MINUTES = 20;
+const FALLBACK_TIME_ZONE = 'Europe/Paris';
+
+const validTimePattern = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+
+const minutesForTime = (value: string) => {
+  const [hours, minutes] = value.split(':').map(Number);
+  return hours * 60 + minutes;
+};
+
+const isValidWindow = (window: TimeWindow) =>
+  validTimePattern.test(window.start)
+  && validTimePattern.test(window.end)
+  && minutesForTime(window.start) < minutesForTime(window.end);
+
+const currentTimeZone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || FALLBACK_TIME_ZONE;
+  } catch {
+    return FALLBACK_TIME_ZONE;
+  }
+};
+
+const isValidTimeZone = (timeZone: string) => {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone }).format();
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 export const normalizeWeekdays = (weekdays: number[]) =>
   [...new Set(weekdays)].filter((day) => day >= 1 && day <= 7).sort((a, b) => a - b);
@@ -80,7 +112,38 @@ export const maxChecksPerActiveDay = (groups: ScheduleGroup[]) => {
 export const validateScheduleGroupsDraft = (groups: ScheduleGroup[]): MonitoringPlanMessageKey | undefined => {
   if (groups.every((group) => group.windows.length === 0)) return 'addTimeWindowError';
   if (groups.some((group) => normalizeWeekdays(group.weekdays).length === 0)) return 'selectDayError';
+  if (groups.some((group) => group.windows.some((window) => !isValidWindow(window)))) return 'invalidInput';
   if (groups.length > MAX_SCHEDULE_GROUPS) return 'maxScheduleGroupsError';
   if (flattenScheduleGroups(groups).windows.length > MAX_TIME_WINDOWS) return 'maxTimeWindowsError';
   return undefined;
+};
+
+export const buildMonitoringPlanFromGroups = (plan: Partial<MonitoringPlan>, groups: ScheduleGroup[]): MonitoringPlan => {
+  const flattened = flattenScheduleGroups(groups);
+  const normalizedGroups = groups.map((group) => {
+    const label = group.label?.trim();
+    return {
+      id: group.id,
+      ...(label ? { label } : {}),
+      weekdays: normalizeWeekdays(group.weekdays),
+      windows: group.windows.map((window) => ({
+        id: window.id,
+        start: window.start,
+        end: window.end,
+      })),
+    };
+  });
+
+  return {
+    checksPerDay: maxChecksPerActiveDay(groups),
+    weekdays: flattened.weekdays,
+    windows: flattened.windows,
+    scheduleGroups: normalizedGroups,
+    expiryMinutes: Number.isInteger(plan.expiryMinutes) && Number(plan.expiryMinutes) >= 1 && Number(plan.expiryMinutes) <= 120
+      ? Number(plan.expiryMinutes)
+      : DEFAULT_EXPIRY_MINUTES,
+    timeZone: typeof plan.timeZone === 'string' && plan.timeZone && isValidTimeZone(plan.timeZone)
+      ? plan.timeZone
+      : currentTimeZone(),
+  };
 };

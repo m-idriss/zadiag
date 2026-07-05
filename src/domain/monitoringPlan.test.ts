@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { translate } from '../services/i18n';
 import {
+  buildMonitoringPlanFromGroups,
   flattenScheduleGroups,
   groupsFromLegacyPlan,
   maxChecksPerActiveDay,
@@ -59,5 +60,29 @@ describe('monitoring plan helpers', () => {
     }];
 
     expect(validateScheduleGroupsDraft(groups)).toBe('maxTimeWindowsError');
+  });
+
+  it('normalizes legacy plans before saving grouped schedules', () => {
+    const groups = [{
+      id: 'g1',
+      label: '',
+      weekdays: [7, 1, 1],
+      windows: [{ id: 'morning', start: '07:30', end: '09:30' }],
+    }];
+
+    const plan = buildMonitoringPlanFromGroups({ weekdays: [1], windows: [] }, groups);
+
+    expect(plan).toMatchObject({
+      checksPerDay: 1,
+      weekdays: [1, 7],
+      windows: [{ id: 'g1_morning', start: '07:30', end: '09:30' }],
+      expiryMinutes: 20,
+    });
+    expect(plan.timeZone).toBeTruthy();
+    expect(plan.scheduleGroups?.[0]).toEqual({
+      id: 'g1',
+      weekdays: [1, 7],
+      windows: [{ id: 'morning', start: '07:30', end: '09:30' }],
+    });
   });
 });
