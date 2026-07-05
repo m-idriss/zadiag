@@ -6,7 +6,12 @@ type MonitoringPlanMessageKey =
   | 'everyDay'
   | 'weekdaysOnly'
   | 'addTimeWindowError'
-  | 'selectDayError';
+  | 'selectDayError'
+  | 'maxScheduleGroupsError'
+  | 'maxTimeWindowsError';
+
+export const MAX_SCHEDULE_GROUPS = 12;
+export const MAX_TIME_WINDOWS = 12;
 
 export const normalizeWeekdays = (weekdays: number[]) =>
   [...new Set(weekdays)].filter((day) => day >= 1 && day <= 7).sort((a, b) => a - b);
@@ -75,5 +80,7 @@ export const maxChecksPerActiveDay = (groups: ScheduleGroup[]) => {
 export const validateScheduleGroupsDraft = (groups: ScheduleGroup[]): MonitoringPlanMessageKey | undefined => {
   if (groups.every((group) => group.windows.length === 0)) return 'addTimeWindowError';
   if (groups.some((group) => normalizeWeekdays(group.weekdays).length === 0)) return 'selectDayError';
+  if (groups.length > MAX_SCHEDULE_GROUPS) return 'maxScheduleGroupsError';
+  if (flattenScheduleGroups(groups).windows.length > MAX_TIME_WINDOWS) return 'maxTimeWindowsError';
   return undefined;
 };

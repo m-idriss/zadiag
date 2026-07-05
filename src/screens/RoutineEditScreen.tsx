@@ -4,6 +4,8 @@ import type { MessageKey } from '../services/i18n';
 import {
   flattenScheduleGroups,
   groupsFromLegacyPlan,
+  MAX_SCHEDULE_GROUPS,
+  MAX_TIME_WINDOWS,
   maxChecksPerActiveDay,
   nextScheduleGroupId,
   nextWindowId,
@@ -76,6 +78,7 @@ export function RoutineEditScreen({
   const [error, setError] = useState<string>();
   const [timePicker, setTimePicker] = useState<TimePickerState>();
   const flattened = flattenScheduleGroups(groups);
+  const totalWindowCount = flattened.windows.length;
   const checksPerDay = maxChecksPerActiveDay(groups);
   const initialGroupsSignature = useMemo(() => scheduleGroupsSignature(groupsFromLegacyPlan(plan)), [plan]);
   const currentGroupsSignature = useMemo(() => scheduleGroupsSignature(groups), [groups]);
@@ -97,6 +100,14 @@ export function RoutineEditScreen({
   };
 
   const addGroup = () => {
+    if (groups.length >= MAX_SCHEDULE_GROUPS) {
+      setError(t('maxScheduleGroupsError'));
+      return;
+    }
+    if (totalWindowCount >= MAX_TIME_WINDOWS) {
+      setError(t('maxTimeWindowsError'));
+      return;
+    }
     setGroups((current) => [...current, {
       id: nextScheduleGroupId(current),
       weekdays: [6, 7],
@@ -109,6 +120,10 @@ export function RoutineEditScreen({
   };
 
   const addWindow = (groupId: string) => {
+    if (totalWindowCount >= MAX_TIME_WINDOWS) {
+      setError(t('maxTimeWindowsError'));
+      return;
+    }
     updateGroup(groupId, (group) => ({
       ...group,
       windows: [...group.windows, { id: nextWindowId(group.windows), start: '09:00', end: '17:00' }],
@@ -284,13 +299,13 @@ export function RoutineEditScreen({
               </article>
             ))}
           </div>
-          <button type="button" className="plan-add-button schedule-add-window" onClick={() => addWindow(group.id)}>
+          <button type="button" className="plan-add-button schedule-add-window" disabled={totalWindowCount >= MAX_TIME_WINDOWS} onClick={() => addWindow(group.id)}>
             <span className="schedule-add-symbol" aria-hidden="true">+</span>{t('addTimeSlot')}
           </button>
         </section>
       ))}
 
-      <button type="button" className="plan-add-button schedule-add-group" onClick={addGroup}>
+      <button type="button" className="plan-add-button schedule-add-group" disabled={groups.length >= MAX_SCHEDULE_GROUPS || totalWindowCount >= MAX_TIME_WINDOWS} onClick={addGroup}>
         <span className="schedule-add-symbol" aria-hidden="true">+</span>{t('addScheduleGroup')}
       </button>
 

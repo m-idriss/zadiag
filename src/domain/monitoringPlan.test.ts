@@ -46,4 +46,18 @@ describe('monitoring plan helpers', () => {
     expect(validateScheduleGroupsDraft(groups)).toBeUndefined();
     expect(maxChecksPerActiveDay(groups)).toBe(2);
   });
+
+  it('rejects drafts that exceed the server schedule limits', () => {
+    const groups = [{
+      id: 'g1',
+      weekdays: [1, 2, 3, 4, 5, 6, 7],
+      windows: Array.from({ length: 13 }, (_, index) => ({
+        id: `w${index + 1}`,
+        start: '09:00',
+        end: '17:00',
+      })),
+    }];
+
+    expect(validateScheduleGroupsDraft(groups)).toBe('maxTimeWindowsError');
+  });
 });
