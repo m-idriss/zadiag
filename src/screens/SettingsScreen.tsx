@@ -178,16 +178,6 @@ export function SettingsScreen({
       <section className="settings-section" aria-labelledby="settings-device-heading">
         <h2 id="settings-device-heading">{t('settingsDeviceSection')}</h2>
         <div className="card settings-list">
-          {role === 'parent' ? <div className="settings-row">
-            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={linkOutline} /></span>
-            <div className="settings-row-copy">
-              <strong>{t('settingsChildInstallTitle')}</strong>
-              <small>{t(childInstallDetailKey)}</small>
-            </div>
-            <span className={childInstalled ? 'status-pill status-detected' : 'status-pill status-missed'}>
-              {t(childInstallStatusKey)}
-            </span>
-          </div> : null}
           <div className="settings-row">
             <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={languageOutline} /></span>
             <div className="settings-row-copy">
@@ -256,26 +246,6 @@ export function SettingsScreen({
               </button>
             </div>
           </div> : null}
-          {role === 'child' ? <div className="settings-row">
-            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={notificationsOutline} /></span>
-            <div className="settings-row-copy">
-              <strong>{t('settingsReminderRepeatTitle')}</strong>
-              <small>{reminderRepeatLabel}</small>
-            </div>
-            <div className="settings-locale-toggle settings-choice-toggle" role="group" aria-label={t('settingsReminderRepeatTitle')}>
-              {[0, 20, 30].map((minutes) => (
-                <button
-                  type="button"
-                  className={preferences.reminderRepeatMinutes === minutes ? 'active' : ''}
-                  aria-pressed={preferences.reminderRepeatMinutes === minutes}
-                  onClick={() => { void setPreferences({ reminderRepeatMinutes: minutes }); }}
-                  key={minutes}
-                >
-                  {minutes === 0 ? t('off') : `${minutes}m`}
-                </button>
-              ))}
-            </div>
-          </div> : null}
         </div>
       </section>
       <section className="settings-section" aria-labelledby="settings-support-heading">
@@ -316,13 +286,48 @@ export function SettingsScreen({
       </section>
       <section className="settings-section" aria-labelledby="settings-install-heading">
         <h2 id="settings-install-heading">{t('settingsInstallSection')}</h2>
-        <section className="card privacy-card settings-device-card">
-          <h2>{t('installTitle')}</h2>
-          <ul>
-            <li>{t('settingsInstallDetail')}</li>
-            {role === 'child' ? <li className={notificationsEnabled ? undefined : 'settings-device-missing'}>{t(notificationDetailKey)}</li> : null}
-          </ul>
-        </section>
+        {role === 'parent' ? (
+          <div className="card settings-list">
+            <div className="settings-row">
+              <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={linkOutline} /></span>
+              <div className="settings-row-copy">
+                <strong>{t('settingsChildInstallTitle')}</strong>
+                <small>{t(childInstallDetailKey)}</small>
+              </div>
+              <span className={childInstalled ? 'status-pill status-detected' : 'status-pill status-missed'}>
+                {t(childInstallStatusKey)}
+              </span>
+            </div>
+            <div className="settings-row">
+              <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={notificationsOutline} /></span>
+              <div className="settings-row-copy">
+                <strong>{t('settingsReminderRepeatTitle')}</strong>
+                <small>{reminderRepeatLabel}</small>
+              </div>
+              <div className="settings-locale-toggle settings-choice-toggle" role="group" aria-label={t('settingsReminderRepeatTitle')}>
+                {[0, 20, 30].map((minutes) => (
+                  <button
+                    type="button"
+                    className={preferences.reminderRepeatMinutes === minutes ? 'active' : ''}
+                    aria-pressed={preferences.reminderRepeatMinutes === minutes}
+                    onClick={() => { void setPreferences({ reminderRepeatMinutes: minutes }); }}
+                    key={minutes}
+                  >
+                    {minutes === 0 ? t('off') : `${minutes}m`}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <section className="card privacy-card settings-device-card">
+            <h2>{t('installTitle')}</h2>
+            <ul>
+              <li>{t('settingsInstallDetail')}</li>
+              <li className={notificationsEnabled ? undefined : 'settings-device-missing'}>{t(notificationDetailKey)}</li>
+            </ul>
+          </section>
+        )}
       </section>
       <section className="settings-section settings-account-section" aria-labelledby="settings-account-heading">
         <h2 id="settings-account-heading">{t('settingsAccountSection')}</h2>
