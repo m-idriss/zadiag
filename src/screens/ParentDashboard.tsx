@@ -29,7 +29,7 @@ export function ParentDashboard({
   const [proofErrors, setProofErrors] = useState<Record<string, boolean>>({});
   const [reviewingId, setReviewingId] = useState<string>();
   const [reviewErrorId, setReviewErrorId] = useState<string>();
-  const [expandedReviewIds, setExpandedReviewIds] = useState<Record<string, boolean>>({});
+  const [enlargedProofUrl, setEnlargedProofUrl] = useState<string>();
   const rangedEvents = filterEventsBySummaryRange(state.events, summaryRange);
   const reviewEvents = useMemo(() => state.events
     .filter((event) => event.status === 'uncertain' && !['approved', 'rejected'].includes(event.reviewStatus ?? ''))
@@ -44,11 +44,10 @@ export function ParentDashboard({
     const assignment = state.routineAssignments.find((item) => item.routineId === event.routineId);
     return assignment ? presentRoutine(assignment.routine, state.locale).name : t('routine');
   };
-  const percent = (value?: number) => value === undefined ? undefined : `${Math.round(value * 100)}%`;
-  const shortId = (value: string) => value.slice(0, 6);
-  const toggleReview = (eventId: string) => {
-    setExpandedReviewIds((current) => ({ ...current, [eventId]: !current[eventId] }));
-  };
+  const displayReason = (event: VerificationEvent) =>
+    event.reason && event.reason !== 'analysis_unavailable' && event.reason !== 'self_validated'
+      ? event.reason
+      : undefined;
 
   useEffect(() => {
     if (!getProofImageUrl) return;
@@ -139,75 +138,67 @@ export function ParentDashboard({
           </div>
           <div className="parent-review-list">
             {reviewEvents.map((event) => {
-              const expanded = expandedReviewIds[event.id] === true;
+              const proofUrl = proofUrls[event.id];
+              const reason = displayReason(event);
               const renderImage = () => proofUrls[event.id]
                 ? <img src={proofUrls[event.id]} alt={t('responsibleReviewImageAlt')} />
                 : <div role="status">{proofErrors[event.id] ? t('responsibleReviewImageError') : t('loadingProofImage')}</div>;
               return (
-                <article className={`card parent-review-card ${expanded ? 'expanded' : ''}`} key={event.id}>
+                <article className="card parent-review-card" key={event.id}>
                   <div className="parent-review-main">
-                    <div className="parent-review-image">{renderImage()}</div>
+                    {proofUrl ? (
+                      <button
+                        type="button"
+                        className="parent-review-image parent-review-image-button"
+                        aria-label={t('responsibleReviewImageAlt')}
+                        onClick={() => setEnlargedProofUrl(proofUrl)}
+                      >
+                        {renderImage()}
+                      </button>
+                    ) : (
+                      <div className="parent-review-image">{renderImage()}</div>
+                    )}
                     <div className="parent-review-copy">
                       <div className="parent-review-title-row">
                         <div>
                           <strong>{routineNameFor(event)}</strong>
                           <small>{formatDateTime(event.capturedAt ?? event.requestedAt)}</small>
                         </div>
-                        <button
-                          type="button"
-                          className="parent-review-expand"
-                          aria-label={expanded ? t('reviewShowLess') : t('reviewShowMore')}
-                          aria-expanded={expanded}
-                          onClick={() => toggleReview(event.id)}
-                        >
-                          <AppIcon name="chevron-down" className={expanded ? 'expanded' : undefined} />
-                        </button>
                       </div>
-                      <div className="parent-review-meta-line">
-                        <span>{t('analysisSource')}: {event.analysisSource ? t(event.analysisSource === 'ai' ? 'analysisSourceAi' : event.analysisSource === 'self' ? 'analysisSourceSelf' : 'analysisSourceFallback') : t('analysisSourceFallback')}</span>
-                        {event.imageQuality !== undefined ? <span>{t('analysisQuality')}: {percent(event.imageQuality)}</span> : null}
-                        {event.confidence !== undefined ? <span>{t('analysisConfidence')}: {percent(event.confidence)}</span> : null}
-                      </div>
-                      {event.reason ? <p>{event.reason}</p> : null}
+                      {reason ? <p>{reason}</p> : null}
                       {reviewErrorId === event.id ? <p className="request-feedback error">{t('responsibleReviewError')}</p> : null}
                     </div>
-                  </div>
-                  {expanded ? (
-                    <div className="parent-review-expanded-panel">
-                      <div className="parent-review-large-image">{renderImage()}</div>
-                      <dl className="parent-review-metadata">
-                        <div><dt>{t('reviewCapturedAt')}</dt><dd>{formatDateTime(event.capturedAt ?? event.requestedAt)}</dd></div>
-                        <div><dt>{t('reviewRequestedAt')}</dt><dd>{formatDateTime(event.requestedAt)}</dd></div>
-                        <div><dt>{t('reviewExpiresAt')}</dt><dd>{formatDateTime(event.expiresAt)}</dd></div>
-                        <div><dt>{t('routine')}</dt><dd>{routineNameFor(event)}</dd></div>
-                        <div><dt>{t('reviewCheckId')}</dt><dd>{shortId(event.id)}</dd></div>
-                        <div><dt>{t('reviewSessionId')}</dt><dd>{shortId(event.sessionId)}</dd></div>
-                      </dl>
+                    <div className="parent-review-actions">
+                      <button
+                        type="button"
+                        className="parent-review-button approve"
+                        disabled={reviewingId === event.id}
+                        onClick={() => { void decide(event.id, 'detected'); }}
+                      >
+                        {t('responsibleReviewApprove')}
+                      </button>
+                      <button
+                        type="button"
+                        className="parent-review-button reject"
+                        disabled={reviewingId === event.id}
+                        onClick={() => { void decide(event.id, 'not_detected'); }}
+                      >
+                        {t('responsibleReviewReject')}
+                      </button>
                     </div>
-                  ) : null}
-                  <div className="parent-review-actions">
-                    <button
-                      type="button"
-                      className="parent-review-button approve"
-                      disabled={reviewingId === event.id}
-                      onClick={() => { void decide(event.id, 'detected'); }}
-                    >
-                      {t('responsibleReviewApprove')}
-                    </button>
-                    <button
-                      type="button"
-                      className="parent-review-button reject"
-                      disabled={reviewingId === event.id}
-                      onClick={() => { void decide(event.id, 'not_detected'); }}
-                    >
-                      {t('responsibleReviewReject')}
-                    </button>
                   </div>
                 </article>
               );
             })}
           </div>
         </section>
+      ) : null}
+
+      {enlargedProofUrl ? (
+        <div className="proof-lightbox" role="dialog" aria-modal="true" aria-label={t('responsibleReviewImageAlt')} onClick={() => setEnlargedProofUrl(undefined)}>
+          <button type="button" className="proof-lightbox-close" aria-label={t('close')} onClick={() => setEnlargedProofUrl(undefined)}>×</button>
+          <img src={enlargedProofUrl} alt={t('responsibleReviewImageAlt')} onClick={(event) => event.stopPropagation()} />
+        </div>
       ) : null}
 
       <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedEvents} locale={state.locale} t={t} />
