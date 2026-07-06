@@ -6,6 +6,7 @@ import { CodeBox } from '../components/CodeBox';
 import { RoutineHistoryPanel } from '../components/RoutineHistoryPanel';
 import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } from '../components/AdherenceSummaryCard';
 import { presentRoutine } from '../domain/routinePresentation';
+import { ActivityLog } from '../components/ActivityLog';
 
 export function ParentDashboard({
   state,
@@ -37,6 +38,16 @@ export function ParentDashboard({
     .sort((a, b) => Date.parse(b.capturedAt ?? b.requestedAt) - Date.parse(a.capturedAt ?? a.requestedAt)),
   [state.events]);
   const locale = state.locale === 'fr' ? 'fr-FR' : 'en-US';
+  const activePendingEvents = state.events.filter((event) => event.status === 'pending' && Date.parse(event.expiresAt) > Date.now());
+  const responsibleEmptyState = !state.family.childLinked
+    ? { icon: 'link' as const, title: t('responsibleEmptyParticipantNotLinkedTitle'), hint: t('responsibleEmptyParticipantNotLinkedHint') }
+    : !state.routineAssignments.length
+      ? { icon: 'add' as const, title: t('responsibleEmptyNoRoutineTitle'), hint: t('responsibleEmptyNoRoutineHint') }
+      : activePendingEvents.length
+        ? { icon: 'time' as const, title: t('responsibleEmptyWaitingProofTitle'), hint: t('responsibleEmptyWaitingProofHint') }
+        : !state.events.length
+          ? { icon: 'notifications' as const, title: t('responsibleEmptyNoCheckTitle'), hint: t('responsibleEmptyNoCheckHint') }
+          : undefined;
   const formatDateTime = (value: string) => new Intl.DateTimeFormat(locale, {
     dateStyle: 'short',
     timeStyle: 'short',
@@ -122,6 +133,18 @@ export function ParentDashboard({
       </header>
 
       <AdherenceSummaryCard events={state.events} range={summaryRange} onRangeChange={setSummaryRange} t={t} />
+
+      <ActivityLog state={state} t={t} />
+
+      {responsibleEmptyState ? (
+        <section className="card responsible-state-card">
+          <span className="settings-row-icon" aria-hidden="true"><AppIcon name={responsibleEmptyState.icon} /></span>
+          <div>
+            <h2>{responsibleEmptyState.title}</h2>
+            <p>{responsibleEmptyState.hint}</p>
+          </div>
+        </section>
+      ) : null}
 
       {!state.family.childLinked && state.family.linkingCode ? (
         <CodeBox

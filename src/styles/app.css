@@ -178,6 +178,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .installed-badge { width: max-content; display: flex; align-items: center; gap: 7px; margin: 6px 0 4px; padding: 7px 11px; border-radius: 99px; background: var(--mint); color: var(--teal); font-size: 12px; font-weight: 900; }
 .installed-badge .app-icon { width: 18px; height: 18px; padding: 3px; border-radius: 50%; background: var(--teal); color: white; }
 .role-grid { display: grid; gap: 10px; }
+.role-device-note { margin: 0 2px; color: var(--muted); font-size: 12px; line-height: 1.35; }
 .role-button { width: 100%; margin: 0; display: flex; align-items: center; justify-content: flex-start; padding: 0 15px; background: white; color: var(--navy); min-height: 78px; border-radius: 22px; border: 1px solid var(--line); box-shadow: 0 12px 30px rgba(21, 50, 75, .05); cursor: pointer; text-align: left; }
 .role-button::part(native) { justify-content: flex-start; }
 .role-button > .role-copy { display: flex; flex-direction: column; align-items: flex-start; margin-left: 14px; text-align: left; }
@@ -485,6 +486,40 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .history-retake-button:active { transform: scale(.985); filter: brightness(.97); }
 .routine-history-icon { background: color-mix(in srgb, var(--routine-accent, var(--teal)) 12%, white); color: var(--routine-accent, var(--teal)); }
 .routine-history-icon .app-icon { font-size: 22px; }
+.activity-log { display: grid; gap: 10px; margin-top: 16px; }
+.activity-log-heading { margin: 0; }
+.activity-log-list { display: grid; gap: 9px; }
+.activity-log-row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
+  padding: 12px 14px;
+}
+.activity-log-row strong,
+.activity-log-row small { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.activity-log-row strong { color: var(--navy); font-size: 13px; }
+.activity-log-row small { margin-top: 3px; color: var(--muted); font-size: 11px; font-weight: 800; }
+.activity-log-icon { width: 34px; height: 34px; border-radius: 12px; }
+.activity-log-empty {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
+  padding: 14px;
+}
+.activity-log-empty h2 { margin: 0; font-size: 15px; }
+.activity-log-empty p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
+.responsible-state-card {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 14px;
+}
+.responsible-state-card h2 { margin: 0; color: var(--navy); font-size: 16px; }
+.responsible-state-card p { margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.35; }
 .status-pill { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; white-space: nowrap; padding: 7px 10px; border-radius: 99px; background: #eef2f4; color: var(--navy); font-weight: 900; font-size: 11px; text-transform: capitalize; }
 .status-detected { background: var(--mint); color: var(--teal); }
 .status-uncertain { background: #fff0d9; color: #b87218; }

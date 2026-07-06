@@ -43,6 +43,7 @@ export function WelcomeScreen({
             <b aria-hidden="true">›</b>
           </button>
         </div>
+        <p className="role-device-note">{t('roleDeviceNote')}</p>
       </section>
       <Disclaimer t={t} />
       <small className="demo-label">{t('demo')}</small>
