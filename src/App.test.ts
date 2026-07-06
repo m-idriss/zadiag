@@ -27,4 +27,16 @@ describe('appBadgeCountForState', () => {
       Date.parse('2026-07-06T09:00:00.000Z'),
     )).toBe(0);
   });
+
+  it('does not badge passive or expired participant information', () => {
+    expect(appBadgeCountForState(
+      'child',
+      [
+        { ...activePendingEvent('2026-07-06T08:30:00.000Z'), id: 'expired' },
+        { ...activePendingEvent('2026-07-06T09:30:00.000Z'), id: 'completed', status: 'detected' },
+        { ...activePendingEvent('2026-07-06T09:30:00.000Z'), id: 'review', status: 'uncertain' },
+      ],
+      Date.parse('2026-07-06T09:00:00.000Z'),
+    )).toBe(0);
+  });
 });
