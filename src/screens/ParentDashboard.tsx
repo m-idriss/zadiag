@@ -126,61 +126,75 @@ export function ParentDashboard({
   const handleMouseUp = (event: MouseEvent<HTMLElement>, eventId: string) => completeSwipe(eventId, event.clientX, event.clientY);
 
   return (
-    <div className="content-screen parent-overview-screen">
-      <header className="screen-header">
-        <div><small>{t('overview')}</small><h1>{state.family.childName} · {t('routine')}</h1></div>
-        <div className="avatar">{state.family.childName.charAt(0)}</div>
+    <div className="content-screen child-home parent-overview-screen">
+      <header className="screen-header participant-header">
+        <div><h1>{t('activity')}</h1><p>{t('participantTodaySubtitle').replace('{name}', state.family.childName)}</p></div>
+        <div className="avatar" aria-hidden="true">{state.family.childName.trim().charAt(0).toUpperCase() || '?'}</div>
       </header>
 
-      <AdherenceSummaryCard events={state.events} range={summaryRange} onRangeChange={setSummaryRange} t={t} />
-
-      {responsibleEmptyState ? (
-        <section className="card responsible-state-card">
-          <span className="settings-row-icon" aria-hidden="true"><AppIcon name={responsibleEmptyState.icon} /></span>
-          <div className="settings-row-copy">
-            <h2>{responsibleEmptyState.title}</h2>
-            <p>{responsibleEmptyState.hint}</p>
-          </div>
-        </section>
-      ) : null}
-
-      {!state.family.childLinked && state.family.linkingCode ? (
-        <CodeBox
-          label={t('childLinkCode')}
-          hint={t('childLinkCodeHint')}
-          value={state.family.linkingCode}
-          t={t}
-          action={(
-            <>
-              <button type="button" className="regenerate-code" disabled={regenerating} onClick={() => { void regenerate(); }}>
-                {regenerating ? t('regeneratingCode') : t('regenerateCode')}
-              </button>
-              {codeError ? <span className="form-error">{t('regenerateCodeError')}</span> : null}
-            </>
-          )}
-        />
-      ) : null}
-
-      {!state.routineAssignments.length && onCreateRoutine ? (
-        <section className="card parent-create-routine-card">
-          <div className="parent-create-routine-icon" aria-hidden="true">
-            <AppIcon name="add" />
-          </div>
-          <div className="parent-create-routine-copy">
+      {(responsibleEmptyState || (!state.family.childLinked && state.family.linkingCode) || (!state.routineAssignments.length && onCreateRoutine)) ? (
+        <section className="today-section parent-setup-section" aria-labelledby="parent-setup-title">
+          <div className="today-panel-heading">
             <div>
-              <small>{t('routineSetupEyebrow')}</small>
-              <h2>{t('createFirstRoutine')}</h2>
+              <small>{t('overview')}</small>
+              <h2 id="parent-setup-title">{state.family.childName} · {t('routine')}</h2>
             </div>
-            <p>{t('createFirstRoutineHint')}</p>
           </div>
-          <button type="button" className="request-check" onClick={onCreateRoutine}>{t('chooseRoutine')}</button>
+
+          <div className="today-task-list">
+            {responsibleEmptyState ? (
+              <section className="card responsible-state-card">
+                <span className="settings-row-icon today-task-icon" aria-hidden="true"><AppIcon name={responsibleEmptyState.icon} /></span>
+                <div className="settings-row-copy">
+                  <h2>{responsibleEmptyState.title}</h2>
+                  <p>{responsibleEmptyState.hint}</p>
+                </div>
+              </section>
+            ) : null}
+
+            {!state.family.childLinked && state.family.linkingCode ? (
+              <CodeBox
+                label={t('childLinkCode')}
+                hint={t('childLinkCodeHint')}
+                value={state.family.linkingCode}
+                t={t}
+                action={(
+                  <>
+                    <button type="button" className="regenerate-code" disabled={regenerating} onClick={() => { void regenerate(); }}>
+                      {regenerating ? t('regeneratingCode') : t('regenerateCode')}
+                    </button>
+                    {codeError ? <span className="form-error">{t('regenerateCodeError')}</span> : null}
+                  </>
+                )}
+              />
+            ) : null}
+
+            {!state.routineAssignments.length && onCreateRoutine ? (
+              <section className="card parent-create-routine-card">
+                <div className="parent-create-routine-icon today-task-icon" aria-hidden="true">
+                  <AppIcon name="add" />
+                </div>
+                <div className="parent-create-routine-copy">
+                  <div>
+                    <small>{t('routineSetupEyebrow')}</small>
+                    <h2>{t('createFirstRoutine')}</h2>
+                  </div>
+                  <p>{t('createFirstRoutineHint')}</p>
+                </div>
+                <button type="button" className="request-check" onClick={onCreateRoutine}>{t('chooseRoutine')}</button>
+              </section>
+            ) : null}
+          </div>
         </section>
       ) : null}
 
       {reviewEvents.length ? (
-        <section className="parent-review-section" aria-labelledby="parent-review-title">
-          <div className="section-heading parent-history-heading">
-            <h2 id="parent-review-title">{t('responsibleReviewTitle')}</h2>
+        <section className="today-section parent-review-section" aria-labelledby="parent-review-title">
+          <div className="today-panel-heading parent-review-heading">
+            <div>
+              <small>{t('toDoToday')}</small>
+              <h2 id="parent-review-title">{t('responsibleReviewTitle')}</h2>
+            </div>
             <span>{reviewEvents.length}</span>
           </div>
           <div className="parent-review-list">
@@ -259,7 +273,10 @@ export function ParentDashboard({
         </div>
       ) : null}
 
-      <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedEvents} locale={state.locale} t={t} />
+      <section className="today-section participant-history-section parent-history-section" aria-labelledby="responsible-history-title">
+        <AdherenceSummaryCard events={state.events} range={summaryRange} onRangeChange={setSummaryRange} t={t} />
+        <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedEvents} locale={state.locale} titleId="responsible-history-title" t={t} />
+      </section>
     </div>
   );
 }
