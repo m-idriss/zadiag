@@ -18,6 +18,8 @@ export interface AppRepository {
   savePlan(plan: MonitoringPlan, routineId?: string): Promise<void>;
   activeSession(): VerificationEvent | undefined;
   submitCapture(sessionId: string, capturedAt: Date, imageDataUrl: string): Promise<VerificationEvent>;
+  getProofImageUrl(eventId: string): Promise<string>;
+  reviewCheck(eventId: string, decision: 'detected' | 'not_detected'): Promise<VerificationEvent>;
   reset(): Promise<void>;
 }
 

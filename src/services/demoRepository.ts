@@ -45,6 +45,9 @@ const progressEvent = (
     confidence: status === 'detected' ? 0.9 : status === 'uncertain' ? 0.58 : undefined,
     imageQuality: status === 'detected' ? 0.88 : status === 'uncertain' ? 0.64 : undefined,
     reason: status === 'uncertain' ? 'demo_mixed_day' : undefined,
+    proofImagePath: status === 'uncertain' ? 'demo-proof' : undefined,
+    proofImageExpiresAt: status === 'uncertain' ? new Date(Date.now() + 30 * 86_400_000).toISOString() : undefined,
+    reviewStatus: status === 'uncertain' ? 'pending' : undefined,
   };
 };
 
@@ -132,6 +135,9 @@ function seedEvents(now = new Date()): VerificationEvent[] {
       confidence: 0.62,
       imageQuality: 0.66,
       reason: 'low_light',
+      proofImagePath: 'demo-proof',
+      proofImageExpiresAt: new Date(now.getTime() + 30 * 86_400_000).toISOString(),
+      reviewStatus: 'pending',
     },
     {
       id: 'three-days',
@@ -360,6 +366,33 @@ export class DemoRepository implements AppRepository {
       imageQuality: 0.91,
     };
     Object.assign(event, analysis, { capturedAt: capturedAt.toISOString() });
+    this.persist();
+    return structuredClone(event);
+  }
+
+  async getProofImageUrl(eventId: string) {
+    const event = this.state.events.find((item) => item.id === eventId);
+    if (!event?.proofImagePath) throw new Error('proof_image_unavailable');
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent([
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480">',
+      '<rect width="640" height="480" rx="28" fill="#e8f6f2"/>',
+      '<circle cx="320" cy="214" r="86" fill="#fff"/>',
+      '<path d="M244 262c44 40 108 40 152 0" fill="none" stroke="#087f6d" stroke-width="22" stroke-linecap="round"/>',
+      '<text x="320" y="384" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#102a43">Demo proof photo</text>',
+      '</svg>',
+    ].join(''));
+  }
+
+  async reviewCheck(eventId: string, decision: 'detected' | 'not_detected') {
+    const event = this.state.events.find((item) => item.id === eventId);
+    if (!event || event.status !== 'uncertain') throw new Error('check_not_reviewable');
+    Object.assign(event, {
+      status: decision,
+      reviewStatus: decision === 'detected' ? 'approved' : 'rejected',
+      reviewedAt: new Date().toISOString(),
+      reviewedBy: 'demo-parent',
+      reviewReason: 'responsible_review',
+    });
     this.persist();
     return structuredClone(event);
   }

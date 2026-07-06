@@ -113,6 +113,12 @@ export interface VerificationEvent extends RoutineTask {
   confidence?: number;
   imageQuality?: number;
   reason?: string;
+  proofImagePath?: string;
+  proofImageExpiresAt?: string;
+  reviewStatus?: 'pending' | 'approved' | 'rejected';
+  reviewedAt?: string;
+  reviewedBy?: string;
+  reviewReason?: string;
 }
 
 export interface FamilyState {

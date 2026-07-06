@@ -1,18 +1,20 @@
 import { initializeApp } from 'firebase-admin/app';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import { getStorage } from 'firebase-admin/storage';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import { GoogleAuth } from 'google-auth-library';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, normalizeLinkCode } from './helpers.js';
-import { analyzeWithGemini, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
+import { analyzeWithGemini, parseImageDataUrl, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
 import { getLocalDateKey, getWindowForDate, monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
 import { createDefaultRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, routineFromCatalog, type RoutineAssignmentDocument } from './routines.js';
 import { buildCheckNotificationPayload } from './notifications.js';
 
 initializeApp();
 const db = getFirestore();
+const bucket = getStorage().bucket();
 const region = 'europe-west1';
 const vapidPrivateKey = defineSecret('WEB_PUSH_VAPID_PRIVATE_KEY');
 const vapidPublicKey = defineSecret('WEB_PUSH_VAPID_PUBLIC_KEY');
@@ -77,11 +79,42 @@ const defaultPlan = {
 };
 const recoveryLifetimeMs = 90 * 24 * 60 * 60 * 1000;
 const maxImageDataUrlLength = 5 * 1024 * 1024;
+const proofImageSignedUrlMinutes = 5;
+const proofImageRetentionDays = 30;
 const createRecoveryRecord = (familyId: string, expiresAt: Date) => ({
   familyId,
   expiresAt: expiresAt.toISOString(),
   createdAt: new Date().toISOString(),
 });
+
+const requireFamilyRole = async (uid: string, familyId: string, role: 'parent' | 'child') => {
+  const profile = await db.collection('users').doc(uid).get();
+  if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== role) {
+    throw new HttpsError('permission-denied', `Only the linked ${role} can perform this action.`);
+  }
+  return profile;
+};
+
+const imageExtensionFor = (mimeType: string) => {
+  if (mimeType === 'image/png') return 'png';
+  if (mimeType === 'image/webp') return 'webp';
+  return 'jpg';
+};
+
+const storeProofImage = async (familyId: string, checkId: string, imageDataUrl: string) => {
+  const { mimeType, data } = parseImageDataUrl(imageDataUrl);
+  const path = `families/${familyId}/checks/${checkId}/proof.${imageExtensionFor(mimeType)}`;
+  const file = bucket.file(path);
+  await file.save(Buffer.from(data, 'base64'), {
+    resumable: false,
+    metadata: {
+      contentType: mimeType,
+      cacheControl: 'private, max-age=0, no-transform',
+      metadata: { familyId, checkId },
+    },
+  });
+  return path;
+};
 
 const ensureFamilyRoutineMigration = async (familyRef: FirebaseFirestore.DocumentReference) => {
   const assignmentRef = familyRef.collection('routineAssignments').doc(DEFAULT_ROUTINE_ID);
@@ -829,10 +862,7 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
   const capturedAt = String(request.data?.capturedAt ?? '');
   const imageDataUrl = String(request.data?.imageDataUrl ?? '');
   const locale = request.data?.locale === 'fr' ? 'fr' : 'en';
-  const profile = await db.collection('users').doc(uid).get();
-  if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'child') {
-    throw new HttpsError('permission-denied', 'Only the linked child can submit this check.');
-  }
+  await requireFamilyRole(uid, familyId, 'child');
   if (!/^data:image\/(?:jpeg|png|webp);base64,/.test(imageDataUrl) || imageDataUrl.length > maxImageDataUrlLength) {
     throw new HttpsError('invalid-argument', 'A valid image is required.');
   }
@@ -853,6 +883,12 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
     });
     return typeof checkData.routineId === 'string' && checkData.routineId ? checkData.routineId : DEFAULT_ROUTINE_ID;
   });
+  let proofImagePath: string | undefined;
+  try {
+    proofImagePath = await storeProofImage(familyId, checkId, imageDataUrl);
+  } catch (error) {
+    console.error('Unable to store proof image for review', error);
+  }
   const assignment = await db.collection('families').doc(familyId).collection('routineAssignments').doc(routineId).get();
   const assignmentData = assignment.data() as Partial<RoutineAssignmentDocument> | undefined;
   if (assignmentData?.validationMode === 'auto') {
@@ -861,6 +897,8 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
       status: 'detected',
       analysisSource: 'self',
       reason: 'self_validated',
+      ...(proofImagePath ? { proofImagePath } : {}),
+      ...(proofImagePath ? { proofImageExpiresAt: new Date(Date.now() + proofImageRetentionDays * 86_400_000).toISOString() } : {}),
     };
     const response = await db.runTransaction(async (transaction) => {
       const check = await transaction.get(checkRef);
@@ -893,6 +931,9 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
     capturedAt,
     status: result.status ?? 'uncertain',
     analysisSource: result.reason === 'analysis_unavailable' ? 'fallback' : 'ai',
+    ...(proofImagePath ? { proofImagePath } : {}),
+    ...(proofImagePath ? { proofImageExpiresAt: new Date(Date.now() + proofImageRetentionDays * 86_400_000).toISOString() } : {}),
+    ...((result.status ?? 'uncertain') === 'uncertain' && proofImagePath ? { reviewStatus: 'pending' } : {}),
     ...(result.confidence !== undefined ? { confidence: result.confidence } : {}),
     ...(result.imageQuality !== undefined ? { imageQuality: result.imageQuality } : {}),
     ...(result.reason ? { reason: result.reason } : {}),
@@ -908,6 +949,77 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
     return { id: check.id, ...checkData, ...analysisUpdate };
   });
   return response;
+});
+
+export const getProofImageUrl = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = requireUid(request.auth);
+  const familyId = String(request.data?.familyId ?? '');
+  const checkId = String(request.data?.checkId ?? '');
+  await requireFamilyRole(uid, familyId, 'parent');
+  const check = await db.collection('families').doc(familyId).collection('checks').doc(checkId).get();
+  const proofImagePath = check.data()?.proofImagePath;
+  if (!check.exists || typeof proofImagePath !== 'string' || !proofImagePath) {
+    throw new HttpsError('not-found', 'No proof image is available for this check.');
+  }
+  const [exists] = await bucket.file(proofImagePath).exists();
+  if (!exists) throw new HttpsError('not-found', 'The proof image is no longer available.');
+  const [url] = await bucket.file(proofImagePath).getSignedUrl({
+    action: 'read',
+    expires: Date.now() + proofImageSignedUrlMinutes * 60 * 1000,
+  });
+  return { url };
+});
+
+export const reviewCheck = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = requireUid(request.auth);
+  const familyId = String(request.data?.familyId ?? '');
+  const checkId = String(request.data?.checkId ?? '');
+  const decision = String(request.data?.decision ?? '');
+  if (!['detected', 'not_detected'].includes(decision)) {
+    throw new HttpsError('invalid-argument', 'A valid review decision is required.');
+  }
+  await requireFamilyRole(uid, familyId, 'parent');
+  const checkRef = db.collection('families').doc(familyId).collection('checks').doc(checkId);
+  const reviewedAt = new Date().toISOString();
+  return db.runTransaction(async (transaction) => {
+    const check = await transaction.get(checkRef);
+    const checkData = check.data();
+    if (!check.exists || !checkData) throw new HttpsError('not-found', 'The check could not be found.');
+    if (checkData.status !== 'uncertain' || checkData.reviewStatus !== 'pending') {
+      throw new HttpsError('failed-precondition', 'This check is not waiting for responsible review.');
+    }
+    const update = {
+      status: decision as 'detected' | 'not_detected',
+      reviewStatus: decision === 'detected' ? 'approved' : 'rejected',
+      reviewedAt,
+      reviewedBy: uid,
+      reviewReason: 'responsible_review',
+    };
+    transaction.update(checkRef, update);
+    return { id: check.id, ...checkData, ...update };
+  });
+});
+
+export const cleanupExpiredProofImages = onSchedule({
+  region,
+  schedule: 'every 24 hours',
+  timeZone: 'UTC',
+}, async () => {
+  const expired = await db.collectionGroup('checks')
+    .where('proofImageExpiresAt', '<', new Date().toISOString())
+    .limit(200)
+    .get();
+  if (expired.empty) return;
+  await Promise.allSettled(expired.docs.map(async (check) => {
+    const proofImagePath = check.data().proofImagePath;
+    if (typeof proofImagePath === 'string' && proofImagePath) {
+      await bucket.file(proofImagePath).delete({ ignoreNotFound: true });
+    }
+    await check.ref.update({
+      proofImagePath: FieldValue.delete(),
+      proofImageExpiresAt: FieldValue.delete(),
+    });
+  }));
 });
 
 export const deleteAccountData = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
@@ -934,5 +1046,8 @@ export const deleteAccountData = onCall({ region, cors, enforceAppCheck: true },
   memberIds.forEach((memberId) => batch.delete(db.collection('users').doc(memberId)));
   links.docs.forEach((link) => batch.delete(link.ref));
   await batch.commit();
+  await bucket.deleteFiles({ prefix: `families/${familyId}/` }).catch((error) => {
+    console.error('Unable to delete family proof images', error);
+  });
   await db.recursiveDelete(familyRef);
 });

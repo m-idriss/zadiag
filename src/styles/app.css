@@ -398,6 +398,31 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .parent-empty-history-card { display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: center; gap: 12px; padding: 12px 14px; }
 .parent-empty-history-card h2 { font-size: 16px; }
 .parent-empty-history-card p { margin: 3px 0 0; font-size: 12px; line-height: 1.35; }
+.parent-review-section { display: grid; gap: 10px; }
+.parent-review-list { display: grid; gap: 10px; }
+.parent-review-card { display: grid; gap: 12px; padding: 12px; }
+.parent-review-image {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(16,42,67,.06);
+  border-radius: 17px;
+  background: #eef5f3;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+.parent-review-image img { width: 100%; max-height: 280px; display: block; object-fit: contain; }
+.parent-review-copy { display: grid; gap: 4px; min-width: 0; }
+.parent-review-copy strong { color: var(--navy); font-size: 15px; }
+.parent-review-copy small { color: var(--muted); font-size: 12px; font-weight: 800; }
+.parent-review-copy p { margin: 2px 0 0; font-size: 12px; line-height: 1.35; }
+.parent-review-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.parent-review-button { min-height: 42px; border: 0; border-radius: 12px; font-size: 12px; font-weight: 850; }
+.parent-review-button.approve { background: var(--teal); color: white; }
+.parent-review-button.reject { background: color-mix(in srgb, var(--coral) 10%, white); color: color-mix(in srgb, var(--coral) 84%, var(--navy)); }
+.parent-review-button:disabled { opacity: .62; }
 .history-results-heading { margin-top: 2px; margin-bottom: 0; }
 .parent-history-list { display: grid; gap: 12px; }
 .parent-history-row { margin-bottom: 0; }

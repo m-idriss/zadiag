@@ -1,6 +1,6 @@
 import type { AppRepository } from './contracts';
 import { DemoRepository } from './demoRepository';
-import type { AppState, Locale, MonitoringPlan, Role } from '../domain/models';
+import type { AppState, Locale, MonitoringPlan, Role, RoutineValidationMode } from '../domain/models';
 import { firebaseEnabled } from './firebaseConfig';
 import { isLocalDemoEnvironment } from './browserEnvironment';
 
@@ -80,8 +80,8 @@ class LazyFirebaseRepository implements AppRepository {
     return (await this.load()).requestCheckNow(routineId);
   }
 
-  async updateRoutine(routineId: string, plan: MonitoringPlan) {
-    return (await this.load()).updateRoutine(routineId, plan);
+  async updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode) {
+    return (await this.load()).updateRoutine(routineId, plan, validationMode);
   }
 
   async savePushSubscription(subscription: PushSubscriptionJSON) {
@@ -98,6 +98,14 @@ class LazyFirebaseRepository implements AppRepository {
 
   async submitCapture(sessionId: string, capturedAt: Date, imageDataUrl: string) {
     return (await this.load()).submitCapture(sessionId, capturedAt, imageDataUrl);
+  }
+
+  async getProofImageUrl(eventId: string) {
+    return (await this.load()).getProofImageUrl(eventId);
+  }
+
+  async reviewCheck(eventId: string, decision: 'detected' | 'not_detected') {
+    return (await this.load()).reviewCheck(eventId, decision);
   }
 
   async reset() {

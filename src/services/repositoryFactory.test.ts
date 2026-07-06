@@ -51,6 +51,8 @@ class FakeFirebaseRepository implements AppRepository {
   async savePlan() {}
   activeSession() { return undefined; }
   async submitCapture(): Promise<VerificationEvent> { throw new Error('not implemented'); }
+  async getProofImageUrl(): Promise<string> { throw new Error('not implemented'); }
+  async reviewCheck(): Promise<VerificationEvent> { throw new Error('not implemented'); }
   async reset() {}
 }
 

@@ -59,6 +59,9 @@ const initialState = (): AppState => {
   };
 };
 
+const asReviewStatus = (value: unknown): VerificationEvent['reviewStatus'] =>
+  value === 'pending' || value === 'approved' || value === 'rejected' ? value : undefined;
+
 const asEvent = (id: string, data: DocumentData): VerificationEvent => ({
   id,
   routineId: String(data.routineId ?? DEFAULT_ROUTINE_ID),
@@ -71,6 +74,12 @@ const asEvent = (id: string, data: DocumentData): VerificationEvent => ({
   confidence: data.confidence,
   imageQuality: data.imageQuality,
   reason: data.reason,
+  proofImagePath: data.proofImagePath ? String(data.proofImagePath) : undefined,
+  proofImageExpiresAt: data.proofImageExpiresAt ? String(data.proofImageExpiresAt) : undefined,
+  reviewStatus: asReviewStatus(data.reviewStatus),
+  reviewedAt: data.reviewedAt ? String(data.reviewedAt) : undefined,
+  reviewedBy: data.reviewedBy ? String(data.reviewedBy) : undefined,
+  reviewReason: data.reviewReason ? String(data.reviewReason) : undefined,
 });
 
 const asRoutineAssignment = (id: string, data: DocumentData): RoutineAssignment => {
@@ -248,6 +257,29 @@ export class FirebaseRepository implements AppRepository {
       imageDataUrl,
       locale: this.state.locale,
     });
+    this.state.events = this.state.events.map((item) => item.id === result.data.id ? result.data : item);
+    this.emit();
+    return result.data;
+  }
+
+  async getProofImageUrl(eventId: string) {
+    if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
+    const getProofImageUrl = httpsCallable<{ familyId: string; checkId: string }, { url: string }>(
+      this.services.functions,
+      'getProofImageUrl',
+    );
+    const result = await getProofImageUrl({ familyId: this.state.family.id, checkId: eventId });
+    return result.data.url;
+  }
+
+  async reviewCheck(eventId: string, decision: 'detected' | 'not_detected') {
+    if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
+    const reviewCheck = httpsCallable<{
+      familyId: string;
+      checkId: string;
+      decision: 'detected' | 'not_detected';
+    }, VerificationEvent>(this.services.functions, 'reviewCheck');
+    const result = await reviewCheck({ familyId: this.state.family.id, checkId: eventId, decision });
     this.state.events = this.state.events.map((item) => item.id === result.data.id ? result.data : item);
     this.emit();
     return result.data;
