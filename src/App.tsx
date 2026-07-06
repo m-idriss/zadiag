@@ -35,6 +35,14 @@ const appBadgeApi = navigator as Navigator & {
   clearAppBadge?: () => Promise<void>;
 };
 
+export const appBadgeCountForState = (
+  role: Role | undefined,
+  events: VerificationEvent[],
+  now = Date.now(),
+) => role === 'child'
+  ? events.filter((event) => event.status === 'pending' && Date.parse(event.expiresAt) > now).length
+  : 0;
+
 export function App() {
   const repository = useMemo(createRepository, []);
   const [state, setState] = useState(repository.snapshot());
@@ -112,7 +120,7 @@ export function App() {
   }, [repository]);
 
   useEffect(() => {
-    const pendingCount = state.events.filter((event) => event.status === 'pending' && Date.parse(event.expiresAt) > Date.now()).length;
+    const pendingCount = appBadgeCountForState(state.role, state.events);
     if (!appBadgeApi.setAppBadge || !appBadgeApi.clearAppBadge) return;
     void (pendingCount > 0 ? appBadgeApi.setAppBadge(pendingCount) : appBadgeApi.clearAppBadge()).catch(console.error);
   }, [state.events, state.role]);
