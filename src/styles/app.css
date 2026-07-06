@@ -178,6 +178,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .installed-badge { width: max-content; display: flex; align-items: center; gap: 7px; margin: 6px 0 4px; padding: 7px 11px; border-radius: 99px; background: var(--mint); color: var(--teal); font-size: 12px; font-weight: 900; }
 .installed-badge .app-icon { width: 18px; height: 18px; padding: 3px; border-radius: 50%; background: var(--teal); color: white; }
 .role-grid { display: grid; gap: 10px; }
+.role-device-note { margin: 0 2px; color: var(--muted); font-size: 12px; line-height: 1.35; }
 .role-button { width: 100%; margin: 0; display: flex; align-items: center; justify-content: flex-start; padding: 0 15px; background: white; color: var(--navy); min-height: 78px; border-radius: 22px; border: 1px solid var(--line); box-shadow: 0 12px 30px rgba(21, 50, 75, .05); cursor: pointer; text-align: left; }
 .role-button::part(native) { justify-content: flex-start; }
 .role-button > .role-copy { display: flex; flex-direction: column; align-items: flex-start; margin-left: 14px; text-align: left; }
