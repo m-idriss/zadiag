@@ -682,7 +682,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .routine-icon { display: grid; place-items: center; font-size: 21px; }
 .routine-icon .app-icon { font-size: 23px; }
 .routine-rate { align-self: center; color: var(--routine-accent, var(--teal)); font-size: 12px; font-weight: 850; }
-.routine-progress-row { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; gap: 0; padding-left: 54px; }
+.routine-progress-row { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; gap: 0; padding-left: 0; }
 .routine-progress-track { height: 4px; overflow: hidden; border-radius: 999px; background: #dce4e1; }
 .routine-progress-track span { display: block; height: 100%; border-radius: inherit; background: var(--routine-accent, var(--teal)); }
 .routine-next-inline {
@@ -691,8 +691,8 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
   gap: 5px;
   min-width: 0;
   width: auto;
-  max-width: calc(100% - 54px);
-  margin: -1px 0 0 54px !important;
+  max-width: 100%;
+  margin: -1px 0 0 !important;
   padding: 6px 9px;
   border: 1px solid color-mix(in srgb, var(--routine-accent, var(--teal)) 12%, white);
   border-radius: 12px;

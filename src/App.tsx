@@ -79,22 +79,7 @@ export function App() {
     };
     const checkForAppUpdate = async () => {
       try {
-        const [registration, latestVersion] = await Promise.all([
-          refreshServiceWorkerRegistration(),
-          fetchLatestAppVersion().catch((error) => {
-            console.error(error);
-            return undefined;
-          }),
-        ]);
-        if (!alive) return;
-        const versionUpdate = describeAppUpdate(import.meta.env.VITE_APP_VERSION, latestVersion);
-        const waiting = Boolean(registration?.waiting);
-        setAppUpdateInfo(versionUpdate ?? {
-          available: waiting,
-          currentVersion: import.meta.env.VITE_APP_VERSION,
-          latestVersion,
-          severity: waiting ? 'unknown' : 'patch',
-        });
+        await refreshAppUpdateInfo(() => alive);
       } catch (error) {
         console.error(error);
       }
@@ -187,10 +172,27 @@ export function App() {
     const subscription = await push.subscribe();
     await repository.savePushSubscription(subscription.toJSON());
   };
+  const refreshAppUpdateInfo = async (shouldApply: () => boolean = () => true): Promise<ServiceWorkerRegistration | undefined> => {
+    const [registration, latestVersion] = await Promise.all([
+      refreshServiceWorkerRegistration(),
+      fetchLatestAppVersion().catch((error) => {
+        console.error(error);
+        return undefined;
+      }),
+    ]);
+    const versionUpdate = describeAppUpdate(import.meta.env.VITE_APP_VERSION, latestVersion);
+    const waiting = Boolean(registration?.waiting);
+    if (!shouldApply()) return registration;
+    setAppUpdateInfo(versionUpdate ?? {
+      available: waiting,
+      currentVersion: import.meta.env.VITE_APP_VERSION,
+      latestVersion,
+      severity: waiting ? 'unknown' : 'patch',
+    });
+    return registration;
+  };
   const forceAppUpdate = async (): Promise<boolean> => {
-    const registration = await refreshServiceWorkerRegistration();
-    const available = Boolean(registration?.waiting);
-    setAppUpdateInfo((current) => ({ ...current, available }));
+    const registration = await refreshAppUpdateInfo();
     if (!registration?.waiting) return false;
     registration.waiting.postMessage({ type: 'SKIP_WAITING' });
     await new Promise<void>((resolve) => {

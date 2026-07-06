@@ -158,8 +158,8 @@ export function SettingsScreen({
   const appUpdated = Number.isNaN(updatedAt.getTime())
     ? import.meta.env.VITE_APP_UPDATED_AT
     : new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-US', {
-      dateStyle: 'short',
-      timeStyle: 'short',
+      day: '2-digit',
+      month: '2-digit',
     }).format(updatedAt);
   const updateSeverity = updateInfo.available ? updateInfo.severity : 'none';
   const updateDetail = updateInfo.available
@@ -255,9 +255,9 @@ export function SettingsScreen({
           <div className="settings-row">
             <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={informationCircleOutline} /></span>
             <div className="settings-row-copy">
-              <strong>{t('settingsAppInfoTitle')}</strong>
-              <small>{t('settingsVersionLabel')} {import.meta.env.VITE_APP_VERSION} · {t('settingsUpdatedLabel')} {appUpdated}</small>
-              <small>{updateDetail}</small>
+              <strong>{t('settingsAppInfoTitle')} v{import.meta.env.VITE_APP_VERSION}</strong>
+              <small>{t('settingsUpdatedLabel')} {appUpdated}</small>
+              {updateInfo.available ? <small>{updateDetail}</small> : null}
               {updateError ? <small className="settings-action-error">{t('settingsUpdateError')}</small> : null}
             </div>
             <div className="settings-row-control">
@@ -265,10 +265,10 @@ export function SettingsScreen({
               <IonButton
                 className={`settings-inline-action settings-inline-action-contained settings-update-action ${updateSeverity}`}
                 size="small"
-                disabled={updatingApp || !updateInfo.available}
+                disabled={updatingApp}
                 onClick={() => { void forceUpdate(); }}
               >
-                {updatingApp ? t('settingsUpdateChecking') : t('settingsUpdateAction')}
+                {updatingApp ? t('settingsUpdateChecking') : updateInfo.available ? t('settingsUpdateAction') : t('settingsUpdateCheckAction')}
               </IonButton>
             </div>
           </div>
