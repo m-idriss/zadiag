@@ -129,9 +129,9 @@ describe('ParentDashboard', () => {
     expect(reviewCheck).toHaveBeenCalledWith('review', 'detected');
   });
 
-  it('lets the responsible person review a legacy uncertain check without proof metadata', async () => {
+  it('tries to recover proof images for legacy uncertain checks without proof metadata', async () => {
     const assignment = createDefaultRoutineAssignment();
-    const getProofImageUrl = vi.fn();
+    const getProofImageUrl = vi.fn().mockResolvedValue('data:image/png;base64,RESTORED');
     const reviewCheck = vi.fn().mockResolvedValue(undefined);
     const state: AppState = {
       role: 'parent',
@@ -165,8 +165,7 @@ describe('ParentDashboard', () => {
     });
 
     expect(container.textContent).toContain('Checks to verify');
-    expect(container.textContent).toContain('Photo unavailable');
-    expect(getProofImageUrl).not.toHaveBeenCalled();
+    expect(getProofImageUrl).toHaveBeenCalledWith('legacy-review');
     const reject = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Reject');
 
     await act(async () => {

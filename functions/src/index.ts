@@ -983,13 +983,34 @@ export const getProofImageUrl = onCall({ region, cors, enforceAppCheck: true }, 
   const familyId = String(request.data?.familyId ?? '');
   const checkId = String(request.data?.checkId ?? '');
   await requireFamilyRole(uid, familyId, 'parent');
-  const check = await db.collection('families').doc(familyId).collection('checks').doc(checkId).get();
-  const proofImagePath = check.data()?.proofImagePath;
-  if (!check.exists || typeof proofImagePath !== 'string' || !proofImagePath) {
+  const checkRef = db.collection('families').doc(familyId).collection('checks').doc(checkId);
+  const check = await checkRef.get();
+  if (!check.exists) {
     throw new HttpsError('not-found', 'No proof image is available for this check.');
   }
-  const [exists] = await bucket.file(proofImagePath).exists();
-  if (!exists) throw new HttpsError('not-found', 'The proof image is no longer available.');
+  const storedProofImagePath = check.data()?.proofImagePath;
+  const candidatePaths = [
+    ...(typeof storedProofImagePath === 'string' && storedProofImagePath ? [storedProofImagePath] : []),
+    `families/${familyId}/checks/${checkId}/proof.jpg`,
+    `families/${familyId}/checks/${checkId}/proof.png`,
+    `families/${familyId}/checks/${checkId}/proof.webp`,
+  ];
+  const uniqueCandidatePaths = [...new Set(candidatePaths)];
+  let proofImagePath: string | undefined;
+  for (const candidatePath of uniqueCandidatePaths) {
+    const [exists] = await bucket.file(candidatePath).exists();
+    if (exists) {
+      proofImagePath = candidatePath;
+      break;
+    }
+  }
+  if (!proofImagePath) throw new HttpsError('not-found', 'The proof image is no longer available.');
+  if (proofImagePath !== storedProofImagePath) {
+    await checkRef.update({
+      proofImagePath,
+      proofImageExpiresAt: new Date(Date.now() + proofImageRetentionDays * 86_400_000).toISOString(),
+    });
+  }
   const [url] = await bucket.file(proofImagePath).getSignedUrl({
     action: 'read',
     expires: Date.now() + proofImageSignedUrlMinutes * 60 * 1000,

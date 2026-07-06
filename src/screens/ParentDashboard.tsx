@@ -47,7 +47,6 @@ export function ParentDashboard({
   useEffect(() => {
     if (!getProofImageUrl) return;
     reviewEvents.forEach((event) => {
-      if (!event.proofImagePath) return;
       if (proofUrls[event.id] || proofErrors[event.id]) return;
       void getProofImageUrl(event.id)
         .then((url) => setProofUrls((current) => ({ ...current, [event.id]: url })))
