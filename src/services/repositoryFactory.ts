@@ -1,6 +1,6 @@
 import type { AppRepository } from './contracts';
 import { DemoRepository } from './demoRepository';
-import type { AppState, Locale, MonitoringPlan, Role, RoutineValidationMode } from '../domain/models';
+import { normalizeAppPreferences, type AppPreferences, type AppState, type Locale, type MonitoringPlan, type Role, type RoutineValidationMode } from '../domain/models';
 import { firebaseEnabled } from './firebaseConfig';
 import { isLocalDemoEnvironment } from './browserEnvironment';
 
@@ -9,12 +9,12 @@ const PREFERENCES_KEY = 'zadiag.preferences.v1';
 const browserLocale = (): Locale => navigator.language?.startsWith('fr') ? 'fr' : 'en';
 
 const initialRemoteState = (): AppState => {
-  const preferences = JSON.parse(localStorage.getItem(PREFERENCES_KEY) ?? '{}') as { locale?: Locale; role?: Role; showActivityLog?: boolean };
+  const preferences = JSON.parse(localStorage.getItem(PREFERENCES_KEY) ?? '{}') as Partial<AppPreferences> & { locale?: Locale; role?: Role };
   return {
     locale: preferences.locale ?? browserLocale(),
     notificationsEnabled: false,
     role: preferences.role,
-    preferences: { showActivityLog: preferences.showActivityLog ?? false },
+    preferences: normalizeAppPreferences(preferences),
     family: { linked: false, childLinked: false, childName: '', linkingCode: '', parentRecoveryCode: '', consented: false },
     routineAssignments: [],
     routinesLoaded: false,
@@ -51,6 +51,10 @@ class LazyFirebaseRepository implements AppRepository {
 
   async setLocale(locale: Locale) {
     return (await this.load()).setLocale(locale);
+  }
+
+  async setPreferences(preferences: Partial<AppPreferences>) {
+    return (await this.load()).setPreferences(preferences);
   }
 
   async setShowActivityLog(show: boolean) {

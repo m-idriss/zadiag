@@ -495,6 +495,12 @@ export const savePushSubscription = onCall({ region, cors, enforceAppCheck: true
   const p256dh = String(subscription?.keys?.p256dh ?? '');
   const auth = String(subscription?.keys?.auth ?? '');
   const locale = request.data?.locale === 'fr' ? 'fr' : 'en';
+  const rawPreferences = request.data?.preferences as Record<string, unknown> | undefined;
+  const preferences = rawPreferences ? {
+    notificationWindowStart: String(rawPreferences.notificationWindowStart ?? '08:00'),
+    notificationWindowEnd: String(rawPreferences.notificationWindowEnd ?? '21:00'),
+    reminderRepeatMinutes: Number(rawPreferences.reminderRepeatMinutes ?? 20),
+  } : undefined;
   if (!endpoint.startsWith('https://') || !p256dh || !auth) {
     throw new HttpsError('invalid-argument', 'A valid push subscription is required.');
   }
@@ -510,6 +516,7 @@ export const savePushSubscription = onCall({ region, cors, enforceAppCheck: true
     endpoint,
     keys: { p256dh, auth },
     locale,
+    ...(preferences ? { preferences } : {}),
     updatedAt: FieldValue.serverTimestamp(),
   });
   batch.update(profile.ref, { notificationsEnabled: true, updatedAt: FieldValue.serverTimestamp() });

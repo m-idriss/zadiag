@@ -7,7 +7,7 @@ import type {
   RoutineValidationMode,
   VerificationEvent,
 } from '../domain/models';
-import { createDefaultRoutineAssignment, DEFAULT_ROUTINE_ID, primaryRoutineAssignment } from '../domain/models';
+import { createDefaultRoutineAssignment, DEFAULT_ROUTINE_ID, normalizeAppPreferences, primaryRoutineAssignment, type AppPreferences } from '../domain/models';
 import { routineFromCatalog } from '../domain/routineCatalog';
 import { isFreshCapture } from '../domain/adherence';
 import type { AppRepository } from './contracts';
@@ -160,7 +160,7 @@ function initialState(): AppState {
   return {
     locale: browserLocale(),
     notificationsEnabled: false,
-    preferences: { showActivityLog: false },
+    preferences: normalizeAppPreferences(),
     family: {
       linked: false,
       childLinked: false,
@@ -223,9 +223,13 @@ export class DemoRepository implements AppRepository {
     this.persist();
   }
 
-  async setShowActivityLog(show: boolean) {
-    this.state.preferences = { ...this.state.preferences, showActivityLog: show };
+  async setPreferences(preferences: Partial<AppPreferences>) {
+    this.state.preferences = normalizeAppPreferences({ ...this.state.preferences, ...preferences });
     this.persist();
+  }
+
+  async setShowActivityLog(show: boolean) {
+    await this.setPreferences({ showActivityLog: show });
   }
 
   async linkParent(childName: string) {
@@ -450,7 +454,7 @@ export class DemoRepository implements AppRepository {
       : [{ ...createDefaultRoutineAssignment(), ...(legacyPlan ? { plan: legacyPlan } : {}) }];
     return {
       ...state,
-      preferences: { showActivityLog: state.preferences?.showActivityLog ?? false },
+      preferences: normalizeAppPreferences(state.preferences),
       routineAssignments,
       events: state.events.map((event) => ({ ...event, routineId: event.routineId ?? DEFAULT_ROUTINE_ID })),
     };

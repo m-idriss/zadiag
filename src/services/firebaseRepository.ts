@@ -16,6 +16,8 @@ import type { AppRepository } from './contracts';
 import { getFirebaseServices, type FirebaseServices } from './firebaseClient';
 import {
   DEFAULT_ROUTINE_ID,
+  normalizeAppPreferences,
+  type AppPreferences,
   type AppState,
   type Locale,
   type MonitoringPlan,
@@ -47,12 +49,12 @@ interface FamilyDocument {
 }
 
 const initialState = (): AppState => {
-  const preferences = JSON.parse(localStorage.getItem(PREFERENCES_KEY) ?? '{}') as { locale?: Locale; role?: Role; showActivityLog?: boolean };
+  const preferences = JSON.parse(localStorage.getItem(PREFERENCES_KEY) ?? '{}') as Partial<AppPreferences> & { locale?: Locale; role?: Role };
   return {
     locale: preferences.locale ?? browserLocale(),
     notificationsEnabled: false,
     role: preferences.role,
-    preferences: { showActivityLog: preferences.showActivityLog ?? false },
+    preferences: normalizeAppPreferences(preferences),
     family: { linked: false, childLinked: false, childName: '', linkingCode: '', parentRecoveryCode: '', consented: false },
     routineAssignments: [],
     routinesLoaded: false,
@@ -153,10 +155,15 @@ export class FirebaseRepository implements AppRepository {
     await this.syncPushSubscriptionLocale();
   }
 
-  async setShowActivityLog(show: boolean) {
-    this.state.preferences = { ...this.state.preferences, showActivityLog: show };
+  async setPreferences(preferences: Partial<AppPreferences>) {
+    this.state.preferences = normalizeAppPreferences({ ...this.state.preferences, ...preferences });
     this.persistPreferences();
     this.emit();
+    await this.syncPushSubscriptionPreferences();
+  }
+
+  async setShowActivityLog(show: boolean) {
+    await this.setPreferences({ showActivityLog: show });
   }
 
   async linkParent(childName: string) {
@@ -226,11 +233,13 @@ export class FirebaseRepository implements AppRepository {
       familyId: string;
       subscription: PushSubscriptionJSON;
       locale: Locale;
+      preferences: AppPreferences;
     }, void>(this.services.functions, 'savePushSubscription');
     await savePushSubscription({
       familyId: this.state.family.id,
       subscription,
       locale: this.state.locale,
+      preferences: normalizeAppPreferences(this.state.preferences),
     });
     this.state.notificationsEnabled = true;
     this.emit();
@@ -418,7 +427,7 @@ export class FirebaseRepository implements AppRepository {
     localStorage.setItem(PREFERENCES_KEY, JSON.stringify({
       locale: this.state.locale,
       role: this.state.role,
-      showActivityLog: this.state.preferences?.showActivityLog ?? false,
+      ...normalizeAppPreferences(this.state.preferences),
     }));
   }
 
@@ -430,6 +439,17 @@ export class FirebaseRepository implements AppRepository {
       });
     } catch (error) {
       console.error('Unable to update push subscription locale', error);
+    }
+  }
+
+  private async syncPushSubscriptionPreferences() {
+    if (this.state.role !== 'child' || !this.user || !this.state.family.id || !this.state.notificationsEnabled) return;
+    try {
+      await updateDoc(doc(this.services.db, 'families', this.state.family.id, 'pushSubscriptions', this.user.uid), {
+        preferences: normalizeAppPreferences(this.state.preferences),
+      });
+    } catch (error) {
+      console.error('Unable to update push subscription preferences', error);
     }
   }
 

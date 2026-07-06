@@ -133,7 +133,24 @@ export interface FamilyState {
 
 export interface AppPreferences {
   showActivityLog: boolean;
+  compactMode: boolean;
+  notificationWindowStart: string;
+  notificationWindowEnd: string;
+  reminderRepeatMinutes: number;
 }
+
+export const defaultAppPreferences: AppPreferences = {
+  showActivityLog: false,
+  compactMode: false,
+  notificationWindowStart: '08:00',
+  notificationWindowEnd: '21:00',
+  reminderRepeatMinutes: 20,
+};
+
+export const normalizeAppPreferences = (preferences?: Partial<AppPreferences>): AppPreferences => ({
+  ...defaultAppPreferences,
+  ...preferences,
+});
 
 export interface AppState {
   role?: Role;

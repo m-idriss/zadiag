@@ -1,4 +1,4 @@
-import type { AnalysisResult, AppState, Locale, MonitoringPlan, Role, RoutineValidationMode, VerificationEvent } from '../domain/models';
+import type { AnalysisResult, AppPreferences, AppState, Locale, MonitoringPlan, Role, RoutineValidationMode, VerificationEvent } from '../domain/models';
 
 export interface AppRepository {
   initialize(): Promise<void>;
@@ -6,6 +6,7 @@ export interface AppRepository {
   subscribe(listener: () => void): () => void;
   selectRole(role: Role): Promise<void>;
   setLocale(locale: Locale): Promise<void>;
+  setPreferences(preferences: Partial<AppPreferences>): Promise<void>;
   setShowActivityLog(show: boolean): Promise<void>;
   linkParent(childName: string): Promise<void>;
   recoverParent(code: string): Promise<void>;

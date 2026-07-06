@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType } from 'react';
 import { IonApp } from '@ionic/react';
-import type { Role, VerificationEvent } from './domain/models';
+import { normalizeAppPreferences, type Role, type VerificationEvent } from './domain/models';
 import { routeForState, type AppRoute } from './domain/appRouting';
 import { createRepository } from './services/repositoryFactory';
 import { translate, type MessageKey } from './services/i18n';
@@ -70,6 +70,8 @@ export function App() {
   const [selectedSessionId, setSelectedSessionId] = useState<string>();
   const useLocalDemo = isLocalDemoEnvironment();
   const t = (key: MessageKey) => translate(state.locale, key);
+  const preferences = normalizeAppPreferences(state.preferences);
+  const appRootClassName = preferences.compactMode ? 'app-root app-compact' : 'app-root';
 
   useEffect(() => {
     let alive = true;
@@ -241,7 +243,7 @@ export function App() {
 
   if (startupError) {
     return (
-      <IonApp className="app-root">
+      <IonApp className={appRootClassName}>
         <main className="page startup-recovery-page">
           <section className="startup-recovery-card" aria-live="polite">
             <img src="/icons/icon-192.png" alt="" />
@@ -259,7 +261,7 @@ export function App() {
 
   if (!ready) {
     return (
-      <IonApp className="app-root">
+      <IonApp className={appRootClassName}>
         <SplashScreen progress={splashProgress} message={t(splashMessage)} />
       </IonApp>
     );
@@ -340,8 +342,8 @@ export function App() {
       : tab === 'settings'
         ? <SettingsScreen
             notificationsEnabled={state.notificationsEnabled}
-            showActivityLog={state.preferences?.showActivityLog ?? false}
-            setShowActivityLog={async (show) => { await repository.setShowActivityLog(show); sync(); }}
+            preferences={preferences}
+            setPreferences={async (nextPreferences) => { await repository.setPreferences(nextPreferences); sync(); }}
             childInstalled={state.family.childLinked}
             familyId={state.family.id}
             events={state.events}
@@ -372,7 +374,7 @@ export function App() {
   }
 
   return (
-    <IonApp className="app-root">
+    <IonApp className={appRootClassName}>
       <Suspense fallback={<SplashScreen progress={ready ? 96 : splashProgress} message={t(ready ? 'splashFinalizing' : splashMessage)} />}>
         {content}
       </Suspense>

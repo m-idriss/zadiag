@@ -6,9 +6,12 @@ import {
   linkOutline,
   listOutline,
   mailOutline,
+  notificationsOutline,
+  optionsOutline,
+  timeOutline,
   trashOutline,
 } from 'ionicons/icons';
-import type { Locale, Role, VerificationEvent } from '../domain/models';
+import type { AppPreferences, Locale, Role, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { buildDiagnosticsEmailBody, createCorrelationId } from '../services/appLogs';
 import type { AppUpdateInfo } from '../services/appUpdate';
@@ -26,8 +29,8 @@ export function SettingsScreen({
   reset,
   role,
   notificationsEnabled,
-  showActivityLog,
-  setShowActivityLog,
+  preferences,
+  setPreferences,
   childInstalled,
   familyId,
   events,
@@ -45,8 +48,8 @@ export function SettingsScreen({
   reset: () => void;
   role: Role;
   notificationsEnabled: boolean;
-  showActivityLog: boolean;
-  setShowActivityLog: (show: boolean) => Promise<void>;
+  preferences: AppPreferences;
+  setPreferences: (preferences: Partial<AppPreferences>) => Promise<void>;
   childInstalled: boolean;
   familyId?: string;
   events: VerificationEvent[];
@@ -137,6 +140,10 @@ export function SettingsScreen({
   const languageDetailKey = locale === 'fr'
     ? 'settingsLanguageDetailFr'
     : 'settingsLanguageDetailEn';
+  const notificationWindowLabel = `${preferences.notificationWindowStart}-${preferences.notificationWindowEnd}`;
+  const reminderRepeatLabel = preferences.reminderRepeatMinutes === 0
+    ? t('settingsReminderRepeatDetailOff')
+    : t('settingsReminderRepeatDetail').replace('{minutes}', String(preferences.reminderRepeatMinutes));
   const updatedAt = new Date(import.meta.env.VITE_APP_UPDATED_AT ?? '');
   const appUpdated = Number.isNaN(updatedAt.getTime())
     ? import.meta.env.VITE_APP_UPDATED_AT
@@ -196,18 +203,79 @@ export function SettingsScreen({
             <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={listOutline} /></span>
             <div className="settings-row-copy">
               <strong>{t('settingsActivityLogTitle')}</strong>
-              <small>{t(showActivityLog ? 'settingsActivityLogDetailVisible' : 'settingsActivityLogDetailHidden')}</small>
+              <small>{t(preferences.showActivityLog ? 'settingsActivityLogDetailVisible' : 'settingsActivityLogDetailHidden')}</small>
             </div>
             <button
               type="button"
-              className={`settings-switch ${showActivityLog ? 'active' : ''}`}
-              aria-pressed={showActivityLog}
+              className={`settings-switch ${preferences.showActivityLog ? 'active' : ''}`}
+              aria-pressed={preferences.showActivityLog}
               aria-label={t('settingsActivityLogTitle')}
-              onClick={() => { void setShowActivityLog(!showActivityLog); }}
+              onClick={() => { void setPreferences({ showActivityLog: !preferences.showActivityLog }); }}
             >
               <span aria-hidden="true" />
             </button>
           </div>
+          <div className="settings-row">
+            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={optionsOutline} /></span>
+            <div className="settings-row-copy">
+              <strong>{t('settingsCompactModeTitle')}</strong>
+              <small>{t(preferences.compactMode ? 'settingsCompactModeDetailOn' : 'settingsCompactModeDetailOff')}</small>
+            </div>
+            <button
+              type="button"
+              className={`settings-switch ${preferences.compactMode ? 'active' : ''}`}
+              aria-pressed={preferences.compactMode}
+              aria-label={t('settingsCompactModeTitle')}
+              onClick={() => { void setPreferences({ compactMode: !preferences.compactMode }); }}
+            >
+              <span aria-hidden="true" />
+            </button>
+          </div>
+          {role === 'child' ? <div className="settings-row">
+            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={timeOutline} /></span>
+            <div className="settings-row-copy">
+              <strong>{t('settingsNotificationWindowTitle')}</strong>
+              <small>{t('settingsNotificationWindowDetail')} {notificationWindowLabel}</small>
+            </div>
+            <div className="settings-locale-toggle settings-choice-toggle" role="group" aria-label={t('settingsNotificationWindowTitle')}>
+              <button
+                type="button"
+                className={preferences.notificationWindowStart === '08:00' && preferences.notificationWindowEnd === '21:00' ? 'active' : ''}
+                aria-pressed={preferences.notificationWindowStart === '08:00' && preferences.notificationWindowEnd === '21:00'}
+                onClick={() => { void setPreferences({ notificationWindowStart: '08:00', notificationWindowEnd: '21:00' }); }}
+              >
+                {t('settingsNotificationWindowDay')}
+              </button>
+              <button
+                type="button"
+                className={preferences.notificationWindowStart === '00:00' && preferences.notificationWindowEnd === '23:59' ? 'active' : ''}
+                aria-pressed={preferences.notificationWindowStart === '00:00' && preferences.notificationWindowEnd === '23:59'}
+                onClick={() => { void setPreferences({ notificationWindowStart: '00:00', notificationWindowEnd: '23:59' }); }}
+              >
+                {t('settingsNotificationWindowAnytime')}
+              </button>
+            </div>
+          </div> : null}
+          {role === 'child' ? <div className="settings-row">
+            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={notificationsOutline} /></span>
+            <div className="settings-row-copy">
+              <strong>{t('settingsReminderRepeatTitle')}</strong>
+              <small>{reminderRepeatLabel}</small>
+            </div>
+            <div className="settings-locale-toggle settings-choice-toggle" role="group" aria-label={t('settingsReminderRepeatTitle')}>
+              {[0, 20, 30].map((minutes) => (
+                <button
+                  type="button"
+                  className={preferences.reminderRepeatMinutes === minutes ? 'active' : ''}
+                  aria-pressed={preferences.reminderRepeatMinutes === minutes}
+                  onClick={() => { void setPreferences({ reminderRepeatMinutes: minutes }); }}
+                  key={minutes}
+                >
+                  {minutes === 0 ? t('off') : `${minutes}m`}
+                </button>
+              ))}
+            </div>
+          </div> : null}
         </div>
       </section>
       <section className="settings-section" aria-labelledby="settings-support-heading">
@@ -247,7 +315,7 @@ export function SettingsScreen({
         </div>
       </section>
       <section className="settings-section" aria-labelledby="settings-install-heading">
-        <h2 id="settings-install-heading">{t('settingsDeviceSection')}</h2>
+        <h2 id="settings-install-heading">{t('settingsInstallSection')}</h2>
         <section className="card privacy-card settings-device-card">
           <h2>{t('installTitle')}</h2>
           <ul>
