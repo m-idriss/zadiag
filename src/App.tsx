@@ -303,6 +303,7 @@ export function App() {
             start={role === 'child' ? () => startCapture() : undefined}
             edit
             requestCheck={role === 'parent' ? async (routineId) => { await repository.requestCheckNow(routineId); sync(); } : undefined}
+            getProofImageUrl={(eventId) => repository.getProofImageUrl(eventId)}
             onAssignRoutine={async (routineId) => { await repository.assignRoutine(routineId); sync(); }}
             onDeleteRoutine={async (routineId) => { await repository.deleteRoutine(routineId); sync(); }}
             onSaveMonitoringPlan={async (routineId, plan, validationMode) => {

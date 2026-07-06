@@ -84,13 +84,14 @@ describe('participant routines navigation', () => {
       routineAssignments: [assignment],
       events: [
         { id: 'done', routineId: assignment.routineId, sessionId: 'one', requestedAt: '2026-07-02T08:00:00.000Z', expiresAt: '2026-07-02T09:00:00.000Z', status: 'detected' },
-        { id: 'missed', routineId: assignment.routineId, sessionId: 'two', requestedAt: '2026-07-02T10:00:00.000Z', expiresAt: '2026-07-02T11:00:00.000Z', status: 'missed' },
+        { id: 'missed', routineId: assignment.routineId, sessionId: 'two', requestedAt: '2026-07-02T10:00:00.000Z', expiresAt: '2026-07-02T11:00:00.000Z', status: 'not_detected', proofImagePath: 'families/family/checks/missed/proof.jpg' },
         { id: 'next', routineId: assignment.routineId, sessionId: 'three', requestedAt: '2026-07-02T18:00:00.000Z', expiresAt: '2026-07-02T20:00:00.000Z', status: 'pending' },
         { id: 'other', routineId: 'another-routine', sessionId: 'four', requestedAt: '2026-07-02T12:00:00.000Z', expiresAt: '2026-07-02T13:00:00.000Z', status: 'detected', reason: 'Other routine event' },
       ],
     };
 
-    act(() => root.render(<RoutinesScreen state={state} t={(key) => translate('en', key)} />));
+    const getProofImageUrl = vi.fn().mockResolvedValue('data:image/png;base64,PROOF');
+    act(() => root.render(<RoutinesScreen state={state} getProofImageUrl={getProofImageUrl} t={(key) => translate('en', key)} />));
 
     expect(container.textContent).toContain('Orthodontic Elastics');
     expect(container.textContent).toContain('3 checks each day');
@@ -123,9 +124,17 @@ describe('participant routines navigation', () => {
     expect(container.textContent).toContain('Take a clear photo');
 
     const history = Array.from(container.querySelectorAll('.routine-tabs button')).find((button) => button.textContent === 'History');
-    act(() => history?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    await act(async () => {
+      history?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await Promise.resolve();
+    });
     expect(container.textContent).toContain('Recent history');
     expect(container.textContent).not.toContain('Other routine event');
+    expect(getProofImageUrl).toHaveBeenCalledWith('missed');
+    const proofThumb = container.querySelector<HTMLButtonElement>('.submission-thumb-button');
+    expect(proofThumb?.querySelector('img')?.getAttribute('src')).toBe('data:image/png;base64,PROOF');
+    act(() => proofThumb?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(container.querySelector('.proof-lightbox img')?.getAttribute('src')).toBe('data:image/png;base64,PROOF');
 
     const progress = Array.from(container.querySelectorAll('.routine-tabs button')).find((button) => button.textContent === 'Progress');
     act(() => progress?.dispatchEvent(new MouseEvent('click', { bubbles: true })));

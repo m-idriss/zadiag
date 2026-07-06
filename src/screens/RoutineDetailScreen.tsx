@@ -124,11 +124,12 @@ const renderRoutineStepIcon = (icon: string) => {
   return icon;
 };
 
-export function RoutineDetailScreen({ assignment, state, back, start, t, edit, initialTab, onSaveMonitoringPlan, routinePlanBusy }: {
+export function RoutineDetailScreen({ assignment, state, back, start, getProofImageUrl, t, edit, initialTab, onSaveMonitoringPlan, routinePlanBusy }: {
   assignment: RoutineAssignment;
   state: AppState;
   back: () => void;
   start?: () => void;
+  getProofImageUrl?: (eventId: string) => Promise<string>;
   t: (key: MessageKey) => string;
   edit?: boolean;
   initialTab?: DetailTab;
@@ -136,6 +137,9 @@ export function RoutineDetailScreen({ assignment, state, back, start, t, edit, i
   routinePlanBusy?: boolean;
 }) {
   const [tab, setTab] = useState<DetailTab>(initialTab ?? (edit ? 'plan' : 'overview'));
+  const [proofUrls, setProofUrls] = useState<Record<string, string>>({});
+  const [proofErrors, setProofErrors] = useState<Record<string, boolean>>({});
+  const [enlargedProofUrl, setEnlargedProofUrl] = useState<string>();
   const todayHeatmapRef = useRef<HTMLSpanElement | null>(null);
   const events = state.events.filter((event) => event.routineId === assignment.routineId);
   const summary = adherenceSummary(events);
@@ -154,13 +158,35 @@ export function RoutineDetailScreen({ assignment, state, back, start, t, edit, i
     todayHeatmapRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }, [tab]);
 
-  const historyRow = (event: VerificationEvent) => (
+  useEffect(() => {
+    if (tab !== 'history' || !getProofImageUrl) return;
+    events.forEach((event) => {
+      if (!event.proofImagePath || proofUrls[event.id] || proofErrors[event.id]) return;
+      void getProofImageUrl(event.id)
+        .then((url) => setProofUrls((current) => ({ ...current, [event.id]: url })))
+        .catch((error) => {
+          console.error(error);
+          setProofErrors((current) => ({ ...current, [event.id]: true }));
+        });
+    });
+  }, [events, getProofImageUrl, proofErrors, proofUrls, tab]);
+
+  const historyRow = (event: VerificationEvent) => {
+    const proofUrl = proofUrls[event.id];
+    return (
     <article className="routine-history-row" key={event.id}>
-      <span className="submission-thumb" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
+      {proofUrl ? (
+        <button type="button" className="submission-thumb submission-thumb-button" aria-label={t('responsibleReviewImageAlt')} onClick={() => setEnlargedProofUrl(proofUrl)}>
+          <img src={proofUrl} alt={t('responsibleReviewImageAlt')} />
+        </button>
+      ) : (
+        <span className={`submission-thumb ${event.proofImagePath ? 'submission-thumb-loading' : ''}`} aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
+      )}
       <div><strong>{formatDateTime(event.requestedAt)}</strong><small>{event.reason ?? t('noAnalysisYet')}</small></div>
       <StatusPill status={event.status} t={t} /><span aria-hidden="true"><IonIcon icon={chevronForwardOutline} /></span>
     </article>
-  );
+    );
+  };
 
   return (
     <div className="content-screen routine-detail-screen" style={visual.style}>
@@ -231,6 +257,13 @@ export function RoutineDetailScreen({ assignment, state, back, start, t, edit, i
         <div className="heatmap-legend" aria-hidden="true"><span><i className="success" />{t('successful')}</span><span><i className="attention" />{t('toReview')}</span><span><i className="missed" />{t('missed')}</span></div>
         <h2>{t('streaks')}</h2><div className="streak-grid"><div><small>{t('currentStreak')}</small><b>{currentStreak}</b><span>{t('days')}</span></div><div><small>{t('bestStreak')}</small><b>{Math.max(currentStreak, summary.successful)}</b><span>{t('days')}</span></div></div>
       </div>}
+
+      {enlargedProofUrl ? (
+        <div className="proof-lightbox" role="dialog" aria-modal="true" aria-label={t('responsibleReviewImageAlt')} onClick={() => setEnlargedProofUrl(undefined)}>
+          <button type="button" className="proof-lightbox-close" aria-label={t('close')} onClick={() => setEnlargedProofUrl(undefined)}>×</button>
+          <img src={enlargedProofUrl} alt={t('responsibleReviewImageAlt')} onClick={(event) => event.stopPropagation()} />
+        </div>
+      ) : null}
 
       {tab === 'plan' && edit && onSaveMonitoringPlan && <div className="routine-tab-panel routine-plan-tab-panel">
         <RoutineEditScreen

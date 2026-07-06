@@ -89,6 +89,11 @@ const createRecoveryRecord = (familyId: string, expiresAt: Date) => ({
   expiresAt: expiresAt.toISOString(),
   createdAt: new Date().toISOString(),
 });
+type ReviewedCheckPayload = Record<string, unknown> & {
+  id: string;
+  proofImagePath?: unknown;
+  proofImageExpiresAt?: unknown;
+};
 
 const requireFamilyRole = async (uid: string, familyId: string, role: 'parent' | 'child') => {
   const [profile, family] = await Promise.all([
@@ -101,6 +106,19 @@ const requireFamilyRole = async (uid: string, familyId: string, role: 'parent' |
   const familyMatches = family.exists && family.data()?.members?.[uid] === role;
   if (!profileMatches && !familyMatches) {
     throw new HttpsError('permission-denied', `Only the linked ${role} can perform this action.`);
+  }
+  return profile;
+};
+
+const requireFamilyMember = async (uid: string, familyId: string) => {
+  const [profile, family] = await Promise.all([
+    db.collection('users').doc(uid).get(),
+    db.collection('families').doc(familyId).get(),
+  ]);
+  const profileMatches = profile.exists && profile.data()?.familyId === familyId;
+  const familyMatches = family.exists && typeof family.data()?.members?.[uid] === 'string';
+  if (!profileMatches && !familyMatches) {
+    throw new HttpsError('permission-denied', 'Only a linked family member can perform this action.');
   }
   return profile;
 };
@@ -985,7 +1003,7 @@ export const getProofImageUrl = onCall({ region, cors, enforceAppCheck: true }, 
   const uid = requireUid(request.auth);
   const familyId = String(request.data?.familyId ?? '');
   const checkId = String(request.data?.checkId ?? '');
-  await requireFamilyRole(uid, familyId, 'parent');
+  await requireFamilyMember(uid, familyId);
   const checkRef = db.collection('families').doc(familyId).collection('checks').doc(checkId);
   const check = await checkRef.get();
   if (!check.exists) {
@@ -1045,7 +1063,7 @@ export const reviewCheck = onCall({ region, cors, enforceAppCheck: true }, async
   await requireFamilyRole(uid, familyId, 'parent');
   const checkRef = db.collection('families').doc(familyId).collection('checks').doc(checkId);
   const reviewedAt = new Date().toISOString();
-  return db.runTransaction(async (transaction) => {
+  const reviewedCheck = await db.runTransaction<ReviewedCheckPayload>(async (transaction) => {
     const check = await transaction.get(checkRef);
     const checkData = check.data();
     if (!check.exists || !checkData) throw new HttpsError('not-found', 'The check could not be found.');
@@ -1062,6 +1080,21 @@ export const reviewCheck = onCall({ region, cors, enforceAppCheck: true }, async
     transaction.update(checkRef, update);
     return { id: check.id, ...checkData, ...update };
   });
+  const proofImagePath = reviewedCheck.proofImagePath;
+  if (decision === 'detected' && typeof proofImagePath === 'string' && proofImagePath) {
+    try {
+      await bucket.file(proofImagePath).delete({ ignoreNotFound: true });
+      await checkRef.update({
+        proofImagePath: FieldValue.delete(),
+        proofImageExpiresAt: FieldValue.delete(),
+      });
+      delete reviewedCheck.proofImagePath;
+      delete reviewedCheck.proofImageExpiresAt;
+    } catch (error) {
+      console.error('Unable to delete reviewed proof image', { familyId, checkId, proofImagePath, error });
+    }
+  }
+  return reviewedCheck;
 });
 
 export const cleanupExpiredProofImages = onSchedule({
