@@ -6,6 +6,7 @@ import { CodeBox } from '../components/CodeBox';
 import { RoutineHistoryPanel } from '../components/RoutineHistoryPanel';
 import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } from '../components/AdherenceSummaryCard';
 import { presentRoutine } from '../domain/routinePresentation';
+import { ActivityLog } from '../components/ActivityLog';
 
 export function ParentDashboard({
   state,
@@ -122,6 +123,8 @@ export function ParentDashboard({
       </header>
 
       <AdherenceSummaryCard events={state.events} range={summaryRange} onRangeChange={setSummaryRange} t={t} />
+
+      <ActivityLog state={state} t={t} />
 
       {!state.family.childLinked && state.family.linkingCode ? (
         <CodeBox
