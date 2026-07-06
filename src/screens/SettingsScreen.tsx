@@ -171,6 +171,14 @@ export function SettingsScreen({
           ? t('settingsUpdatePatchAvailable')
           : t('settingsUpdateAvailable')
     : t('settingsUpdateDetail');
+  const linkCodeAction = (
+    <>
+      <button type="button" className="regenerate-code" disabled={regenerating} onClick={() => { void regenerate(); }}>
+        {regenerating ? t('regeneratingCode') : t('regenerateCode')}
+      </button>
+      {codeError ? <span className="form-error">{t('regenerateCodeError')}</span> : null}
+    </>
+  );
 
   return (
     <div className="content-screen settings-screen">
@@ -272,23 +280,37 @@ export function SettingsScreen({
         <h2>{t('privacyDefaults')}</h2>
         <ul><li>{t('noFaceRecognition')}</li><li>{t('noModelTraining')}</li><li>{t('noPhotoUpload')}</li><li>{t('immediateDeletion')}</li></ul>
       </section>
-      {(role === 'parent' ? childLinkingCode : parentRecoveryCode) ? (
+      {role === 'parent' ? (
+        childLinkingCode ? (
+          <CodeBox
+            label={t('childLinkCode')}
+            hint={t('childLinkCodeHint')}
+            value={childLinkingCode}
+            maskValue
+            t={t}
+            action={linkCodeAction}
+          />
+        ) : (
+          <section className="card code-box">
+            <div className="code-box-header">
+              <div>
+                <small className="code-box-label">{t('childLinkCode')}</small>
+                <div className="code-box-value-row">
+                  <strong>{t('childLinkCodeEmpty')}</strong>
+                </div>
+              </div>
+            </div>
+            <span>{t('childLinkCodeEmptyHint')}</span>
+            <div className="code-box-actions">{linkCodeAction}</div>
+          </section>
+        )
+      ) : parentRecoveryCode ? (
         <CodeBox
-          label={t(role === 'parent' ? 'childLinkCode' : 'parentRecoveryCode')}
-          hint={t(role === 'parent' ? 'childLinkCodeHint' : 'childRecoveryHelp')}
-          value={(role === 'parent' ? childLinkingCode : parentRecoveryCode) || ''}
+          label={t('parentRecoveryCode')}
+          hint={t('childRecoveryHelp')}
+          value={parentRecoveryCode}
           maskValue
           t={t}
-          {...(role === 'parent' ? {
-            action: (
-              <>
-                <button type="button" className="regenerate-code" disabled={regenerating} onClick={() => { void regenerate(); }}>
-                  {regenerating ? t('regeneratingCode') : t('regenerateCode')}
-                </button>
-                {codeError ? <span className="form-error">{t('regenerateCodeError')}</span> : null}
-              </>
-            ),
-          } : {})}
         />
       ) : null}
       <Disclaimer t={t} />
