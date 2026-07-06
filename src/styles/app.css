@@ -509,6 +509,16 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 }
 .activity-log-empty h2 { margin: 0; font-size: 15px; }
 .activity-log-empty p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
+.responsible-state-card {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 14px;
+}
+.responsible-state-card h2 { margin: 0; color: var(--navy); font-size: 16px; }
+.responsible-state-card p { margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.35; }
 .status-pill { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; white-space: nowrap; padding: 7px 10px; border-radius: 99px; background: #eef2f4; color: var(--navy); font-weight: 900; font-size: 11px; text-transform: capitalize; }
 .status-detected { background: var(--mint); color: var(--teal); }
 .status-uncertain { background: #fff0d9; color: #b87218; }
