@@ -239,6 +239,26 @@ export function SettingsScreen({
               </button>
             </div>
           </div> : null}
+          {role === 'parent' ? <div className="settings-row">
+            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={notificationsOutline} /></span>
+            <div className="settings-row-copy">
+              <strong>{t('settingsReminderRepeatTitle')}</strong>
+              <small>{reminderRepeatLabel}</small>
+            </div>
+            <div className="settings-locale-toggle settings-choice-toggle" role="group" aria-label={t('settingsReminderRepeatTitle')}>
+              {[0, 20, 30].map((minutes) => (
+                <button
+                  type="button"
+                  className={preferences.reminderRepeatMinutes === minutes ? 'active' : ''}
+                  aria-pressed={preferences.reminderRepeatMinutes === minutes}
+                  onClick={() => { void setPreferences({ reminderRepeatMinutes: minutes }); }}
+                  key={minutes}
+                >
+                  {minutes === 0 ? t('off') : `${minutes}m`}
+                </button>
+              ))}
+            </div>
+          </div> : null}
         </div>
       </section>
       <section className="settings-section" aria-labelledby="settings-support-heading">
@@ -275,26 +295,6 @@ export function SettingsScreen({
               </IonButton>
             </div>
           </div>
-          {role === 'parent' ? <div className="settings-row">
-            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={notificationsOutline} /></span>
-            <div className="settings-row-copy">
-              <strong>{t('settingsReminderRepeatTitle')}</strong>
-              <small>{reminderRepeatLabel}</small>
-            </div>
-            <div className="settings-locale-toggle settings-choice-toggle" role="group" aria-label={t('settingsReminderRepeatTitle')}>
-              {[0, 20, 30].map((minutes) => (
-                <button
-                  type="button"
-                  className={preferences.reminderRepeatMinutes === minutes ? 'active' : ''}
-                  aria-pressed={preferences.reminderRepeatMinutes === minutes}
-                  onClick={() => { void setPreferences({ reminderRepeatMinutes: minutes }); }}
-                  key={minutes}
-                >
-                  {minutes === 0 ? t('off') : `${minutes}m`}
-                </button>
-              ))}
-            </div>
-          </div> : null}
         </div>
       </section>
       <section className="settings-section" aria-labelledby="settings-install-heading">
