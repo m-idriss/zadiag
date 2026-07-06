@@ -339,7 +339,6 @@ export function App() {
           />
       : tab === 'settings'
         ? <SettingsScreen
-            enableNotifications={enableNotifications}
             notificationsEnabled={state.notificationsEnabled}
             showActivityLog={state.preferences?.showActivityLog ?? false}
             setShowActivityLog={async (show) => { await repository.setShowActivityLog(show); sync(); }}

@@ -6,8 +6,6 @@ import {
   linkOutline,
   listOutline,
   mailOutline,
-  notificationsOutline,
-  phonePortraitOutline,
   trashOutline,
 } from 'ionicons/icons';
 import type { Locale, Role, VerificationEvent } from '../domain/models';
@@ -27,7 +25,6 @@ export function SettingsScreen({
   forceAppUpdate,
   reset,
   role,
-  enableNotifications,
   notificationsEnabled,
   showActivityLog,
   setShowActivityLog,
@@ -47,7 +44,6 @@ export function SettingsScreen({
   forceAppUpdate: () => Promise<boolean>;
   reset: () => void;
   role: Role;
-  enableNotifications: () => Promise<void>;
   notificationsEnabled: boolean;
   showActivityLog: boolean;
   setShowActivityLog: (show: boolean) => Promise<void>;
@@ -60,10 +56,6 @@ export function SettingsScreen({
   totalChecks: number;
   regenerateLinkCode: () => Promise<void>;
 }) {
-  const standalone = window.matchMedia('(display-mode: standalone)').matches;
-  const [notificationState, setNotificationState] = useState<'idle' | 'saving' | 'enabled' | 'error'>(
-    notificationsEnabled ? 'enabled' : 'idle',
-  );
   const [mailError, setMailError] = useState(false);
   const [contactMailError, setContactMailError] = useState(false);
   const [updatingApp, setUpdatingApp] = useState(false);
@@ -71,16 +63,6 @@ export function SettingsScreen({
   const [regenerating, setRegenerating] = useState(false);
   const [codeError, setCodeError] = useState(false);
 
-  const requestNotifications = async () => {
-    setNotificationState('saving');
-    try {
-      await enableNotifications();
-      setNotificationState('enabled');
-    } catch (error) {
-      console.error(error);
-      setNotificationState('error');
-    }
-  };
   const regenerate = async () => {
     if (!window.confirm(t('regenerateCodeConfirm'))) return;
     setCodeError(false);
@@ -143,11 +125,7 @@ export function SettingsScreen({
       setUpdatingApp(false);
     }
   };
-  const notificationEnabled = notificationState === 'enabled';
-  const notificationStatusKey = notificationState === 'enabled'
-    ? 'settingsNotificationsStatusEnabled'
-    : 'settingsNotificationsStatusDisabled';
-  const notificationDetailKey = notificationState === 'enabled'
+  const notificationDetailKey = notificationsEnabled
     ? 'settingsNotificationsDetailEnabled'
     : 'settingsNotificationsDetailDisabled';
   const childInstallStatusKey = childInstalled
@@ -193,14 +171,6 @@ export function SettingsScreen({
       <section className="settings-section" aria-labelledby="settings-device-heading">
         <h2 id="settings-device-heading">{t('settingsDeviceSection')}</h2>
         <div className="card settings-list">
-          <div className="settings-row">
-            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={phonePortraitOutline} /></span>
-            <div className="settings-row-copy">
-              <strong>{t('installTitle')}</strong>
-              <small>{t('settingsInstallDetail')}</small>
-            </div>
-            <span className="status-pill status-detected">{t('settingsInstallStatus')}</span>
-          </div>
           {role === 'parent' ? <div className="settings-row">
             <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={linkOutline} /></span>
             <div className="settings-row-copy">
@@ -210,27 +180,6 @@ export function SettingsScreen({
             <span className={childInstalled ? 'status-pill status-detected' : 'status-pill status-missed'}>
               {t(childInstallStatusKey)}
             </span>
-          </div> : null}
-          {role === 'child' ? <div className="settings-row settings-row-expandable">
-            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={notificationsOutline} /></span>
-            <div className="settings-row-copy">
-              <strong>{t('notifications')}</strong>
-              <small>{t(notificationDetailKey)}</small>
-              {notificationState === 'error' ? <small className="settings-action-error">{t('pushError')}</small> : null}
-            </div>
-            <div className="settings-row-control">
-              <span className={notificationEnabled ? 'status-pill status-detected' : 'status-pill status-missed'}>
-                {t(notificationStatusKey)}
-              </span>
-              {!notificationEnabled ? <IonButton
-                className="settings-inline-action settings-inline-action-contained"
-                size="small"
-                disabled={!standalone || notificationState === 'saving'}
-                onClick={() => { void requestNotifications(); }}
-              >
-                {notificationState === 'saving' ? t('enablingReminders') : t('enableReminders')}
-              </IonButton> : null}
-            </div>
           </div> : null}
           <div className="settings-row">
             <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={languageOutline} /></span>
@@ -296,6 +245,16 @@ export function SettingsScreen({
             </div>
           </div>
         </div>
+      </section>
+      <section className="settings-section" aria-labelledby="settings-install-heading">
+        <h2 id="settings-install-heading">{t('settingsDeviceSection')}</h2>
+        <section className="card privacy-card settings-device-card">
+          <h2>{t('installTitle')}</h2>
+          <ul>
+            <li>{t('settingsInstallDetail')}</li>
+            {role === 'child' ? <li className={notificationsEnabled ? undefined : 'settings-device-missing'}>{t(notificationDetailKey)}</li> : null}
+          </ul>
+        </section>
       </section>
       <section className="settings-section settings-account-section" aria-labelledby="settings-account-heading">
         <h2 id="settings-account-heading">{t('settingsAccountSection')}</h2>
