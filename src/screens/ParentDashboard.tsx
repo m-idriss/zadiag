@@ -29,6 +29,7 @@ export function ParentDashboard({
   const [proofErrors, setProofErrors] = useState<Record<string, boolean>>({});
   const [reviewingId, setReviewingId] = useState<string>();
   const [reviewErrorId, setReviewErrorId] = useState<string>();
+  const [expandedReviewIds, setExpandedReviewIds] = useState<Record<string, boolean>>({});
   const rangedEvents = filterEventsBySummaryRange(state.events, summaryRange);
   const reviewEvents = useMemo(() => state.events
     .filter((event) => event.status === 'uncertain' && !['approved', 'rejected'].includes(event.reviewStatus ?? ''))
@@ -42,6 +43,11 @@ export function ParentDashboard({
   const routineNameFor = (event: VerificationEvent) => {
     const assignment = state.routineAssignments.find((item) => item.routineId === event.routineId);
     return assignment ? presentRoutine(assignment.routine, state.locale).name : t('routine');
+  };
+  const percent = (value?: number) => value === undefined ? undefined : `${Math.round(value * 100)}%`;
+  const shortId = (value: string) => value.slice(0, 6);
+  const toggleReview = (eventId: string) => {
+    setExpandedReviewIds((current) => ({ ...current, [eventId]: !current[eventId] }));
   };
 
   useEffect(() => {
@@ -132,39 +138,74 @@ export function ParentDashboard({
             <span>{reviewEvents.length}</span>
           </div>
           <div className="parent-review-list">
-            {reviewEvents.map((event) => (
-              <article className="card parent-review-card" key={event.id}>
-                <div className="parent-review-image">
-                  {proofUrls[event.id]
-                    ? <img src={proofUrls[event.id]} alt={t('responsibleReviewImageAlt')} />
-                    : <div role="status">{!event.proofImagePath || proofErrors[event.id] ? t('responsibleReviewImageError') : t('loadingProofImage')}</div>}
-                </div>
-                <div className="parent-review-copy">
-                  <strong>{routineNameFor(event)}</strong>
-                  <small>{formatDateTime(event.capturedAt ?? event.requestedAt)}</small>
-                  {event.reason ? <p>{event.reason}</p> : null}
-                  {reviewErrorId === event.id ? <p className="request-feedback error">{t('responsibleReviewError')}</p> : null}
-                </div>
-                <div className="parent-review-actions">
-                  <button
-                    type="button"
-                    className="parent-review-button approve"
-                    disabled={reviewingId === event.id}
-                    onClick={() => { void decide(event.id, 'detected'); }}
-                  >
-                    {t('responsibleReviewApprove')}
-                  </button>
-                  <button
-                    type="button"
-                    className="parent-review-button reject"
-                    disabled={reviewingId === event.id}
-                    onClick={() => { void decide(event.id, 'not_detected'); }}
-                  >
-                    {t('responsibleReviewReject')}
-                  </button>
-                </div>
-              </article>
-            ))}
+            {reviewEvents.map((event) => {
+              const expanded = expandedReviewIds[event.id] === true;
+              const renderImage = () => proofUrls[event.id]
+                ? <img src={proofUrls[event.id]} alt={t('responsibleReviewImageAlt')} />
+                : <div role="status">{proofErrors[event.id] ? t('responsibleReviewImageError') : t('loadingProofImage')}</div>;
+              return (
+                <article className={`card parent-review-card ${expanded ? 'expanded' : ''}`} key={event.id}>
+                  <div className="parent-review-main">
+                    <div className="parent-review-image">{renderImage()}</div>
+                    <div className="parent-review-copy">
+                      <div className="parent-review-title-row">
+                        <div>
+                          <strong>{routineNameFor(event)}</strong>
+                          <small>{formatDateTime(event.capturedAt ?? event.requestedAt)}</small>
+                        </div>
+                        <button
+                          type="button"
+                          className="parent-review-expand"
+                          aria-label={expanded ? t('reviewShowLess') : t('reviewShowMore')}
+                          aria-expanded={expanded}
+                          onClick={() => toggleReview(event.id)}
+                        >
+                          <AppIcon name="chevron-down" className={expanded ? 'expanded' : undefined} />
+                        </button>
+                      </div>
+                      <div className="parent-review-meta-line">
+                        <span>{t('analysisSource')}: {event.analysisSource ? t(event.analysisSource === 'ai' ? 'analysisSourceAi' : event.analysisSource === 'self' ? 'analysisSourceSelf' : 'analysisSourceFallback') : t('analysisSourceFallback')}</span>
+                        {event.imageQuality !== undefined ? <span>{t('analysisQuality')}: {percent(event.imageQuality)}</span> : null}
+                        {event.confidence !== undefined ? <span>{t('analysisConfidence')}: {percent(event.confidence)}</span> : null}
+                      </div>
+                      {event.reason ? <p>{event.reason}</p> : null}
+                      {reviewErrorId === event.id ? <p className="request-feedback error">{t('responsibleReviewError')}</p> : null}
+                    </div>
+                  </div>
+                  {expanded ? (
+                    <div className="parent-review-expanded-panel">
+                      <div className="parent-review-large-image">{renderImage()}</div>
+                      <dl className="parent-review-metadata">
+                        <div><dt>{t('reviewCapturedAt')}</dt><dd>{formatDateTime(event.capturedAt ?? event.requestedAt)}</dd></div>
+                        <div><dt>{t('reviewRequestedAt')}</dt><dd>{formatDateTime(event.requestedAt)}</dd></div>
+                        <div><dt>{t('reviewExpiresAt')}</dt><dd>{formatDateTime(event.expiresAt)}</dd></div>
+                        <div><dt>{t('routine')}</dt><dd>{routineNameFor(event)}</dd></div>
+                        <div><dt>{t('reviewCheckId')}</dt><dd>{shortId(event.id)}</dd></div>
+                        <div><dt>{t('reviewSessionId')}</dt><dd>{shortId(event.sessionId)}</dd></div>
+                      </dl>
+                    </div>
+                  ) : null}
+                  <div className="parent-review-actions">
+                    <button
+                      type="button"
+                      className="parent-review-button approve"
+                      disabled={reviewingId === event.id}
+                      onClick={() => { void decide(event.id, 'detected'); }}
+                    >
+                      {t('responsibleReviewApprove')}
+                    </button>
+                    <button
+                      type="button"
+                      className="parent-review-button reject"
+                      disabled={reviewingId === event.id}
+                      onClick={() => { void decide(event.id, 'not_detected'); }}
+                    >
+                      {t('responsibleReviewReject')}
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </section>
       ) : null}

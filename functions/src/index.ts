@@ -1014,11 +1014,24 @@ export const getProofImageUrl = onCall({ region, cors, enforceAppCheck: true }, 
       proofImageExpiresAt: new Date(Date.now() + proofImageRetentionDays * 86_400_000).toISOString(),
     });
   }
-  const [url] = await bucket.file(proofImagePath).getSignedUrl({
-    action: 'read',
-    expires: Date.now() + proofImageSignedUrlMinutes * 60 * 1000,
-  });
-  return { url };
+  const proofFile = bucket.file(proofImagePath);
+  try {
+    const [url] = await proofFile.getSignedUrl({
+      action: 'read',
+      expires: Date.now() + proofImageSignedUrlMinutes * 60 * 1000,
+    });
+    return { url };
+  } catch (error) {
+    console.error('Unable to create signed proof image URL, returning inline proof image', error);
+    const [[buffer], [metadata]] = await Promise.all([
+      proofFile.download(),
+      proofFile.getMetadata(),
+    ]);
+    const contentType = typeof metadata.contentType === 'string' && metadata.contentType
+      ? metadata.contentType
+      : 'image/jpeg';
+    return { url: `data:${contentType};base64,${buffer.toString('base64')}` };
+  }
 });
 
 export const reviewCheck = onCall({ region, cors, enforceAppCheck: true }, async (request) => {

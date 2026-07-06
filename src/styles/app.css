@@ -399,25 +399,71 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .parent-empty-history-card h2 { font-size: 16px; }
 .parent-empty-history-card p { margin: 3px 0 0; font-size: 12px; line-height: 1.35; }
 .parent-review-section { display: grid; gap: 10px; }
-.parent-review-list { display: grid; gap: 10px; }
-.parent-review-card { display: grid; gap: 12px; padding: 12px; }
+.parent-review-list { display: grid; gap: 8px; }
+.parent-review-card { display: grid; gap: 10px; padding: 10px 12px; overflow: hidden; border-radius: 20px; }
+.parent-review-main { display: grid; grid-template-columns: 92px minmax(0, 1fr); align-items: stretch; gap: 11px; min-height: 116px; }
 .parent-review-image {
-  min-height: 180px;
+  align-self: stretch;
+  min-height: 116px;
+  aspect-ratio: 4 / 5;
   display: grid;
   place-items: center;
   overflow: hidden;
-  border: 1px solid rgba(16,42,67,.06);
-  border-radius: 17px;
-  background: #eef5f3;
+  border: 1px solid #d9e8e6;
+  border-radius: 14px;
+  background: #eff8f6;
   color: var(--muted);
   font-size: 12px;
   font-weight: 850;
+  text-align: center;
 }
-.parent-review-image img { width: 100%; max-height: 280px; display: block; object-fit: contain; }
-.parent-review-copy { display: grid; gap: 4px; min-width: 0; }
+.parent-review-image img { width: 100%; height: 100%; display: block; object-fit: cover; object-position: center; }
+.parent-review-copy { display: grid; align-content: start; gap: 5px; min-width: 0; }
+.parent-review-title-row { display: grid; grid-template-columns: minmax(0, 1fr) 34px; align-items: start; gap: 8px; }
 .parent-review-copy strong { color: var(--navy); font-size: 15px; }
 .parent-review-copy small { color: var(--muted); font-size: 12px; font-weight: 800; }
-.parent-review-copy p { margin: 2px 0 0; font-size: 12px; line-height: 1.35; }
+.parent-review-copy p { display: -webkit-box; margin: 0; overflow: hidden; color: var(--muted); font-size: 12px; line-height: 1.32; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.parent-review-meta-line { display: flex; flex-wrap: wrap; gap: 5px; }
+.parent-review-meta-line span {
+  max-width: 100%;
+  padding: 4px 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--teal) 8%, white);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.parent-review-expand {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--teal) 10%, white);
+  color: var(--teal);
+}
+.parent-review-expand .app-icon { font-size: 18px; transition: transform .2s cubic-bezier(.22,1,.36,1); }
+.parent-review-expand .app-icon.expanded { transform: rotate(180deg); }
+.parent-review-expanded-panel { display: grid; gap: 10px; }
+.parent-review-large-image {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  max-height: 360px;
+  border: 1px solid #d9e8e6;
+  border-radius: 16px;
+  background: #eff8f6;
+}
+.parent-review-large-image img { width: 100%; max-height: 360px; display: block; object-fit: contain; }
+.parent-review-large-image div[role="status"] { padding: 60px 12px; color: var(--muted); font-size: 12px; font-weight: 850; }
+.parent-review-metadata { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin: 0; }
+.parent-review-metadata div { min-width: 0; padding: 8px 9px; border-radius: 12px; background: #f6faf9; }
+.parent-review-metadata dt { margin: 0 0 2px; color: var(--muted); font-size: 9px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+.parent-review-metadata dd { margin: 0; overflow: hidden; color: var(--navy); font-size: 11px; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
 .parent-review-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .parent-review-button { min-height: 42px; border: 0; border-radius: 12px; font-size: 12px; font-weight: 850; }
 .parent-review-button.approve { background: var(--teal); color: white; }
