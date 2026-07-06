@@ -475,30 +475,72 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
   .parent-review-copy small, .parent-review-copy p { font-size: 11px; }
   .parent-review-button { border-radius: 11px; font-size: 11px; }
 }
-.history-results-heading { margin-top: 2px; margin-bottom: 0; }
-.parent-history-list { display: grid; gap: 12px; }
-.parent-history-row { margin-bottom: 0; }
+.parent-overview-screen { display: grid; align-content: start; row-gap: 14px; }
+.parent-overview-screen .screen-header { margin-bottom: 8px; }
+.parent-overview-screen .adherence-summary-card { margin-bottom: 0; }
+.parent-overview-screen .code-box,
+.parent-overview-screen .parent-create-routine-card,
+.parent-overview-screen .parent-review-section,
+.parent-overview-screen .routine-history-panel { margin-top: 4px; }
+.parent-overview-screen .section-heading {
+  min-height: 32px;
+  margin: 0 2px;
+}
+.parent-overview-screen .section-heading h2 { font-size: 17px; }
+.parent-overview-screen .section-heading span {
+  min-width: 26px;
+  height: 26px;
+  font-size: 12px;
+}
+.parent-overview-screen .history-filter-card {
+  margin: 0;
+  padding: 15px;
+  border-radius: 20px;
+}
+.parent-overview-screen .filter-chips { gap: 7px; }
+.parent-overview-screen .filter-chips button {
+  min-height: 34px;
+  padding: 7px 11px;
+  border-radius: 11px;
+  font-size: 12px;
+}
+.history-results-heading { margin-top: 4px; margin-bottom: 0; }
+.parent-history-list { display: grid; gap: 13px; }
+.parent-history-row {
+  position: relative;
+  min-height: 82px;
+  margin-bottom: 0;
+  padding: 14px 15px 14px 17px;
+  border-radius: 20px;
+  border-color: rgba(255,255,255,.92);
+  box-shadow: var(--shadow-sm);
+}
+.parent-history-row::before {
+  content: '';
+  position: absolute;
+  inset: 13px auto 13px 0;
+  width: 4px;
+  border-radius: 0 999px 999px 0;
+  background: var(--routine-accent, var(--teal));
+  opacity: .8;
+}
 .parent-history-row > div:nth-child(2) { min-width: 0; }
 .parent-history-row strong,
 .parent-history-row small { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.parent-history-row strong { font-size: 14px; }
+.parent-history-row small { margin-top: 4px; font-size: 11px; font-weight: 750; }
 .history-row-actions { display: flex; flex: 0 0 auto; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: 7px; min-width: max-content; }
 .history-retake-button { min-height: 34px; padding: 7px 11px; border: 0; border-radius: 12px; background: var(--routine-accent, var(--teal)); color: white; font-size: 11px; font-weight: 850; white-space: nowrap; }
 .history-retake-button:active { transform: scale(.985); filter: brightness(.97); }
 .routine-history-icon { background: color-mix(in srgb, var(--routine-accent, var(--teal)) 12%, white); color: var(--routine-accent, var(--teal)); }
 .routine-history-icon .app-icon { font-size: 22px; }
-.activity-log { display: grid; gap: 10px; margin-top: 16px; }
+.activity-log { display: grid; gap: 10px; margin-top: 0; }
 .activity-log-heading { margin: 0; }
-.activity-log-list { display: grid; gap: 9px; }
-.activity-log-row {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr);
-  align-items: center;
-  gap: 11px;
-  padding: 12px 14px;
-}
+.activity-log-list { overflow: hidden; }
+.activity-log-row { min-height: 70px; }
 .activity-log-row strong,
 .activity-log-row small { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.activity-log-row strong { color: var(--navy); font-size: 13px; }
+.activity-log-row strong { color: var(--navy); font-size: 13px; line-height: 1.25; }
 .activity-log-row small { margin-top: 3px; color: var(--muted); font-size: 11px; font-weight: 800; }
 .activity-log-icon { width: 34px; height: 34px; border-radius: 12px; }
 .activity-log-empty {
@@ -507,6 +549,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
   align-items: center;
   gap: 11px;
   padding: 14px;
+  border-radius: 20px;
 }
 .activity-log-empty h2 { margin: 0; font-size: 15px; }
 .activity-log-empty p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
@@ -515,8 +558,9 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
   grid-template-columns: 42px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
-  margin-top: 12px;
+  margin-top: 0;
   padding: 14px;
+  border-radius: 20px;
 }
 .responsible-state-card h2 { margin: 0; color: var(--navy); font-size: 16px; }
 .responsible-state-card p { margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.35; }

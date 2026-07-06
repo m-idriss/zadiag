@@ -61,11 +61,11 @@ export function ActivityLog({
         <h2 id="activity-log-title">{t('activityLogTitle')}</h2>
       </div>
       {entries.length ? (
-        <div className="activity-log-list">
+        <div className="card settings-list activity-log-list">
           {entries.map(({ event, icon, message }) => (
-            <article className="card activity-log-row" key={event.id}>
+            <article className="settings-row activity-log-row" key={event.id}>
               <span className="settings-row-icon activity-log-icon" aria-hidden="true"><AppIcon name={icon} /></span>
-              <div>
+              <div className="settings-row-copy">
                 <strong>{message}</strong>
                 <small>{formatTime(event.capturedAt ?? event.requestedAt)}</small>
               </div>
@@ -75,7 +75,7 @@ export function ActivityLog({
       ) : (
         <section className="card activity-log-empty">
           <AppIcon name="time" />
-          <div>
+          <div className="settings-row-copy">
             <h2>{t('activityLogEmptyTitle')}</h2>
             <p>{t('activityLogEmptyHint')}</p>
           </div>

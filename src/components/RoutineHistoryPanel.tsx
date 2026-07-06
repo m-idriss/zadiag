@@ -96,7 +96,7 @@ export function RoutineHistoryPanel({
               return (
                 <section className="card history-row parent-history-row" style={visual?.style} key={event.id}>
                   <div className="settings-row-icon history-icon routine-history-icon"><AppIcon name={routineIconName(visual?.icon)} /></div>
-                  <div>
+                  <div className="settings-row-copy">
                     <strong>{visual?.name ?? t('routine')}</strong>
                     <small>{formatDateTime(event.requestedAt)}{event.reason ? ` · ${event.reason}` : ''}</small>
                   </div>
