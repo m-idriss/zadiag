@@ -294,8 +294,12 @@ export function SettingsScreen({
                 <strong>{t('settingsChildInstallTitle')}</strong>
                 <small>{t(childInstallDetailKey)}</small>
               </div>
-              <span className={childInstalled ? 'status-pill status-detected' : 'status-pill status-missed'}>
-                {t(childInstallStatusKey)}
+              <span
+                className={childInstalled ? 'settings-check-state' : 'settings-check-state missing'}
+                role="img"
+                aria-label={t(childInstallStatusKey)}
+              >
+                {childInstalled ? '✓' : '×'}
               </span>
             </div>
             <div className="settings-row">
