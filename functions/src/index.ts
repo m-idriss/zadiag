@@ -88,8 +88,15 @@ const createRecoveryRecord = (familyId: string, expiresAt: Date) => ({
 });
 
 const requireFamilyRole = async (uid: string, familyId: string, role: 'parent' | 'child') => {
-  const profile = await db.collection('users').doc(uid).get();
-  if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== role) {
+  const [profile, family] = await Promise.all([
+    db.collection('users').doc(uid).get(),
+    db.collection('families').doc(familyId).get(),
+  ]);
+  const profileMatches = profile.exists
+    && profile.data()?.familyId === familyId
+    && profile.data()?.role === role;
+  const familyMatches = family.exists && family.data()?.members?.[uid] === role;
+  if (!profileMatches && !familyMatches) {
     throw new HttpsError('permission-denied', `Only the linked ${role} can perform this action.`);
   }
   return profile;
@@ -888,6 +895,12 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
     proofImagePath = await storeProofImage(familyId, checkId, imageDataUrl);
   } catch (error) {
     console.error('Unable to store proof image for review', error);
+    await checkRef.update({
+      capturedAt: FieldValue.delete(),
+      status: 'pending',
+      analysisStartedAt: FieldValue.delete(),
+    });
+    throw new HttpsError('unavailable', 'The proof image could not be stored. Please retake the photo.');
   }
   const assignment = await db.collection('families').doc(familyId).collection('routineAssignments').doc(routineId).get();
   const assignmentData = assignment.data() as Partial<RoutineAssignmentDocument> | undefined;
