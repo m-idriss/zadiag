@@ -14,7 +14,7 @@ const initialRemoteState = (): AppState => {
     locale: preferences.locale ?? browserLocale(),
     notificationsEnabled: false,
     role: preferences.role,
-    preferences: { showActivityLog: preferences.showActivityLog ?? true },
+    preferences: { showActivityLog: preferences.showActivityLog ?? false },
     family: { linked: false, childLinked: false, childName: '', linkingCode: '', parentRecoveryCode: '', consented: false },
     routineAssignments: [],
     routinesLoaded: false,

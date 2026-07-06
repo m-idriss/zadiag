@@ -78,12 +78,11 @@ describe('participant Today screen', () => {
     expect(start).toHaveBeenCalledWith(pending);
   });
 
-  it('hides the activity log when the preference is off', () => {
+  it('hides the activity log by default', () => {
     const state: AppState = {
       role: 'child',
       locale: 'en',
       notificationsEnabled: true,
-      preferences: { showActivityLog: false },
       family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: false },
       routineAssignments: [createDefaultRoutineAssignment()],
       events: [],
@@ -92,6 +91,22 @@ describe('participant Today screen', () => {
     act(() => root.render(<ChildDashboard state={state} start={() => undefined} t={(key) => translate('en', key)} />));
 
     expect(container.textContent).not.toContain('Activity log');
+  });
+
+  it('shows the activity log when the preference is on', () => {
+    const state: AppState = {
+      role: 'child',
+      locale: 'en',
+      notificationsEnabled: true,
+      preferences: { showActivityLog: true },
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: false },
+      routineAssignments: [createDefaultRoutineAssignment()],
+      events: [],
+    };
+
+    act(() => root.render(<ChildDashboard state={state} start={() => undefined} t={(key) => translate('en', key)} />));
+
+    expect(container.textContent).toContain('Activity log');
   });
 
   it('lets the participant send proof for any currently available routine', () => {
