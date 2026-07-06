@@ -985,7 +985,7 @@ export const reviewCheck = onCall({ region, cors, enforceAppCheck: true }, async
     const check = await transaction.get(checkRef);
     const checkData = check.data();
     if (!check.exists || !checkData) throw new HttpsError('not-found', 'The check could not be found.');
-    if (checkData.status !== 'uncertain' || checkData.reviewStatus !== 'pending') {
+    if (checkData.status !== 'uncertain' || ['approved', 'rejected'].includes(String(checkData.reviewStatus ?? ''))) {
       throw new HttpsError('failed-precondition', 'This check is not waiting for responsible review.');
     }
     const update = {

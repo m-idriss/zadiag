@@ -128,4 +128,52 @@ describe('ParentDashboard', () => {
 
     expect(reviewCheck).toHaveBeenCalledWith('review', 'detected');
   });
+
+  it('lets the responsible person review a legacy uncertain check without proof metadata', async () => {
+    const assignment = createDefaultRoutineAssignment();
+    const getProofImageUrl = vi.fn();
+    const reviewCheck = vi.fn().mockResolvedValue(undefined);
+    const state: AppState = {
+      role: 'parent',
+      locale: 'en',
+      notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      routineAssignments: [assignment],
+      events: [{
+        id: 'legacy-review',
+        routineId: assignment.routineId,
+        sessionId: 'one',
+        requestedAt: '2026-07-02T08:00:00.000Z',
+        expiresAt: '2026-07-02T09:00:00.000Z',
+        capturedAt: '2026-07-02T08:04:00.000Z',
+        status: 'uncertain',
+        reason: 'The proof is unclear.',
+      }],
+    };
+
+    await act(async () => {
+      root.render(
+        <ParentDashboard
+          state={state}
+          regenerateCode={vi.fn()}
+          getProofImageUrl={getProofImageUrl}
+          reviewCheck={reviewCheck}
+          t={(key) => translate('en', key)}
+        />,
+      );
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain('Checks to verify');
+    expect(container.textContent).toContain('Photo unavailable');
+    expect(getProofImageUrl).not.toHaveBeenCalled();
+    const reject = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Reject');
+
+    await act(async () => {
+      reject?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(reviewCheck).toHaveBeenCalledWith('legacy-review', 'not_detected');
+  });
 });

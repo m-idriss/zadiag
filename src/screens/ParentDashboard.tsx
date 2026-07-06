@@ -31,7 +31,7 @@ export function ParentDashboard({
   const [reviewErrorId, setReviewErrorId] = useState<string>();
   const rangedEvents = filterEventsBySummaryRange(state.events, summaryRange);
   const reviewEvents = useMemo(() => state.events
-    .filter((event) => event.status === 'uncertain' && event.reviewStatus === 'pending' && Boolean(event.proofImagePath))
+    .filter((event) => event.status === 'uncertain' && !['approved', 'rejected'].includes(event.reviewStatus ?? ''))
     .sort((a, b) => Date.parse(b.capturedAt ?? b.requestedAt) - Date.parse(a.capturedAt ?? a.requestedAt)),
   [state.events]);
   const locale = state.locale === 'fr' ? 'fr-FR' : 'en-US';
@@ -47,6 +47,7 @@ export function ParentDashboard({
   useEffect(() => {
     if (!getProofImageUrl) return;
     reviewEvents.forEach((event) => {
+      if (!event.proofImagePath) return;
       if (proofUrls[event.id] || proofErrors[event.id]) return;
       void getProofImageUrl(event.id)
         .then((url) => setProofUrls((current) => ({ ...current, [event.id]: url })))
@@ -137,7 +138,7 @@ export function ParentDashboard({
                 <div className="parent-review-image">
                   {proofUrls[event.id]
                     ? <img src={proofUrls[event.id]} alt={t('responsibleReviewImageAlt')} />
-                    : <div role="status">{proofErrors[event.id] ? t('responsibleReviewImageError') : t('loadingProofImage')}</div>}
+                    : <div role="status">{!event.proofImagePath || proofErrors[event.id] ? t('responsibleReviewImageError') : t('loadingProofImage')}</div>}
                 </div>
                 <div className="parent-review-copy">
                   <strong>{routineNameFor(event)}</strong>
