@@ -134,12 +134,10 @@ export function ParentDashboard({
 
       <AdherenceSummaryCard events={state.events} range={summaryRange} onRangeChange={setSummaryRange} t={t} />
 
-      <ActivityLog state={state} t={t} />
-
       {responsibleEmptyState ? (
         <section className="card responsible-state-card">
           <span className="settings-row-icon" aria-hidden="true"><AppIcon name={responsibleEmptyState.icon} /></span>
-          <div>
+          <div className="settings-row-copy">
             <h2>{responsibleEmptyState.title}</h2>
             <p>{responsibleEmptyState.hint}</p>
           </div>
@@ -251,6 +249,8 @@ export function ParentDashboard({
           </div>
         </section>
       ) : null}
+
+      <ActivityLog state={state} t={t} />
 
       {enlargedProofUrl ? (
         <div className="proof-lightbox" role="dialog" aria-modal="true" aria-label={t('responsibleReviewImageAlt')} onClick={() => setEnlargedProofUrl(undefined)}>
