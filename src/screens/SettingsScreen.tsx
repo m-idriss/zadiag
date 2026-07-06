@@ -160,6 +160,8 @@ export function SettingsScreen({
     : new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-US', {
       day: '2-digit',
       month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
     }).format(updatedAt);
   const updateSeverity = updateInfo.available ? updateInfo.severity : 'none';
   const updateDetail = updateInfo.available
