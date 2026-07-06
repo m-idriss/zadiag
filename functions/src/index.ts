@@ -12,7 +12,10 @@ import { getLocalDateKey, getWindowForDate, monitoringPlanSchema, shouldAutoDisp
 import { createDefaultRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, routineFromCatalog, type RoutineAssignmentDocument } from './routines.js';
 import { buildCheckNotificationPayload } from './notifications.js';
 
-initializeApp();
+const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
+  ?? (process.env.GCLOUD_PROJECT ? `${process.env.GCLOUD_PROJECT}.firebasestorage.app` : undefined);
+
+initializeApp(storageBucket ? { storageBucket } : undefined);
 const db = getFirestore();
 const bucket = getStorage().bucket();
 const region = 'europe-west1';

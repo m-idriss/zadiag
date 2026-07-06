@@ -11,6 +11,7 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
+import { getDownloadURL, ref as storageRef } from 'firebase/storage';
 import type { AppRepository } from './contracts';
 import { getFirebaseServices, type FirebaseServices } from './firebaseClient';
 import {
@@ -268,8 +269,26 @@ export class FirebaseRepository implements AppRepository {
       this.services.functions,
       'getProofImageUrl',
     );
-    const result = await getProofImageUrl({ familyId: this.state.family.id, checkId: eventId });
-    return result.data.url;
+    try {
+      const result = await getProofImageUrl({ familyId: this.state.family.id, checkId: eventId });
+      return result.data.url;
+    } catch (error) {
+      const event = this.state.events.find((item) => item.id === eventId);
+      const candidatePaths = [
+        ...(event?.proofImagePath ? [event.proofImagePath] : []),
+        `families/${this.state.family.id}/checks/${eventId}/proof.jpg`,
+        `families/${this.state.family.id}/checks/${eventId}/proof.png`,
+        `families/${this.state.family.id}/checks/${eventId}/proof.webp`,
+      ];
+      for (const candidatePath of [...new Set(candidatePaths)]) {
+        try {
+          return await getDownloadURL(storageRef(this.services.storage, candidatePath));
+        } catch {
+          // Try the next known proof image extension.
+        }
+      }
+      throw error;
+    }
   }
 
   async reviewCheck(eventId: string, decision: 'detected' | 'not_detected') {

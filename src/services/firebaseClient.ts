@@ -2,6 +2,7 @@ import { initializeApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getFunctions, type Functions } from 'firebase/functions';
+import { getStorage, type FirebaseStorage } from 'firebase/storage';
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';
 import {
   firebaseAppCheckDebugToken,
@@ -15,6 +16,7 @@ export interface FirebaseServices {
   auth: Auth;
   db: Firestore;
   functions: Functions;
+  storage: FirebaseStorage;
 }
 
 let services: FirebaseServices | undefined;
@@ -35,6 +37,7 @@ export function getFirebaseServices(): FirebaseServices {
       auth: getAuth(app),
       db: getFirestore(app),
       functions: getFunctions(app, 'europe-west1'),
+      storage: getStorage(app),
     };
   }
   return services;
