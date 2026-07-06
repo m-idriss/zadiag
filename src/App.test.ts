@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_ROUTINE_ID, type VerificationEvent } from './domain/models';
-import { appBadgeCountForState } from './App';
+import { appBadgeCountForState, resetNoticeMessageKey } from './App';
 
 const activePendingEvent = (expiresAt: string): VerificationEvent => ({
   id: 'check-1',
@@ -38,5 +38,13 @@ describe('appBadgeCountForState', () => {
       ],
       Date.parse('2026-07-06T09:00:00.000Z'),
     )).toBe(0);
+  });
+});
+
+describe('resetNoticeMessageKey', () => {
+  it('explains responsible and participant reset outcomes separately', () => {
+    expect(resetNoticeMessageKey('parent')).toBe('resetNoticeParent');
+    expect(resetNoticeMessageKey('child')).toBe('resetNoticeChild');
+    expect(resetNoticeMessageKey(undefined)).toBe('resetNoticeChild');
   });
 });

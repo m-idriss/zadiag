@@ -43,6 +43,9 @@ export const appBadgeCountForState = (
   ? events.filter((event) => event.status === 'pending' && Date.parse(event.expiresAt) > now).length
   : 0;
 
+export const resetNoticeMessageKey = (role: Role | undefined): MessageKey =>
+  role === 'parent' ? 'resetNoticeParent' : 'resetNoticeChild';
+
 export function App() {
   const repository = useMemo(createRepository, []);
   const [state, setState] = useState(repository.snapshot());
@@ -62,6 +65,7 @@ export function App() {
   const [dismissedUpdateId, setDismissedUpdateId] = useState<string>();
   const [result, setResult] = useState<VerificationEvent>();
   const [submitError, setSubmitError] = useState<string>();
+  const [resetNoticeKey, setResetNoticeKey] = useState<MessageKey>();
   const [savingRoutineId, setSavingRoutineId] = useState<string>();
   const [selectedSessionId, setSelectedSessionId] = useState<string>();
   const useLocalDemo = isLocalDemoEnvironment();
@@ -163,8 +167,10 @@ export function App() {
   };
 
   const reset = async () => {
+    const previousRole = state.role;
     await repository.reset();
     sync();
+    setResetNoticeKey(resetNoticeMessageKey(previousRole));
     setRoute('welcome');
     setTab('home');
   };
@@ -377,6 +383,13 @@ export function App() {
           onAction={() => { void applySnackbarUpdate(); }}
           onClose={() => setDismissedUpdateId(updateSnackbarId)}
           busy={updateActionBusy}
+        />
+      ) : null}
+      {resetNoticeKey ? (
+        <Snackbar
+          message={t(resetNoticeKey)}
+          closeLabel={t('close')}
+          onClose={() => setResetNoticeKey(undefined)}
         />
       ) : null}
     </IonApp>
