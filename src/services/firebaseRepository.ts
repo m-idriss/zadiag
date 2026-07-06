@@ -47,11 +47,12 @@ interface FamilyDocument {
 }
 
 const initialState = (): AppState => {
-  const preferences = JSON.parse(localStorage.getItem(PREFERENCES_KEY) ?? '{}') as { locale?: Locale; role?: Role };
+  const preferences = JSON.parse(localStorage.getItem(PREFERENCES_KEY) ?? '{}') as { locale?: Locale; role?: Role; showActivityLog?: boolean };
   return {
     locale: preferences.locale ?? browserLocale(),
     notificationsEnabled: false,
     role: preferences.role,
+    preferences: { showActivityLog: preferences.showActivityLog ?? true },
     family: { linked: false, childLinked: false, childName: '', linkingCode: '', parentRecoveryCode: '', consented: false },
     routineAssignments: [],
     routinesLoaded: false,
@@ -150,6 +151,12 @@ export class FirebaseRepository implements AppRepository {
     this.persistPreferences();
     this.emit();
     await this.syncPushSubscriptionLocale();
+  }
+
+  async setShowActivityLog(show: boolean) {
+    this.state.preferences = { ...this.state.preferences, showActivityLog: show };
+    this.persistPreferences();
+    this.emit();
   }
 
   async linkParent(childName: string) {
@@ -408,7 +415,11 @@ export class FirebaseRepository implements AppRepository {
   }
 
   private persistPreferences() {
-    localStorage.setItem(PREFERENCES_KEY, JSON.stringify({ locale: this.state.locale, role: this.state.role }));
+    localStorage.setItem(PREFERENCES_KEY, JSON.stringify({
+      locale: this.state.locale,
+      role: this.state.role,
+      showActivityLog: this.state.preferences?.showActivityLog ?? true,
+    }));
   }
 
   private async syncPushSubscriptionLocale() {

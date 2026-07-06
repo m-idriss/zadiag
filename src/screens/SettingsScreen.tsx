@@ -4,6 +4,7 @@ import {
   informationCircleOutline,
   languageOutline,
   linkOutline,
+  listOutline,
   mailOutline,
   notificationsOutline,
   phonePortraitOutline,
@@ -28,6 +29,8 @@ export function SettingsScreen({
   role,
   enableNotifications,
   notificationsEnabled,
+  showActivityLog,
+  setShowActivityLog,
   childInstalled,
   familyId,
   events,
@@ -46,6 +49,8 @@ export function SettingsScreen({
   role: Role;
   enableNotifications: () => Promise<void>;
   notificationsEnabled: boolean;
+  showActivityLog: boolean;
+  setShowActivityLog: (show: boolean) => Promise<void>;
   childInstalled: boolean;
   familyId?: string;
   events: VerificationEvent[];
@@ -237,6 +242,22 @@ export function SettingsScreen({
               <button type="button" className={locale === 'en' ? 'active' : ''} aria-pressed={locale === 'en'} onClick={() => { void setLocale('en'); }}>EN</button>
               <button type="button" className={locale === 'fr' ? 'active' : ''} aria-pressed={locale === 'fr'} onClick={() => { void setLocale('fr'); }}>FR</button>
             </div>
+          </div>
+          <div className="settings-row">
+            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={listOutline} /></span>
+            <div className="settings-row-copy">
+              <strong>{t('settingsActivityLogTitle')}</strong>
+              <small>{t(showActivityLog ? 'settingsActivityLogDetailVisible' : 'settingsActivityLogDetailHidden')}</small>
+            </div>
+            <button
+              type="button"
+              className={`settings-switch ${showActivityLog ? 'active' : ''}`}
+              aria-pressed={showActivityLog}
+              aria-label={t('settingsActivityLogTitle')}
+              onClick={() => { void setShowActivityLog(!showActivityLog); }}
+            >
+              <span aria-hidden="true" />
+            </button>
           </div>
         </div>
       </section>

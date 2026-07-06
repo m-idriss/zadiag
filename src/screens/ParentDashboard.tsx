@@ -26,6 +26,7 @@ export function ParentDashboard({
   const [regenerating, setRegenerating] = useState(false);
   const [codeError, setCodeError] = useState(false);
   const [summaryRange, setSummaryRange] = useState<SummaryRange>('day');
+  const showActivityLog = state.preferences?.showActivityLog ?? true;
   const [proofUrls, setProofUrls] = useState<Record<string, string>>({});
   const [proofErrors, setProofErrors] = useState<Record<string, boolean>>({});
   const [reviewingId, setReviewingId] = useState<string>();
@@ -264,7 +265,7 @@ export function ParentDashboard({
         </section>
       ) : null}
 
-      <ActivityLog state={state} t={t} />
+      {showActivityLog ? <ActivityLog state={state} t={t} /> : null}
 
       {enlargedProofUrl ? (
         <div className="proof-lightbox" role="dialog" aria-modal="true" aria-label={t('responsibleReviewImageAlt')} onClick={() => setEnlargedProofUrl(undefined)}>

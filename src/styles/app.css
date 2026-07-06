@@ -1070,6 +1070,10 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .settings-locale-toggle { display: flex; gap: 3px; padding: 3px; border: 1px solid var(--line); border-radius: 12px; background: #f1f3f2; }
 .settings-locale-toggle button { min-width: 38px; min-height: 36px; border: 0; background: transparent; border-radius: 9px; padding: 5px 8px; font-size: 11px; font-weight: 800; color: var(--muted); }
 .settings-locale-toggle button.active { background: var(--navy); color: #fff; }
+.settings-switch { width: 52px; height: 32px; display: inline-flex; align-items: center; padding: 3px; border: 1px solid var(--line); border-radius: 999px; background: #edf1f2; box-shadow: inset 0 1px rgba(255,255,255,.72); transition: background .18s ease, border-color .18s ease; }
+.settings-switch span { width: 24px; height: 24px; display: block; border-radius: 50%; background: white; box-shadow: 0 4px 10px rgba(16,42,67,.16); transform: translateX(0); transition: transform .18s cubic-bezier(.22,1,.36,1); }
+.settings-switch.active { border-color: color-mix(in srgb, var(--teal) 30%, white); background: var(--teal); }
+.settings-switch.active span { transform: translateX(20px); }
 .settings-pull-indicator { max-height: 0; overflow: hidden; display: grid; gap: 6px; transition: max-height .18s ease, margin .18s ease; margin: 0; }
 .settings-pull-indicator.visible { max-height: 48px; margin-top: -8px; }
 .settings-pull-indicator small { color: var(--muted); font-size: 11px; font-weight: 800; }

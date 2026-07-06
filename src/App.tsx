@@ -341,6 +341,8 @@ export function App() {
         ? <SettingsScreen
             enableNotifications={enableNotifications}
             notificationsEnabled={state.notificationsEnabled}
+            showActivityLog={state.preferences?.showActivityLog ?? true}
+            setShowActivityLog={async (show) => { await repository.setShowActivityLog(show); sync(); }}
             childInstalled={state.family.childLinked}
             familyId={state.family.id}
             events={state.events}

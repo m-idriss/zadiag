@@ -68,6 +68,22 @@ describe('ParentDashboard', () => {
     expect(openRoutines).toHaveBeenCalled();
   });
 
+  it('hides the activity log when the preference is off', () => {
+    const state: AppState = {
+      role: 'parent',
+      locale: 'en',
+      notificationsEnabled: true,
+      preferences: { showActivityLog: false },
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      routineAssignments: [createDefaultRoutineAssignment()],
+      events: [],
+    };
+
+    act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
+
+    expect(container.textContent).not.toContain('Activity log');
+  });
+
   it('hides the participant linking code once the participant is linked', () => {
     const state: AppState = {
       role: 'parent',

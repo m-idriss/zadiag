@@ -131,10 +131,15 @@ export interface FamilyState {
   consented: boolean;
 }
 
+export interface AppPreferences {
+  showActivityLog: boolean;
+}
+
 export interface AppState {
   role?: Role;
   locale: Locale;
   notificationsEnabled: boolean;
+  preferences?: AppPreferences;
   family: FamilyState;
   routineAssignments: RoutineAssignment[];
   routinesLoaded?: boolean;

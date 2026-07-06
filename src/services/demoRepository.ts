@@ -160,6 +160,7 @@ function initialState(): AppState {
   return {
     locale: browserLocale(),
     notificationsEnabled: false,
+    preferences: { showActivityLog: true },
     family: {
       linked: false,
       childLinked: false,
@@ -219,6 +220,11 @@ export class DemoRepository implements AppRepository {
 
   async setLocale(locale: AppState['locale']) {
     this.state.locale = locale;
+    this.persist();
+  }
+
+  async setShowActivityLog(show: boolean) {
+    this.state.preferences = { ...this.state.preferences, showActivityLog: show };
     this.persist();
   }
 
@@ -444,6 +450,7 @@ export class DemoRepository implements AppRepository {
       : [{ ...createDefaultRoutineAssignment(), ...(legacyPlan ? { plan: legacyPlan } : {}) }];
     return {
       ...state,
+      preferences: { showActivityLog: state.preferences?.showActivityLog ?? true },
       routineAssignments,
       events: state.events.map((event) => ({ ...event, routineId: event.routineId ?? DEFAULT_ROUTINE_ID })),
     };

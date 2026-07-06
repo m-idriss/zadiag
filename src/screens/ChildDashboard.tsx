@@ -36,6 +36,7 @@ export function ChildDashboard({
   t: (key: MessageKey) => string;
 }) {
   const [summaryRange, setSummaryRange] = useState<SummaryRange>('day');
+  const showActivityLog = state.preferences?.showActivityLog ?? true;
   const now = Date.now();
   const participantInitial = state.family.childName.trim().charAt(0).toUpperCase() || '?';
   const today = state.events.filter((event) => isToday(event.requestedAt));
@@ -196,7 +197,7 @@ export function ChildDashboard({
         <div className="avatar" aria-hidden="true">{participantInitial}</div>
       </header>
       {pendingSection}
-      <ActivityLog state={state} t={t} />
+      {showActivityLog ? <ActivityLog state={state} t={t} /> : null}
       {upcomingSection}
       {completedSection}
       {historySection}

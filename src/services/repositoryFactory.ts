@@ -9,11 +9,12 @@ const PREFERENCES_KEY = 'zadiag.preferences.v1';
 const browserLocale = (): Locale => navigator.language?.startsWith('fr') ? 'fr' : 'en';
 
 const initialRemoteState = (): AppState => {
-  const preferences = JSON.parse(localStorage.getItem(PREFERENCES_KEY) ?? '{}') as { locale?: Locale; role?: Role };
+  const preferences = JSON.parse(localStorage.getItem(PREFERENCES_KEY) ?? '{}') as { locale?: Locale; role?: Role; showActivityLog?: boolean };
   return {
     locale: preferences.locale ?? browserLocale(),
     notificationsEnabled: false,
     role: preferences.role,
+    preferences: { showActivityLog: preferences.showActivityLog ?? true },
     family: { linked: false, childLinked: false, childName: '', linkingCode: '', parentRecoveryCode: '', consented: false },
     routineAssignments: [],
     routinesLoaded: false,
@@ -50,6 +51,10 @@ class LazyFirebaseRepository implements AppRepository {
 
   async setLocale(locale: Locale) {
     return (await this.load()).setLocale(locale);
+  }
+
+  async setShowActivityLog(show: boolean) {
+    return (await this.load()).setShowActivityLog(show);
   }
 
   async linkParent(childName: string) {
