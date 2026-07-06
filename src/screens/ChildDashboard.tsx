@@ -6,6 +6,7 @@ import { StatusPill } from '../components/StatusPill';
 import { AppIcon, routineIconName } from '../components/Icon';
 import { RoutineHistoryPanel } from '../components/RoutineHistoryPanel';
 import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } from '../components/AdherenceSummaryCard';
+import { ActivityLog } from '../components/ActivityLog';
 import { presentRoutine } from '../domain/routinePresentation';
 import { dayPeriodLabelKey, plannedWindowLabel } from '../domain/taskTimeLabel';
 import { canRetakeCapture } from '../domain/adherence';
@@ -195,6 +196,7 @@ export function ChildDashboard({
         <div className="avatar" aria-hidden="true">{participantInitial}</div>
       </header>
       {pendingSection}
+      <ActivityLog state={state} t={t} />
       {upcomingSection}
       {completedSection}
       {historySection}
