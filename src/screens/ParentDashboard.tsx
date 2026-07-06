@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent, type TouchEvent } from 'react';
 import type { AppState, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { AppIcon } from '../components/Icon';
@@ -30,6 +30,7 @@ export function ParentDashboard({
   const [reviewingId, setReviewingId] = useState<string>();
   const [reviewErrorId, setReviewErrorId] = useState<string>();
   const [enlargedProofUrl, setEnlargedProofUrl] = useState<string>();
+  const swipeStartRef = useRef<{ eventId: string; x: number; y: number } | undefined>(undefined);
   const rangedEvents = filterEventsBySummaryRange(state.events, summaryRange);
   const reviewEvents = useMemo(() => state.events
     .filter((event) => event.status === 'uncertain' && !['approved', 'rejected'].includes(event.reviewStatus ?? ''))
@@ -87,6 +88,31 @@ export function ParentDashboard({
       setReviewingId(undefined);
     }
   };
+  const beginSwipe = (eventId: string, x: number, y: number, target: EventTarget) => {
+    if (reviewingId === eventId || (target as HTMLElement).closest('button')) return;
+    swipeStartRef.current = { eventId, x, y };
+  };
+  const completeSwipe = (eventId: string, x: number, y: number) => {
+    const swipeStart = swipeStartRef.current;
+    if (!swipeStart || swipeStart.eventId !== eventId || reviewingId === eventId) return;
+    swipeStartRef.current = undefined;
+    const deltaX = x - swipeStart.x;
+    const deltaY = y - swipeStart.y;
+    if (Math.abs(deltaX) < 72 || Math.abs(deltaX) < Math.abs(deltaY) * 1.35) return;
+    void decide(eventId, deltaX > 0 ? 'detected' : 'not_detected');
+  };
+  const handleTouchStart = (event: TouchEvent<HTMLElement>, eventId: string) => {
+    const touch = event.changedTouches[0];
+    if (!touch) return;
+    beginSwipe(eventId, touch.clientX, touch.clientY, event.target);
+  };
+  const handleTouchEnd = (event: TouchEvent<HTMLElement>, eventId: string) => {
+    const touch = event.changedTouches[0];
+    if (!touch) return;
+    completeSwipe(eventId, touch.clientX, touch.clientY);
+  };
+  const handleMouseDown = (event: MouseEvent<HTMLElement>, eventId: string) => beginSwipe(eventId, event.clientX, event.clientY, event.target);
+  const handleMouseUp = (event: MouseEvent<HTMLElement>, eventId: string) => completeSwipe(eventId, event.clientX, event.clientY);
 
   return (
     <div className="content-screen parent-overview-screen">
@@ -144,7 +170,16 @@ export function ParentDashboard({
                 ? <img src={proofUrls[event.id]} alt={t('responsibleReviewImageAlt')} />
                 : <div role="status">{proofErrors[event.id] ? t('responsibleReviewImageError') : t('loadingProofImage')}</div>;
               return (
-                <article className="card parent-review-card" key={event.id}>
+                <article
+                  className="card parent-review-card"
+                  key={event.id}
+                  onMouseDown={(mouseEvent) => handleMouseDown(mouseEvent, event.id)}
+                  onMouseLeave={() => { swipeStartRef.current = undefined; }}
+                  onMouseUp={(mouseEvent) => handleMouseUp(mouseEvent, event.id)}
+                  onTouchCancel={() => { swipeStartRef.current = undefined; }}
+                  onTouchEnd={(touchEvent) => handleTouchEnd(touchEvent, event.id)}
+                  onTouchStart={(touchEvent) => handleTouchStart(touchEvent, event.id)}
+                >
                   <div className="parent-review-main">
                     {proofUrl ? (
                       <button

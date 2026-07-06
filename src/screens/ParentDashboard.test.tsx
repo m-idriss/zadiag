@@ -175,4 +175,60 @@ describe('ParentDashboard', () => {
 
     expect(reviewCheck).toHaveBeenCalledWith('legacy-review', 'not_detected');
   });
+
+  it('reviews a proof with a horizontal swipe on the compact block', async () => {
+    const assignment = createDefaultRoutineAssignment();
+    const reviewCheck = vi.fn().mockResolvedValue(undefined);
+    const state: AppState = {
+      role: 'parent',
+      locale: 'en',
+      notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      routineAssignments: [assignment],
+      events: [
+        {
+          id: 'swipe-approve',
+          routineId: assignment.routineId,
+          sessionId: 'one',
+          requestedAt: '2026-07-02T08:00:00.000Z',
+          expiresAt: '2026-07-02T09:00:00.000Z',
+          capturedAt: '2026-07-02T08:04:00.000Z',
+          status: 'uncertain',
+          reviewStatus: 'pending',
+        },
+        {
+          id: 'swipe-reject',
+          routineId: assignment.routineId,
+          sessionId: 'two',
+          requestedAt: '2026-07-02T07:00:00.000Z',
+          expiresAt: '2026-07-02T08:00:00.000Z',
+          capturedAt: '2026-07-02T07:04:00.000Z',
+          status: 'uncertain',
+          reviewStatus: 'pending',
+        },
+      ],
+    };
+    act(() => {
+      root.render(
+        <ParentDashboard
+          state={state}
+          regenerateCode={vi.fn()}
+          reviewCheck={reviewCheck}
+          t={(key) => translate('en', key)}
+        />,
+      );
+    });
+
+    const cards = Array.from(container.querySelectorAll<HTMLElement>('.parent-review-card'));
+    await act(async () => {
+      cards[0].dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 20, clientY: 24 }));
+      cards[0].dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 112, clientY: 28 }));
+      cards[1].dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 112, clientY: 28 }));
+      cards[1].dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 20, clientY: 24 }));
+      await Promise.resolve();
+    });
+
+    expect(reviewCheck).toHaveBeenCalledWith('swipe-approve', 'detected');
+    expect(reviewCheck).toHaveBeenCalledWith('swipe-reject', 'not_detected');
+  });
 });
