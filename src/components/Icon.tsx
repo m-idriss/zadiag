@@ -7,6 +7,7 @@ import {
   addCircleOutline,
   calendarOutline,
   homeOutline,
+  linkOutline,
   listOutline,
   medicalOutline,
   notificationsOutline,
@@ -27,6 +28,7 @@ export type AppIconName =
   | 'add'
   | 'calendar'
   | 'home'
+  | 'link'
   | 'medical'
   | 'notifications'
   | 'routines'
@@ -49,6 +51,7 @@ const icons: Record<AppIconName, string> = {
   add: addCircleOutline,
   calendar: calendarOutline,
   home: homeOutline,
+  link: linkOutline,
   medical: medicalOutline,
   notifications: notificationsOutline,
   routines: listOutline,

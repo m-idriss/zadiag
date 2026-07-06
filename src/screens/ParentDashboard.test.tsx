@@ -37,6 +37,7 @@ describe('ParentDashboard', () => {
     act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
 
     expect(container.textContent).toContain('Last 7 days');
+    expect(container.textContent).toContain('Participant phone not linked');
     expect(container.textContent).toContain('Participant linking code');
     expect(container.textContent).toContain('Recent history');
     expect(container.textContent).toContain('StatusAll');
@@ -50,7 +51,7 @@ describe('ParentDashboard', () => {
       role: 'parent',
       locale: 'en',
       notificationsEnabled: true,
-      family: { linked: true, childLinked: false, childName: 'Maya', linkingCode: 'ZD-123456', parentRecoveryCode: '', consented: true },
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
       routineAssignments: [],
       events: [],
     };
@@ -58,6 +59,7 @@ describe('ParentDashboard', () => {
     act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} onCreateRoutine={openRoutines} t={(key) => translate('en', key)} />));
 
     expect(container.textContent).toContain('Create the first routine');
+    expect(container.textContent).toContain('No routine assigned');
     expect(container.textContent).toContain('No history yet');
     expect(container.textContent).not.toContain('StatusAll');
     act(() => Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Choose a routine')?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
@@ -78,6 +80,42 @@ describe('ParentDashboard', () => {
 
     expect(container.textContent).not.toContain('Participant linking code');
     expect(container.textContent).not.toContain('ZD-123456');
+  });
+
+  it('distinguishes no requested check from an active proof waiting on the participant', () => {
+    const assignment = createDefaultRoutineAssignment();
+    const baseState: AppState = {
+      role: 'parent',
+      locale: 'en',
+      notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      routineAssignments: [assignment],
+      events: [],
+    };
+
+    act(() => root.render(<ParentDashboard state={baseState} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
+
+    expect(container.textContent).toContain('No check requested yet');
+
+    act(() => root.render(
+      <ParentDashboard
+        state={{
+          ...baseState,
+          events: [{
+            id: 'pending',
+            routineId: assignment.routineId,
+            sessionId: 'one',
+            requestedAt: new Date().toISOString(),
+            expiresAt: new Date(Date.now() + 20 * 60_000).toISOString(),
+            status: 'pending',
+          }],
+        }}
+        regenerateCode={vi.fn()}
+        t={(key) => translate('en', key)}
+      />,
+    ));
+
+    expect(container.textContent).toContain('Waiting for participant proof');
   });
 
   it('lets the responsible person review an uncertain proof', async () => {
