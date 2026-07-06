@@ -435,7 +435,6 @@ export const joinFamily = onCall({ region, cors, enforceAppCheck: true }, async 
 
   const familyId = await db.runTransaction(async (transaction) => {
     const [link, existingUser] = await Promise.all([transaction.get(linkRef), transaction.get(userRef)]);
-    if (existingUser.exists) throw new HttpsError('already-exists', 'This account already belongs to a family.');
     if (!link.exists) throw new HttpsError('not-found', 'The linking code is invalid.');
     const data = link.data();
     if (!data) throw new HttpsError('not-found', 'The linking code is invalid.');
@@ -443,9 +442,24 @@ export const joinFamily = onCall({ region, cors, enforceAppCheck: true }, async 
       throw new HttpsError('failed-precondition', 'The linking code has expired or was already used.');
     }
     const targetFamilyId = String(data.familyId);
+    const existingUserData = existingUser.data();
+    const isSameParticipant = existingUser.exists
+      && existingUserData?.familyId === targetFamilyId
+      && existingUserData?.role === 'child';
+    if (existingUser.exists && !isSameParticipant) {
+      throw new HttpsError('already-exists', 'This account already belongs to a family.');
+    }
     const familyRef = db.collection('families').doc(targetFamilyId);
     transaction.update(familyRef, { [`members.${uid}`]: 'child', updatedAt: FieldValue.serverTimestamp() });
-    transaction.create(userRef, { familyId: targetFamilyId, role: 'child', createdAt: new Date().toISOString() });
+    if (existingUser.exists) {
+      transaction.set(userRef, {
+        familyId: targetFamilyId,
+        role: 'child',
+        relinkedAt: new Date().toISOString(),
+      }, { merge: true });
+    } else {
+      transaction.create(userRef, { familyId: targetFamilyId, role: 'child', createdAt: new Date().toISOString() });
+    }
     transaction.update(linkRef, { consumedAt: new Date().toISOString(), consumedBy: uid });
     return targetFamilyId;
   });
