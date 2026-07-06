@@ -505,30 +505,20 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
   font-size: 12px;
 }
 .history-results-heading { margin-top: 4px; margin-bottom: 0; }
-.parent-history-list { display: grid; gap: 13px; }
+.parent-history-list { display: grid; gap: 10px; }
 .parent-history-row {
-  position: relative;
-  min-height: 82px;
+  min-height: 76px;
   margin-bottom: 0;
-  padding: 14px 15px 14px 17px;
-  border-radius: 20px;
+  padding: 13px 14px;
+  border-radius: 22px;
   border-color: rgba(255,255,255,.92);
   box-shadow: var(--shadow-sm);
-}
-.parent-history-row::before {
-  content: '';
-  position: absolute;
-  inset: 13px auto 13px 0;
-  width: 4px;
-  border-radius: 0 999px 999px 0;
-  background: var(--routine-accent, var(--teal));
-  opacity: .8;
 }
 .parent-history-row > div:nth-child(2) { min-width: 0; }
 .parent-history-row strong,
 .parent-history-row small { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.parent-history-row strong { font-size: 14px; }
-.parent-history-row small { margin-top: 4px; font-size: 11px; font-weight: 750; }
+.parent-history-row strong { font-size: 14px; line-height: 1.25; }
+.parent-history-row small { margin-top: 4px; font-size: 11px; font-weight: 750; line-height: 1.35; }
 .history-row-actions { display: flex; flex: 0 0 auto; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: 7px; min-width: max-content; }
 .history-retake-button { min-height: 34px; padding: 7px 11px; border: 0; border-radius: 12px; background: var(--routine-accent, var(--teal)); color: white; font-size: 11px; font-weight: 850; white-space: nowrap; }
 .history-retake-button:active { transform: scale(.985); filter: brightness(.97); }
