@@ -1067,20 +1067,6 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .settings-row-copy strong { color: var(--navy); font-size: 15px; line-height: 1.2; }
 .settings-row-copy small { color: var(--muted); font-size: 12px; line-height: 1.35; overflow-wrap: anywhere; }
 .settings-row-control { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-.settings-check-state {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  color: var(--teal);
-  font-size: 24px;
-  font-weight: 950;
-  line-height: 1;
-}
-.settings-check-state.missing {
-  color: var(--coral);
-  font-size: 28px;
-}
 .settings-locale-toggle { display: flex; gap: 3px; padding: 3px; border: 1px solid var(--line); border-radius: 12px; background: #f1f3f2; }
 .settings-locale-toggle button { min-width: 38px; min-height: 36px; border: 0; background: transparent; border-radius: 9px; padding: 5px 8px; font-size: 11px; font-weight: 800; color: var(--muted); }
 .settings-locale-toggle button.active { background: var(--navy); color: #fff; }

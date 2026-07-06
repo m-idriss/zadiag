@@ -3,7 +3,6 @@ import { IonButton, IonIcon } from '@ionic/react';
 import {
   informationCircleOutline,
   languageOutline,
-  linkOutline,
   listOutline,
   mailOutline,
   notificationsOutline,
@@ -131,12 +130,6 @@ export function SettingsScreen({
   const notificationDetailKey = notificationsEnabled
     ? 'settingsNotificationsDetailEnabled'
     : 'settingsNotificationsDetailDisabled';
-  const childInstallStatusKey = childInstalled
-    ? 'settingsChildInstallStatusLinked'
-    : 'settingsChildInstallStatusPending';
-  const childInstallDetailKey = childInstalled
-    ? 'settingsChildInstallDetailLinked'
-    : 'settingsChildInstallDetailPending';
   const languageDetailKey = locale === 'fr'
     ? 'settingsLanguageDetailFr'
     : 'settingsLanguageDetailEn';
@@ -282,47 +275,36 @@ export function SettingsScreen({
               </IonButton>
             </div>
           </div>
+          {role === 'parent' ? <div className="settings-row">
+            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={notificationsOutline} /></span>
+            <div className="settings-row-copy">
+              <strong>{t('settingsReminderRepeatTitle')}</strong>
+              <small>{reminderRepeatLabel}</small>
+            </div>
+            <div className="settings-locale-toggle settings-choice-toggle" role="group" aria-label={t('settingsReminderRepeatTitle')}>
+              {[0, 20, 30].map((minutes) => (
+                <button
+                  type="button"
+                  className={preferences.reminderRepeatMinutes === minutes ? 'active' : ''}
+                  aria-pressed={preferences.reminderRepeatMinutes === minutes}
+                  onClick={() => { void setPreferences({ reminderRepeatMinutes: minutes }); }}
+                  key={minutes}
+                >
+                  {minutes === 0 ? t('off') : `${minutes}m`}
+                </button>
+              ))}
+            </div>
+          </div> : null}
         </div>
       </section>
       <section className="settings-section" aria-labelledby="settings-install-heading">
         <h2 id="settings-install-heading">{t('settingsInstallSection')}</h2>
         {role === 'parent' ? (
-          <div className="card settings-list">
-            <div className="settings-row">
-              <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={linkOutline} /></span>
-              <div className="settings-row-copy">
-                <strong>{t('settingsChildInstallTitle')}</strong>
-                <small>{t(childInstallDetailKey)}</small>
-              </div>
-              <span
-                className={childInstalled ? 'settings-check-state' : 'settings-check-state missing'}
-                role="img"
-                aria-label={t(childInstallStatusKey)}
-              >
-                {childInstalled ? '✓' : '×'}
-              </span>
-            </div>
-            <div className="settings-row">
-              <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={notificationsOutline} /></span>
-              <div className="settings-row-copy">
-                <strong>{t('settingsReminderRepeatTitle')}</strong>
-                <small>{reminderRepeatLabel}</small>
-              </div>
-              <div className="settings-locale-toggle settings-choice-toggle" role="group" aria-label={t('settingsReminderRepeatTitle')}>
-                {[0, 20, 30].map((minutes) => (
-                  <button
-                    type="button"
-                    className={preferences.reminderRepeatMinutes === minutes ? 'active' : ''}
-                    aria-pressed={preferences.reminderRepeatMinutes === minutes}
-                    onClick={() => { void setPreferences({ reminderRepeatMinutes: minutes }); }}
-                    key={minutes}
-                  >
-                    {minutes === 0 ? t('off') : `${minutes}m`}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+          <section className="card privacy-card settings-device-card">
+            <ul>
+              <li className={childInstalled ? undefined : 'settings-device-missing'}>{t('settingsChildInstallTitle')}</li>
+            </ul>
+          </section>
         ) : (
           <section className="card privacy-card settings-device-card">
             <h2>{t('installTitle')}</h2>
