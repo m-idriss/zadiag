@@ -307,7 +307,6 @@ export function SettingsScreen({
           </section>
         ) : (
           <section className="card privacy-card settings-device-card">
-            <h2>{t('installTitle')}</h2>
             <ul>
               <li>{t('settingsInstallDetail')}</li>
               <li className={notificationsEnabled ? undefined : 'settings-device-missing'}>{t(notificationDetailKey)}</li>
@@ -318,7 +317,6 @@ export function SettingsScreen({
       <section className="settings-section settings-account-section" aria-labelledby="settings-account-heading">
         <h2 id="settings-account-heading">{t('settingsAccountSection')}</h2>
       <section className="card privacy-card">
-        <h2>{t('privacyDefaults')}</h2>
         <ul><li>{t('noFaceRecognition')}</li><li>{t('noModelTraining')}</li><li>{t('noPhotoUpload')}</li><li>{t('immediateDeletion')}</li></ul>
       </section>
       {role === 'parent' ? (
