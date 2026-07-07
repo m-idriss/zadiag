@@ -264,6 +264,11 @@ export function SettingsScreen({
           </ListRow>
         </div>
       </section>
+      {contactMailError ? <small className="settings-action-error">{t('settingsContactError')}</small> : null}
+      <IonButton className="settings-contact-button" expand="block" onClick={contactSupport}>
+        <IonIcon slot="start" icon={mailOutline} />
+        {t('settingsContactButton')}
+      </IonButton>
       <section className="settings-section" aria-labelledby="settings-install-heading">
         <h2 id="settings-install-heading">{t('settingsInstallSection')}</h2>
         {role === 'parent' ? (
@@ -320,11 +325,6 @@ export function SettingsScreen({
         />
       ) : null}
       <Disclaimer t={t} />
-      {contactMailError ? <small className="settings-action-error">{t('settingsContactError')}</small> : null}
-      <IonButton className="settings-contact-button" expand="block" onClick={contactSupport}>
-        <IonIcon slot="start" icon={mailOutline} />
-        {t('settingsContactButton')}
-      </IonButton>
       <IonButton className="settings-reset-button" expand="block" onClick={confirmReset}>
         <IonIcon slot="start" icon={trashOutline} />
         {t('resetDemo')}
