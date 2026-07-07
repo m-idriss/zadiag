@@ -5,6 +5,7 @@ import { presentRoutine } from '../domain/routinePresentation';
 import { AppIcon, routineIconName } from './Icon';
 import { StatusPill } from './StatusPill';
 import { canRetakeCapture, withResolvedEventStatuses } from '../domain/adherence';
+import { EmptyState, ListRow } from './ui';
 
 type StatusFilter = VerificationStatus | 'all';
 type RoutineFilter = string | 'all';
@@ -95,30 +96,30 @@ export function RoutineHistoryPanel({
               const visual = presentationFor(event);
               const canRetake = Boolean(onRetake) && canRetakeCapture(event, retryEvents ?? events, new Date());
               return (
-                <section className="card history-row parent-history-row" style={visual?.style} key={event.id}>
-                  <div className="settings-row-icon history-icon routine-history-icon"><AppIcon name={routineIconName(visual?.icon)} /></div>
-                  <div className="settings-row-copy">
-                    <strong>{visual?.name ?? t('routine')}</strong>
-                    <small>{formatDateTime(event.requestedAt)}{event.reason ? ` · ${event.reason}` : ''}</small>
-                  </div>
-                  <div className="history-row-actions">
-                    <StatusPill status={event.status} t={t} />
-                    {canRetake ? <button type="button" className="history-retake-button" onClick={() => onRetake?.(event)}>{t('retakeShort')}</button> : null}
-                  </div>
-                </section>
+                <ListRow
+                  as="section"
+                  className="card history-row parent-history-row"
+                  variant="bare"
+                  icon={<AppIcon name={routineIconName(visual?.icon)} />}
+                  iconClassName="history-icon routine-history-icon"
+                  title={visual?.name ?? t('routine')}
+                  detail={`${formatDateTime(event.requestedAt)}${event.reason ? ` · ${event.reason}` : ''}`}
+                  style={visual?.style}
+                  trailing={(
+                    <div className="history-row-actions">
+                      <StatusPill status={event.status} t={t} />
+                      {canRetake ? <button type="button" className="history-retake-button" onClick={() => onRetake?.(event)}>{t('retakeShort')}</button> : null}
+                    </div>
+                  )}
+                  key={event.id}
+                />
               );
             })}
             {!filtered.length && <p className="empty-state">{t('noHistoryMatches')}</p>}
           </div>
         </>
       ) : (
-        <section className="card parent-empty-history-card">
-          <AppIcon name="time" />
-          <div>
-            <h2>{t('noHistoryYet')}</h2>
-            <p>{t('noHistoryYetHint')}</p>
-          </div>
-        </section>
+        <EmptyState icon="time" title={t('noHistoryYet')} detail={t('noHistoryYetHint')} />
       )}
     </section>
   );

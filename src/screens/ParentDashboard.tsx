@@ -8,6 +8,7 @@ import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } f
 import { presentRoutine } from '../domain/routinePresentation';
 import { ActivityLog } from '../components/ActivityLog';
 import { withResolvedEventStatuses } from '../domain/adherence';
+import { EmptyState } from '../components/ui';
 
 export function ParentDashboard({
   state,
@@ -147,13 +148,12 @@ export function ParentDashboard({
 
           <div className="today-task-list">
             {responsibleEmptyState ? (
-              <section className="card responsible-state-card">
-                <span className="settings-row-icon today-task-icon" aria-hidden="true"><AppIcon name={responsibleEmptyState.icon} /></span>
-                <div className="settings-row-copy">
-                  <h2>{responsibleEmptyState.title}</h2>
-                  <p>{responsibleEmptyState.hint}</p>
-                </div>
-              </section>
+              <EmptyState
+                className="responsible-state-card"
+                icon={responsibleEmptyState.icon}
+                title={responsibleEmptyState.title}
+                detail={responsibleEmptyState.hint}
+              />
             ) : null}
 
             {!state.family.childLinked && state.family.linkingCode ? (

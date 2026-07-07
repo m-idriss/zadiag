@@ -393,9 +393,11 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .filter-chips .filter-status-not_detected.active { background: var(--coral); color: white; }
 .parent-create-routine-card { display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: center; gap: 12px; margin-top: 12px; padding: var(--row-padding-y) var(--row-padding-x); }
 .parent-create-routine-icon,
-.parent-empty-history-card > .app-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; background: #e9f5f2; color: var(--teal); box-shadow: inset 0 1px rgba(255,255,255,.8); }
+.parent-empty-history-card > .app-icon,
+.parent-empty-history-card > .settings-row-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; background: #e9f5f2; color: var(--teal); box-shadow: inset 0 1px rgba(255,255,255,.8); }
 .parent-create-routine-icon .app-icon,
-.parent-empty-history-card > .app-icon { font-size: 24px; }
+.parent-empty-history-card > .app-icon,
+.parent-empty-history-card > .settings-row-icon { font-size: 24px; }
 .parent-create-routine-copy { display: grid; gap: 5px; min-width: 0; }
 .parent-create-routine-card small { color: var(--muted); font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
 .parent-create-routine-card h2 { margin-top: 2px; font-size: 17px; }
@@ -1253,6 +1255,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .app-compact .history-icon,
 .app-compact .parent-create-routine-icon,
 .app-compact .parent-empty-history-card > .app-icon,
+.app-compact .parent-empty-history-card > .settings-row-icon,
 .app-compact .today-task-icon,
 .app-compact .routine-icon {
   width: 36px;

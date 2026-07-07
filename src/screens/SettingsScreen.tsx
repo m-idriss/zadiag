@@ -16,6 +16,7 @@ import { buildDiagnosticsEmailBody, createCorrelationId } from '../services/appL
 import type { AppUpdateInfo } from '../services/appUpdate';
 import { Disclaimer } from '../components/Disclaimer';
 import { CodeBox } from '../components/CodeBox';
+import { ListRow, SegmentedControl, Switch } from '../components/ui';
 
 const SUPPORT_EMAIL = 'contact@3dime.com';
 
@@ -134,6 +135,9 @@ export function SettingsScreen({
     ? 'settingsLanguageDetailFr'
     : 'settingsLanguageDetailEn';
   const notificationWindowLabel = `${preferences.notificationWindowStart}-${preferences.notificationWindowEnd}`;
+  const notificationWindowValue = preferences.notificationWindowStart === '08:00' && preferences.notificationWindowEnd === '21:00'
+    ? 'day'
+    : 'anytime';
   const reminderRepeatLabel = preferences.reminderRepeatMinutes === 0
     ? t('settingsReminderRepeatDetailOff')
     : t('settingsReminderRepeatDetail').replace('{minutes}', String(preferences.reminderRepeatMinutes));
@@ -171,130 +175,107 @@ export function SettingsScreen({
       <section className="settings-section" aria-labelledby="settings-device-heading">
         <h2 id="settings-device-heading">{t('settingsDeviceSection')}</h2>
         <div className="card settings-list">
-          <div className="settings-row">
-            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={languageOutline} /></span>
-            <div className="settings-row-copy">
-              <strong>{t('settingsLanguageTitle')}</strong>
-              <small>{t(languageDetailKey)}</small>
-            </div>
-            <div className="settings-locale-toggle" role="group" aria-label={t('settingsLanguageTitle')}>
-              <button type="button" className={locale === 'en' ? 'active' : ''} aria-pressed={locale === 'en'} onClick={() => { void setLocale('en'); }}>EN</button>
-              <button type="button" className={locale === 'fr' ? 'active' : ''} aria-pressed={locale === 'fr'} onClick={() => { void setLocale('fr'); }}>FR</button>
-            </div>
-          </div>
-          <div className="settings-row">
-            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={listOutline} /></span>
-            <div className="settings-row-copy">
-              <strong>{t('settingsActivityLogTitle')}</strong>
-              <small>{t(preferences.showActivityLog ? 'settingsActivityLogDetailVisible' : 'settingsActivityLogDetailHidden')}</small>
-            </div>
-            <button
-              type="button"
-              className={`settings-switch ${preferences.showActivityLog ? 'active' : ''}`}
-              aria-pressed={preferences.showActivityLog}
-              aria-label={t('settingsActivityLogTitle')}
-              onClick={() => { void setPreferences({ showActivityLog: !preferences.showActivityLog }); }}
-            >
-              <span aria-hidden="true" />
-            </button>
-          </div>
-          <div className="settings-row">
-            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={optionsOutline} /></span>
-            <div className="settings-row-copy">
-              <strong>{t('settingsCompactModeTitle')}</strong>
-              <small>{t(preferences.compactMode ? 'settingsCompactModeDetailOn' : 'settingsCompactModeDetailOff')}</small>
-            </div>
-            <button
-              type="button"
-              className={`settings-switch ${preferences.compactMode ? 'active' : ''}`}
-              aria-pressed={preferences.compactMode}
-              aria-label={t('settingsCompactModeTitle')}
-              onClick={() => { void setPreferences({ compactMode: !preferences.compactMode }); }}
-            >
-              <span aria-hidden="true" />
-            </button>
-          </div>
-          {role === 'child' ? <div className="settings-row">
-            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={timeOutline} /></span>
-            <div className="settings-row-copy">
-              <strong>{t('settingsNotificationWindowTitle')}</strong>
-              <small>{t('settingsNotificationWindowDetail')} {notificationWindowLabel}</small>
-            </div>
-            <div className="settings-locale-toggle settings-choice-toggle" role="group" aria-label={t('settingsNotificationWindowTitle')}>
-              <button
-                type="button"
-                className={preferences.notificationWindowStart === '08:00' && preferences.notificationWindowEnd === '21:00' ? 'active' : ''}
-                aria-pressed={preferences.notificationWindowStart === '08:00' && preferences.notificationWindowEnd === '21:00'}
-                onClick={() => { void setPreferences({ notificationWindowStart: '08:00', notificationWindowEnd: '21:00' }); }}
-              >
-                {t('settingsNotificationWindowDay')}
-              </button>
-              <button
-                type="button"
-                className={preferences.notificationWindowStart === '00:00' && preferences.notificationWindowEnd === '23:59' ? 'active' : ''}
-                aria-pressed={preferences.notificationWindowStart === '00:00' && preferences.notificationWindowEnd === '23:59'}
-                onClick={() => { void setPreferences({ notificationWindowStart: '00:00', notificationWindowEnd: '23:59' }); }}
-              >
-                {t('settingsNotificationWindowAnytime')}
-              </button>
-            </div>
-          </div> : null}
-          {role === 'parent' ? <div className="settings-row">
-            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={notificationsOutline} /></span>
-            <div className="settings-row-copy">
-              <strong>{t('settingsReminderRepeatTitle')}</strong>
-              <small>{reminderRepeatLabel}</small>
-            </div>
-            <div className="settings-locale-toggle settings-choice-toggle" role="group" aria-label={t('settingsReminderRepeatTitle')}>
-              {[0, 20, 30].map((minutes) => (
-                <button
-                  type="button"
-                  className={preferences.reminderRepeatMinutes === minutes ? 'active' : ''}
-                  aria-pressed={preferences.reminderRepeatMinutes === minutes}
-                  onClick={() => { void setPreferences({ reminderRepeatMinutes: minutes }); }}
-                  key={minutes}
-                >
-                  {minutes === 0 ? t('off') : `${minutes}m`}
-                </button>
-              ))}
-            </div>
-          </div> : null}
+          <ListRow
+            icon={<IonIcon icon={languageOutline} />}
+            title={t('settingsLanguageTitle')}
+            detail={t(languageDetailKey)}
+            trailing={(
+              <SegmentedControl
+                ariaLabel={t('settingsLanguageTitle')}
+                value={locale}
+                onChange={(value) => { void setLocale(value); }}
+                options={[
+                  { value: 'en' as const, label: 'EN' },
+                  { value: 'fr' as const, label: 'FR' },
+                ]}
+              />
+            )}
+          />
+          <ListRow
+            icon={<IonIcon icon={listOutline} />}
+            title={t('settingsActivityLogTitle')}
+            detail={t(preferences.showActivityLog ? 'settingsActivityLogDetailVisible' : 'settingsActivityLogDetailHidden')}
+            trailing={<Switch checked={preferences.showActivityLog} label={t('settingsActivityLogTitle')} onChange={(checked) => { void setPreferences({ showActivityLog: checked }); }} />}
+          />
+          <ListRow
+            icon={<IonIcon icon={optionsOutline} />}
+            title={t('settingsCompactModeTitle')}
+            detail={t(preferences.compactMode ? 'settingsCompactModeDetailOn' : 'settingsCompactModeDetailOff')}
+            trailing={<Switch checked={preferences.compactMode} label={t('settingsCompactModeTitle')} onChange={(checked) => { void setPreferences({ compactMode: checked }); }} />}
+          />
+          {role === 'child' ? (
+            <ListRow
+              icon={<IonIcon icon={timeOutline} />}
+              title={t('settingsNotificationWindowTitle')}
+              detail={`${t('settingsNotificationWindowDetail')} ${notificationWindowLabel}`}
+              trailing={(
+                <SegmentedControl
+                  ariaLabel={t('settingsNotificationWindowTitle')}
+                  className="settings-choice-toggle"
+                  value={notificationWindowValue}
+                  onChange={(value) => {
+                    void setPreferences(value === 'day'
+                      ? { notificationWindowStart: '08:00', notificationWindowEnd: '21:00' }
+                      : { notificationWindowStart: '00:00', notificationWindowEnd: '23:59' });
+                  }}
+                  options={[
+                    { value: 'day' as const, label: t('settingsNotificationWindowDay') },
+                    { value: 'anytime' as const, label: t('settingsNotificationWindowAnytime') },
+                  ]}
+                />
+              )}
+            />
+          ) : null}
+          {role === 'parent' ? (
+            <ListRow
+              icon={<IonIcon icon={notificationsOutline} />}
+              title={t('settingsReminderRepeatTitle')}
+              detail={reminderRepeatLabel}
+              trailing={(
+                <SegmentedControl
+                  ariaLabel={t('settingsReminderRepeatTitle')}
+                  className="settings-choice-toggle"
+                  value={preferences.reminderRepeatMinutes}
+                  onChange={(value) => { void setPreferences({ reminderRepeatMinutes: value }); }}
+                  options={[0, 20, 30].map((minutes) => ({ value: minutes, label: minutes === 0 ? t('off') : `${minutes}m` }))}
+                />
+              )}
+            />
+          ) : null}
         </div>
       </section>
       <section className="settings-section" aria-labelledby="settings-support-heading">
         <h2 id="settings-support-heading">{t('settingsSupportSection')}</h2>
         <div className="card settings-list">
-          <div className="settings-row">
-            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={mailOutline} /></span>
-            <div className="settings-row-copy">
-              <strong>{t('settingsDebugMailTitle')}</strong>
-              <small>{t('settingsDebugMailDetail')}</small>
-              {mailError ? <small className="settings-action-error">{t('settingsDebugMailError')}</small> : null}
-            </div>
-            <IonButton className="settings-inline-action settings-inline-action-contained" size="small" onClick={sendDiagnosticsEmail}>
-              {t('settingsDebugMailSend')}
-            </IonButton>
-          </div>
-          <div className="settings-row">
-            <span className="settings-row-icon" aria-hidden="true"><IonIcon icon={informationCircleOutline} /></span>
-            <div className="settings-row-copy">
-              <strong>{t('settingsAppInfoTitle')} v{import.meta.env.VITE_APP_VERSION}</strong>
-              <small>{t('settingsUpdatedLabel')} {appUpdated}</small>
-              {updateInfo.available ? <small>{updateDetail}</small> : null}
-              {updateError ? <small className="settings-action-error">{t('settingsUpdateError')}</small> : null}
-            </div>
-            <div className="settings-row-control">
-              {updateInfo.badgeLabel ? <span className={`settings-update-badge ${updateSeverity}`}>{updateInfo.badgeLabel}</span> : null}
-              <IonButton
-                className={`settings-inline-action settings-inline-action-contained settings-update-action ${updateSeverity}`}
-                size="small"
-                disabled={updatingApp}
-                onClick={() => { void forceUpdate(); }}
-              >
-                {updatingApp ? t('settingsUpdateChecking') : updateInfo.available ? t('settingsUpdateAction') : t('settingsUpdateCheckAction')}
-              </IonButton>
-            </div>
-          </div>
+          <ListRow
+            icon={<IonIcon icon={mailOutline} />}
+            title={t('settingsDebugMailTitle')}
+            detail={t('settingsDebugMailDetail')}
+            trailing={<IonButton className="settings-inline-action settings-inline-action-contained" size="small" onClick={sendDiagnosticsEmail}>{t('settingsDebugMailSend')}</IonButton>}
+          >
+            {mailError ? <small className="settings-action-error">{t('settingsDebugMailError')}</small> : null}
+          </ListRow>
+          <ListRow
+            icon={<IonIcon icon={informationCircleOutline} />}
+            title={`${t('settingsAppInfoTitle')} v${import.meta.env.VITE_APP_VERSION}`}
+            detail={`${t('settingsUpdatedLabel')} ${appUpdated}`}
+            trailing={(
+              <div className="settings-row-control">
+                {updateInfo.badgeLabel ? <span className={`settings-update-badge ${updateSeverity}`}>{updateInfo.badgeLabel}</span> : null}
+                <IonButton
+                  className={`settings-inline-action settings-inline-action-contained settings-update-action ${updateSeverity}`}
+                  size="small"
+                  disabled={updatingApp}
+                  onClick={() => { void forceUpdate(); }}
+                >
+                  {updatingApp ? t('settingsUpdateChecking') : updateInfo.available ? t('settingsUpdateAction') : t('settingsUpdateCheckAction')}
+                </IonButton>
+              </div>
+            )}
+          >
+            {updateInfo.available ? <small>{updateDetail}</small> : null}
+            {updateError ? <small className="settings-action-error">{t('settingsUpdateError')}</small> : null}
+          </ListRow>
         </div>
       </section>
       <section className="settings-section" aria-labelledby="settings-install-heading">

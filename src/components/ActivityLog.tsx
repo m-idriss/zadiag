@@ -3,6 +3,7 @@ import type { AppState, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { presentRoutine } from '../domain/routinePresentation';
 import { AppIcon, type AppIconName } from './Icon';
+import { EmptyState, ListRow } from './ui';
 
 const eventTime = (event: VerificationEvent) =>
   Date.parse(event.capturedAt ?? event.reviewedAt ?? event.requestedAt);
@@ -63,23 +64,19 @@ export function ActivityLog({
       {entries.length ? (
         <div className="card settings-list activity-log-list">
           {entries.map(({ event, icon, message }) => (
-            <article className="settings-row activity-log-row" key={event.id}>
-              <span className="settings-row-icon activity-log-icon" aria-hidden="true"><AppIcon name={icon} /></span>
-              <div className="settings-row-copy">
-                <strong>{message}</strong>
-                <small>{formatTime(event.capturedAt ?? event.requestedAt)}</small>
-              </div>
-            </article>
+            <ListRow
+              as="article"
+              className="activity-log-row"
+              icon={<AppIcon name={icon} />}
+              iconClassName="activity-log-icon"
+              title={message}
+              detail={formatTime(event.capturedAt ?? event.requestedAt)}
+              key={event.id}
+            />
           ))}
         </div>
       ) : (
-        <section className="card activity-log-empty">
-          <AppIcon name="time" />
-          <div className="settings-row-copy">
-            <h2>{t('activityLogEmptyTitle')}</h2>
-            <p>{t('activityLogEmptyHint')}</p>
-          </div>
-        </section>
+        <EmptyState className="activity-log-empty" icon="time" title={t('activityLogEmptyTitle')} detail={t('activityLogEmptyHint')} />
       )}
     </section>
   );
