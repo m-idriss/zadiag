@@ -139,7 +139,7 @@ export interface AppPreferences {
 }
 
 export const defaultAppPreferences: AppPreferences = {
-  compactMode: false,
+  compactMode: true,
   notificationWindowStart: '08:00',
   notificationWindowEnd: '21:00',
   reminderRepeatMinutes: 20,

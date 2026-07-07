@@ -11,6 +11,7 @@ import { analyzeWithGemini, parseImageDataUrl, type AnalysisResult, type Routine
 import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
 import { createDefaultRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, routineFromCatalog, type RoutineAssignmentDocument } from './routines.js';
 import { buildCheckNotificationPayload } from './notifications.js';
+import { normalizeReminderRepeatMinutes, shouldSendCheckReminder } from './reminders.js';
 
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
   ?? (process.env.GCLOUD_PROJECT ? `${process.env.GCLOUD_PROJECT}.firebasestorage.app` : undefined);
@@ -41,6 +42,8 @@ interface RoutineNotificationNames {
     fr?: string;
   };
 }
+
+type CheckNotificationDocument = FirebaseFirestore.QueryDocumentSnapshot | FirebaseFirestore.DocumentSnapshot;
 
 const getRoutineAnalysisContext = (
   assignment: Partial<RoutineAssignmentDocument> | undefined,
@@ -202,6 +205,31 @@ const recordRecoveryAttempt = async (uid: string) => {
   });
 };
 
+const sendCheckPushNotification = async (
+  subscriptionDocument: CheckNotificationDocument,
+  check: { sessionId: string; routineId: string } & RoutineNotificationNames,
+  resend: boolean,
+) => {
+  const subscription = subscriptionDocument.data() as PushSubscription & { locale?: string } | undefined;
+  if (!subscription) return;
+  try {
+    const payload = buildCheckNotificationPayload({
+      sessionId: check.sessionId,
+      routineId: check.routineId,
+      routineName: check.routineName,
+      routineNames: check.routineNames,
+      routineIcon: check.routineIcon,
+      resend,
+      locale: subscription.locale,
+    });
+    await webpush.sendNotification(subscription, JSON.stringify(payload), { TTL: 120 });
+  } catch (error) {
+    const statusCode = (error as { statusCode?: number }).statusCode;
+    if (statusCode === 404 || statusCode === 410) await subscriptionDocument.ref.delete();
+    else console.error('Unable to send Web Push notification', error);
+  }
+};
+
 const sendCheckPushNotifications = async (
   familyRef: FirebaseFirestore.DocumentReference,
   check: { sessionId: string; routineId: string } & RoutineNotificationNames,
@@ -210,25 +238,7 @@ const sendCheckPushNotifications = async (
   const subscriptions = await familyRef.collection('pushSubscriptions').get();
   if (subscriptions.empty) return;
   webpush.setVapidDetails('https://www.zadiag.com', vapidPublicKey.value(), vapidPrivateKey.value());
-  await Promise.allSettled(subscriptions.docs.map(async (document) => {
-    const subscription = document.data() as PushSubscription & { locale?: string };
-    try {
-      const payload = buildCheckNotificationPayload({
-        sessionId: check.sessionId,
-        routineId: check.routineId,
-        routineName: check.routineName,
-        routineNames: check.routineNames,
-        routineIcon: check.routineIcon,
-        resend,
-        locale: subscription.locale,
-      });
-      await webpush.sendNotification(subscription, JSON.stringify(payload), { TTL: 120 });
-    } catch (error) {
-      const statusCode = (error as { statusCode?: number }).statusCode;
-      if (statusCode === 404 || statusCode === 410) await document.ref.delete();
-      else console.error('Unable to send Web Push notification', error);
-    }
-  }));
+  await Promise.allSettled(subscriptions.docs.map((document) => sendCheckPushNotification(document, check, resend)));
 };
 
 const getRoutineNotificationNames = (
@@ -521,6 +531,21 @@ export const savePushSubscription = onCall({ region, cors, enforceAppCheck: true
   });
   batch.update(profile.ref, { notificationsEnabled: true, updatedAt: FieldValue.serverTimestamp() });
   await batch.commit();
+});
+
+export const updateNotificationPreferences = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = requireUid(request.auth);
+  const familyId = String(request.data?.familyId ?? '');
+  const reminderRepeatMinutes = normalizeReminderRepeatMinutes(request.data?.reminderRepeatMinutes);
+  const profile = await db.collection('users').doc(uid).get();
+  if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'parent') {
+    throw new HttpsError('permission-denied', 'Only the parent can update notification preferences.');
+  }
+
+  await db.collection('families').doc(familyId).update({
+    'notificationPreferences.reminderRepeatMinutes': reminderRepeatMinutes,
+    updatedAt: FieldValue.serverTimestamp(),
+  });
 });
 
 export const regenerateLinkCode = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
@@ -879,6 +904,106 @@ export const dispatchPlannedChecks = onSchedule({
         routineId,
         ...getRoutineNotificationNames(assignmentData, routineId),
       }, false);
+    }));
+  }));
+});
+
+export const dispatchCheckReminders = onSchedule({
+  region,
+  schedule: 'every 5 minutes',
+  timeZone: 'UTC',
+  secrets: [vapidPrivateKey, vapidPublicKey],
+}, async () => {
+  const families = await db.collection('families')
+    .where('members', '!=', {})
+    .get();
+  if (families.empty) return;
+
+  const now = new Date();
+  webpush.setVapidDetails('https://www.zadiag.com', vapidPublicKey.value(), vapidPrivateKey.value());
+
+  await Promise.allSettled(families.docs.map(async (familyDoc) => {
+    const familyData = familyDoc.data() as {
+      members?: Record<string, string>;
+      notificationPreferences?: { reminderRepeatMinutes?: unknown };
+    };
+    if (!Object.values(familyData.members ?? {}).includes('child')) return;
+
+    const repeatMinutes = normalizeReminderRepeatMinutes(familyData.notificationPreferences?.reminderRepeatMinutes);
+    if (repeatMinutes <= 0) return;
+
+    const [pendingChecks, subscriptions] = await Promise.all([
+      familyDoc.ref.collection('checks')
+        .where('status', '==', 'pending')
+        .limit(20)
+        .get(),
+      familyDoc.ref.collection('pushSubscriptions').get(),
+    ]);
+    if (pendingChecks.empty || subscriptions.empty) return;
+
+    const assignmentCache = new Map<string, Promise<FirebaseFirestore.DocumentSnapshot>>();
+    const assignmentFor = (routineId: string) => {
+      const cached = assignmentCache.get(routineId);
+      if (cached) return cached;
+      const next = familyDoc.ref.collection('routineAssignments').doc(routineId).get();
+      assignmentCache.set(routineId, next);
+      return next;
+    };
+
+    await Promise.allSettled(pendingChecks.docs.map(async (checkDoc) => {
+      const checkData = checkDoc.data() as {
+        routineId?: string;
+        sessionId?: string;
+        requestedAt?: string;
+        expiresAt?: string;
+        status?: string;
+      };
+      if (!shouldSendCheckReminder({
+        requestedAt: checkData.requestedAt,
+        expiresAt: checkData.expiresAt,
+        repeatMinutes,
+        now,
+      })) return;
+
+      const routineId = String(checkData.routineId ?? DEFAULT_ROUTINE_ID);
+      const assignment = await assignmentFor(routineId);
+      const notificationNames = getRoutineNotificationNames(assignment.data(), routineId);
+
+      await Promise.allSettled(subscriptions.docs.map(async (subscriptionDoc) => {
+        const reminderRef = checkDoc.ref.collection('reminders').doc(subscriptionDoc.id);
+        const reserved = await db.runTransaction(async (transaction): Promise<boolean> => {
+          const [freshCheck, reminder] = await Promise.all([
+            transaction.get(checkDoc.ref),
+            transaction.get(reminderRef),
+          ]);
+          const freshCheckData = freshCheck.data() as {
+            requestedAt?: string;
+            expiresAt?: string;
+            status?: string;
+          } | undefined;
+          if (!freshCheck.exists || freshCheckData?.status !== 'pending') return false;
+          const lastReminderAt = reminder.data()?.lastSentAt;
+          if (!shouldSendCheckReminder({
+            requestedAt: freshCheckData.requestedAt,
+            expiresAt: freshCheckData.expiresAt,
+            lastReminderAt: typeof lastReminderAt === 'string' ? lastReminderAt : undefined,
+            repeatMinutes,
+            now,
+          })) return false;
+          transaction.set(reminderRef, {
+            lastSentAt: now.toISOString(),
+            repeatMinutes,
+            updatedAt: FieldValue.serverTimestamp(),
+          }, { merge: true });
+          return true;
+        });
+        if (!reserved) return;
+        await sendCheckPushNotification(subscriptionDoc, {
+          sessionId: String(checkData.sessionId ?? checkDoc.id),
+          routineId,
+          ...notificationNames,
+        }, true);
+      }));
     }));
   }));
 });

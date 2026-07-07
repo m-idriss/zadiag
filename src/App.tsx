@@ -71,7 +71,7 @@ export function App() {
   const useLocalDemo = isLocalDemoEnvironment();
   const t = (key: MessageKey) => translate(state.locale, key);
   const preferences = normalizeAppPreferences(state.preferences);
-  const appRootClassName = preferences.compactMode ? 'app-root app-compact' : 'app-root';
+  const appRootClassName = 'app-root app-compact';
 
   useEffect(() => {
     let alive = true;

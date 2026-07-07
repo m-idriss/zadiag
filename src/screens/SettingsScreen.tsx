@@ -5,7 +5,6 @@ import {
   languageOutline,
   mailOutline,
   notificationsOutline,
-  optionsOutline,
   timeOutline,
   trashOutline,
 } from 'ionicons/icons';
@@ -189,12 +188,6 @@ export function SettingsScreen({
                 ]}
               />
             )}
-          />
-          <ListRow
-            icon={<IonIcon icon={optionsOutline} />}
-            title={t('settingsCompactModeTitle')}
-            detail={t(preferences.compactMode ? 'settingsCompactModeDetailOn' : 'settingsCompactModeDetailOff')}
-            trailing={<Switch checked={preferences.compactMode} label={t('settingsCompactModeTitle')} onChange={(checked) => { void setPreferences({ compactMode: checked }); }} />}
           />
           {role === 'child' ? (
             <ListRow
