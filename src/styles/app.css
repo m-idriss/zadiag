@@ -455,7 +455,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .parent-review-actions { display: grid; grid-template-columns: repeat(2, 46px); gap: 7px; align-self: center; justify-content: end; }
 .parent-review-button { width: 46px; min-height: 46px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 12px; font-size: 22px; font-weight: 850; }
 .parent-review-button .app-icon { font-size: 23px; }
-.parent-review-button.approve { background: var(--teal); color: white; }
+.parent-review-button.approve { background: var(--navy); color: white; }
 .parent-review-button.reject { background: color-mix(in srgb, var(--coral) 10%, white); color: color-mix(in srgb, var(--coral) 84%, var(--navy)); }
 .parent-review-button:disabled { opacity: .62; }
 .proof-lightbox {
@@ -876,7 +876,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .routine-meta-card i { color: var(--muted); font-style: normal; font-size: 18px; }
 .routine-meta-card > div > span ion-icon { font-size: 16px; }
 .routine-meta-card i ion-icon { font-size: 16px; }
-.routine-edit-plan-button { min-height: 34px; padding: 7px 11px; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--routine-accent, var(--teal)) 12%, white); color: var(--routine-accent, var(--teal)); font-size: 12px; font-weight: 900; }
+.routine-edit-plan-button { min-height: 34px; padding: 7px 11px; border: 0; border-radius: 999px; background: var(--navy); color: white; font-size: 12px; font-weight: 900; }
 .routine-proof-action { margin-top: 4px; --background: var(--routine-accent); --border-radius: 10px; }
 .routine-instruction-list { display: grid; gap: 16px; }
 .routine-instruction-list article { display: grid; grid-template-columns: 24px 46px 1fr; align-items: center; gap: 10px; }
