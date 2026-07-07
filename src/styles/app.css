@@ -610,7 +610,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .participant-header p { max-width: 32ch; font-size: 14px; }
 .more-button, .add-routine-button, .detail-back { border: 0; background: transparent; color: var(--navy); font-weight: 900; }
 .more-button { padding: 7px; letter-spacing: 2px; }
-.add-routine-button { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: var(--mint); color: var(--teal); font-size: 25px; }
+.add-routine-button { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: var(--navy); color: white; font-size: 25px; }
 
 .today-section { margin-top: 16px; }
 .content-screen > .today-section { margin-top: 0; }
