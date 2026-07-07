@@ -132,7 +132,6 @@ export interface FamilyState {
 }
 
 export interface AppPreferences {
-  showActivityLog: boolean;
   compactMode: boolean;
   notificationWindowStart: string;
   notificationWindowEnd: string;
@@ -140,7 +139,6 @@ export interface AppPreferences {
 }
 
 export const defaultAppPreferences: AppPreferences = {
-  showActivityLog: false,
   compactMode: false,
   notificationWindowStart: '08:00',
   notificationWindowEnd: '21:00',

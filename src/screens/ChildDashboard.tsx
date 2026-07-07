@@ -6,7 +6,6 @@ import { StatusPill } from '../components/StatusPill';
 import { AppIcon, routineIconName } from '../components/Icon';
 import { RoutineHistoryPanel } from '../components/RoutineHistoryPanel';
 import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } from '../components/AdherenceSummaryCard';
-import { ActivityLog } from '../components/ActivityLog';
 import { presentRoutine } from '../domain/routinePresentation';
 import { dayPeriodLabelKey, plannedWindowLabel } from '../domain/taskTimeLabel';
 import { canRetakeCapture, resolvedEventStatus, withResolvedEventStatuses } from '../domain/adherence';
@@ -33,7 +32,6 @@ export function ChildDashboard({
   t: (key: MessageKey) => string;
 }) {
   const [summaryRange, setSummaryRange] = useState<SummaryRange>('day');
-  const showActivityLog = state.preferences?.showActivityLog ?? false;
   const now = Date.now();
   const participantInitial = state.family.childName.trim().charAt(0).toUpperCase() || '?';
   const today = state.events.filter((event) => isToday(event.requestedAt));
@@ -193,7 +191,6 @@ export function ChildDashboard({
         <div className="avatar" aria-hidden="true">{participantInitial}</div>
       </header>
       {pendingSection}
-      {showActivityLog ? <ActivityLog state={state} t={t} /> : null}
       {upcomingSection}
       {completedSection}
       {historySection}

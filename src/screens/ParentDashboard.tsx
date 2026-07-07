@@ -6,7 +6,6 @@ import { CodeBox } from '../components/CodeBox';
 import { RoutineHistoryPanel } from '../components/RoutineHistoryPanel';
 import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } from '../components/AdherenceSummaryCard';
 import { presentRoutine } from '../domain/routinePresentation';
-import { ActivityLog } from '../components/ActivityLog';
 import { withResolvedEventStatuses } from '../domain/adherence';
 import { EmptyState } from '../components/ui';
 
@@ -28,7 +27,6 @@ export function ParentDashboard({
   const [regenerating, setRegenerating] = useState(false);
   const [codeError, setCodeError] = useState(false);
   const [summaryRange, setSummaryRange] = useState<SummaryRange>('day');
-  const showActivityLog = state.preferences?.showActivityLog ?? false;
   const [proofUrls, setProofUrls] = useState<Record<string, string>>({});
   const [proofErrors, setProofErrors] = useState<Record<string, boolean>>({});
   const [reviewingId, setReviewingId] = useState<string>();
@@ -267,8 +265,6 @@ export function ParentDashboard({
           </div>
         </section>
       ) : null}
-
-      {showActivityLog ? <ActivityLog state={state} t={t} /> : null}
 
       {enlargedProofUrl ? (
         <div className="proof-lightbox" role="dialog" aria-modal="true" aria-label={t('responsibleReviewImageAlt')} onClick={() => setEnlargedProofUrl(undefined)}>

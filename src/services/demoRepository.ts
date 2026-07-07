@@ -228,10 +228,6 @@ export class DemoRepository implements AppRepository {
     this.persist();
   }
 
-  async setShowActivityLog(show: boolean) {
-    await this.setPreferences({ showActivityLog: show });
-  }
-
   async linkParent(childName: string) {
     this.state.family = {
       ...this.state.family,

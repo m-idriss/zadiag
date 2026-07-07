@@ -3,7 +3,6 @@ import { IonButton, IonIcon } from '@ionic/react';
 import {
   informationCircleOutline,
   languageOutline,
-  listOutline,
   mailOutline,
   notificationsOutline,
   optionsOutline,
@@ -190,12 +189,6 @@ export function SettingsScreen({
                 ]}
               />
             )}
-          />
-          <ListRow
-            icon={<IonIcon icon={listOutline} />}
-            title={t('settingsActivityLogTitle')}
-            detail={t(preferences.showActivityLog ? 'settingsActivityLogDetailVisible' : 'settingsActivityLogDetailHidden')}
-            trailing={<Switch checked={preferences.showActivityLog} label={t('settingsActivityLogTitle')} onChange={(checked) => { void setPreferences({ showActivityLog: checked }); }} />}
           />
           <ListRow
             icon={<IonIcon icon={optionsOutline} />}

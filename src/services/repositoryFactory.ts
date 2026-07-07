@@ -57,10 +57,6 @@ class LazyFirebaseRepository implements AppRepository {
     return (await this.load()).setPreferences(preferences);
   }
 
-  async setShowActivityLog(show: boolean) {
-    return (await this.load()).setShowActivityLog(show);
-  }
-
   async linkParent(childName: string) {
     return (await this.load()).linkParent(childName);
   }

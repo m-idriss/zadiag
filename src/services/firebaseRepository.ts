@@ -162,10 +162,6 @@ export class FirebaseRepository implements AppRepository {
     await this.syncPushSubscriptionPreferences();
   }
 
-  async setShowActivityLog(show: boolean) {
-    await this.setPreferences({ showActivityLog: show });
-  }
-
   async linkParent(childName: string) {
     const createFamily = httpsCallable<{ childName: string }, { familyId: string; code: string; recoveryCode: string }>(this.services.functions, 'createFamily');
     const result = await createFamily({ childName });

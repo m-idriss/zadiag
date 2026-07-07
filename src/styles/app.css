@@ -366,7 +366,6 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .content-section,
 .settings-section,
 .routine-history-panel,
-.activity-log,
 .dashboard-summary-section,
 .routines-list-section { display: grid; gap: 10px; min-width: 0; }
 .section-heading { min-height: 32px; margin: 0 2px; }
@@ -520,24 +519,6 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .history-retake-button:active { transform: scale(.985); filter: brightness(.97); }
 .routine-history-icon { background: color-mix(in srgb, var(--routine-accent, var(--teal)) 12%, white); color: var(--routine-accent, var(--teal)); }
 .routine-history-icon .app-icon { font-size: 22px; }
-.activity-log-heading { margin: 0; }
-.activity-log-list { overflow: hidden; }
-.activity-log-row { min-height: 70px; }
-.activity-log-row strong,
-.activity-log-row small { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.activity-log-row strong { color: var(--navy); font-size: 13px; line-height: 1.25; }
-.activity-log-row small { margin-top: 3px; color: var(--muted); font-size: 11px; font-weight: 800; }
-.activity-log-icon { width: 34px; height: 34px; border-radius: 12px; }
-.activity-log-empty {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr);
-  align-items: center;
-  gap: 11px;
-  padding: var(--block-padding);
-  border-radius: 20px;
-}
-.activity-log-empty h2 { margin: 0; font-size: 15px; }
-.activity-log-empty p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
 .responsible-state-card {
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr);
@@ -1191,7 +1172,6 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .app-compact .content-section,
 .app-compact .dashboard-summary-section,
 .app-compact .routine-history-panel,
-.app-compact .activity-log,
 .app-compact .routines-list-section,
 .app-compact .settings-section { gap: 6px; }
 .app-compact .section-heading,
@@ -1234,7 +1214,6 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .app-compact .settings-row-copy strong,
 .app-compact .parent-review-copy strong,
 .app-compact .parent-history-row strong,
-.app-compact .activity-log-row strong,
 .app-compact .routine-card-heading h2,
 .app-compact .routine-catalog-item h3,
 .app-compact .today-task-copy h3,
@@ -1246,7 +1225,6 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .app-compact .parent-review-copy small,
 .app-compact .parent-review-copy p,
 .app-compact .parent-history-row small,
-.app-compact .activity-log-row small,
 .app-compact .routine-card-heading p,
 .app-compact .routine-catalog-item p,
 .app-compact .today-task-copy p,

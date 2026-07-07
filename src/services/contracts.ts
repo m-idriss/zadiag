@@ -7,7 +7,6 @@ export interface AppRepository {
   selectRole(role: Role): Promise<void>;
   setLocale(locale: Locale): Promise<void>;
   setPreferences(preferences: Partial<AppPreferences>): Promise<void>;
-  setShowActivityLog(show: boolean): Promise<void>;
   linkParent(childName: string): Promise<void>;
   recoverParent(code: string): Promise<void>;
   linkChild(code: string): Promise<void>;
