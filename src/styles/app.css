@@ -1088,9 +1088,10 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
   padding: 10px 14px;
   border: 0;
   border-radius: 12px;
-  background: var(--teal);
+  background: var(--navy);
   color: #fff;
-  --background-hover: var(--navy);
+  --background: var(--navy);
+  --background-hover: color-mix(in srgb, var(--navy) 92%, white);
   --background-activated: color-mix(in srgb, var(--navy) 86%, white);
   --background-focused: var(--navy);
   --padding-start: 14px;
