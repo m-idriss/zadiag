@@ -15,6 +15,7 @@ export function ParentDashboard({
   onCreateRoutine,
   getProofImageUrl,
   reviewCheck,
+  requestCheck,
   t,
 }: {
   state: AppState;
@@ -22,6 +23,7 @@ export function ParentDashboard({
   onCreateRoutine?: () => void;
   getProofImageUrl?: (eventId: string) => Promise<string>;
   reviewCheck?: (eventId: string, decision: 'detected' | 'not_detected') => Promise<void>;
+  requestCheck?: (routineId: string) => Promise<void>;
   t: (key: MessageKey) => string;
 }) {
   const [regenerating, setRegenerating] = useState(false);
@@ -270,7 +272,7 @@ export function ParentDashboard({
       <section className="today-section participant-history-section parent-history-section dashboard-summary-section" aria-labelledby="responsible-summary-title">
         <h2 id="responsible-summary-title">{t('overview')}</h2>
         <AdherenceSummaryCard events={displayEvents} range={summaryRange} onRangeChange={setSummaryRange} t={t} />
-        <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedEvents} locale={state.locale} titleId="responsible-history-title" t={t} />
+        <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedEvents} locale={state.locale} titleId="responsible-history-title" onRequestCheck={requestCheck} t={t} />
       </section>
     </div>
   );

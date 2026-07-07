@@ -367,6 +367,7 @@ export function App() {
               onCreateRoutine={() => setTab('routines')}
               getProofImageUrl={(eventId) => repository.getProofImageUrl(eventId)}
               reviewCheck={async (eventId, decision) => { await repository.reviewCheck(eventId, decision); sync(); }}
+              requestCheck={async (routineId) => { await repository.requestCheckNow(routineId); sync(); }}
               t={t}
             />
           : <ChildDashboard state={state} active={repository.activeSession()} start={startCapture} retake={retryCapture} t={t} />;

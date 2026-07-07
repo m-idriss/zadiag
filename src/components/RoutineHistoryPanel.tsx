@@ -41,6 +41,7 @@ export function RoutineHistoryPanel({
   titleId = 'routine-history-panel-title',
   retryEvents,
   onRetake,
+  onRequestCheck,
   t,
 }: {
   assignments: RoutineAssignment[];
@@ -49,10 +50,12 @@ export function RoutineHistoryPanel({
   titleId?: string;
   retryEvents?: VerificationEvent[];
   onRetake?: (event: VerificationEvent) => void;
+  onRequestCheck?: (routineId: string) => Promise<void>;
   t: (key: MessageKey) => string;
 }) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [routineFilter, setRoutineFilter] = useState<RoutineFilter>('all');
+  const [requestingEventId, setRequestingEventId] = useState<string>();
   const formatterLocale = locale === 'fr' ? 'fr-FR' : 'en-US';
   const displayEvents = useMemo(() => withResolvedEventStatuses(events), [events]);
   const formatDateTime = (value: string) => new Intl.DateTimeFormat(formatterLocale, {
@@ -63,6 +66,16 @@ export function RoutineHistoryPanel({
     () => [...displayEvents].sort((a, b) => eventTimestamp(b) - eventTimestamp(a)),
     [displayEvents],
   );
+  const latestMissedEventIds = useMemo(() => {
+    const ids = new Set<string>();
+    const seenRoutineIds = new Set<string>();
+    sortedEvents.forEach((event) => {
+      if (event.status !== 'missed' || seenRoutineIds.has(event.routineId)) return;
+      seenRoutineIds.add(event.routineId);
+      ids.add(event.id);
+    });
+    return ids;
+  }, [sortedEvents]);
   const statuses = useMemo<VerificationStatus[]>(
     () => Array.from(new Set(sortedEvents.map((event) => event.status))),
     [sortedEvents],
@@ -74,6 +87,17 @@ export function RoutineHistoryPanel({
   const presentationFor = (event: VerificationEvent) => {
     const assignment = assignments.find((item) => item.routineId === event.routineId);
     return assignment ? presentRoutine(assignment.routine, locale) : undefined;
+  };
+  const requestCheck = async (event: VerificationEvent) => {
+    if (!onRequestCheck || requestingEventId) return;
+    setRequestingEventId(event.id);
+    try {
+      await onRequestCheck(event.routineId);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setRequestingEventId(undefined);
+    }
   };
 
   return (
@@ -106,6 +130,7 @@ export function RoutineHistoryPanel({
             {filtered.map((event) => {
               const visual = presentationFor(event);
               const canRetake = Boolean(onRetake) && canRetakeCapture(event, retryEvents ?? events, new Date());
+              const canRequestCheck = Boolean(onRequestCheck) && latestMissedEventIds.has(event.id);
               const reason = displayReason(event.reason);
               const tag = analysisTag(event, locale);
               return (
@@ -127,6 +152,17 @@ export function RoutineHistoryPanel({
                   trailing={(
                     <div className="history-row-actions">
                       <StatusPill status={event.status} t={t} />
+                      {canRequestCheck ? (
+                        <button
+                          type="button"
+                          className="history-reminder-button"
+                          aria-label={t('requestCheckAgain')}
+                          disabled={requestingEventId === event.id}
+                          onClick={() => { void requestCheck(event); }}
+                        >
+                          <AppIcon name="send" />
+                        </button>
+                      ) : null}
                       {canRetake ? <button type="button" className="history-retake-button" onClick={() => onRetake?.(event)}>{t('retakeShort')}</button> : null}
                     </div>
                   )}
