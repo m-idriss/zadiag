@@ -264,6 +264,7 @@ export function SettingsScreen({
           </ListRow>
         </div>
       </section>
+      <Disclaimer t={t} />
       {contactMailError ? <small className="settings-action-error">{t('settingsContactError')}</small> : null}
       <IonButton className="settings-contact-button" expand="block" onClick={contactSupport}>
         <IonIcon slot="start" icon={mailOutline} />
@@ -324,7 +325,6 @@ export function SettingsScreen({
           t={t}
         />
       ) : null}
-      <Disclaimer t={t} />
       <IonButton className="settings-reset-button" expand="block" onClick={confirmReset}>
         <IonIcon slot="start" icon={trashOutline} />
         {t('resetDemo')}
