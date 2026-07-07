@@ -404,6 +404,8 @@ export class DemoRepository implements AppRepository {
     return structuredClone(event);
   }
 
+  async retryRemoteSync() {}
+
   async reset() {
     this.state = initialState();
     this.consumedSessions.clear();

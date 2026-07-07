@@ -318,6 +318,14 @@ export class FirebaseRepository implements AppRepository {
     return result.data;
   }
 
+  async retryRemoteSync() {
+    if (!this.state.family.id || !this.state.role) {
+      await this.restoreProfile();
+      return;
+    }
+    await this.attachFamily(this.state.family.id, this.state.role);
+  }
+
   async reset() {
     this.remoteSubscriptions.splice(0).forEach((unsubscribe) => unsubscribe());
     if (this.state.family.linked) {
@@ -422,6 +430,12 @@ export class FirebaseRepository implements AppRepository {
     const checks = query(collection(familyRef, 'checks'), orderBy('requestedAt', 'desc'));
     this.remoteSubscriptions.push(onSnapshot(checks, (snapshot) => {
       this.state.events = snapshot.docs.map((item) => asEvent(item.id, item.data()));
+      this.state.routinesError = false;
+      this.emit();
+    }, (error) => {
+      console.error('Unable to load checks', error);
+      this.state.routinesLoaded = true;
+      this.state.routinesError = true;
       this.emit();
     }));
     this.persistPreferences();

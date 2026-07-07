@@ -38,6 +38,7 @@ export function ParentDashboard({
   const now = Date.now();
   const displayEvents = useMemo(() => withResolvedEventStatuses(state.events, now), [now, state.events]);
   const rangedEvents = filterEventsBySummaryRange(displayEvents, summaryRange, now);
+  const rangedRawEvents = filterEventsBySummaryRange(state.events, summaryRange, now);
   const reviewEvents = useMemo(() => state.events
     .filter((event) => event.status === 'uncertain' && !['approved', 'rejected'].includes(event.reviewStatus ?? ''))
     .sort((a, b) => Date.parse(b.capturedAt ?? b.requestedAt) - Date.parse(a.capturedAt ?? a.requestedAt)),
@@ -272,7 +273,7 @@ export function ParentDashboard({
       <section className="today-section participant-history-section parent-history-section dashboard-summary-section" aria-labelledby="responsible-summary-title">
         <h2 id="responsible-summary-title">{t('overview')}</h2>
         <AdherenceSummaryCard events={displayEvents} range={summaryRange} onRangeChange={setSummaryRange} t={t} />
-        <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedEvents} locale={state.locale} titleId="responsible-history-title" onRequestCheck={requestCheck} t={t} />
+        <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedRawEvents} locale={state.locale} titleId="responsible-history-title" onRequestCheck={requestCheck} t={t} />
       </section>
     </div>
   );

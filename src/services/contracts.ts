@@ -21,6 +21,7 @@ export interface AppRepository {
   submitCapture(sessionId: string, capturedAt: Date, imageDataUrl: string): Promise<VerificationEvent>;
   getProofImageUrl(eventId: string): Promise<string>;
   reviewCheck(eventId: string, decision: 'detected' | 'not_detected'): Promise<VerificationEvent>;
+  retryRemoteSync?(): Promise<void>;
   reset(): Promise<void>;
 }
 

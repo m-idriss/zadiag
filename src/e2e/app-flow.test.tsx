@@ -64,7 +64,11 @@ vi.mock('../screens/ResultScreen', () => ({
 }));
 
 vi.mock('../components/BottomNav', () => ({
-  BottomNav: () => null,
+  BottomNav: ({ onChange }: { onChange: (tab: 'home' | 'history' | 'settings' | 'routines') => void }) => (
+    <nav>
+      <button type="button" onClick={() => onChange('settings')}>Settings</button>
+    </nav>
+  ),
 }));
 
 vi.mock('../components/SplashScreen', () => ({
@@ -130,8 +134,8 @@ const makeUnrestoredState = (): AppState => ({
   events: [],
 });
 
-const createFakeRepository = (): AppRepository => {
-  let state = makeState();
+const createFakeRepository = (initialState = makeState()): AppRepository => {
+  let state = initialState;
   const listeners = new Set<() => void>();
   const emit = () => listeners.forEach((listener) => listener());
   return {
@@ -141,7 +145,10 @@ const createFakeRepository = (): AppRepository => {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-    async selectRole() {},
+    async selectRole(role) {
+      state = { ...makeUnrestoredState(), role };
+      emit();
+    },
     async setLocale() {},
     async linkParent() {},
     async recoverParent() {},
@@ -180,7 +187,10 @@ const createFakeRepository = (): AppRepository => {
       emit();
       return structuredClone(event);
     },
-    async reset() {},
+    async reset() {
+      state = makeUnrestoredState();
+      emit();
+    },
   };
 };
 
@@ -288,5 +298,70 @@ describe('Zadiag smoke flow', () => {
     expect(document.body.textContent).not.toContain('Link account flow');
     expect(document.body.textContent).toContain('Your account has not been reset.');
     expect(document.body.textContent).toContain('Restart Zadiag');
+  }, 15000);
+
+  it('lets a participant reset and continue as responsible', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const { App } = await import('../App');
+
+    root.render(<App />);
+
+    await waitForText('Ready for a quick photo?');
+
+    const settingsButton = Array.from(document.querySelectorAll('button'))
+      .find((button) => button.textContent?.includes('Settings')) as HTMLButtonElement | undefined;
+    settingsButton?.click();
+    await waitForText('Reset account data');
+
+    const resetButton = Array.from(document.querySelectorAll('button'))
+      .find((button) => button.textContent?.includes('Reset account data')) as HTMLButtonElement | undefined;
+    resetButton?.click();
+
+    await waitForText('Continue as');
+
+    const responsibleButton = Array.from(document.querySelectorAll('button'))
+      .find((button) => button.textContent?.includes('Responsible')) as HTMLButtonElement | undefined;
+    responsibleButton?.click();
+
+    await waitForText('Link account flow');
+
+    expect(fakeRepository.snapshot().role).toBe('parent');
+    expect(confirm).toHaveBeenCalled();
+    confirm.mockRestore();
+  }, 15000);
+
+  it('lets a responsible device reset and continue as participant', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    fakeRepository = createFakeRepository({
+      ...makeState(),
+      role: 'parent',
+      family: { id: 'family-1', linked: true, childLinked: true, childName: 'Maya', linkingCode: 'ZD-123456', parentRecoveryCode: 'PR-1234-5678-ABCD', consented: true },
+    });
+    const { App } = await import('../App');
+
+    root.render(<App />);
+
+    await waitForText('Settings');
+
+    const settingsButton = Array.from(document.querySelectorAll('button'))
+      .find((button) => button.textContent?.includes('Settings')) as HTMLButtonElement | undefined;
+    settingsButton?.click();
+    await waitForText('Reset account data');
+
+    const resetButton = Array.from(document.querySelectorAll('button'))
+      .find((button) => button.textContent?.includes('Reset account data')) as HTMLButtonElement | undefined;
+    resetButton?.click();
+
+    await waitForText('Continue as');
+
+    const participantButton = Array.from(document.querySelectorAll('button'))
+      .find((button) => button.textContent?.includes('Participant')) as HTMLButtonElement | undefined;
+    participantButton?.click();
+
+    await waitForText('Link account flow');
+
+    expect(fakeRepository.snapshot().role).toBe('child');
+    expect(confirm).toHaveBeenCalled();
+    confirm.mockRestore();
   }, 15000);
 });

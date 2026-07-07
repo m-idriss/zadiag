@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import type { AppState, MonitoringPlan, RoutineAssignment, RoutineValidationMode, ScheduleGroup, VerificationEvent } from '../domain/models';
 import { groupsFromLegacyPlan, nextPlannedWindow, summarizeWeekdaysShort } from '../domain/monitoringPlan';
 import type { MessageKey } from '../services/i18n';
@@ -16,6 +16,10 @@ const completionRate = (assignment: RoutineAssignment, events: VerificationEvent
 };
 
 type RequestStatus = 'idle' | 'sent' | 'active' | 'error';
+interface RequestRetryState {
+  attempts: number;
+  retryAt: number;
+}
 
 const responseWindowSummary = (expiryMinutes: number, t: (key: MessageKey) => string) =>
   expiryMinutes > 0
@@ -57,6 +61,7 @@ export function RoutinesScreen({
   getProofImageUrl,
   onAssignRoutine,
   onDeleteRoutine,
+  onRetryRoutines,
   onSaveMonitoringPlan,
   savingRoutineId,
   t,
@@ -68,6 +73,7 @@ export function RoutinesScreen({
   getProofImageUrl?: (eventId: string) => Promise<string>;
   onAssignRoutine?: (routineId: string) => Promise<void>;
   onDeleteRoutine?: (routineId: string) => Promise<void>;
+  onRetryRoutines?: () => Promise<void>;
   onSaveMonitoringPlan?: (routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode) => Promise<void>;
   savingRoutineId?: string;
   t: (key: MessageKey) => string;
@@ -75,6 +81,9 @@ export function RoutinesScreen({
   const [selectedId, setSelectedId] = useState<string>();
   const [requestingRoutineId, setRequestingRoutineId] = useState<string>();
   const [requestStatuses, setRequestStatuses] = useState<Record<string, RequestStatus>>({});
+  const [requestRetries, setRequestRetries] = useState<Record<string, RequestRetryState>>({});
+  const [retryTick, setRetryTick] = useState(Date.now());
+  const [retryingRoutines, setRetryingRoutines] = useState(false);
   const [catalogOpen, setCatalogOpen] = useState(() => Boolean(onAssignRoutine && !state.routineAssignments.length));
   const [assigningRoutineId, setAssigningRoutineId] = useState<string>();
   const [assignError, setAssignError] = useState(false);
@@ -84,10 +93,18 @@ export function RoutinesScreen({
   const [expandedScheduleIds, setExpandedScheduleIds] = useState<Set<string>>(() => new Set());
   const selected = state.routineAssignments.find((assignment) => assignment.id === selectedId);
   const marketplace = marketplaceFromTemplates();
+  const retryDelayForAttempt = (attempt: number) => Math.min(30_000, 2 ** Math.max(0, attempt - 1) * 2_000);
   const openDetails = (assignmentId: string, initialTab?: 'overview' | 'plan') => {
     setDetailInitialTab(initialTab);
     setSelectedId(assignmentId);
   };
+
+  useEffect(() => {
+    if (!Object.keys(requestRetries).length) return undefined;
+    const timer = window.setInterval(() => setRetryTick(Date.now()), 500);
+    return () => window.clearInterval(timer);
+  }, [requestRetries]);
+
   if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={() => setSelectedId(undefined)} start={start} edit={edit} initialTab={detailInitialTab} getProofImageUrl={getProofImageUrl} onSaveMonitoringPlan={onSaveMonitoringPlan ? (plan, validationMode) => onSaveMonitoringPlan(selected.routineId, plan, validationMode) : undefined} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
 
   const setRequestStatus = (routineId: string, status: RequestStatus) => {
@@ -101,10 +118,32 @@ export function RoutinesScreen({
     try {
       await requestCheck(routineId);
       setRequestStatus(routineId, 'sent');
+      setRequestRetries((current) => {
+        const next = { ...current };
+        delete next[routineId];
+        return next;
+      });
     } catch (error) {
       setRequestStatus(routineId, String(error).includes('active_check_exists') ? 'active' : 'error');
+      if (!String(error).includes('active_check_exists')) {
+        setRequestRetries((current) => {
+          const attempts = (current[routineId]?.attempts ?? 0) + 1;
+          return { ...current, [routineId]: { attempts, retryAt: Date.now() + retryDelayForAttempt(attempts) } };
+        });
+      }
     } finally {
       setRequestingRoutineId(undefined);
+    }
+  };
+  const retryRoutines = async () => {
+    if (!onRetryRoutines) return;
+    setRetryingRoutines(true);
+    try {
+      await onRetryRoutines();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setRetryingRoutines(false);
     }
   };
 
@@ -148,7 +187,16 @@ export function RoutinesScreen({
   };
 
   if (state.routinesLoaded === false) return <div className="content-screen routines-state" role="status"><p>{t('loadingRoutines')}</p></div>;
-  if (state.routinesError) return <div className="content-screen routines-state" role="alert"><p>{t('routinesLoadError')}</p></div>;
+  if (state.routinesError) return (
+    <div className="content-screen routines-state" role="alert">
+      <p>{t('routinesLoadError')}</p>
+      {onRetryRoutines ? (
+        <button type="button" className="primary-action-button routines-retry-button" disabled={retryingRoutines} onClick={() => { void retryRoutines(); }}>
+          {retryingRoutines ? t('retrying') : t('retryNow')}
+        </button>
+      ) : null}
+    </div>
+  );
 
   return (
     <div className="content-screen routines-screen">
@@ -214,6 +262,9 @@ export function RoutinesScreen({
               })),
             }));
             const requestStatus = requestStatuses[assignment.routineId] ?? 'idle';
+            const retryState = requestRetries[assignment.routineId];
+            const retryInSeconds = retryState ? Math.max(0, Math.ceil((retryState.retryAt - retryTick) / 1000)) : 0;
+            const retryBlocked = Boolean(retryState && retryInSeconds > 0);
             const requesting = requestingRoutineId === assignment.routineId;
             const scheduleExpanded = expandedScheduleIds.has(assignment.id);
             return (
@@ -251,7 +302,7 @@ export function RoutinesScreen({
                     </div>
                     <div className="routine-card-actions">
                       {edit && requestCheck && (
-                        <button className="request-check routine-list-request" disabled={requesting} onClick={() => { void requestNow(assignment.routineId); }}>
+                        <button className="request-check routine-list-request" disabled={requesting || retryBlocked} onClick={() => { void requestNow(assignment.routineId); }}>
                           {requesting ? t('requestingCheck') : next ? t('requestCheckAgain') : t('requestCheckNow')}
                         </button>
                       )}
@@ -273,7 +324,13 @@ export function RoutinesScreen({
                         {next && <p role="status" className="request-feedback">{t('requestCheckActive')}</p>}
                         {requestStatus === 'sent' && <p role="status" aria-live="polite" className="request-feedback success">{t('requestCheckSent')}</p>}
                         {requestStatus === 'active' && !next && <p role="status" aria-live="polite" className="request-feedback">{t('requestCheckActive')}</p>}
-                        {requestStatus === 'error' && <p role="status" aria-live="polite" className="request-feedback error">{t('requestCheckError')}</p>}
+                        {requestStatus === 'error' && (
+                          <p role="status" aria-live="polite" className="request-feedback error">
+                            {retryBlocked
+                              ? `${t('requestCheckError')} ${t('retryInSeconds').replace('{seconds}', String(retryInSeconds))}`
+                              : t('requestCheckError')}
+                          </p>
+                        )}
                       </>
                     )}
                   </div>

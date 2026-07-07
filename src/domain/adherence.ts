@@ -1,4 +1,4 @@
-import type { VerificationEvent } from './models';
+import type { RoutineAssignment, VerificationEvent } from './models';
 
 const finalStatuses = new Set([
   'detected',
@@ -34,6 +34,18 @@ export function withResolvedEventStatuses(events: VerificationEvent[], now = Dat
     const status = resolvedEventStatus(event, now);
     return status === event.status ? event : { ...event, status };
   });
+}
+
+export type StalePendingCheckReason = 'expired' | 'orphaned';
+
+export function stalePendingCheckReason(
+  event: VerificationEvent,
+  assignments: Pick<RoutineAssignment, 'routineId'>[] = [],
+  now = Date.now(),
+): StalePendingCheckReason | undefined {
+  if (event.status !== 'pending') return undefined;
+  if (!assignments.some((assignment) => assignment.routineId === event.routineId)) return 'orphaned';
+  return Date.parse(event.expiresAt) <= now ? 'expired' : undefined;
 }
 
 export function isFreshCapture(
