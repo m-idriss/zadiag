@@ -355,6 +355,7 @@ export function App() {
             getProofImageUrl={(eventId) => repository.getProofImageUrl(eventId)}
             onAssignRoutine={async (routineId) => { await repository.assignRoutine(routineId); sync(); }}
             onDeleteRoutine={async (routineId) => { await repository.deleteRoutine(routineId); sync(); }}
+            onRetryRoutines={repository.retryRemoteSync ? async () => { await repository.retryRemoteSync?.(); sync(); } : undefined}
             onSaveMonitoringPlan={async (routineId, plan, validationMode) => {
               setSavingRoutineId(routineId);
               try {

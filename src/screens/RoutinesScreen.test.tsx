@@ -56,8 +56,13 @@ describe('participant routines navigation', () => {
     act(() => root.render(<RoutinesScreen state={state} t={(key) => translate('en', key)} />));
     expect(container.querySelector('[role="status"]')?.textContent).toContain('Loading routines');
 
-    act(() => root.render(<RoutinesScreen state={{ ...state, routinesLoaded: true, routinesError: true }} t={(key) => translate('en', key)} />));
+    const retry = vi.fn().mockResolvedValue(undefined);
+    act(() => root.render(<RoutinesScreen state={{ ...state, routinesLoaded: true, routinesError: true }} onRetryRoutines={retry} t={(key) => translate('en', key)} />));
     expect(container.querySelector('[role="alert"]')?.textContent).toContain('could not be loaded');
+    const retryButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Retry');
+    expect(retryButton).toBeDefined();
+    act(() => retryButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(retry).toHaveBeenCalled();
   });
 
   it('opens the routine catalog when the responsible view is empty', () => {
@@ -248,5 +253,37 @@ describe('participant routines navigation', () => {
     expect(confirm).toHaveBeenCalledWith('Delete Hydration? Related checks will be removed.');
     expect(deleteRoutine).toHaveBeenCalledWith('daily-hydration');
     confirm.mockRestore();
+  });
+
+  it('backs off before retrying failed check requests', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-07T08:00:00.000Z'));
+    const assignment = createDefaultRoutineAssignment();
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      routineAssignments: [assignment], events: [],
+    };
+    const requestCheck = vi.fn().mockRejectedValueOnce(new Error('unavailable')).mockResolvedValue(undefined);
+    act(() => root.render(<RoutinesScreen state={state} edit requestCheck={requestCheck} t={(key) => translate('en', key)} />));
+
+    const scheduleToggle = container.querySelector('button[aria-label="Show schedule"]');
+    act(() => scheduleToggle?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    const requestButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Request a check now') as HTMLButtonElement;
+
+    await act(async () => {
+      requestButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain('Retry in 2s.');
+    expect(requestButton.disabled).toBe(true);
+
+    await act(async () => {
+      vi.advanceTimersByTime(2_000);
+      await Promise.resolve();
+    });
+
+    expect(requestButton.disabled).toBe(false);
   });
 });

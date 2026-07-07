@@ -113,6 +113,10 @@ class LazyFirebaseRepository implements AppRepository {
     return (await this.load()).reviewCheck(eventId, decision);
   }
 
+  async retryRemoteSync() {
+    return (await this.load()).retryRemoteSync?.();
+  }
+
   async reset() {
     return (await this.load()).reset();
   }
