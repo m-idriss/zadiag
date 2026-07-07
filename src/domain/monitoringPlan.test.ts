@@ -90,6 +90,28 @@ describe('monitoring plan helpers', () => {
     });
   });
 
+  it('stores the maximum number of checks on any active day', () => {
+    const groups = [
+      {
+        id: 'weekdays',
+        weekdays: [1, 2, 3, 4, 5, 6, 7],
+        windows: [
+          { id: 'morning', start: '07:30', end: '09:30' },
+          { id: 'noon', start: '12:00', end: '14:00' },
+          { id: 'evening', start: '17:00', end: '20:00' },
+        ],
+      },
+      {
+        id: 'weekend',
+        weekdays: [6, 7],
+        windows: [{ id: 'lateMorning', start: '10:00', end: '12:00' }],
+      },
+    ];
+
+    expect(maxChecksPerActiveDay(groups)).toBe(4);
+    expect(buildMonitoringPlanFromGroups({}, groups).checksPerDay).toBe(4);
+  });
+
   it('keeps zero response delay as the full active window', () => {
     const groups = [{
       id: 'g1',

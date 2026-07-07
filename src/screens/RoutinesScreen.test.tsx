@@ -94,7 +94,7 @@ describe('participant routines navigation', () => {
     act(() => root.render(<RoutinesScreen state={state} getProofImageUrl={getProofImageUrl} t={(key) => translate('en', key)} />));
 
     expect(container.textContent).toContain('Orthodontic Elastics');
-    expect(container.textContent).toContain('3 checks each day');
+    expect(container.textContent).toContain('3 max checks each day');
     expect(container.textContent).toContain('33%');
     expect(container.textContent).not.toContain('Wear your elastics as prescribed');
     expect(container.textContent).toContain('Next check');
@@ -114,18 +114,14 @@ describe('participant routines navigation', () => {
       await new Promise((resolve) => window.setTimeout(resolve, 100));
     });
 
-    expect(container.textContent).toContain('Progress');
+    expect(container.textContent).toContain('Tracking');
     expect(container.textContent).toContain('Instructions');
-    expect(container.textContent).toContain('History');
     expect(container.textContent).toContain('Expected proof');
-
-    const instructions = Array.from(container.querySelectorAll('.routine-tabs button')).find((button) => button.textContent === 'Instructions');
-    act(() => instructions?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(container.textContent).toContain('Take a clear photo');
 
-    const history = Array.from(container.querySelectorAll('.routine-tabs button')).find((button) => button.textContent === 'History');
+    const tracking = Array.from(container.querySelectorAll('.routine-tabs button')).find((button) => button.textContent === 'Tracking');
     await act(async () => {
-      history?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      tracking?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       await Promise.resolve();
     });
     expect(container.textContent).toContain('Recent history');
@@ -136,8 +132,6 @@ describe('participant routines navigation', () => {
     act(() => proofThumb?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(container.querySelector('.proof-lightbox img')?.getAttribute('src')).toBe('data:image/png;base64,PROOF');
 
-    const progress = Array.from(container.querySelectorAll('.routine-tabs button')).find((button) => button.textContent === 'Progress');
-    act(() => progress?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(container.textContent).toContain('Overall progress');
     expect(container.textContent).toContain('Activity');
     const heatmapDays = container.querySelectorAll('.routine-heatmap-day');

@@ -290,10 +290,6 @@ export function RoutineEditScreen({
             })}
           </div>
 
-          <div className="schedule-group-heading">
-            <span>{t('timeWindows')}</span>
-          </div>
-
           <div className="plan-window-list">
             {group.windows.map((window, windowIndex) => (
               <article className="plan-window-card" key={window.id}>
@@ -301,18 +297,12 @@ export function RoutineEditScreen({
                   <span>{windowIndex + 1}</span>
                 </div>
                 <div className="plan-time-fields">
-                  <label>
-                    <span>{t('start')}</span>
-                    <button type="button" className="plan-time-button" onClick={() => openTimePicker(group.id, window.id, 'start', window.start)}>
-                      {window.start}
-                    </button>
-                  </label>
-                  <label>
-                    <span>{t('end')}</span>
-                    <button type="button" className="plan-time-button" onClick={() => openTimePicker(group.id, window.id, 'end', window.end)}>
-                      {window.end}
-                    </button>
-                  </label>
+                  <button type="button" className="plan-time-button" aria-label={`${t('start')} ${window.start}`} onClick={() => openTimePicker(group.id, window.id, 'start', window.start)}>
+                    <span>{t('start')}</span><b>{window.start}</b>
+                  </button>
+                  <button type="button" className="plan-time-button" aria-label={`${t('end')} ${window.end}`} onClick={() => openTimePicker(group.id, window.id, 'end', window.end)}>
+                    <span>{t('end')}</span><b>{window.end}</b>
+                  </button>
                 </div>
                 <button type="button" className="plan-remove-button" onClick={() => removeWindow(group.id, window.id)} aria-label={t('removeWindow')} disabled={group.windows.length === 1}>
                   <span aria-hidden="true">×</span>

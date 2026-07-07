@@ -10,7 +10,8 @@ import { StatusPill } from '../components/StatusPill';
 import { dayPeriodLabelKey } from '../domain/taskTimeLabel';
 import { RoutineEditScreen } from './RoutineEditScreen';
 
-type DetailTab = 'overview' | 'instructions' | 'history' | 'progress' | 'plan';
+type DetailTab = 'details' | 'tracking' | 'plan';
+type DetailInitialTab = DetailTab | 'overview';
 
 const sameLocalDay = (value: string, day = new Date()) => {
   const date = new Date(value);
@@ -132,11 +133,11 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   getProofImageUrl?: (eventId: string) => Promise<string>;
   t: (key: MessageKey) => string;
   edit?: boolean;
-  initialTab?: DetailTab;
+  initialTab?: DetailInitialTab;
   onSaveMonitoringPlan?: (plan: RoutineAssignment['plan'], validationMode?: RoutineValidationMode) => Promise<void>;
   routinePlanBusy?: boolean;
 }) {
-  const [tab, setTab] = useState<DetailTab>(initialTab ?? (edit ? 'plan' : 'overview'));
+  const [tab, setTab] = useState<DetailTab>(initialTab === 'plan' ? 'plan' : (edit ? 'plan' : 'details'));
   const [proofUrls, setProofUrls] = useState<Record<string, string>>({});
   const [proofErrors, setProofErrors] = useState<Record<string, boolean>>({});
   const [enlargedProofUrl, setEnlargedProofUrl] = useState<string>();
@@ -153,15 +154,15 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   const days = calendarDays(events, locale);
   const monthSections = calendarMonthSections(days, locale);
   const currentStreak = streakFor(events);
-  const tabs: DetailTab[] = edit ? ['plan', 'overview', 'instructions', 'history', 'progress'] : ['overview', 'instructions', 'history', 'progress'];
+  const tabs: DetailTab[] = edit ? ['plan', 'details', 'tracking'] : ['details', 'tracking'];
 
   useEffect(() => {
-    if (tab !== 'progress') return;
+    if (tab !== 'tracking') return;
     todayHeatmapRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }, [tab]);
 
   useEffect(() => {
-    if (tab !== 'history' || !getProofImageUrl) return;
+    if (tab !== 'tracking' || !getProofImageUrl) return;
     events.forEach((event) => {
       if (!event.proofImagePath || proofUrls[event.id] || proofErrors[event.id]) return;
       void getProofImageUrl(event.id)
@@ -190,75 +191,82 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
     );
   };
 
+  const detailsPanel = (
+    <div className="routine-tab-panel">
+      <section className="next-check-card"><div><small>{t('nextCheck')}</small><h2>{next ? t(dayPeriodLabelKey(next.expiresAt)) : t('noPendingTask')}</h2>{next && <p>{t('before')} {formatTime(next.expiresAt)}</p>}</div><span aria-hidden="true"><IonIcon icon={timeOutline} /></span></section>
+      <section className="routine-copy"><h2>{t('routineSummary')}</h2><p>{visual.description}</p></section>
+      <section className="routine-meta-card">
+        <div className="routine-plan-meta"><span aria-hidden="true"><IonIcon icon={timeOutline} /></span><b>{t('monitoringPlan')}</b><p>{assignment.plan.checksPerDay} {t('checksDay')}</p>{edit && <button type="button" onClick={() => setTab('plan')} className="routine-edit-plan-button">{t('edit')}</button>}</div>
+        <div><span aria-hidden="true"><IonIcon icon={cameraOutline} /></span><b>{t('expectedProof')}</b><p>{visual.proofType}</p><i><IonIcon icon={chevronForwardOutline} /></i></div>
+        <div><span aria-hidden="true"><IonIcon icon={peopleOutline} /></span><b>{t('responsible')}</b><p>{visual.responsibleName}</p><i><IonIcon icon={chevronForwardOutline} /></i></div>
+      </section>
+      <section className="routine-copy"><h2>{t('instructions')}</h2><p>{visual.instructions}</p></section>
+      <div className="routine-instruction-list">{visual.instructionSteps.map((step, index) => <article key={step.id}><b>{index + 1}</b><span aria-hidden="true">{renderRoutineStepIcon(step.icon)}</span><div><h3>{step.title}</h3><p>{step.description}</p></div></article>)}</div>
+      <aside className="routine-advice"><b>{t('advice')}</b><p>{t('routineAdvice')}</p></aside>
+      {next && start && <IonButton className="routine-proof-action" expand="block" onClick={start}><IonIcon icon={cameraOutline} slot="start" />{t('sendProof')}</IonButton>}
+    </div>
+  );
+
+  const trackingPanel = (
+    <div className="routine-tab-panel">
+      <h2>{t('globalProgress')}</h2><section className="card progress-summary"><div className="progress-ring" style={{ '--progress': `${summary.rate * 360}deg` } as React.CSSProperties}><span>{Math.round(summary.rate * 100)}%</span></div><dl><div><dt>{t('checksSuccessful')}</dt><dd>{summary.successful}</dd></div><div><dt>{t('toReview')}</dt><dd>{summary.attention}</dd></div><div><dt>{t('missed')}</dt><dd>{events.filter((event) => ['missed', 'expired'].includes(event.status)).length}</dd></div></dl></section>
+      <h2>{t('activityHeatmap')}</h2><div className="routine-heatmap" aria-label={t('activityHeatmap')}>
+        <div className="routine-heatmap-body">
+          <div className="routine-heatmap-weekdays" aria-hidden="true">{days.slice(0, 7).map((day) => <span key={day.weekday}>{day.label}</span>)}</div>
+          <div className="routine-heatmap-months">
+            {monthSections.map((month) => (
+              <section className="routine-heatmap-month" key={month.key} aria-label={month.label}>
+                <h3>{month.label}</h3>
+                <div className="routine-heatmap-weeks">
+                  {month.weeks.map((week, weekIndex) => (
+                    <div className="routine-heatmap-week" key={week[0]?.key ?? weekIndex}>
+                      {week.map((day) => (
+                        <span
+                          className={`routine-heatmap-day ${day.status} level-${day.level} ${day.total > 0 && !day.isFuture ? 'has-activity' : ''} ${day.isToday ? 'is-today' : ''} ${day.isFuture ? 'is-future' : ''} ${day.isOutsideMonth ? 'is-outside-month' : ''}`}
+                          key={`${month.key}-${day.key}`}
+                          ref={day.isToday && !day.isOutsideMonth ? todayHeatmapRef : undefined}
+                          style={{
+                            '--success-share': `${day.successfulShare}%`,
+                            '--attention-end': `${day.successfulShare + day.attentionShare}%`,
+                          } as React.CSSProperties}
+                          title={day.isOutsideMonth ? undefined : `${day.dateLabel}: ${day.successful} ${t('successful')}, ${day.attention} ${t('toReview')}, ${day.missed} ${t('missed')}`}
+                          aria-hidden={day.isOutsideMonth ? true : undefined}
+                          aria-label={day.isOutsideMonth ? undefined : `${day.dateLabel}: ${day.successful} ${t('successful')}, ${day.attention} ${t('toReview')}, ${day.missed} ${t('missed')}`}
+                        ><b>{day.isOutsideMonth ? '' : day.dayOfMonth}</b></span>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="heatmap-legend" aria-hidden="true"><span><i className="success" />{t('successful')}</span><span><i className="attention" />{t('toReview')}</span><span><i className="missed" />{t('missed')}</span></div>
+      <h2>{t('streaks')}</h2><div className="streak-grid"><div><small>{t('currentStreak')}</small><b>{currentStreak}</b><span>{t('days')}</span></div><div><small>{t('bestStreak')}</small><b>{Math.max(currentStreak, summary.successful)}</b><span>{t('days')}</span></div></div>
+      <div className="tab-section-title"><h2>{t('recentHistory')}</h2><span>{events.length}</span></div><div className="routine-history-list">{events.map(historyRow)}{!events.length && <p className="empty-state">{t('noRoutineHistory')}</p>}</div>
+    </div>
+  );
+
   return (
     <div className="content-screen routine-detail-screen" style={visual.style}>
       <div className="routine-detail-topbar">
         <button type="button" className="detail-back" onClick={back} aria-label={t('backToRoutines')}><IonIcon icon={chevronBackOutline} /></button>
+        <header className="routine-detail-hero">
+          <span className="routine-hero-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
+          <div className="routine-detail-title">
+            <h1>{visual.name}</h1>
+            <p>{assignment.plan.checksPerDay} {t('checksDay')}</p>
+          </div>
+        </header>
         <button type="button" className="more-button" aria-label={t('moreOptions')}><IonIcon icon={ellipsisHorizontal} /></button>
       </div>
-      <header className="routine-detail-hero">
-        <span className="routine-hero-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
-        <div className="routine-detail-title">
-          <h1>{visual.name}</h1>
-          <p>{assignment.plan.checksPerDay} {t('checksDay')}</p>
-        </div>
-      </header>
       <nav className="routine-tabs" aria-label={t('routineSections')}>
-        {tabs.map((item) => <button type="button" className={tab === item ? 'active' : ''} aria-current={tab === item ? 'page' : undefined} onClick={() => setTab(item)} key={item}>{t(item === 'overview' ? 'overviewTab' : item === 'instructions' ? 'instructions' : item === 'history' ? 'history' : item === 'plan' ? 'monitoringPlan' : 'routineProgress')}</button>)}
+        {tabs.map((item) => <button type="button" className={tab === item ? 'active' : ''} aria-current={tab === item ? 'page' : undefined} onClick={() => setTab(item)} key={item}>{t(item === 'details' ? 'infoTab' : item === 'plan' ? 'monitoringPlan' : 'trackingTab')}</button>)}
       </nav>
 
-      {tab === 'overview' && <div className="routine-tab-panel">
-        <section className="next-check-card"><div><small>{t('nextCheck')}</small><h2>{next ? t(dayPeriodLabelKey(next.expiresAt)) : t('noPendingTask')}</h2>{next && <p>{t('before')} {formatTime(next.expiresAt)}</p>}</div><span aria-hidden="true"><IonIcon icon={timeOutline} /></span></section>
-        <section className="routine-copy"><h2>{t('overviewTab')}</h2><p>{visual.description}</p></section>
-        <section className="routine-meta-card">
-          <div className="routine-plan-meta"><span aria-hidden="true"><IonIcon icon={timeOutline} /></span><b>{t('monitoringPlan')}</b><p>{assignment.plan.checksPerDay} {t('timesPerDay')}</p>{edit && <button type="button" onClick={() => setTab('plan')} className="routine-edit-plan-button">{t('edit')}</button>}</div>
-          <div><span aria-hidden="true"><IonIcon icon={cameraOutline} /></span><b>{t('expectedProof')}</b><p>{visual.proofType}</p><i><IonIcon icon={chevronForwardOutline} /></i></div>
-          <div><span aria-hidden="true"><IonIcon icon={peopleOutline} /></span><b>{t('responsible')}</b><p>{visual.responsibleName}</p><i><IonIcon icon={chevronForwardOutline} /></i></div>
-        </section>
-        {next && start && <IonButton className="routine-proof-action" expand="block" onClick={start}><IonIcon icon={cameraOutline} slot="start" />{t('sendProof')}</IonButton>}
-      </div>}
-
-      {tab === 'instructions' && <div className="routine-tab-panel"><section className="routine-copy"><h2>{t('instructions')}</h2><p>{visual.instructions}</p></section><div className="routine-instruction-list">{visual.instructionSteps.map((step, index) => <article key={step.id}><b>{index + 1}</b><span aria-hidden="true">{renderRoutineStepIcon(step.icon)}</span><div><h3>{step.title}</h3><p>{step.description}</p></div></article>)}</div><aside className="routine-advice"><b>{t('advice')}</b><p>{t('routineAdvice')}</p></aside></div>}
-
-      {tab === 'history' && <div className="routine-tab-panel"><div className="tab-section-title"><h2>{t('recentHistory')}</h2><span>{events.length}</span></div><div className="routine-history-list">{events.map(historyRow)}{!events.length && <p className="empty-state">{t('noRoutineHistory')}</p>}</div></div>}
-
-      {tab === 'progress' && <div className="routine-tab-panel">
-        <h2>{t('globalProgress')}</h2><section className="card progress-summary"><div className="progress-ring" style={{ '--progress': `${summary.rate * 360}deg` } as React.CSSProperties}><span>{Math.round(summary.rate * 100)}%</span></div><dl><div><dt>{t('checksSuccessful')}</dt><dd>{summary.successful}</dd></div><div><dt>{t('toReview')}</dt><dd>{summary.attention}</dd></div><div><dt>{t('missed')}</dt><dd>{events.filter((event) => ['missed', 'expired'].includes(event.status)).length}</dd></div></dl></section>
-        <h2>{t('activityHeatmap')}</h2><div className="routine-heatmap" aria-label={t('activityHeatmap')}>
-          <div className="routine-heatmap-body">
-            <div className="routine-heatmap-weekdays" aria-hidden="true">{days.slice(0, 7).map((day) => <span key={day.weekday}>{day.label}</span>)}</div>
-            <div className="routine-heatmap-months">
-              {monthSections.map((month) => (
-                <section className="routine-heatmap-month" key={month.key} aria-label={month.label}>
-                  <h3>{month.label}</h3>
-                  <div className="routine-heatmap-weeks">
-                    {month.weeks.map((week, weekIndex) => (
-                      <div className="routine-heatmap-week" key={week[0]?.key ?? weekIndex}>
-                        {week.map((day) => (
-                          <span
-                            className={`routine-heatmap-day ${day.status} level-${day.level} ${day.total > 0 && !day.isFuture ? 'has-activity' : ''} ${day.isToday ? 'is-today' : ''} ${day.isFuture ? 'is-future' : ''} ${day.isOutsideMonth ? 'is-outside-month' : ''}`}
-                            key={`${month.key}-${day.key}`}
-                            ref={day.isToday && !day.isOutsideMonth ? todayHeatmapRef : undefined}
-                            style={{
-                              '--success-share': `${day.successfulShare}%`,
-                              '--attention-end': `${day.successfulShare + day.attentionShare}%`,
-                            } as React.CSSProperties}
-                            title={day.isOutsideMonth ? undefined : `${day.dateLabel}: ${day.successful} ${t('successful')}, ${day.attention} ${t('toReview')}, ${day.missed} ${t('missed')}`}
-                            aria-hidden={day.isOutsideMonth ? true : undefined}
-                            aria-label={day.isOutsideMonth ? undefined : `${day.dateLabel}: ${day.successful} ${t('successful')}, ${day.attention} ${t('toReview')}, ${day.missed} ${t('missed')}`}
-                          ><b>{day.isOutsideMonth ? '' : day.dayOfMonth}</b></span>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="heatmap-legend" aria-hidden="true"><span><i className="success" />{t('successful')}</span><span><i className="attention" />{t('toReview')}</span><span><i className="missed" />{t('missed')}</span></div>
-        <h2>{t('streaks')}</h2><div className="streak-grid"><div><small>{t('currentStreak')}</small><b>{currentStreak}</b><span>{t('days')}</span></div><div><small>{t('bestStreak')}</small><b>{Math.max(currentStreak, summary.successful)}</b><span>{t('days')}</span></div></div>
-      </div>}
+      {tab === 'details' && detailsPanel}
+      {tab === 'tracking' && trackingPanel}
 
       {enlargedProofUrl ? (
         <div className="proof-lightbox" role="dialog" aria-modal="true" aria-label={t('responsibleReviewImageAlt')} onClick={() => setEnlargedProofUrl(undefined)}>
@@ -274,7 +282,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
           canEditValidationMode={assignment.createdBy === 'child'}
           routineId={assignment.routineId}
           onSave={onSaveMonitoringPlan}
-          onCancel={() => setTab('overview')}
+          onCancel={() => setTab('details')}
           busy={Boolean(routinePlanBusy)}
           t={t}
           embedded
