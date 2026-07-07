@@ -235,19 +235,21 @@ export function ParentDashboard({
                     <div className="parent-review-actions">
                       <button
                         type="button"
-                        className="parent-review-button approve"
-                        disabled={reviewingId === event.id}
-                        onClick={() => { void decide(event.id, 'detected'); }}
-                      >
-                        {t('responsibleReviewApprove')}
-                      </button>
-                      <button
-                        type="button"
                         className="parent-review-button reject"
+                        aria-label={t('responsibleReviewReject')}
                         disabled={reviewingId === event.id}
                         onClick={() => { void decide(event.id, 'not_detected'); }}
                       >
-                        {t('responsibleReviewReject')}
+                        <AppIcon name="close" />
+                      </button>
+                      <button
+                        type="button"
+                        className="parent-review-button approve"
+                        aria-label={t('responsibleReviewApprove')}
+                        disabled={reviewingId === event.id}
+                        onClick={() => { void decide(event.id, 'detected'); }}
+                      >
+                        <AppIcon name="check" />
                       </button>
                     </div>
                   </div>

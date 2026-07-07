@@ -425,7 +425,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .parent-review-section { display: grid; gap: 10px; }
 .parent-review-list { display: grid; gap: 8px; }
 .parent-review-card { display: grid; padding: var(--row-padding-y) var(--row-padding-x); overflow: hidden; border-radius: 20px; touch-action: pan-y; }
-.parent-review-main { display: grid; grid-template-columns: 66px minmax(0, 1fr) minmax(212px, 30%); align-items: center; gap: 12px; min-height: 66px; }
+.parent-review-main { display: grid; grid-template-columns: 66px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 66px; }
 .parent-review-image {
   align-self: start;
   width: 66px;
@@ -452,8 +452,9 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .parent-review-copy strong { display: block; overflow: hidden; color: var(--navy); font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
 .parent-review-copy small { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; font-weight: 800; }
 .parent-review-copy p { display: -webkit-box; margin: 0; overflow: hidden; color: var(--muted); font-size: 12px; line-height: 1.32; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.parent-review-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; align-self: center; }
-.parent-review-button { min-height: 50px; border: 0; border-radius: 12px; font-size: 12px; font-weight: 850; }
+.parent-review-actions { display: grid; grid-template-columns: repeat(2, 46px); gap: 7px; align-self: center; justify-content: end; }
+.parent-review-button { width: 46px; min-height: 46px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 12px; font-size: 22px; font-weight: 850; }
+.parent-review-button .app-icon { font-size: 23px; }
 .parent-review-button.approve { background: var(--teal); color: white; }
 .parent-review-button.reject { background: color-mix(in srgb, var(--coral) 10%, white); color: color-mix(in srgb, var(--coral) 84%, var(--navy)); }
 .parent-review-button:disabled { opacity: .62; }
@@ -492,12 +493,13 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 }
 @media (max-width: 430px) {
   .parent-review-card { padding: var(--row-padding-y) var(--row-padding-x); }
-  .parent-review-main { grid-template-columns: 57px minmax(0, 1fr); gap: 9px; min-height: 57px; }
+  .parent-review-main { grid-template-columns: 57px minmax(0, 1fr) auto; gap: 9px; min-height: 57px; }
   .parent-review-image { width: 57px; height: 57px; border-radius: 11px; }
   .parent-review-copy strong { font-size: 14px; }
   .parent-review-copy small, .parent-review-copy p { font-size: 11px; }
-  .parent-review-actions { grid-column: 1 / -1; }
-  .parent-review-button { border-radius: 11px; font-size: 11px; }
+  .parent-review-actions { grid-column: auto; grid-template-columns: repeat(2, 40px); gap: 6px; }
+  .parent-review-button { width: 40px; min-height: 40px; border-radius: 11px; font-size: 20px; }
+  .parent-review-button .app-icon { font-size: 21px; }
 }
 .history-results-heading { margin-top: 0; margin-bottom: 0; }
 .parent-history-list { display: grid; gap: 10px; }
@@ -1310,7 +1312,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .app-compact .parent-history-list { gap: 7px; }
 .app-compact .history-results-heading { min-height: 22px; }
 .app-compact .parent-review-main {
-  grid-template-columns: 54px minmax(0, 1fr) minmax(170px, 28%);
+  grid-template-columns: 54px minmax(0, 1fr) auto;
   gap: 10px;
   min-height: 54px;
 }
@@ -1319,6 +1321,18 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
   height: 54px;
   border-radius: 10px;
 }
+.app-compact .parent-review-actions {
+  grid-template-columns: repeat(2, 36px);
+  gap: 6px;
+}
+.app-compact .parent-review-button {
+  width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-radius: 10px;
+  font-size: 19px;
+}
+.app-compact .parent-review-button .app-icon { font-size: 20px; }
 .app-compact .today-routine-primary { gap: 9px; }
 .app-compact .today-task-stack {
   gap: 5px;

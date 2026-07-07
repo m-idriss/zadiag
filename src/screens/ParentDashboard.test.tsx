@@ -186,7 +186,7 @@ describe('ParentDashboard', () => {
 
     expect(container.textContent).toContain('Checks to verify');
     expect(getProofImageUrl).toHaveBeenCalledWith('review');
-    const validate = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Validate');
+    const validate = Array.from(container.querySelectorAll('button')).find((button) => button.getAttribute('aria-label') === 'Validate');
 
     await act(async () => {
       validate?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -233,7 +233,7 @@ describe('ParentDashboard', () => {
 
     expect(container.textContent).toContain('Checks to verify');
     expect(getProofImageUrl).toHaveBeenCalledWith('legacy-review');
-    const reject = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Reject');
+    const reject = Array.from(container.querySelectorAll('button')).find((button) => button.getAttribute('aria-label') === 'Reject');
 
     await act(async () => {
       reject?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
