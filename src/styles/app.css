@@ -823,11 +823,13 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .detail-back ion-icon,
 .routine-detail-topbar .more-button ion-icon { font-size: 20px; }
 .routine-detail-topbar .more-button {
+  display: none;
   visibility: hidden;
   pointer-events: none;
 }
 .routine-detail-hero {
   display: grid;
+  grid-column: 2 / 4;
   grid-template-columns: 48px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
@@ -1945,16 +1947,22 @@ ion-input {
   gap: 8px;
   margin-top: 0;
 }
-.routine-edit-cancel {
-  min-height: 0;
+.routine-edit-actions .routine-edit-cancel,
+.routine-edit-actions .routine-edit-save {
+  width: 100%;
+  min-height: 42px;
   padding: 11px;
   margin: 0;
   border-radius: 13px;
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 850;
+}
+.routine-edit-cancel {
   background: white;
-  font-size: inherit;
   box-shadow: 0 8px 22px rgba(21,50,75,.055);
 }
-.routine-edit-save { min-height: 0; margin-top: 0; padding: 11px; border-radius: 13px; font-size: inherit; box-shadow: none; }
+.routine-edit-save { box-shadow: none; }
 .routine-edit-actions button:disabled {
   opacity: 1;
   cursor: default;
