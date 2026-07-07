@@ -339,13 +339,33 @@ export function SettingsScreen({
           ) : null}
         </section>
       ) : parentRecoveryCode ? (
-        <CodeBox
-          label={t('parentRecoveryCode')}
-          hint={t('childRecoveryHelp')}
-          value={parentRecoveryCode}
-          maskValue
-          t={t}
-        />
+        <section className="settings-sensitive-area" aria-labelledby="settings-sensitive-heading">
+          <h3 id="settings-sensitive-heading">{t('settingsSensitiveSection')}</h3>
+          <button
+            type="button"
+            className="card settings-sensitive-toggle"
+            aria-expanded={sensitiveOpen}
+            aria-controls="settings-recovery-code-panel"
+            onClick={() => setSensitiveOpen((open) => !open)}
+          >
+            <div>
+              <strong>{t('parentRecoveryCode')}</strong>
+              <small>{t('settingsSensitiveCodeHint')}</small>
+            </div>
+            <IonIcon className={sensitiveOpen ? 'expanded' : undefined} icon={chevronDownOutline} aria-hidden="true" />
+          </button>
+          {sensitiveOpen ? (
+            <div id="settings-recovery-code-panel">
+              <CodeBox
+                label={t('parentRecoveryCode')}
+                hint={t('childRecoveryHelp')}
+                value={parentRecoveryCode}
+                maskValue
+                t={t}
+              />
+            </div>
+          ) : null}
+        </section>
       ) : null}
       <IonButton className="settings-reset-button" expand="block" onClick={confirmReset}>
         <IonIcon slot="start" icon={trashOutline} />
