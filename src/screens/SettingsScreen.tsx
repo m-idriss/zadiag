@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { IonButton, IonIcon } from '@ionic/react';
 import {
+  chevronDownOutline,
   informationCircleOutline,
   languageOutline,
   mailOutline,
@@ -63,6 +64,7 @@ export function SettingsScreen({
   const [updateError, setUpdateError] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [codeError, setCodeError] = useState(false);
+  const [sensitiveOpen, setSensitiveOpen] = useState(false);
 
   const regenerate = async () => {
     if (!window.confirm(t('regenerateCodeConfirm'))) return;
@@ -293,29 +295,49 @@ export function SettingsScreen({
         <ul><li>{t('noFaceRecognition')}</li><li>{t('noModelTraining')}</li><li>{t('noPhotoUpload')}</li><li>{t('immediateDeletion')}</li></ul>
       </section>
       {role === 'parent' ? (
-        childLinkingCode ? (
-          <CodeBox
-            label={t('childLinkCode')}
-            hint={t('childLinkCodeHint')}
-            value={childLinkingCode}
-            maskValue
-            t={t}
-            action={linkCodeAction}
-          />
-        ) : (
-          <section className="card code-box">
-            <div className="code-box-header">
-              <div>
-                <small className="code-box-label">{t('childLinkCode')}</small>
-                <div className="code-box-value-row">
-                  <strong>{t('childLinkCodeEmpty')}</strong>
-                </div>
-              </div>
+        <section className="settings-sensitive-area" aria-labelledby="settings-sensitive-heading">
+          <h3 id="settings-sensitive-heading">{t('settingsSensitiveSection')}</h3>
+          <button
+            type="button"
+            className="card settings-sensitive-toggle"
+            aria-expanded={sensitiveOpen}
+            aria-controls="settings-link-code-panel"
+            onClick={() => setSensitiveOpen((open) => !open)}
+          >
+            <div>
+              <strong>{t('childLinkCode')}</strong>
+              <small>{childLinkingCode ? t('settingsSensitiveCodeHint') : t('childLinkCodeEmpty')}</small>
             </div>
-            <span>{t('childLinkCodeEmptyHint')}</span>
-            <div className="code-box-actions">{linkCodeAction}</div>
-          </section>
-        )
+            <IonIcon className={sensitiveOpen ? 'expanded' : undefined} icon={chevronDownOutline} aria-hidden="true" />
+          </button>
+          {sensitiveOpen ? (
+            <div id="settings-link-code-panel">
+              {childLinkingCode ? (
+                <CodeBox
+                  label={t('childLinkCode')}
+                  hint={t('childLinkCodeHint')}
+                  value={childLinkingCode}
+                  maskValue
+                  t={t}
+                  action={linkCodeAction}
+                />
+              ) : (
+                <section className="card code-box">
+                  <div className="code-box-header">
+                    <div>
+                      <small className="code-box-label">{t('childLinkCode')}</small>
+                      <div className="code-box-value-row">
+                        <strong>{t('childLinkCodeEmpty')}</strong>
+                      </div>
+                    </div>
+                  </div>
+                  <span>{t('childLinkCodeEmptyHint')}</span>
+                  <div className="code-box-actions">{linkCodeAction}</div>
+                </section>
+              )}
+            </div>
+          ) : null}
+        </section>
       ) : parentRecoveryCode ? (
         <CodeBox
           label={t('parentRecoveryCode')}

@@ -223,6 +223,14 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .copy-code-feedback { display: inline-flex; width: fit-content; align-items: center; gap: 6px; margin-top: -2px; padding: 5px 9px; border-radius: 999px; font-size: 11px !important; font-weight: 900; background: #eef5f6; color: var(--teal) !important; }
 .copy-code-feedback.error { background: #fdebe7; color: var(--coral) !important; }
 .regenerate-code { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--teal); border-radius: 13px; background: transparent; color: var(--teal); font-weight: 900; }
+.settings-sensitive-area { display: grid; gap: 8px; }
+.settings-sensitive-area h3 { margin: 4px 4px 0; color: var(--coral); font-size: 11px; font-weight: 850; letter-spacing: .07em; text-transform: uppercase; }
+.settings-sensitive-toggle { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 32px; align-items: center; gap: 10px; padding: var(--row-padding-y) var(--row-padding-x); border: 1px solid color-mix(in srgb, var(--coral) 15%, white); background: color-mix(in srgb, var(--coral) 5%, white); color: var(--navy); text-align: left; }
+.settings-sensitive-toggle > div { min-width: 0; display: grid; gap: 2px; }
+.settings-sensitive-toggle strong { font-size: 13px; font-weight: 750; }
+.settings-sensitive-toggle small { color: var(--muted); font-size: 11px; font-weight: 550; line-height: 1.25; }
+.settings-sensitive-toggle ion-icon { justify-self: end; color: var(--coral); font-size: 20px; transition: transform .18s ease; }
+.settings-sensitive-toggle ion-icon.expanded { transform: rotate(180deg); }
 .regenerate-code:disabled { opacity: .55; }
 .consent-row { display: flex; align-items: flex-start; gap: 12px; color: var(--navy); line-height: 1.4; font-size: 14px; }
 .form-error { color: var(--coral) !important; font-weight: 800; font-size: 13px; }
