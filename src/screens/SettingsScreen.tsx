@@ -37,6 +37,8 @@ export function SettingsScreen({
   parentRecoveryCode,
   pendingChecks,
   totalChecks,
+  serviceWorkerStatus,
+  lastSyncAt,
   regenerateLinkCode,
 }: {
   t: (key: MessageKey) => string;
@@ -56,6 +58,8 @@ export function SettingsScreen({
   parentRecoveryCode?: string;
   pendingChecks: number;
   totalChecks: number;
+  serviceWorkerStatus: 'unsupported' | 'registered' | 'notRegistered';
+  lastSyncAt?: string;
   regenerateLinkCode: () => Promise<void>;
 }) {
   const [mailError, setMailError] = useState(false);
@@ -160,6 +164,19 @@ export function SettingsScreen({
           ? t('settingsUpdatePatchAvailable')
           : t('settingsUpdateAvailable')
     : t('settingsUpdateDetail');
+  const serviceWorkerDetailKey = serviceWorkerStatus === 'registered'
+    ? 'settingsServiceWorkerRegistered'
+    : serviceWorkerStatus === 'unsupported'
+      ? 'settingsServiceWorkerUnsupported'
+      : 'settingsServiceWorkerMissing';
+  const formattedLastSync = lastSyncAt
+    ? new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-US', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(lastSyncAt))
+    : t('settingsDiagnosticsMissing');
   const linkCodeAction = (
     <>
       <button type="button" className="regenerate-code" disabled={regenerating} onClick={() => { void regenerate(); }}>
@@ -242,6 +259,21 @@ export function SettingsScreen({
             trailing={<button type="button" className="settings-inline-action settings-inline-action-contained" onClick={sendDiagnosticsEmail}>{t('settingsDebugMailSend')}</button>}
           >
             {mailError ? <small className="settings-action-error">{t('settingsDebugMailError')}</small> : null}
+          </ListRow>
+          <ListRow
+            icon={<IonIcon icon={informationCircleOutline} />}
+            title={t('settingsRecoveryDiagnosticsTitle')}
+            detail={t('settingsRecoveryDiagnosticsDetail')}
+          >
+            <dl className="settings-diagnostics-list">
+              <div><dt>{t('settingsDiagnosticsFamilyId')}</dt><dd>{familyId ?? t('settingsDiagnosticsMissing')}</dd></div>
+              <div><dt>{t('settingsDiagnosticsRole')}</dt><dd>{t(role)}</dd></div>
+              <div><dt>{t('settingsDiagnosticsParticipant')}</dt><dd>{childInstalled ? t('settingsChildInstallStatusLinked') : t('settingsChildInstallStatusPending')}</dd></div>
+              <div><dt>{t('settingsDiagnosticsNotifications')}</dt><dd>{notificationsEnabled ? t('settingsNotificationsStatusEnabled') : t('settingsNotificationsStatusDisabled')}</dd></div>
+              <div><dt>{t('settingsDiagnosticsAppVersion')}</dt><dd>{import.meta.env.VITE_APP_VERSION}</dd></div>
+              <div><dt>{t('settingsDiagnosticsServiceWorker')}</dt><dd>{t(serviceWorkerDetailKey)}</dd></div>
+              <div><dt>{t('settingsDiagnosticsLastSync')}</dt><dd>{formattedLastSync}</dd></div>
+            </dl>
           </ListRow>
           <ListRow
             icon={<IonIcon icon={informationCircleOutline} />}

@@ -69,6 +69,10 @@ export function App() {
   const [resetNoticeKey, setResetNoticeKey] = useState<MessageKey>();
   const [savingRoutineId, setSavingRoutineId] = useState<string>();
   const [selectedSessionId, setSelectedSessionId] = useState<string>();
+  const [lastSyncAt, setLastSyncAt] = useState<string>();
+  const [serviceWorkerStatus, setServiceWorkerStatus] = useState<'unsupported' | 'registered' | 'notRegistered'>(
+    () => ('serviceWorker' in navigator ? 'notRegistered' : 'unsupported'),
+  );
   const useLocalDemo = isLocalDemoEnvironment();
   const t = (key: MessageKey) => translate(state.locale, key);
   const preferences = normalizeAppPreferences(state.preferences);
@@ -76,7 +80,11 @@ export function App() {
 
   useEffect(() => {
     let alive = true;
-    const unsubscribe = repository.subscribe(() => setState(repository.snapshot()));
+    const syncFromRepository = () => {
+      setState(repository.snapshot());
+      setLastSyncAt(new Date().toISOString());
+    };
+    const unsubscribe = repository.subscribe(syncFromRepository);
     const startupProgressTicker = window.setInterval(() => {
       if (!alive) return;
       setSplashProgress((current) => {
@@ -104,6 +112,7 @@ export function App() {
       window.clearInterval(startupProgressTicker);
       const restored = repository.snapshot();
       setState(restored);
+      setLastSyncAt(new Date().toISOString());
       setRoute(routeForState(restored, browserRouteContext()));
       setStartupStep(100, 'splashFinalizing');
       setStartupError(false);
@@ -125,6 +134,21 @@ export function App() {
       unsubscribe();
     };
   }, [repository]);
+
+  useEffect(() => {
+    let alive = true;
+    const refreshServiceWorkerStatus = async () => {
+      if (!('serviceWorker' in navigator)) {
+        setServiceWorkerStatus('unsupported');
+        return;
+      }
+      const registration = await navigator.serviceWorker.getRegistration().catch(() => undefined);
+      if (!alive) return;
+      setServiceWorkerStatus(registration ? 'registered' : 'notRegistered');
+    };
+    void refreshServiceWorkerStatus();
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     const pendingCount = appBadgeCountForState(state.role, state.events);
@@ -358,6 +382,8 @@ export function App() {
             parentRecoveryCode={state.family.parentRecoveryCode}
             pendingChecks={state.events.filter((event) => event.status === 'pending' && Date.parse(event.expiresAt) > Date.now()).length}
             totalChecks={state.events.length}
+            serviceWorkerStatus={serviceWorkerStatus}
+            lastSyncAt={lastSyncAt}
             regenerateLinkCode={async () => { await repository.regenerateLinkCode(); sync(); }}
             locale={state.locale}
             setLocale={async (locale) => { await repository.setLocale(locale); sync(); }}
