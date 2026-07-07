@@ -10,6 +10,7 @@ import {
   normalizeWeekdays,
   responseWindowExpiresAt,
   summarizeWeekdays,
+  summarizeWeekdaysShort,
   validateMonitoringPlanDraft,
   validateScheduleGroupsDraft,
 } from './monitoringPlan';
@@ -19,6 +20,7 @@ describe('monitoring plan helpers', () => {
     expect(normalizeWeekdays([7, 1, 1, 9, 0, 3])).toEqual([1, 3, 7]);
     expect(summarizeWeekdays([1, 2, 3, 4, 5, 6, 7], (key) => translate('en', key))).toBe('Every day');
     expect(summarizeWeekdays([1, 2, 3, 4, 5], (key) => translate('fr', key))).toBe('Du lundi au vendredi');
+    expect(summarizeWeekdaysShort([6, 7], (key) => translate('fr', key))).toBe('Sam, Dim');
   });
 
   it('creates stable unique ids when windows have been removed', () => {

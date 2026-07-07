@@ -1,8 +1,10 @@
 import type { MonitoringPlan, ScheduleGroup, TimeWindow } from './models';
 
 const weekdayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
+const weekdayShortKeys = ['mondayShort', 'tuesdayShort', 'wednesdayShort', 'thursdayShort', 'fridayShort', 'saturdayShort', 'sundayShort'] as const;
 type MonitoringPlanMessageKey =
   | typeof weekdayKeys[number]
+  | typeof weekdayShortKeys[number]
   | 'everyDay'
   | 'weekdaysOnly'
   | 'addTimeWindowError'
@@ -69,6 +71,14 @@ export const summarizeWeekdays = (weekdays: number[], t: (key: MonitoringPlanMes
   if (normalized.length === 7) return t('everyDay');
   if (normalized.length === 5 && normalized.every((day) => day <= 5)) return t('weekdaysOnly');
   return normalized.map((day) => t(weekdayKeys[day - 1])).join(', ');
+};
+
+export const summarizeWeekdaysShort = (weekdays: number[], t: (key: MonitoringPlanMessageKey) => string) => {
+  const normalized = normalizeWeekdays(weekdays);
+  if (normalized.length === 0) return '-';
+  if (normalized.length === 7) return t('everyDay');
+  if (normalized.length === 5 && normalized.every((day) => day <= 5)) return `${t('mondayShort')}-${t('fridayShort')}`;
+  return normalized.map((day) => t(weekdayShortKeys[day - 1])).join(', ');
 };
 
 export const validateMonitoringPlanDraft = (windows: TimeWindow[], weekdays: number[]): MonitoringPlanMessageKey | undefined => {

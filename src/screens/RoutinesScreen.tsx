@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState } from 'react';
 import type { AppState, MonitoringPlan, RoutineAssignment, RoutineValidationMode, ScheduleGroup, VerificationEvent } from '../domain/models';
-import { groupsFromLegacyPlan, nextPlannedWindow, summarizeWeekdays } from '../domain/monitoringPlan';
+import { groupsFromLegacyPlan, nextPlannedWindow, summarizeWeekdaysShort } from '../domain/monitoringPlan';
 import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
 import { presentRoutine } from '../domain/routinePresentation';
@@ -17,13 +17,6 @@ const completionRate = (assignment: RoutineAssignment, events: VerificationEvent
 };
 
 type RequestStatus = 'idle' | 'sent' | 'active' | 'error';
-
-const groupSummaryLabel = (group: ScheduleGroup, index: number, t: (key: MessageKey) => string) => {
-  const label = group.label?.trim();
-  const weekdaySummary = summarizeWeekdays(group.weekdays, t);
-  if (!label || label === weekdaySummary) return `${t('monitoringPeriod')} ${index + 1}`;
-  return label;
-};
 
 const responseWindowSummary = (expiryMinutes: number, t: (key: MessageKey) => string) =>
   expiryMinutes > 0
@@ -186,15 +179,14 @@ export function RoutinesScreen({
                 ? plannedWindowLabel(planned.end, now, locale, t)
                 : t('noPendingTask');
             const groups = groupsFromLegacyPlan(assignment.plan);
-            const planChips = groups.map((group, groupIndex) => {
-              const windows = group.windows.map((window) => `${window.start}–${window.end}`).join(', ');
-              return {
-                id: group.id,
-                label: groups.length > 1
-                  ? `${groupSummaryLabel(group, groupIndex, t)} · ${summarizeWeekdays(group.weekdays, t)} · ${windows}`
-                  : windows,
-              };
-            });
+            const planScheduleGroups = groups.map((group, groupIndex) => ({
+              id: group.id,
+              label: `${groups.length > 1 ? `${groupIndex + 1} · ` : ''}${summarizeWeekdaysShort(group.weekdays, t)}`,
+              windows: group.windows.map((window) => ({
+                id: `${group.id}_${window.id}`,
+                label: `${window.start}–${window.end}`,
+              })),
+            }));
             const requestStatus = requestStatuses[assignment.routineId] ?? 'idle';
             const requesting = requestingRoutineId === assignment.routineId;
             const scheduleExpanded = expandedScheduleIds.has(assignment.id);
@@ -223,8 +215,20 @@ export function RoutinesScreen({
                 {scheduleExpanded && (
                   <div className="routine-expanded-panel">
                     <p className="routine-instructions">{visual.instructions}</p>
-                    <div className="chips routine-schedule-chips">{planChips.map((chip) => <span key={chip.id}><i aria-hidden="true">◷</i>{chip.label}</span>)}</div>
+                    <div className="routine-schedule-groups">
+                      {planScheduleGroups.map((group) => (
+                        <div className="chips routine-schedule-chips" key={group.id}>
+                          {group.label && <span className="routine-schedule-period-chip">{group.label}</span>}
+                          {group.windows.map((chip) => <span key={chip.id}><i aria-hidden="true">◷</i>{chip.label}</span>)}
+                        </div>
+                      ))}
+                    </div>
                     <div className="routine-card-actions">
+                      {edit && requestCheck && (
+                        <button className="request-check routine-list-request" disabled={requesting} onClick={() => { void requestNow(assignment.routineId); }}>
+                          {requesting ? t('requestingCheck') : next ? t('requestCheckAgain') : t('requestCheckNow')}
+                        </button>
+                      )}
                       <button type="button" className="routine-list-detail-button" onClick={() => openDetails(assignment.id)}>{t('details')}</button>
                       {edit && onDeleteRoutine && (
                         <button
@@ -240,9 +244,6 @@ export function RoutinesScreen({
                     </div>
                     {edit && requestCheck && (
                       <>
-                        <button className="request-check routine-list-request" disabled={requesting} onClick={() => { void requestNow(assignment.routineId); }}>
-                          {requesting ? t('requestingCheck') : next ? t('requestCheckAgain') : t('requestCheckNow')}
-                        </button>
                         {next && <p role="status" className="request-feedback">{t('requestCheckActive')}</p>}
                         {requestStatus === 'sent' && <p role="status" aria-live="polite" className="request-feedback success">{t('requestCheckSent')}</p>}
                         {requestStatus === 'active' && !next && <p role="status" aria-live="polite" className="request-feedback">{t('requestCheckActive')}</p>}
