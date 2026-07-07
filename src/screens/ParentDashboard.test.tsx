@@ -143,7 +143,33 @@ describe('ParentDashboard', () => {
     act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
 
     expect(container.textContent).toContain('Missed');
+    expect(container.textContent).toContain('Expired before proof was sent');
     expect(container.textContent).not.toContain('Pending');
+    vi.useRealTimers();
+  });
+
+  it('explains pending checks whose routine is no longer assigned', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-07T08:04:00.000Z'));
+    const state: AppState = {
+      role: 'parent',
+      locale: 'en',
+      notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      routineAssignments: [],
+      events: [{
+        id: 'orphaned-pending',
+        routineId: 'deleted-routine',
+        sessionId: 'one',
+        requestedAt: '2026-07-07T07:30:00.000Z',
+        expiresAt: '2026-07-07T08:30:00.000Z',
+        status: 'pending',
+      }],
+    };
+
+    act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
+
+    expect(container.textContent).toContain('Routine no longer assigned');
     vi.useRealTimers();
   });
 

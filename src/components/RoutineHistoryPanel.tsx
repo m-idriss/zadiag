@@ -4,7 +4,7 @@ import type { MessageKey } from '../services/i18n';
 import { presentRoutine } from '../domain/routinePresentation';
 import { AppIcon, routineIconName } from './Icon';
 import { StatusPill } from './StatusPill';
-import { canRetakeCapture, withResolvedEventStatuses } from '../domain/adherence';
+import { canRetakeCapture, stalePendingCheckReason, withResolvedEventStatuses } from '../domain/adherence';
 import { EmptyState, ListRow } from './ui';
 
 type StatusFilter = VerificationStatus | 'all';
@@ -132,6 +132,12 @@ export function RoutineHistoryPanel({
               const canRetake = Boolean(onRetake) && canRetakeCapture(event, retryEvents ?? events, new Date());
               const canRequestCheck = Boolean(onRequestCheck) && latestMissedEventIds.has(event.id);
               const reason = displayReason(event.reason);
+              const staleReason = stalePendingCheckReason(events.find((item) => item.id === event.id) ?? event, assignments);
+              const staleHint = staleReason === 'expired'
+                ? t('staleCheckExpiredHint')
+                : staleReason === 'orphaned'
+                  ? t('staleCheckOrphanedHint')
+                  : undefined;
               const tag = analysisTag(event, locale);
               return (
                 <ListRow
@@ -146,6 +152,7 @@ export function RoutineHistoryPanel({
                       {formatDateTime(event.requestedAt)}
                       {tag ? <span className="history-analysis-tag">{tag}</span> : null}
                       {reason ? ` · ${reason}` : ''}
+                      {staleHint ? <span className="history-stale-hint"> · {staleHint}</span> : null}
                     </>
                   )}
                   style={visual?.style}
