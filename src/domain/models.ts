@@ -189,7 +189,7 @@ export const defaultPlan: MonitoringPlan = {
       ],
     },
   ],
-  expiryMinutes: 20,
+  expiryMinutes: 0,
   timeZone: 'Europe/Paris',
 };
 

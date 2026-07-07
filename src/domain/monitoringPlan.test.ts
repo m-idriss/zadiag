@@ -8,6 +8,7 @@ import {
   nextPlannedWindow,
   nextWindowId,
   normalizeWeekdays,
+  responseWindowExpiresAt,
   summarizeWeekdays,
   validateMonitoringPlanDraft,
   validateScheduleGroupsDraft,
@@ -77,7 +78,7 @@ describe('monitoring plan helpers', () => {
       checksPerDay: 1,
       weekdays: [1, 7],
       windows: [{ id: 'g1_morning', start: '07:30', end: '09:30' }],
-      expiryMinutes: 20,
+      expiryMinutes: 0,
     });
     expect(plan.timeZone).toBeTruthy();
     expect(plan.scheduleGroups?.[0]).toEqual({
@@ -85,6 +86,35 @@ describe('monitoring plan helpers', () => {
       weekdays: [1, 7],
       windows: [{ id: 'morning', start: '07:30', end: '09:30' }],
     });
+  });
+
+  it('keeps zero response delay as the full active window', () => {
+    const groups = [{
+      id: 'g1',
+      weekdays: [2],
+      windows: [{ id: 'morning', start: '07:30', end: '09:30' }],
+    }];
+
+    const plan = buildMonitoringPlanFromGroups({ expiryMinutes: 0 }, groups);
+    const expiresAt = responseWindowExpiresAt(plan, new Date(2026, 6, 7, 8, 15));
+
+    expect(plan.expiryMinutes).toBe(0);
+    expect(expiresAt.getHours()).toBe(9);
+    expect(expiresAt.getMinutes()).toBe(30);
+  });
+
+  it('caps fixed response delay at the active window end', () => {
+    const groups = [{
+      id: 'g1',
+      weekdays: [2],
+      windows: [{ id: 'morning', start: '07:30', end: '09:30' }],
+    }];
+
+    const plan = buildMonitoringPlanFromGroups({ expiryMinutes: 60 }, groups);
+    const expiresAt = responseWindowExpiresAt(plan, new Date(2026, 6, 7, 9, 0));
+
+    expect(expiresAt.getHours()).toBe(9);
+    expect(expiresAt.getMinutes()).toBe(30);
   });
 
   it('finds the next planned window when no check is currently pending', () => {

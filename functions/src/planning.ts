@@ -43,7 +43,7 @@ export const monitoringPlanSchema = z.object({
   weekdays: weekdaySchema,
   windows: z.array(timeWindowSchema).min(1).max(12),
   scheduleGroups: z.array(scheduleGroupSchema).min(1).max(12).optional(),
-  expiryMinutes: z.number().int().min(1).max(120),
+  expiryMinutes: z.number().int().min(0).max(120),
   timeZone: z.string().min(1).max(100).refine((timeZone) => {
     try {
       new Intl.DateTimeFormat('en-US', { timeZone }).format();
@@ -171,6 +171,21 @@ export const getWindowForDate = (plan: MonitoringPlan, date: Date, timeZone: str
   return plan.scheduleGroups?.length
     ? getWindowForMinutesAndWeekday(plan, (parts.hour * 60) + parts.minute, parts.weekday)
     : getWindowForMinutes(plan, (parts.hour * 60) + parts.minute);
+};
+
+export const checkExpiresAt = (plan: MonitoringPlan, now: Date, fallbackMinutes = 20) => {
+  const localMinutes = getLocalTimeMinutes(now, plan.timeZone);
+  const window = getWindowForDate(plan, now, plan.timeZone);
+  const windowEnd = window
+    ? new Date(now.getTime() + Math.max(1, minutesForTime(window.end) - localMinutes) * 60 * 1000)
+    : undefined;
+
+  if (plan.expiryMinutes > 0) {
+    const fixedDelayEnd = new Date(now.getTime() + plan.expiryMinutes * 60 * 1000);
+    return windowEnd && windowEnd.getTime() < fixedDelayEnd.getTime() ? windowEnd : fixedDelayEnd;
+  }
+
+  return windowEnd ?? new Date(now.getTime() + fallbackMinutes * 60 * 1000);
 };
 
 export const shouldAutoDispatchCheck = (

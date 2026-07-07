@@ -13,7 +13,8 @@ type MonitoringPlanMessageKey =
 
 export const MAX_SCHEDULE_GROUPS = 12;
 export const MAX_TIME_WINDOWS = 12;
-const DEFAULT_EXPIRY_MINUTES = 20;
+const DEFAULT_RESPONSE_WINDOW_MINUTES = 0;
+const FALLBACK_EXPIRY_MINUTES = 20;
 const FALLBACK_TIME_ZONE = 'Europe/Paris';
 
 const validTimePattern = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
@@ -135,6 +136,40 @@ export const nextPlannedWindow = (
   return candidates.sort((a, b) => a.start.getTime() - b.start.getTime())[0];
 };
 
+export const currentPlannedWindow = (
+  plan: Pick<MonitoringPlan, 'weekdays' | 'windows' | 'scheduleGroups'>,
+  now = new Date(),
+): PlannedWindow | undefined => {
+  const weekday = planWeekdayForDate(now);
+  const groups = groupsFromLegacyPlan(plan);
+
+  for (const group of groups) {
+    if (!normalizeWeekdays(group.weekdays).includes(weekday)) continue;
+    const window = group.windows.filter(isValidWindow).find((item) => {
+      const start = dateWithTime(now, item.start);
+      const end = dateWithTime(now, item.end);
+      return start.getTime() <= now.getTime() && now.getTime() < end.getTime();
+    });
+    if (window) return { start: dateWithTime(now, window.start), end: dateWithTime(now, window.end) };
+  }
+
+  return undefined;
+};
+
+export const responseWindowExpiresAt = (
+  plan: Pick<MonitoringPlan, 'expiryMinutes' | 'weekdays' | 'windows' | 'scheduleGroups'>,
+  now = new Date(),
+  fallbackMinutes = FALLBACK_EXPIRY_MINUTES,
+) => {
+  const currentWindowEnd = currentPlannedWindow(plan, now)?.end;
+  if (Number.isInteger(plan.expiryMinutes) && plan.expiryMinutes > 0) {
+    const fixedDelayEnd = new Date(now.getTime() + plan.expiryMinutes * 60_000);
+    return currentWindowEnd && currentWindowEnd.getTime() < fixedDelayEnd.getTime() ? currentWindowEnd : fixedDelayEnd;
+  }
+
+  return currentWindowEnd ?? new Date(now.getTime() + fallbackMinutes * 60_000);
+};
+
 export const flattenScheduleGroups = (groups: ScheduleGroup[]) => {
   const windows = groups.flatMap((group) => group.windows.map((window) => ({
     ...window,
@@ -184,9 +219,9 @@ export const buildMonitoringPlanFromGroups = (plan: Partial<MonitoringPlan>, gro
     weekdays: flattened.weekdays,
     windows: flattened.windows,
     scheduleGroups: normalizedGroups,
-    expiryMinutes: Number.isInteger(plan.expiryMinutes) && Number(plan.expiryMinutes) >= 1 && Number(plan.expiryMinutes) <= 120
+    expiryMinutes: Number.isInteger(plan.expiryMinutes) && Number(plan.expiryMinutes) >= 0 && Number(plan.expiryMinutes) <= 120
       ? Number(plan.expiryMinutes)
-      : DEFAULT_EXPIRY_MINUTES,
+      : DEFAULT_RESPONSE_WINDOW_MINUTES,
     timeZone: typeof plan.timeZone === 'string' && plan.timeZone && isValidTimeZone(plan.timeZone)
       ? plan.timeZone
       : currentTimeZone(),

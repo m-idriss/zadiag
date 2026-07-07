@@ -43,6 +43,12 @@ const scheduleGroupsSignature = (groups: ScheduleGroup[]) => JSON.stringify(grou
 
 const timeHours = Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, '0'));
 const timeMinutes = Array.from({ length: 12 }, (_, index) => String(index * 5).padStart(2, '0'));
+const responseWindowOptions = [0, 15, 30, 60] as const;
+
+const normalizedExpiryMinutes = (value: number | undefined) =>
+  Number.isInteger(value) && responseWindowOptions.includes(Number(value) as typeof responseWindowOptions[number])
+    ? Number(value)
+    : 0;
 
 type TimePickerState = {
   groupId: string;
@@ -75,17 +81,22 @@ export function RoutineEditScreen({
 }) {
   const [groups, setGroups] = useState<ScheduleGroup[]>(groupsFromLegacyPlan(plan));
   const [draftValidationMode, setDraftValidationMode] = useState<RoutineValidationMode>(validationMode);
+  const [draftExpiryMinutes, setDraftExpiryMinutes] = useState(() => normalizedExpiryMinutes(plan.expiryMinutes));
   const [error, setError] = useState<string>();
   const [timePicker, setTimePicker] = useState<TimePickerState>();
   const flattened = flattenScheduleGroups(groups);
   const totalWindowCount = flattened.windows.length;
   const initialGroupsSignature = useMemo(() => scheduleGroupsSignature(groupsFromLegacyPlan(plan)), [plan]);
+  const initialExpiryMinutes = useMemo(() => normalizedExpiryMinutes(plan.expiryMinutes), [plan.expiryMinutes]);
   const currentGroupsSignature = useMemo(() => scheduleGroupsSignature(groups), [groups]);
-  const hasChanges = currentGroupsSignature !== initialGroupsSignature || (canEditValidationMode && draftValidationMode !== validationMode);
+  const hasChanges = currentGroupsSignature !== initialGroupsSignature
+    || draftExpiryMinutes !== initialExpiryMinutes
+    || (canEditValidationMode && draftValidationMode !== validationMode);
 
   const resetDraft = () => {
     setGroups(groupsFromLegacyPlan(plan));
     setDraftValidationMode(validationMode);
+    setDraftExpiryMinutes(normalizedExpiryMinutes(plan.expiryMinutes));
     setError(undefined);
     setTimePicker(undefined);
   };
@@ -177,7 +188,7 @@ export function RoutineEditScreen({
       return;
     }
     try {
-      await onSave(buildMonitoringPlanFromGroups(plan, groups), canEditValidationMode ? draftValidationMode : undefined);
+      await onSave(buildMonitoringPlanFromGroups({ ...plan, expiryMinutes: draftExpiryMinutes }, groups), canEditValidationMode ? draftValidationMode : undefined);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error('Save error:', message);
@@ -231,6 +242,26 @@ export function RoutineEditScreen({
           </button>
         </div>
       </section>}
+
+      <section className="card plan-editor-section response-window-card">
+        <div className="card-title routine-edit-card-title">
+          <h2><span aria-hidden="true">⏱</span>{t('responseWindowTitle')}</h2>
+        </div>
+        <p>{t('responseWindowHint')}</p>
+        <div className="response-window-options" role="group" aria-label={t('responseWindowTitle')}>
+          {responseWindowOptions.map((minutes) => (
+            <button
+              type="button"
+              className={`${draftExpiryMinutes === minutes ? 'active' : ''}${minutes === 0 ? ' response-window-full' : ''}`}
+              aria-pressed={draftExpiryMinutes === minutes}
+              onClick={() => setDraftExpiryMinutes(minutes)}
+              key={minutes}
+            >
+              {minutes === 0 ? t('responseWindowFullOption') : `${minutes}m`}
+            </button>
+          ))}
+        </div>
+      </section>
 
       {groups.map((group, groupIndex) => (
         <section className="card plan-editor-section schedule-group-card" key={group.id}>

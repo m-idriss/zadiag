@@ -10,6 +10,7 @@ import type {
 import { createDefaultRoutineAssignment, DEFAULT_ROUTINE_ID, normalizeAppPreferences, primaryRoutineAssignment, type AppPreferences } from '../domain/models';
 import { routineFromCatalog } from '../domain/routineCatalog';
 import { isFreshCapture } from '../domain/adherence';
+import { responseWindowExpiresAt } from '../domain/monitoringPlan';
 import type { AppRepository } from './contracts';
 
 const STORAGE_KEY = 'zadiag.demo.v1';
@@ -310,7 +311,7 @@ export class DemoRepository implements AppRepository {
       routineId: assignment.routineId,
       sessionId: crypto.randomUUID(),
       requestedAt: now.toISOString(),
-      expiresAt: new Date(now.getTime() + assignment.plan.expiryMinutes * 60_000).toISOString(),
+      expiresAt: responseWindowExpiresAt(assignment.plan, now).toISOString(),
       status: 'pending',
     });
     this.persist();

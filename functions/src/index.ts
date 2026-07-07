@@ -8,7 +8,7 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, normalizeLinkCode } from './helpers.js';
 import { analyzeWithGemini, parseImageDataUrl, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
-import { getLocalDateKey, getWindowForDate, monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
+import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
 import { createDefaultRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, routineFromCatalog, type RoutineAssignmentDocument } from './routines.js';
 import { buildCheckNotificationPayload } from './notifications.js';
 
@@ -77,7 +77,7 @@ const defaultPlan = {
     { id: 'midday', start: '12:00', end: '14:00' },
     { id: 'evening', start: '17:00', end: '20:00' },
   ],
-  expiryMinutes: 20,
+  expiryMinutes: 0,
   timeZone: 'Europe/Paris',
 };
 const recoveryLifetimeMs = 90 * 24 * 60 * 60 * 1000;
@@ -623,12 +623,9 @@ export const requestCheckNow = onCall({
       return { check: { id: activePendingCheck.id, ...activePendingCheck.data() } as RequestedCheck, resend: true };
     }
 
-    const configuredMinutes = Number(assignment.data()?.plan?.expiryMinutes);
-    const expiryMinutes = Number.isFinite(configuredMinutes)
-      ? Math.min(120, Math.max(1, configuredMinutes))
-      : defaultPlan.expiryMinutes;
     const now = new Date();
-    const expiresAt = new Date(now.getTime() + expiryMinutes * 60 * 1000);
+    const parsedPlan = monitoringPlanSchema.safeParse(assignment.data()?.plan);
+    const expiresAt = checkExpiresAt(parsedPlan.success ? parsedPlan.data : defaultPlan, now);
     const check = {
       routineId,
       sessionId: crypto.randomUUID(),
@@ -834,7 +831,7 @@ export const dispatchPlannedChecks = onSchedule({
       if (!decision.shouldDispatch || !decision.dispatchKey) return;
 
       const checkRef = familyDoc.ref.collection('checks').doc();
-      const expiresAt = new Date(now.getTime() + plan.expiryMinutes * 60 * 1000);
+      const expiresAt = checkExpiresAt(plan, now);
       const check = {
         routineId,
         sessionId: crypto.randomUUID(),

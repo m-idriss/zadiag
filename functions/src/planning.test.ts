@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
+import { checkExpiresAt, monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
 
 const plan = {
   checksPerDay: 3,
@@ -17,12 +17,24 @@ const plan = {
 test('validates monitoring plans at the callable boundary', () => {
   assert.equal(monitoringPlanSchema.safeParse(plan).success, true);
   assert.equal(monitoringPlanSchema.safeParse({ ...plan, timeZone: 'Not/AZone' }).success, false);
-  assert.equal(monitoringPlanSchema.safeParse({ ...plan, expiryMinutes: 0 }).success, false);
+  assert.equal(monitoringPlanSchema.safeParse({ ...plan, expiryMinutes: 0 }).success, true);
   assert.equal(monitoringPlanSchema.safeParse({ ...plan, weekdays: [1, 1] }).success, false);
   assert.equal(monitoringPlanSchema.safeParse({
     ...plan,
     windows: [{ id: 'invalid', start: '20:00', end: '08:00' }],
   }).success, false);
+});
+
+test('uses the end of the active window when no response delay is configured', () => {
+  const now = new Date('2026-07-02T06:45:00.000Z');
+  const expiresAt = checkExpiresAt({ ...plan, expiryMinutes: 0 }, now);
+  assert.equal(expiresAt.toISOString(), '2026-07-02T07:30:00.000Z');
+});
+
+test('caps fixed response delays at the active window end', () => {
+  const now = new Date('2026-07-02T07:00:00.000Z');
+  const expiresAt = checkExpiresAt({ ...plan, expiryMinutes: 60 }, now);
+  assert.equal(expiresAt.toISOString(), '2026-07-02T07:30:00.000Z');
 });
 
 test('allows a check inside the current window when quota is available', () => {

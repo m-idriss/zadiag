@@ -52,7 +52,7 @@ describe('RoutineEditScreen', () => {
         busy={false}
         embedded
         t={(key) => translate('en', key)}
-      />,
+      />
     ));
 
     const addSlot = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Add slot'));
@@ -81,7 +81,7 @@ describe('RoutineEditScreen', () => {
         busy={false}
         embedded
         t={(key) => translate('en', key)}
-      />,
+      />
     ));
 
     const addSlot = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Add slot'));
@@ -95,7 +95,7 @@ describe('RoutineEditScreen', () => {
 
     expect(save).toHaveBeenCalledTimes(1);
     expect(save.mock.calls[0][0]).toMatchObject({
-      expiryMinutes: 20,
+      expiryMinutes: 0,
       windows: [
         { id: 'g1_morning', start: '07:30', end: '09:30' },
         { id: 'g1_w2', start: '09:00', end: '17:00' },
@@ -110,5 +110,60 @@ describe('RoutineEditScreen', () => {
       }],
     });
     expect(save.mock.calls[0][0].timeZone).toBeTruthy();
+  });
+
+  it('saves response window changes', async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+
+    act(() => root.render(
+      <RoutineEditScreen
+        plan={planWithWindows(1)}
+        routineId="daily-hydration"
+        onSave={save}
+        onCancel={vi.fn()}
+        busy={false}
+        embedded
+        t={(key) => translate('en', key)}
+      />
+    ));
+
+    const sixtyMinutes = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === '60m');
+    act(() => sixtyMinutes?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    const saveButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Save');
+
+    await act(async () => {
+      saveButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(save.mock.calls[0][0].expiryMinutes).toBe(60);
+  });
+
+  it('saves full active window as response window', async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+    act(() => root.render((
+      <RoutineEditScreen
+        plan={{ ...planWithWindows(1), expiryMinutes: 60 }}
+        routineId="daily-hydration"
+        onSave={save}
+        onCancel={vi.fn()}
+        busy={false}
+        embedded
+        t={(key) => translate('en', key)}
+      />
+    )));
+
+    const fullWindow = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Full window');
+    act(() => fullWindow?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    const saveButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Save');
+
+    await act(async () => {
+      saveButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(save.mock.calls[0][0].expiryMinutes).toBe(0);
   });
 });

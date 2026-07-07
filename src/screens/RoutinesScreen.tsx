@@ -25,6 +25,11 @@ const groupSummaryLabel = (group: ScheduleGroup, index: number, t: (key: Message
   return label;
 };
 
+const responseWindowSummary = (expiryMinutes: number, t: (key: MessageKey) => string) =>
+  expiryMinutes > 0
+    ? <><b>{expiryMinutes}</b> {t('minutesRespond')}</>
+    : <>{t('fullWindowRespond')}</>;
+
 export function RoutinesScreen({
   state,
   start,
@@ -198,7 +203,7 @@ export function RoutinesScreen({
                 <div className="routine-list-card-title">
                   <div className="routine-card-heading">
                     <span className="settings-row-icon routine-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
-                    <div><h2>{visual.name}</h2><p><b>{assignment.plan.checksPerDay}</b> {t('checksDay')} · <b>{assignment.plan.expiryMinutes}</b> {t('minutesRespond')}</p></div>
+                    <div><h2>{visual.name}</h2><p><b>{assignment.plan.checksPerDay}</b> {t('checksDay')} · {responseWindowSummary(assignment.plan.expiryMinutes, t)}</p></div>
                   </div>
                   <b className="routine-rate">{Math.round(rate * 100)}%</b>
                   <button
