@@ -3,9 +3,10 @@ import { timeOutline } from 'ionicons/icons';
 import type { Locale, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { StatusPill } from '../components/StatusPill';
+import { withResolvedEventStatuses } from '../domain/adherence';
 
 export function HistoryScreen({ events, locale, t }: { events: VerificationEvent[]; locale: Locale; t: (key: MessageKey) => string }) {
-  const closed = events.filter((event) => event.status !== 'pending' && event.status !== 'analyzing');
+  const closed = withResolvedEventStatuses(events).filter((event) => event.status !== 'pending' && event.status !== 'analyzing');
   const formatDateTime = (value: string) => new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-US', {
     dateStyle: 'short',
     timeStyle: 'short',

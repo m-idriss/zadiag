@@ -6,11 +6,12 @@ import { AppIcon, routineIconName } from '../components/Icon';
 import { presentRoutine } from '../domain/routinePresentation';
 import { assignableRoutineTemplates, marketplaceFromTemplates, presentRoutineTemplate } from '../domain/routineMarketplace';
 import { dayPeriodLabelKey, plannedWindowLabel } from '../domain/taskTimeLabel';
+import { withResolvedEventStatuses } from '../domain/adherence';
 
 const RoutineDetailScreen = lazy(() => import('./RoutineDetailScreen').then((module) => ({ default: module.RoutineDetailScreen })));
 
 const completionRate = (assignment: RoutineAssignment, events: VerificationEvent[]) => {
-  const completed = events.filter((event) => event.routineId === assignment.routineId && !['pending', 'analyzing'].includes(event.status));
+  const completed = withResolvedEventStatuses(events).filter((event) => event.routineId === assignment.routineId && !['pending', 'analyzing'].includes(event.status));
   if (!completed.length) return 0;
   return completed.filter((event) => event.status === 'detected').length / completed.length;
 };

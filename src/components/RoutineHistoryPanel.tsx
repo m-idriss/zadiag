@@ -4,7 +4,7 @@ import type { MessageKey } from '../services/i18n';
 import { presentRoutine } from '../domain/routinePresentation';
 import { AppIcon, routineIconName } from './Icon';
 import { StatusPill } from './StatusPill';
-import { canRetakeCapture } from '../domain/adherence';
+import { canRetakeCapture, withResolvedEventStatuses } from '../domain/adherence';
 
 type StatusFilter = VerificationStatus | 'all';
 type RoutineFilter = string | 'all';
@@ -42,13 +42,14 @@ export function RoutineHistoryPanel({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [routineFilter, setRoutineFilter] = useState<RoutineFilter>('all');
   const formatterLocale = locale === 'fr' ? 'fr-FR' : 'en-US';
+  const displayEvents = useMemo(() => withResolvedEventStatuses(events), [events]);
   const formatDateTime = (value: string) => new Intl.DateTimeFormat(formatterLocale, {
     dateStyle: 'short',
     timeStyle: 'short',
   }).format(new Date(value));
   const sortedEvents = useMemo(
-    () => [...events].sort((a, b) => eventTimestamp(b) - eventTimestamp(a)),
-    [events],
+    () => [...displayEvents].sort((a, b) => eventTimestamp(b) - eventTimestamp(a)),
+    [displayEvents],
   );
   const statuses = useMemo<VerificationStatus[]>(
     () => Array.from(new Set(sortedEvents.map((event) => event.status))),

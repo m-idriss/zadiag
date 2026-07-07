@@ -664,6 +664,14 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .today-task-copy h3 { font-size: 15px; }
 .today-task-copy small { display: block; margin-top: 7px; color: var(--navy); font-size: 11px; font-weight: 900; }
 .today-task-copy p { margin-top: 1px; }
+.today-task-copy .today-task-time {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .today-task-icon, .routine-icon, .routine-hero-icon { background: color-mix(in srgb, var(--routine-accent, var(--teal)) 12%, white); color: var(--routine-accent, var(--teal)); }
 .today-task-icon .app-icon { font-size: 20px; }
 .today-pending-panel .today-task .primary-action-button { width: auto; min-width: 0; margin: 0; border-radius: 12px; min-height: 40px; background: var(--routine-accent, var(--teal)); color: white; font-weight: 850; }

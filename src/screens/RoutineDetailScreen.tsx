@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { IonButton, IonIcon } from '@ionic/react';
 import { cameraOutline, chevronBackOutline, chevronForwardOutline, ellipsisHorizontal, peopleOutline, sendOutline, timeOutline } from 'ionicons/icons';
-import { adherenceSummary } from '../domain/adherence';
+import { adherenceSummary, withResolvedEventStatuses } from '../domain/adherence';
 import { presentRoutine } from '../domain/routinePresentation';
 import type { AppState, RoutineAssignment, RoutineValidationMode, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
@@ -141,11 +141,13 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   const [proofErrors, setProofErrors] = useState<Record<string, boolean>>({});
   const [enlargedProofUrl, setEnlargedProofUrl] = useState<string>();
   const todayHeatmapRef = useRef<HTMLSpanElement | null>(null);
-  const events = state.events.filter((event) => event.routineId === assignment.routineId);
+  const now = Date.now();
+  const rawEvents = state.events.filter((event) => event.routineId === assignment.routineId);
+  const events = withResolvedEventStatuses(rawEvents, now);
   const summary = adherenceSummary(events);
   const locale = state.locale === 'fr' ? 'fr-FR' : 'en-US';
   const visual = presentRoutine(assignment.routine, state.locale);
-  const next = events.find((event) => event.status === 'pending' && Date.parse(event.expiresAt) > Date.now());
+  const next = rawEvents.find((event) => event.status === 'pending' && Date.parse(event.expiresAt) > now);
   const formatDateTime = (value: string) => new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
   const formatTime = (value: string) => new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(new Date(value));
   const days = calendarDays(events, locale);

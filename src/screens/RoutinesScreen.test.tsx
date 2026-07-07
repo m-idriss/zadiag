@@ -95,7 +95,7 @@ describe('participant routines navigation', () => {
 
     expect(container.textContent).toContain('Orthodontic Elastics');
     expect(container.textContent).toContain('3 checks each day');
-    expect(container.textContent).toContain('50%');
+    expect(container.textContent).toContain('33%');
     expect(container.textContent).not.toContain('Wear your elastics as prescribed');
     expect(container.textContent).toContain('Next check');
     expect(container.textContent).not.toContain('07:30–09:30');
@@ -143,7 +143,7 @@ describe('participant routines navigation', () => {
     const heatmapDays = container.querySelectorAll('.routine-heatmap-day');
     expect(heatmapDays.length).toBeGreaterThanOrEqual(56);
     expect(heatmapDays.length % 7).toBe(0);
-    expect(container.textContent).toContain('50%');
+    expect(container.textContent).toContain('33%');
 
     const back = container.querySelector('.detail-back');
     act(() => back?.dispatchEvent(new MouseEvent('click', { bubbles: true })));

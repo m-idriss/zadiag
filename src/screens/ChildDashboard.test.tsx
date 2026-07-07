@@ -249,7 +249,7 @@ describe('participant Today screen', () => {
     vi.useRealTimers();
   });
 
-  it('shows completed checks before expired pending checks when no action is available', () => {
+  it('shows completed checks before missed pending checks when no action is available', () => {
     const expiredPending = event('expired-pending', 'pending', atToday(8), atToday(9));
     const state: AppState = {
       role: 'child',
@@ -265,6 +265,6 @@ describe('participant Today screen', () => {
     const content = container.textContent ?? '';
     expect(content).toContain('0 checks to complete');
     expect(content.indexOf('Completed today1')).toBeLessThan(content.indexOf('Recent history'));
-    expect(content.indexOf('Validated')).toBeLessThan(content.indexOf('Expired'));
+    expect(content.indexOf('Validated')).toBeLessThan(content.indexOf('Missed'));
   });
 });

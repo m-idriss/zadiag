@@ -7,6 +7,7 @@ import { RoutineHistoryPanel } from '../components/RoutineHistoryPanel';
 import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } from '../components/AdherenceSummaryCard';
 import { presentRoutine } from '../domain/routinePresentation';
 import { ActivityLog } from '../components/ActivityLog';
+import { withResolvedEventStatuses } from '../domain/adherence';
 
 export function ParentDashboard({
   state,
@@ -33,13 +34,15 @@ export function ParentDashboard({
   const [reviewErrorId, setReviewErrorId] = useState<string>();
   const [enlargedProofUrl, setEnlargedProofUrl] = useState<string>();
   const swipeStartRef = useRef<{ eventId: string; x: number; y: number } | undefined>(undefined);
-  const rangedEvents = filterEventsBySummaryRange(state.events, summaryRange);
+  const now = Date.now();
+  const displayEvents = useMemo(() => withResolvedEventStatuses(state.events, now), [now, state.events]);
+  const rangedEvents = filterEventsBySummaryRange(displayEvents, summaryRange, now);
   const reviewEvents = useMemo(() => state.events
     .filter((event) => event.status === 'uncertain' && !['approved', 'rejected'].includes(event.reviewStatus ?? ''))
     .sort((a, b) => Date.parse(b.capturedAt ?? b.requestedAt) - Date.parse(a.capturedAt ?? a.requestedAt)),
   [state.events]);
   const locale = state.locale === 'fr' ? 'fr-FR' : 'en-US';
-  const activePendingEvents = state.events.filter((event) => event.status === 'pending' && Date.parse(event.expiresAt) > Date.now());
+  const activePendingEvents = state.events.filter((event) => event.status === 'pending' && Date.parse(event.expiresAt) > now);
   const responsibleEmptyState = !state.family.childLinked
     ? { icon: 'link' as const, title: t('responsibleEmptyParticipantNotLinkedTitle'), hint: t('responsibleEmptyParticipantNotLinkedHint') }
     : !state.routineAssignments.length
@@ -275,7 +278,7 @@ export function ParentDashboard({
       ) : null}
 
       <section className="today-section participant-history-section parent-history-section" aria-labelledby="responsible-history-title">
-        <AdherenceSummaryCard events={state.events} range={summaryRange} onRangeChange={setSummaryRange} t={t} />
+        <AdherenceSummaryCard events={displayEvents} range={summaryRange} onRangeChange={setSummaryRange} t={t} />
         <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedEvents} locale={state.locale} titleId="responsible-history-title" t={t} />
       </section>
     </div>

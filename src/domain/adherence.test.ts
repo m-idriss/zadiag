@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adherenceSummary, canRetakeCapture, isFreshCapture } from './adherence';
+import { adherenceSummary, canRetakeCapture, isFreshCapture, resolvedEventStatus } from './adherence';
 import type { VerificationEvent } from './models';
 
 const event = (status: VerificationEvent['status']): VerificationEvent => ({
@@ -18,6 +18,13 @@ describe('adherenceSummary', () => {
     ]);
     expect(result).toMatchObject({ completed: 3, successful: 2, attention: 1 });
     expect(result.rate).toBeCloseTo(2 / 3);
+  });
+});
+
+describe('resolvedEventStatus', () => {
+  it('treats expired pending checks as missed for display', () => {
+    expect(resolvedEventStatus(event('pending'), Date.parse('2026-06-30T12:21:00.000Z'))).toBe('missed');
+    expect(resolvedEventStatus(event('pending'), Date.parse('2026-06-30T12:19:00.000Z'))).toBe('pending');
   });
 });
 

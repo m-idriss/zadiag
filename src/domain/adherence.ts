@@ -25,6 +25,17 @@ export function adherenceSummary(events: VerificationEvent[]) {
   };
 }
 
+export function resolvedEventStatus(event: VerificationEvent, now = Date.now()) {
+  return event.status === 'pending' && Date.parse(event.expiresAt) <= now ? 'missed' : event.status;
+}
+
+export function withResolvedEventStatuses(events: VerificationEvent[], now = Date.now()) {
+  return events.map((event) => {
+    const status = resolvedEventStatus(event, now);
+    return status === event.status ? event : { ...event, status };
+  });
+}
+
 export function isFreshCapture(
   event: VerificationEvent,
   capturedAt: Date,

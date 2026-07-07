@@ -9,7 +9,7 @@ import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } f
 import { ActivityLog } from '../components/ActivityLog';
 import { presentRoutine } from '../domain/routinePresentation';
 import { dayPeriodLabelKey, plannedWindowLabel } from '../domain/taskTimeLabel';
-import { canRetakeCapture } from '../domain/adherence';
+import { canRetakeCapture, resolvedEventStatus, withResolvedEventStatuses } from '../domain/adherence';
 import { nextPlannedWindow } from '../domain/monitoringPlan';
 
 const isToday = (value: string, now = new Date()) => {
@@ -18,9 +18,6 @@ const isToday = (value: string, now = new Date()) => {
     && date.getMonth() === now.getMonth()
     && date.getDate() === now.getDate();
 };
-
-const displayStatusFor = (event: VerificationEvent, now: number): VerificationEvent['status'] =>
-  event.status === 'pending' && Date.parse(event.expiresAt) <= now ? 'expired' : event.status;
 
 export function ChildDashboard({
   state,
@@ -51,8 +48,7 @@ export function ChildDashboard({
     && !['pending', 'analyzing'].includes(event.status)
   ));
   const historyEvents = useMemo(
-    () => [...state.events]
-      .map((event) => ({ ...event, status: displayStatusFor(event, now) }))
+    () => withResolvedEventStatuses(state.events, now)
       .filter((event) => !['pending', 'analyzing'].includes(event.status)),
     [now, state.events],
   );
@@ -116,20 +112,19 @@ export function ChildDashboard({
                     <span className="settings-row-icon today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(presentation.icon)} /></span>
                     <div>
                       <h3>{presentation.name}</h3>
-                      <small>{t(dayPeriodLabelKey(main.expiresAt))}</small>
-                      <p>{t('before')} {formatTime(main.expiresAt)}</p>
+                      <p className="today-task-time">{t(dayPeriodLabelKey(main.expiresAt))} · {t('before')} {formatTime(main.expiresAt)}</p>
                     </div>
                   </div>
                   {actionable
                     ? <button type="button" className="primary-action-button today-proof-button" onClick={() => start(main)}><AppIcon name="camera" />{t('sendProofShort')}</button>
-                    : <StatusPill status={displayStatusFor(main, now)} t={t} />}
+                    : <StatusPill status={resolvedEventStatus(main, now)} t={t} />}
                 </div>
                 {stacked.length > 0 && (
                   <div className="today-task-stack">
                     {stacked.map((event) => (
                       <div className="today-task-stack-row" key={event.id}>
                         <span>{t(dayPeriodLabelKey(event.expiresAt))} · {t('before')} {formatTime(event.expiresAt)}</span>
-                        <StatusPill status={displayStatusFor(event, now)} t={t} />
+                        <StatusPill status={resolvedEventStatus(event, now)} t={t} />
                       </div>
                     ))}
                   </div>

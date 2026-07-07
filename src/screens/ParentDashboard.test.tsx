@@ -151,6 +151,33 @@ describe('ParentDashboard', () => {
     expect(container.textContent).toContain('Waiting for participant proof');
   });
 
+  it('shows expired pending checks as missed in recent history', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-07T08:04:00.000Z'));
+    const assignment = createDefaultRoutineAssignment();
+    const state: AppState = {
+      role: 'parent',
+      locale: 'en',
+      notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      routineAssignments: [assignment],
+      events: [{
+        id: 'expired-pending',
+        routineId: assignment.routineId,
+        sessionId: 'one',
+        requestedAt: '2026-07-07T05:30:00.000Z',
+        expiresAt: '2026-07-07T06:16:00.000Z',
+        status: 'pending',
+      }],
+    };
+
+    act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
+
+    expect(container.textContent).toContain('Missed');
+    expect(container.textContent).not.toContain('Pending');
+    vi.useRealTimers();
+  });
+
   it('lets the responsible person review an uncertain proof', async () => {
     const assignment = createDefaultRoutineAssignment();
     const getProofImageUrl = vi.fn().mockResolvedValue('data:image/png;base64,TEST');
