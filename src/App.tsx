@@ -15,6 +15,7 @@ import { InstallScreen } from './screens/InstallScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
 import { ChildDashboard } from './screens/ChildDashboard';
 import { canRetakeCapture } from './domain/adherence';
+import { cleanupClientAfterReset } from './services/resetCleanup';
 
 const lazyScreen = <TProps extends object>(
   load: () => Promise<Record<string, ComponentType<TProps>>>,
@@ -171,7 +172,13 @@ export function App() {
   const reset = async () => {
     const previousRole = state.role;
     await repository.reset();
+    await cleanupClientAfterReset();
     sync();
+    setResult(undefined);
+    setSubmitError(undefined);
+    setSelectedSessionId(undefined);
+    setSavingRoutineId(undefined);
+    setDismissedUpdateId(undefined);
     setResetNoticeKey(resetNoticeMessageKey(previousRole));
     setRoute('welcome');
     setTab('home');
