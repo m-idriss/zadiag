@@ -1392,6 +1392,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
   height: 32px;
   border-radius: 10px;
 }
+.app-compact .routine-schedule-chips span i { display: none; }
 .app-compact .routine-detail-hero {
   grid-template-columns: 48px minmax(0, 1fr);
   gap: 10px;
