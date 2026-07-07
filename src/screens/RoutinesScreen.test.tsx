@@ -179,7 +179,8 @@ describe('participant routines navigation', () => {
     act(() => scheduleToggle?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
 
     expect(container.textContent).toContain('Next check');
-    expect(container.textContent).toContain('Before');
+    expect(container.textContent).toContain('12:00 PM–2:00 PM');
+    expect(container.textContent).not.toContain('Before');
     expect(container.textContent).not.toContain('No task is waiting right now.');
   });
 

@@ -5,7 +5,6 @@ import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
 import { presentRoutine } from '../domain/routinePresentation';
 import { assignableRoutineTemplates, marketplaceFromTemplates, presentRoutineTemplate } from '../domain/routineMarketplace';
-import { dayPeriodLabelKey, plannedWindowLabel } from '../domain/taskTimeLabel';
 import { withResolvedEventStatuses } from '../domain/adherence';
 
 const RoutineDetailScreen = lazy(() => import('./RoutineDetailScreen').then((module) => ({ default: module.RoutineDetailScreen })));
@@ -22,6 +21,33 @@ const responseWindowSummary = (expiryMinutes: number, t: (key: MessageKey) => st
   expiryMinutes > 0
     ? <><b>{expiryMinutes}</b> {t('minutesRespond')}</>
     : <>{t('fullWindowRespond')}</>;
+
+const sameLocalDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear()
+  && a.getMonth() === b.getMonth()
+  && a.getDate() === b.getDate();
+
+const nextLocalDay = (date: Date) => {
+  const next = new Date(date);
+  next.setDate(date.getDate() + 1);
+  return next;
+};
+
+const formatRoutineTime = (date: Date, locale: string) =>
+  new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(date);
+
+const routineWindowLabel = (
+  start: Date,
+  end: Date,
+  now: Date,
+  locale: string,
+  t: (key: MessageKey) => string,
+) => {
+  const windowLabel = `${formatRoutineTime(start, locale)}–${formatRoutineTime(end, locale)}`;
+  if (sameLocalDay(start, now)) return windowLabel;
+  if (sameLocalDay(start, nextLocalDay(now))) return `${t('tomorrow')} · ${windowLabel}`;
+  return `${new Intl.DateTimeFormat(locale, { weekday: 'long' }).format(start)} · ${windowLabel}`;
+};
 
 export function RoutinesScreen({
   state,
@@ -174,9 +200,9 @@ export function RoutinesScreen({
             const locale = state.locale === 'fr' ? 'fr-FR' : 'en-US';
             const planned = next ? undefined : nextPlannedWindow(assignment.plan, now);
             const nextLabel = next
-              ? `${t(dayPeriodLabelKey(next.expiresAt))} · ${t('before')} ${new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(new Date(next.expiresAt))}`
+              ? `${t('before')} ${formatRoutineTime(new Date(next.expiresAt), locale)}`
               : planned
-                ? plannedWindowLabel(planned.end, now, locale, t)
+                ? routineWindowLabel(planned.start, planned.end, now, locale, t)
                 : t('noPendingTask');
             const groups = groupsFromLegacyPlan(assignment.plan);
             const planScheduleGroups = groups.map((group, groupIndex) => ({
