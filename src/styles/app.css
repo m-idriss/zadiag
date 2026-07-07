@@ -1842,9 +1842,9 @@ ion-input {
   white-space: nowrap;
 }
 .response-window-options button.active {
-  background: var(--navy);
+  background: var(--routine-accent, var(--teal));
   color: white;
-  box-shadow: 0 4px 12px rgba(16,42,67,.16);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--routine-accent, var(--teal)) 18%, transparent);
 }
 .plan-section-copy { margin: -5px 0 14px; color: var(--muted); font-size: 13px; }
 .plan-add-button {
