@@ -277,7 +277,8 @@ export function ParentDashboard({
         </div>
       ) : null}
 
-      <section className="today-section participant-history-section parent-history-section" aria-labelledby="responsible-history-title">
+      <section className="today-section participant-history-section parent-history-section dashboard-summary-section" aria-labelledby="responsible-summary-title">
+        <h2 id="responsible-summary-title">{t('overview')}</h2>
         <AdherenceSummaryCard events={displayEvents} range={summaryRange} onRangeChange={setSummaryRange} t={t} />
         <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedEvents} locale={state.locale} titleId="responsible-history-title" t={t} />
       </section>

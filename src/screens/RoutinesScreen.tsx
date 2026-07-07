@@ -165,96 +165,99 @@ export function RoutinesScreen({
           {assignError && <p role="alert" className="request-feedback error">{t('routineAddError')}</p>}
         </section>
       )}
-      <div className="routine-list">
-        {state.routineAssignments.map((assignment) => {
-          const now = new Date();
-          const next = state.events.find((event) => event.routineId === assignment.routineId && event.status === 'pending' && Date.parse(event.expiresAt) > now.getTime());
-          const rate = completionRate(assignment, state.events);
-          const visual = presentRoutine(assignment.routine, state.locale);
-          const locale = state.locale === 'fr' ? 'fr-FR' : 'en-US';
-          const planned = next ? undefined : nextPlannedWindow(assignment.plan, now);
-          const nextLabel = next
-            ? `${t(dayPeriodLabelKey(next.expiresAt))} · ${t('before')} ${new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(new Date(next.expiresAt))}`
-            : planned
-              ? plannedWindowLabel(planned.end, now, locale, t)
-            : t('noPendingTask');
-          const groups = groupsFromLegacyPlan(assignment.plan);
-          const planChips = groups.map((group, groupIndex) => {
-            const windows = group.windows.map((window) => `${window.start}–${window.end}`).join(', ');
-            return {
-              id: group.id,
-              label: groups.length > 1
-                ? `${groupSummaryLabel(group, groupIndex, t)} · ${summarizeWeekdays(group.weekdays, t)} · ${windows}`
-                : windows,
-            };
-          });
-          const requestStatus = requestStatuses[assignment.routineId] ?? 'idle';
-          const requesting = requestingRoutineId === assignment.routineId;
-          const scheduleExpanded = expandedScheduleIds.has(assignment.id);
-          return (
-            <section className="card routine-card routine-plan-list-card" style={visual.style} key={assignment.id}>
-              <div className="routine-list-card-title">
-                <div className="routine-card-heading">
-                  <span className="settings-row-icon routine-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
-                  <div><h2>{visual.name}</h2><p><b>{assignment.plan.checksPerDay}</b> {t('checksDay')} · <b>{assignment.plan.expiryMinutes}</b> {t('minutesRespond')}</p></div>
+      <section className="settings-section routines-list-section" aria-labelledby="routines-list-title">
+        <h2 id="routines-list-title">{t('routines')}</h2>
+        <div className="routine-list">
+          {state.routineAssignments.map((assignment) => {
+            const now = new Date();
+            const next = state.events.find((event) => event.routineId === assignment.routineId && event.status === 'pending' && Date.parse(event.expiresAt) > now.getTime());
+            const rate = completionRate(assignment, state.events);
+            const visual = presentRoutine(assignment.routine, state.locale);
+            const locale = state.locale === 'fr' ? 'fr-FR' : 'en-US';
+            const planned = next ? undefined : nextPlannedWindow(assignment.plan, now);
+            const nextLabel = next
+              ? `${t(dayPeriodLabelKey(next.expiresAt))} · ${t('before')} ${new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(new Date(next.expiresAt))}`
+              : planned
+                ? plannedWindowLabel(planned.end, now, locale, t)
+                : t('noPendingTask');
+            const groups = groupsFromLegacyPlan(assignment.plan);
+            const planChips = groups.map((group, groupIndex) => {
+              const windows = group.windows.map((window) => `${window.start}–${window.end}`).join(', ');
+              return {
+                id: group.id,
+                label: groups.length > 1
+                  ? `${groupSummaryLabel(group, groupIndex, t)} · ${summarizeWeekdays(group.weekdays, t)} · ${windows}`
+                  : windows,
+              };
+            });
+            const requestStatus = requestStatuses[assignment.routineId] ?? 'idle';
+            const requesting = requestingRoutineId === assignment.routineId;
+            const scheduleExpanded = expandedScheduleIds.has(assignment.id);
+            return (
+              <section className="card routine-card routine-plan-list-card" style={visual.style} key={assignment.id}>
+                <div className="routine-list-card-title">
+                  <div className="routine-card-heading">
+                    <span className="settings-row-icon routine-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
+                    <div><h2>{visual.name}</h2><p><b>{assignment.plan.checksPerDay}</b> {t('checksDay')} · <b>{assignment.plan.expiryMinutes}</b> {t('minutesRespond')}</p></div>
+                  </div>
+                  <b className="routine-rate">{Math.round(rate * 100)}%</b>
+                  <button
+                    type="button"
+                    className="routine-schedule-toggle"
+                    aria-label={t(scheduleExpanded ? 'hideSchedule' : 'showSchedule')}
+                    aria-expanded={scheduleExpanded}
+                    onClick={() => toggleSchedule(assignment.id)}
+                  >
+                    <AppIcon name="chevron-down" className={scheduleExpanded ? 'expanded' : undefined} />
+                  </button>
                 </div>
-                <b className="routine-rate">{Math.round(rate * 100)}%</b>
-                <button
-                  type="button"
-                  className="routine-schedule-toggle"
-                  aria-label={t(scheduleExpanded ? 'hideSchedule' : 'showSchedule')}
-                  aria-expanded={scheduleExpanded}
-                  onClick={() => toggleSchedule(assignment.id)}
-                >
-                  <AppIcon name="chevron-down" className={scheduleExpanded ? 'expanded' : undefined} />
-                </button>
-              </div>
-              <div className="routine-progress-row">
-                <div className="routine-progress-track"><span style={{ width: `${Math.round(rate * 100)}%` }} /></div>
-              </div>
-              <p className="routine-next-inline"><span>{t('nextCheck')}</span><strong>{nextLabel}</strong></p>
-              {scheduleExpanded && (
-                <div className="routine-expanded-panel">
-                  <p className="routine-instructions">{visual.instructions}</p>
-                  <div className="chips routine-schedule-chips">{planChips.map((chip) => <span key={chip.id}><i aria-hidden="true">◷</i>{chip.label}</span>)}</div>
-                  <div className="routine-card-actions">
-                    <button type="button" className="routine-list-detail-button" onClick={() => openDetails(assignment.id)}>{t('details')}</button>
-                    {edit && onDeleteRoutine && (
-                      <button
-                        type="button"
-                        className="routine-list-delete-button"
-                        aria-label={t('deleteRoutine').replace('{routine}', visual.name)}
-                        disabled={deletingRoutineId === assignment.routineId}
-                        onClick={() => { void deleteRoutine(assignment, visual.name); }}
-                      >
-                        <span aria-hidden="true">×</span>
-                      </button>
+                <div className="routine-progress-row">
+                  <div className="routine-progress-track"><span style={{ width: `${Math.round(rate * 100)}%` }} /></div>
+                </div>
+                <p className="routine-next-inline"><span>{t('nextCheck')}</span><strong>{nextLabel}</strong></p>
+                {scheduleExpanded && (
+                  <div className="routine-expanded-panel">
+                    <p className="routine-instructions">{visual.instructions}</p>
+                    <div className="chips routine-schedule-chips">{planChips.map((chip) => <span key={chip.id}><i aria-hidden="true">◷</i>{chip.label}</span>)}</div>
+                    <div className="routine-card-actions">
+                      <button type="button" className="routine-list-detail-button" onClick={() => openDetails(assignment.id)}>{t('details')}</button>
+                      {edit && onDeleteRoutine && (
+                        <button
+                          type="button"
+                          className="routine-list-delete-button"
+                          aria-label={t('deleteRoutine').replace('{routine}', visual.name)}
+                          disabled={deletingRoutineId === assignment.routineId}
+                          onClick={() => { void deleteRoutine(assignment, visual.name); }}
+                        >
+                          <span aria-hidden="true">×</span>
+                        </button>
+                      )}
+                    </div>
+                    {edit && requestCheck && (
+                      <>
+                        <button className="request-check routine-list-request" disabled={requesting} onClick={() => { void requestNow(assignment.routineId); }}>
+                          {requesting ? t('requestingCheck') : next ? t('requestCheckAgain') : t('requestCheckNow')}
+                        </button>
+                        {next && <p role="status" className="request-feedback">{t('requestCheckActive')}</p>}
+                        {requestStatus === 'sent' && <p role="status" aria-live="polite" className="request-feedback success">{t('requestCheckSent')}</p>}
+                        {requestStatus === 'active' && !next && <p role="status" aria-live="polite" className="request-feedback">{t('requestCheckActive')}</p>}
+                        {requestStatus === 'error' && <p role="status" aria-live="polite" className="request-feedback error">{t('requestCheckError')}</p>}
+                      </>
                     )}
                   </div>
-                  {edit && requestCheck && (
-                    <>
-                      <button className="request-check routine-list-request" disabled={requesting} onClick={() => { void requestNow(assignment.routineId); }}>
-                        {requesting ? t('requestingCheck') : next ? t('requestCheckAgain') : t('requestCheckNow')}
-                      </button>
-                      {next && <p role="status" className="request-feedback">{t('requestCheckActive')}</p>}
-                      {requestStatus === 'sent' && <p role="status" aria-live="polite" className="request-feedback success">{t('requestCheckSent')}</p>}
-                      {requestStatus === 'active' && !next && <p role="status" aria-live="polite" className="request-feedback">{t('requestCheckActive')}</p>}
-                      {requestStatus === 'error' && <p role="status" aria-live="polite" className="request-feedback error">{t('requestCheckError')}</p>}
-                    </>
-                  )}
-                </div>
-              )}
-              {deleteErrorRoutineId === assignment.routineId && <p role="alert" className="request-feedback error">{t('routineDeleteError')}</p>}
+                )}
+                {deleteErrorRoutineId === assignment.routineId && <p role="alert" className="request-feedback error">{t('routineDeleteError')}</p>}
+              </section>
+            );
+          })}
+          {!state.routineAssignments.length && !catalogOpen && (
+            <section className="card routines-empty-card">
+              <h2>{t('noRoutines')}</h2>
+              <p>{onAssignRoutine ? t('noRoutinesAddHint') : t('noRoutinesWaitHint')}</p>
             </section>
-          );
-        })}
-        {!state.routineAssignments.length && !catalogOpen && (
-          <section className="card routines-empty-card">
-            <h2>{t('noRoutines')}</h2>
-            <p>{onAssignRoutine ? t('noRoutinesAddHint') : t('noRoutinesWaitHint')}</p>
-          </section>
-        )}
-      </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
