@@ -38,7 +38,7 @@ describe('ParentDashboard', () => {
 
     act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
 
-    expect(container.textContent).toContain('Today');
+    expect(container.textContent).toContain('Active checks');
     expect(container.textContent).toContain('Participant phone not linked');
     expect(container.textContent).toContain('Participant linking code');
     expect(container.textContent).toContain('Recent history');

@@ -136,13 +136,8 @@ export function ParentDashboard({
       </header>
 
       {(responsibleEmptyState || (!state.family.childLinked && state.family.linkingCode) || (!state.routineAssignments.length && onCreateRoutine)) ? (
-        <section className="today-section parent-setup-section" aria-labelledby="parent-setup-title">
-          <div className="today-panel-heading">
-            <div>
-              <small>{t('overview')}</small>
-              <h2 id="parent-setup-title">{state.family.childName} · {t('routine')}</h2>
-            </div>
-          </div>
+        <section className="settings-section parent-setup-section" aria-labelledby="parent-setup-title">
+          <h2 id="parent-setup-title">{t('responsibleCurrentChecksTitle')}</h2>
 
           <div className="today-task-list">
             {responsibleEmptyState ? (
@@ -191,12 +186,9 @@ export function ParentDashboard({
       ) : null}
 
       {reviewEvents.length ? (
-        <section className="today-section parent-review-section" aria-labelledby="parent-review-title">
-          <div className="today-panel-heading parent-review-heading">
-            <div>
-              <small>{t('toDoToday')}</small>
-              <h2 id="parent-review-title">{t('responsibleReviewTitle')}</h2>
-            </div>
+        <section className="settings-section parent-review-section" aria-labelledby="parent-review-title">
+          <div className="section-heading parent-review-heading">
+            <h2 id="parent-review-title">{t('responsibleReviewTitle')}</h2>
             <span>{reviewEvents.length}</span>
           </div>
           <div className="parent-review-list">

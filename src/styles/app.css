@@ -598,7 +598,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .routines-state p { max-width: 30ch; }
 
 /* Routine-centric participant experience */
-.participant-header { align-items: flex-start; margin-bottom: 18px; }
+.participant-header { align-items: flex-start; }
 .participant-header h1 { font-size: clamp(28px, 8vw, 36px); }
 .participant-header p { max-width: 32ch; font-size: 14px; }
 .more-button, .add-routine-button, .detail-back { border: 0; background: transparent; color: var(--navy); font-weight: 900; }
@@ -606,6 +606,7 @@ ion-button { --border-radius: 17px; min-height: 52px; font-weight: 800; text-tra
 .add-routine-button { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: var(--mint); color: var(--teal); font-size: 25px; }
 
 .today-section { margin-top: 16px; }
+.content-screen > .today-section { margin-top: 0; }
 .today-pending-panel { padding: 0; border-radius: 0; background: transparent; box-shadow: none; }
 .today-panel-heading { display: flex; align-items: center; justify-content: space-between; padding: 0 4px 13px; color: var(--navy); }
 .today-panel-heading small, .completed-panel-heading small { font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
