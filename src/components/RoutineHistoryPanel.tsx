@@ -13,6 +13,17 @@ type RoutineFilter = string | 'all';
 const eventTimestamp = (event: VerificationEvent) =>
   Date.parse(event.capturedAt ?? event.requestedAt);
 
+const hiddenReasonCodes = new Set(['analysis_unavailable', 'self_validated']);
+
+const displayReason = (reason?: string) =>
+  reason && !hiddenReasonCodes.has(reason) ? reason : undefined;
+
+const analysisTag = (event: VerificationEvent, locale: Locale) => {
+  if (event.analysisSource === 'ai') return locale === 'fr' ? 'IA' : 'AI';
+  if (event.analysisSource === 'self' || event.reason === 'self_validated') return 'Auto';
+  return undefined;
+};
+
 const statusLabelKey = (status: VerificationStatus): MessageKey => {
   if (status === 'detected') return 'validated';
   if (status === 'not_detected') return 'notDetected';
@@ -95,6 +106,8 @@ export function RoutineHistoryPanel({
             {filtered.map((event) => {
               const visual = presentationFor(event);
               const canRetake = Boolean(onRetake) && canRetakeCapture(event, retryEvents ?? events, new Date());
+              const reason = displayReason(event.reason);
+              const tag = analysisTag(event, locale);
               return (
                 <ListRow
                   as="section"
@@ -103,7 +116,13 @@ export function RoutineHistoryPanel({
                   icon={<AppIcon name={routineIconName(visual?.icon)} />}
                   iconClassName="history-icon routine-history-icon"
                   title={visual?.name ?? t('routine')}
-                  detail={`${formatDateTime(event.requestedAt)}${event.reason ? ` · ${event.reason}` : ''}`}
+                  detail={(
+                    <>
+                      {formatDateTime(event.requestedAt)}
+                      {tag ? <span className="history-analysis-tag">{tag}</span> : null}
+                      {reason ? ` · ${reason}` : ''}
+                    </>
+                  )}
                   style={visual?.style}
                   trailing={(
                     <div className="history-row-actions">
