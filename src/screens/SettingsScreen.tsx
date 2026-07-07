@@ -244,7 +244,7 @@ export function SettingsScreen({
             icon={<IonIcon icon={mailOutline} />}
             title={t('settingsDebugMailTitle')}
             detail={t('settingsDebugMailDetail')}
-            trailing={<IonButton className="settings-inline-action settings-inline-action-contained" size="small" onClick={sendDiagnosticsEmail}>{t('settingsDebugMailSend')}</IonButton>}
+            trailing={<button type="button" className="settings-inline-action settings-inline-action-contained" onClick={sendDiagnosticsEmail}>{t('settingsDebugMailSend')}</button>}
           >
             {mailError ? <small className="settings-action-error">{t('settingsDebugMailError')}</small> : null}
           </ListRow>
@@ -255,14 +255,14 @@ export function SettingsScreen({
             trailing={(
               <div className="settings-row-control">
                 {updateInfo.badgeLabel ? <span className={`settings-update-badge ${updateSeverity}`}>{updateInfo.badgeLabel}</span> : null}
-                <IonButton
+                <button
+                  type="button"
                   className={`settings-inline-action settings-inline-action-contained settings-update-action ${updateSeverity}`}
-                  size="small"
                   disabled={updatingApp}
                   onClick={() => { void forceUpdate(); }}
                 >
                   {updatingApp ? t('settingsUpdateChecking') : updateInfo.available ? t('settingsUpdateAction') : t('settingsUpdateCheckAction')}
-                </IonButton>
+                </button>
               </div>
             )}
           >
