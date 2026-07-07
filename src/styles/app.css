@@ -1823,7 +1823,7 @@ ion-input {
 .response-window-card p { margin: -4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.35; }
 .response-window-options {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: minmax(max-content, 1.7fr) repeat(4, minmax(0, .65fr));
   gap: 3px;
   padding: 3px;
   border: 1px solid var(--line);
@@ -1840,9 +1840,6 @@ ion-input {
   font-size: 11px;
   font-weight: 800;
   white-space: nowrap;
-}
-.response-window-options .response-window-full {
-  grid-column: 1 / -1;
 }
 .response-window-options button.active {
   background: var(--navy);
