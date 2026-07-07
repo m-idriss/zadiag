@@ -43,7 +43,7 @@ const scheduleGroupsSignature = (groups: ScheduleGroup[]) => JSON.stringify(grou
 
 const timeHours = Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, '0'));
 const timeMinutes = Array.from({ length: 12 }, (_, index) => String(index * 5).padStart(2, '0'));
-const responseWindowOptions = [0, 15, 30, 60] as const;
+const responseWindowOptions = [0, 15, 30, 60, 120] as const;
 
 const normalizedExpiryMinutes = (value: number | undefined) =>
   Number.isInteger(value) && responseWindowOptions.includes(Number(value) as typeof responseWindowOptions[number])

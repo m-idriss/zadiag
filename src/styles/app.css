@@ -1797,7 +1797,7 @@ ion-input {
 .response-window-card p { margin: -4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.35; }
 .response-window-options {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) repeat(3, minmax(0, .75fr));
+  grid-template-columns: minmax(0, 1.35fr) repeat(4, minmax(0, .65fr));
   gap: 3px;
   padding: 3px;
   border: 1px solid var(--line);
