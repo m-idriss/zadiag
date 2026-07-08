@@ -1078,6 +1078,7 @@ ion-input {
 .settings-row { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 76px; padding: var(--row-padding-y) var(--row-padding-x); border-bottom: 1px solid rgba(16,42,67,.07); }
 .settings-row:last-child { border-bottom: 0; }
 .settings-row-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; background: #e9f5f2; color: var(--teal); font-size: 22px; box-shadow: inset 0 1px rgba(255,255,255,.8); }
+.settings-row > .settings-row-icon { align-self: start; }
 .settings-row-icon.today-task-icon,
 .settings-row-icon.routine-icon,
 .settings-row-icon.routine-history-icon {
