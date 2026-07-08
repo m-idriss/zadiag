@@ -1,3 +1,5 @@
+import { IonIcon } from '@ionic/react';
+import { addOutline } from 'ionicons/icons';
 import type { Locale } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { SetupProgress } from '../components/SetupProgress';
@@ -40,7 +42,7 @@ export function InstallScreen({
         <div className="instruction-row">
           <span className="instruction-number">2</span>
           <div><strong>{t('setupInstallHomeTitle')}</strong><p>{t('setupInstallHomeBody')}</p></div>
-          <span className="instruction-symbol" aria-hidden="true">＋</span>
+          <span className="instruction-symbol" aria-hidden="true"><IonIcon icon={addOutline} /></span>
         </div>
         <div className="instruction-row">
           <span className="instruction-number">3</span>

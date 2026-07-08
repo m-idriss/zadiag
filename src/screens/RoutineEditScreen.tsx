@@ -1,3 +1,5 @@
+import { IonIcon } from '@ionic/react';
+import { addOutline } from 'ionicons/icons';
 import { useEffect, useMemo, useState } from 'react';
 import type { MonitoringPlan, RoutineValidationMode, ScheduleGroup } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
@@ -311,13 +313,13 @@ export function RoutineEditScreen({
             ))}
           </div>
           <button type="button" className="plan-add-button schedule-add-window" disabled={totalWindowCount >= MAX_TIME_WINDOWS} onClick={() => addWindow(group.id)}>
-            <span className="schedule-add-symbol" aria-hidden="true">+</span>{t('addTimeSlot')}
+            <IonIcon icon={addOutline} aria-hidden="true" />{t('addTimeSlot')}
           </button>
         </section>
       ))}
 
       <button type="button" className="plan-add-button schedule-add-group" disabled={groups.length >= MAX_SCHEDULE_GROUPS || totalWindowCount >= MAX_TIME_WINDOWS} onClick={addGroup}>
-        <span className="schedule-add-symbol" aria-hidden="true">+</span>{t('addScheduleGroup')}
+        <IonIcon icon={addOutline} aria-hidden="true" />{t('addScheduleGroup')}
       </button>
 
       {error && <p className="form-error">{error}</p>}

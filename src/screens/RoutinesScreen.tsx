@@ -1,3 +1,5 @@
+import { IonIcon } from '@ionic/react';
+import { addOutline } from 'ionicons/icons';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import type { AppState, MonitoringPlan, RoutineAssignment, RoutineValidationMode, ScheduleGroup, VerificationEvent } from '../domain/models';
 import { groupsFromLegacyPlan, nextPlannedWindow, summarizeWeekdaysShort } from '../domain/monitoringPlan';
@@ -202,7 +204,11 @@ export function RoutinesScreen({
     <div className="content-screen routines-screen">
       <header className="screen-header participant-header">
         <div><h1>{t('myRoutines')}</h1><p>{t('routinesHint')}</p></div>
-        {onAssignRoutine && <button type="button" className="add-routine-button" aria-label={t('addRoutine')} aria-expanded={catalogOpen} onClick={() => setCatalogOpen((open) => !open)}>＋</button>}
+        {onAssignRoutine && (
+          <button type="button" className="add-routine-button" aria-label={t('addRoutine')} aria-expanded={catalogOpen} onClick={() => setCatalogOpen((open) => !open)}>
+            <IonIcon icon={addOutline} aria-hidden="true" />
+          </button>
+        )}
       </header>
       {catalogOpen && (
         <section className="card routine-catalog-card" aria-labelledby="routine-catalog-title">
