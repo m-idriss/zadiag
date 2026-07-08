@@ -10,7 +10,7 @@ import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, isFr
 import { analyzeWithGemini, parseImageDataUrl, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
 import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
 import { createDefaultRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, routineFromCatalog, type RoutineAssignmentDocument } from './routines.js';
-import { buildCheckNotificationPayload } from './notifications.js';
+import { buildCheckNotificationPayload, buildReviewNotificationPayload } from './notifications.js';
 import { normalizeReminderRepeatMinutes, shouldSendCheckReminder } from './reminders.js';
 
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
@@ -43,7 +43,8 @@ interface RoutineNotificationNames {
   };
 }
 
-type CheckNotificationDocument = FirebaseFirestore.QueryDocumentSnapshot | FirebaseFirestore.DocumentSnapshot;
+type PushRecipientRole = 'child' | 'parent';
+type PushNotificationDocument = FirebaseFirestore.QueryDocumentSnapshot | FirebaseFirestore.DocumentSnapshot;
 
 const getRoutineAnalysisContext = (
   assignment: Partial<RoutineAssignmentDocument> | undefined,
@@ -205,10 +206,15 @@ const recordRecoveryAttempt = async (uid: string) => {
   });
 };
 
-const sendCheckPushNotification = async (
-  subscriptionDocument: CheckNotificationDocument,
-  check: { sessionId: string; routineId: string } & RoutineNotificationNames,
-  resend: boolean,
+const pushRecipientRole = (subscriptionDocument: PushNotificationDocument): PushRecipientRole => {
+  const role = subscriptionDocument.data()?.role;
+  return role === 'parent' ? 'parent' : 'child';
+};
+
+const sendPushPayload = async (
+  subscriptionDocument: PushNotificationDocument,
+  payload: unknown,
+  ttl = 120,
 ) => {
   const subscription = subscriptionDocument.data() as PushSubscription & { locale?: string } | undefined;
   if (!subscription) return;
@@ -220,16 +226,7 @@ const sendCheckPushNotification = async (
     }, { merge: true });
   };
   try {
-    const payload = buildCheckNotificationPayload({
-      sessionId: check.sessionId,
-      routineId: check.routineId,
-      routineName: check.routineName,
-      routineNames: check.routineNames,
-      routineIcon: check.routineIcon,
-      resend,
-      locale: subscription.locale,
-    });
-    await webpush.sendNotification(subscription, JSON.stringify(payload), { TTL: 120 });
+    await webpush.sendNotification(subscription, JSON.stringify(payload), { TTL: ttl });
     await recordDispatch('success');
   } catch (error) {
     const statusCode = (error as { statusCode?: number }).statusCode;
@@ -243,6 +240,42 @@ const sendCheckPushNotification = async (
   }
 };
 
+const sendCheckPushNotification = async (
+  subscriptionDocument: PushNotificationDocument,
+  check: { sessionId: string; routineId: string } & RoutineNotificationNames,
+  resend: boolean,
+) => {
+  if (pushRecipientRole(subscriptionDocument) !== 'child') return;
+  const subscription = subscriptionDocument.data() as { locale?: string } | undefined;
+  const payload = buildCheckNotificationPayload({
+    sessionId: check.sessionId,
+    routineId: check.routineId,
+    routineName: check.routineName,
+    routineNames: check.routineNames,
+    routineIcon: check.routineIcon,
+    resend,
+    locale: subscription?.locale,
+  });
+  await sendPushPayload(subscriptionDocument, payload);
+};
+
+const sendReviewPushNotification = async (
+  subscriptionDocument: PushNotificationDocument,
+  check: { checkId: string; routineId: string } & RoutineNotificationNames,
+) => {
+  if (pushRecipientRole(subscriptionDocument) !== 'parent') return;
+  const subscription = subscriptionDocument.data() as { locale?: string } | undefined;
+  const payload = buildReviewNotificationPayload({
+    checkId: check.checkId,
+    routineId: check.routineId,
+    routineName: check.routineName,
+    routineNames: check.routineNames,
+    routineIcon: check.routineIcon,
+    locale: subscription?.locale,
+  });
+  await sendPushPayload(subscriptionDocument, payload);
+};
+
 const sendCheckPushNotifications = async (
   familyRef: FirebaseFirestore.DocumentReference,
   check: { sessionId: string; routineId: string } & RoutineNotificationNames,
@@ -252,6 +285,16 @@ const sendCheckPushNotifications = async (
   if (subscriptions.empty) return;
   webpush.setVapidDetails('https://www.zadiag.com', vapidPublicKey.value(), vapidPrivateKey.value());
   await Promise.allSettled(subscriptions.docs.map((document) => sendCheckPushNotification(document, check, resend)));
+};
+
+const sendReviewPushNotifications = async (
+  familyRef: FirebaseFirestore.DocumentReference,
+  check: { checkId: string; routineId: string } & RoutineNotificationNames,
+) => {
+  const subscriptions = await familyRef.collection('pushSubscriptions').get();
+  if (subscriptions.empty) return;
+  webpush.setVapidDetails('https://www.zadiag.com', vapidPublicKey.value(), vapidPrivateKey.value());
+  await Promise.allSettled(subscriptions.docs.map((document) => sendReviewPushNotification(document, check)));
 };
 
 const getRoutineNotificationNames = (
@@ -529,8 +572,9 @@ export const savePushSubscription = onCall({ region, cors, enforceAppCheck: true
   }
 
   const profile = await db.collection('users').doc(uid).get();
-  if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'child') {
-    throw new HttpsError('permission-denied', 'Only the linked child can enable notifications.');
+  const role = profile.data()?.role;
+  if (!profile.exists || profile.data()?.familyId !== familyId || (role !== 'child' && role !== 'parent')) {
+    throw new HttpsError('permission-denied', 'Only family members can enable notifications.');
   }
 
   const subscriptionRef = db.collection('families').doc(familyId).collection('pushSubscriptions').doc(uid);
@@ -539,6 +583,7 @@ export const savePushSubscription = onCall({ region, cors, enforceAppCheck: true
     endpoint,
     keys: { p256dh, auth },
     locale,
+    role,
     endpointPresent: true,
     lastSuccessfulSaveAt: FieldValue.serverTimestamp(),
     ...(preferences ? { preferences } : {}),
@@ -1140,6 +1185,17 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
     transaction.update(checkRef, analysisUpdate);
     return { id: check.id, ...checkData, ...analysisUpdate };
   });
+  if (analysisUpdate.reviewStatus === 'pending') {
+    try {
+      await sendReviewPushNotifications(checkRef.parent.parent!, {
+        checkId: checkRef.id,
+        routineId,
+        ...getRoutineNotificationNames(assignmentData, routineId),
+      });
+    } catch (error) {
+      console.error('Unable to send review push notifications', error);
+    }
+  }
   return response;
 });
 

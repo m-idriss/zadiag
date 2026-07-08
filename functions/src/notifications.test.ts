@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildCheckNotificationPayload } from './notifications.js';
+import { buildCheckNotificationPayload, buildReviewNotificationPayload } from './notifications.js';
 
 test('builds the current French check notification payload', () => {
   const payload = buildCheckNotificationPayload({
@@ -35,4 +35,22 @@ test('builds the current English reminder notification payload', () => {
   assert.equal(payload.title, '🦷 Orthodontic Elastics · reminder');
   assert.equal(payload.body, 'Check waiting.');
   assert.equal(payload.tag, 'reminder:session-2');
+});
+
+test('builds a French review notification payload for responsible users only', () => {
+  const payload = buildReviewNotificationPayload({
+    checkId: 'check-1',
+    routineId: 'orthodontic-elastics',
+    routineName: 'Orthodontic Elastics',
+    routineNames: { fr: 'Élastiques orthodontiques' },
+    routineIcon: '🦷',
+    locale: 'fr',
+  });
+
+  assert.equal(payload.version, 2);
+  assert.equal(payload.kind, 'review-needed');
+  assert.equal(payload.title, '🦷 Élastiques orthodontiques · à vérifier');
+  assert.equal(payload.body, 'Une preuve attend votre validation.');
+  assert.equal(payload.tag, 'review:check-1');
+  assert.equal(payload.path, '/?open=review');
 });
