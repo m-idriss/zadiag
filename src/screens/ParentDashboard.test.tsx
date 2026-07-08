@@ -120,6 +120,39 @@ describe('ParentDashboard', () => {
     expect(container.textContent).toContain('Waiting for participant proof');
   });
 
+  it('lets the responsible person resend active pending checks from current checks', async () => {
+    const assignment = createDefaultRoutineAssignment();
+    const requestCheck = vi.fn().mockResolvedValue(undefined);
+    const state: AppState = {
+      role: 'parent',
+      locale: 'en',
+      notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      routineAssignments: [assignment],
+      events: [{
+        id: 'pending',
+        routineId: assignment.routineId,
+        sessionId: 'one',
+        requestedAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 20 * 60_000).toISOString(),
+        status: 'pending',
+      }],
+    };
+
+    act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} requestCheck={requestCheck} t={(key) => translate('en', key)} />));
+
+    const resend = Array.from(container.querySelectorAll('button')).find((button) => button.getAttribute('aria-label') === 'Resend reminder');
+    expect(resend).toBeTruthy();
+
+    await act(async () => {
+      resend?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(requestCheck).toHaveBeenCalledWith(assignment.routineId);
+    expect(container.textContent).toContain('The check is ready on the participant’s phone.');
+  });
+
   it('shows expired pending checks as missed in recent history', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-07-07T08:04:00.000Z'));

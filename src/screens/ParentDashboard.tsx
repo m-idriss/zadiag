@@ -33,6 +33,8 @@ export function ParentDashboard({
   const [proofErrors, setProofErrors] = useState<Record<string, boolean>>({});
   const [reviewingId, setReviewingId] = useState<string>();
   const [reviewErrorId, setReviewErrorId] = useState<string>();
+  const [requestingActiveReminder, setRequestingActiveReminder] = useState(false);
+  const [activeReminderStatus, setActiveReminderStatus] = useState<'sent' | 'error'>();
   const [enlargedProofUrl, setEnlargedProofUrl] = useState<string>();
   const swipeStartRef = useRef<{ eventId: string; x: number; y: number } | undefined>(undefined);
   const now = Date.now();
@@ -50,7 +52,7 @@ export function ParentDashboard({
     : !state.routineAssignments.length
       ? { icon: 'add' as const, title: t('responsibleEmptyNoRoutineTitle'), hint: t('responsibleEmptyNoRoutineHint') }
       : activePendingEvents.length
-        ? { icon: 'time' as const, title: t('responsibleEmptyWaitingProofTitle'), hint: t('responsibleEmptyWaitingProofHint') }
+        ? { icon: 'send' as const, title: t('responsibleEmptyWaitingProofTitle'), hint: t('responsibleEmptyWaitingProofHint') }
         : !state.events.length
           ? { icon: 'notifications' as const, title: t('responsibleEmptyNoCheckTitle'), hint: t('responsibleEmptyNoCheckHint') }
           : undefined;
@@ -112,6 +114,21 @@ export function ParentDashboard({
       setReviewingId(undefined);
     }
   };
+  const resendActiveReminders = async () => {
+    if (!requestCheck || requestingActiveReminder) return;
+    setRequestingActiveReminder(true);
+    setActiveReminderStatus(undefined);
+    try {
+      const routineIds = Array.from(new Set(activePendingEvents.map((event) => event.routineId)));
+      await Promise.all(routineIds.map((routineId) => requestCheck(routineId)));
+      setActiveReminderStatus('sent');
+    } catch (error) {
+      console.error(error);
+      setActiveReminderStatus('error');
+    } finally {
+      setRequestingActiveReminder(false);
+    }
+  };
   const beginSwipe = (eventId: string, x: number, y: number, target: EventTarget) => {
     if (reviewingId === eventId || (target as HTMLElement).closest('button')) return;
     swipeStartRef.current = { eventId, x, y };
@@ -156,7 +173,24 @@ export function ParentDashboard({
                 icon={responsibleEmptyState.icon}
                 title={responsibleEmptyState.title}
                 detail={responsibleEmptyState.hint}
-              />
+              >
+                {requestCheck && activePendingEvents.length ? (
+                  <div className="responsible-state-actions">
+                    <button
+                      type="button"
+                      className="responsible-reminder-button"
+                      aria-label={t('requestCheckAgain')}
+                      disabled={requestingActiveReminder}
+                      onClick={() => { void resendActiveReminders(); }}
+                    >
+                      <AppIcon name="send" />
+                      {requestingActiveReminder ? t('requestingCheck') : t('requestCheckAgain')}
+                    </button>
+                    {activeReminderStatus === 'sent' ? <span className="request-feedback success">{t('requestCheckSent')}</span> : null}
+                    {activeReminderStatus === 'error' ? <span className="request-feedback error">{t('requestCheckError')}</span> : null}
+                  </div>
+                ) : null}
+              </EmptyState>
             ) : null}
 
             {!state.family.childLinked && state.family.linkingCode ? (

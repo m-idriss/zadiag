@@ -154,11 +154,13 @@ export function EmptyState({
   title,
   detail,
   className,
+  children,
 }: {
   icon: IconSlot;
   title: ReactNode;
   detail?: ReactNode;
   className?: string;
+  children?: ReactNode;
 }) {
   return (
     <Card className={joinClassNames('parent-empty-history-card', className)}>
@@ -166,6 +168,7 @@ export function EmptyState({
       <div>
         <h2>{title}</h2>
         {detail !== undefined ? <p>{detail}</p> : null}
+        {children}
       </div>
     </Card>
   );
