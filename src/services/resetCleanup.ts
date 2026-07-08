@@ -32,6 +32,7 @@ export async function cleanupClientAfterReset() {
   }
 
   const registration = await navigator.serviceWorker?.getRegistration?.();
+  registration?.active?.postMessage({ type: 'CLEAR_BADGE_AND_NOTIFICATIONS' });
   if (registration?.getNotifications) {
     tasks.push(registration.getNotifications().then((notifications) => {
       notifications

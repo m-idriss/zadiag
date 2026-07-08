@@ -1,5 +1,11 @@
 /// <reference lib="webworker" />
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
+import {
+  clearBadgeAndCheckNotifications,
+  notificationClickPath,
+  notificationOptionsForPayload,
+  type PushPayload,
+} from './services/serviceWorkerNotifications';
 
 declare let self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: Array<{ url: string; revision?: string }>;
@@ -13,40 +19,22 @@ self.addEventListener('activate', (event: ExtendableEvent) => {
 });
 
 self.addEventListener('message', (event: ExtendableMessageEvent) => {
-  if ((event.data as { type?: string } | undefined)?.type === 'SKIP_WAITING') {
+  const type = (event.data as { type?: string } | undefined)?.type;
+  if (type === 'SKIP_WAITING') {
     void self.skipWaiting();
+  } else if (type === 'CLEAR_BADGE_AND_NOTIFICATIONS') {
+    event.waitUntil(clearBadgeAndCheckNotifications(self.registration));
   }
 });
 
 self.addEventListener('push', (event: PushEvent) => {
-  const payload = event.data?.json() as {
-    version?: number;
-    kind?: string;
-    sessionId?: string;
-    routineId?: string;
-    title?: string;
-    body?: string;
-    tag?: string;
-    path?: string;
-  } | undefined;
+  const payload = event.data?.json() as PushPayload | undefined;
   event.waitUntil(
-    self.registration.showNotification(payload?.title ?? 'Check ready', {
-      body: payload?.body ?? 'You can send your proof now.',
-      icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
-      tag: payload?.tag ?? payload?.sessionId ?? 'verification',
-      data: {
-        kind: payload?.kind,
-        routineId: payload?.routineId,
-        sessionId: payload?.sessionId,
-        version: payload?.version,
-        path: payload?.path ?? '/?open=verification',
-      },
-    }),
+    self.registration.showNotification(payload?.title ?? 'Check ready', notificationOptionsForPayload(payload)),
   );
 });
 
 self.addEventListener('notificationclick', (event: NotificationEvent) => {
   event.notification.close();
-  event.waitUntil(self.clients.openWindow(String(event.notification.data?.path ?? '/')));
+  event.waitUntil(self.clients.openWindow(notificationClickPath(event.notification)));
 });
