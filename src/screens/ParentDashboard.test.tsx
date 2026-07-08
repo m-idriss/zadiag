@@ -215,6 +215,7 @@ describe('ParentDashboard', () => {
     });
 
     expect(requestCheck).toHaveBeenCalledWith(assignment.routineId);
+    expect(Array.from(container.querySelectorAll('button')).filter((button) => button.getAttribute('aria-label') === 'Resend reminder')).toHaveLength(0);
     vi.useRealTimers();
   });
 

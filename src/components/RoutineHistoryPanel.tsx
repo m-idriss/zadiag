@@ -56,6 +56,7 @@ export function RoutineHistoryPanel({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [routineFilter, setRoutineFilter] = useState<RoutineFilter>('all');
   const [requestingEventId, setRequestingEventId] = useState<string>();
+  const [hiddenRequestEventIds, setHiddenRequestEventIds] = useState<Record<string, string>>({});
   const formatterLocale = locale === 'fr' ? 'fr-FR' : 'en-US';
   const displayEvents = useMemo(() => withResolvedEventStatuses(events), [events]);
   const formatDateTime = (value: string) => new Intl.DateTimeFormat(formatterLocale, {
@@ -91,10 +92,17 @@ export function RoutineHistoryPanel({
   const requestCheck = async (event: VerificationEvent) => {
     if (!onRequestCheck || requestingEventId) return;
     setRequestingEventId(event.id);
+    setHiddenRequestEventIds((current) => ({ ...current, [event.routineId]: event.id }));
     try {
       await onRequestCheck(event.routineId);
     } catch (error) {
       console.error(error);
+      setHiddenRequestEventIds((current) => {
+        if (current[event.routineId] !== event.id) return current;
+        const next = { ...current };
+        delete next[event.routineId];
+        return next;
+      });
     } finally {
       setRequestingEventId(undefined);
     }
@@ -130,7 +138,9 @@ export function RoutineHistoryPanel({
             {filtered.map((event) => {
               const visual = presentationFor(event);
               const canRetake = Boolean(onRetake) && canRetakeCapture(event, retryEvents ?? events, new Date());
-              const canRequestCheck = Boolean(onRequestCheck) && latestMissedEventIds.has(event.id);
+              const canRequestCheck = Boolean(onRequestCheck)
+                && latestMissedEventIds.has(event.id)
+                && hiddenRequestEventIds[event.routineId] !== event.id;
               const reason = displayReason(event.reason);
               const staleReason = stalePendingCheckReason(events.find((item) => item.id === event.id) ?? event, assignments);
               const staleHint = staleReason === 'expired'
