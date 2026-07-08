@@ -1192,7 +1192,9 @@ ion-input {
 .settings-diagnostics-list div { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding-top: 8px; border-top: 1px solid rgba(13,146,125,.12); }
 .settings-diagnostics-list dt { color: var(--muted); font-size: 11px; font-weight: 900; text-transform: uppercase; }
 .settings-diagnostics-list dd { margin: 0; max-width: 58%; overflow-wrap: anywhere; color: var(--navy); font-size: 12px; font-weight: 900; text-align: right; }
-.settings-diagnostics-toggle { width: 34px; height: 34px; display: grid; place-items: center; justify-self: end; padding: 0; border: 0; border-radius: 12px; background: #f2f7f5; color: var(--teal); }
+.settings-diagnostics-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.settings-diagnostics-header > span { min-width: 0; }
+.settings-diagnostics-toggle { width: 30px; height: 30px; display: grid; place-items: center; flex: 0 0 auto; padding: 0; border: 0; border-radius: 10px; background: #f2f7f5; color: var(--teal); }
 .settings-diagnostics-toggle ion-icon { font-size: 20px; transition: transform .18s ease; }
 .settings-diagnostics-toggle ion-icon.expanded { transform: rotate(180deg); }
 .settings-contact-button {
