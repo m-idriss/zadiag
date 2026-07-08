@@ -162,6 +162,7 @@ const createFakeRepository = (initialState = makeState()): AppRepository => {
       state = { ...state, notificationsEnabled: true };
       emit();
     },
+    async sendTestPushNotification() {},
     async savePlan(plan: MonitoringPlan, routineId = DEFAULT_ROUTINE_ID) {
       state = {
         ...state,

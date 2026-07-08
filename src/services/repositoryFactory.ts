@@ -94,6 +94,10 @@ class LazyFirebaseRepository implements AppRepository {
     return (await this.load()).savePushSubscription(subscription);
   }
 
+  async sendTestPushNotification() {
+    return (await this.load()).sendTestPushNotification();
+  }
+
   async savePlan(plan: MonitoringPlan, routineId?: string) {
     return (await this.load()).savePlan(plan, routineId);
   }

@@ -41,6 +41,20 @@ export interface ReviewNotificationPayload {
   path: string;
 }
 
+export interface TestNotificationInput {
+  locale?: string;
+  role?: 'child' | 'parent';
+}
+
+export interface TestNotificationPayload {
+  version: 2;
+  kind: 'test';
+  tag: string;
+  title: string;
+  body: string;
+  path: string;
+}
+
 export const normalizeNotificationLocale = (locale?: string): NotificationLocale =>
   locale === 'fr' ? 'fr' : 'en';
 
@@ -86,5 +100,17 @@ export const buildReviewNotificationPayload = (input: ReviewNotificationInput): 
     title: locale === 'fr' ? `${titlePrefix} · à vérifier` : `${titlePrefix} · review`,
     body: locale === 'fr' ? 'Une preuve attend votre validation.' : 'A proof needs your review.',
     path: '/?open=review',
+  };
+};
+
+export const buildTestNotificationPayload = (input: TestNotificationInput = {}): TestNotificationPayload => {
+  const locale = normalizeNotificationLocale(input.locale);
+  return {
+    version: 2,
+    kind: 'test',
+    tag: `test:${input.role ?? 'device'}`,
+    title: locale === 'fr' ? 'Notification test Zadiag' : 'Zadiag test notification',
+    body: locale === 'fr' ? 'Ce téléphone peut recevoir les notifications.' : 'This phone can receive notifications.',
+    path: '/?open=settings',
   };
 };

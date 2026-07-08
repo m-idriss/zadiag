@@ -37,6 +37,7 @@ const renderSettings = () => {
         }}
         preferences={defaultAppPreferences}
         setPreferences={async () => undefined}
+        sendTestPushNotification={async () => undefined}
         childInstalled
         familyId="family-1"
         events={[] as VerificationEvent[]}
@@ -72,6 +73,8 @@ describe('SettingsScreen recovery diagnostics', () => {
     expect(container.textContent).toContain('Yes');
     expect(container.textContent).toContain('Last push result');
     expect(container.textContent).toContain('success');
+    expect(container.textContent).toContain('Test notification');
+    expect(container.textContent).toContain('Enable notifications on this device first.');
     expect(container.textContent).toContain('App version');
     expect(container.textContent).toContain('Service worker');
     expect(container.textContent).toContain('Registered');

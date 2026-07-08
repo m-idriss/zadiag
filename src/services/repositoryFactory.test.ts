@@ -48,6 +48,7 @@ class FakeFirebaseRepository implements AppRepository {
   async requestCheckNow() {}
   async updateRoutine(_routineId: string, _plan: MonitoringPlan) {}
   async savePushSubscription() {}
+  async sendTestPushNotification() {}
   async savePlan() {}
   activeSession() { return undefined; }
   async submitCapture(): Promise<VerificationEvent> { throw new Error('not implemented'); }
