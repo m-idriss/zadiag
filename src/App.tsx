@@ -417,6 +417,11 @@ export function App() {
       <Suspense fallback={<SplashScreen progress={ready ? 96 : splashProgress} message={t(ready ? 'splashFinalizing' : splashMessage)} />}>
         {content}
       </Suspense>
+      <div className="orientation-lock-screen" role="status" aria-live="polite">
+        <img src="/icons/icon-192.png" alt="" />
+        <strong>{t('orientationLockTitle')}</strong>
+        <span>{t('orientationLockBody')}</span>
+      </div>
       {showUpdateSnackbar && updateSnackbarId ? (
         <Snackbar
           message={updateSnackbarMessage}

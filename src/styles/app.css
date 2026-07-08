@@ -93,6 +93,28 @@ ion-app.app-root {
   background: transparent;
   overflow: hidden;
 }
+.orientation-lock-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: none;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  padding: 28px;
+  background: #f8faf9;
+  color: var(--navy);
+  text-align: center;
+}
+.orientation-lock-screen img { width: 74px; height: 74px; border-radius: 16px; box-shadow: 0 14px 32px rgba(16,42,67,.11); }
+.orientation-lock-screen strong { font-size: 22px; font-weight: 900; }
+.orientation-lock-screen span { max-width: 280px; color: var(--muted); font-size: 14px; font-weight: 750; line-height: 1.35; }
+@media (orientation: landscape) and (pointer: coarse) {
+  .orientation-lock-screen { display: grid; }
+  .app-shell,
+  .app-splash,
+  .startup-recovery-page { visibility: hidden; }
+}
 .app-splash {
   position: fixed;
   inset: 0;
