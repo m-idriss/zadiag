@@ -74,7 +74,9 @@ test('calls Gemini with the expected payload and returns a conforming analysis r
   assert.equal(sentUrl, 'https://generativelanguage.googleapis.com/v1beta/models/gemini-test-model:generateContent');
   assert.equal(sentInit?.method, 'POST');
   assert.equal((sentInit?.headers as Record<string, string>)?.Authorization, 'Bearer token-123');
-  assert.match(String(sentInit?.body), /"responseMimeType":"application\/json"/);
+  const sentBody = JSON.parse(String(sentInit?.body)) as { generationConfig?: { maxOutputTokens?: number; responseMimeType?: string } };
+  assert.equal(sentBody.generationConfig?.responseMimeType, 'application/json');
+  assert.equal(sentBody.generationConfig?.maxOutputTokens, 768);
   assert.deepEqual(result, {
     status: 'detected',
     confidence: 0.93,

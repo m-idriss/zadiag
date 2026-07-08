@@ -104,6 +104,8 @@ type GeminiGenerateContentResponse = {
 
 export type AnalysisLocale = 'en' | 'fr';
 
+const GEMINI_ANALYSIS_MAX_OUTPUT_TOKENS = 768;
+
 const defaultRoutineAnalysis: RoutineAnalysisContext = {
   routineName: 'Treatment adherence',
   expectedEvidence: 'The expected treatment aid or adherence proof for this routine.',
@@ -123,6 +125,7 @@ const buildPrompt = (locale: AnalysisLocale, retry: boolean, routineAnalysis = d
   'Return JSON only.',
   'Keys: status, confidence, imageQuality, reason.',
   'status must be detected, not_detected, or uncertain.',
+  'Keep reason under 25 words.',
   locale === 'fr'
     ? 'The reason field must be a natural French sentence, with no English words.'
     : 'The reason field must be a natural English sentence, with no French words.',
@@ -173,7 +176,7 @@ const requestGeminiAnalysis = async (
       ],
       generationConfig: {
         temperature: 0,
-        maxOutputTokens: 256,
+        maxOutputTokens: GEMINI_ANALYSIS_MAX_OUTPUT_TOKENS,
         responseMimeType: 'application/json',
       },
     }),
