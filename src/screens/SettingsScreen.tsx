@@ -165,15 +165,6 @@ export function SettingsScreen({
   const reminderRepeatLabel = preferences.reminderRepeatMinutes === 0
     ? t('settingsReminderRepeatDetailOff')
     : t('settingsReminderRepeatDetail').replace('{minutes}', String(preferences.reminderRepeatMinutes));
-  const updatedAt = new Date(import.meta.env.VITE_APP_UPDATED_AT ?? '');
-  const appUpdated = Number.isNaN(updatedAt.getTime())
-    ? import.meta.env.VITE_APP_UPDATED_AT
-    : new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-US', {
-      day: '2-digit',
-      month: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(updatedAt);
   const updateSeverity = updateInfo.available ? updateInfo.severity : 'none';
   const updateDetail = updateInfo.available
     ? updateInfo.severity === 'major'
@@ -284,14 +275,6 @@ export function SettingsScreen({
         <h2 id="settings-support-heading">{t('settingsSupportSection')}</h2>
         <div className="card settings-list">
           <ListRow
-            icon={<IonIcon icon={mailOutline} />}
-            title={t('settingsDebugMailTitle')}
-            detail={t('settingsDebugMailDetail')}
-            trailing={<button type="button" className="settings-inline-action settings-inline-action-contained" onClick={sendDiagnosticsEmail}>{t('settingsDebugMailSend')}</button>}
-          >
-            {mailError ? <small className="settings-action-error">{t('settingsDebugMailError')}</small> : null}
-          </ListRow>
-          <ListRow
             icon={<IonIcon icon={informationCircleOutline} />}
             title={t('settingsRecoveryDiagnosticsTitle')}
             detail={t('settingsRecoveryDiagnosticsDetail')}
@@ -310,6 +293,14 @@ export function SettingsScreen({
               <div><dt>{t('settingsDiagnosticsServiceWorker')}</dt><dd>{t(serviceWorkerDetailKey)}</dd></div>
               <div><dt>{t('settingsDiagnosticsLastSync')}</dt><dd>{formattedLastSync}</dd></div>
             </dl>
+          </ListRow>
+          <ListRow
+            icon={<IonIcon icon={mailOutline} />}
+            title={t('settingsDebugMailTitle')}
+            detail={t('settingsDebugMailDetail')}
+            trailing={<button type="button" className="settings-inline-action settings-inline-action-contained" onClick={sendDiagnosticsEmail}>{t('settingsDebugMailSend')}</button>}
+          >
+            {mailError ? <small className="settings-action-error">{t('settingsDebugMailError')}</small> : null}
           </ListRow>
           <ListRow
             icon={<IonIcon icon={notificationsOutline} />}
@@ -331,8 +322,8 @@ export function SettingsScreen({
           </ListRow>
           <ListRow
             icon={<IonIcon icon={informationCircleOutline} />}
-            title={`${t('settingsAppInfoTitle')} v${import.meta.env.VITE_APP_VERSION}`}
-            detail={`${t('settingsUpdatedLabel')} ${appUpdated}`}
+            title={t('settingsUpdateTitle')}
+            detail={updateDetail}
             trailing={(
               <div className="settings-row-control">
                 {updateInfo.badgeLabel ? <span className={`settings-update-badge ${updateSeverity}`}>{updateInfo.badgeLabel}</span> : null}
@@ -347,7 +338,6 @@ export function SettingsScreen({
               </div>
             )}
           >
-            {updateInfo.available ? <small>{updateDetail}</small> : null}
             {updateError ? <small className="settings-action-error">{t('settingsUpdateError')}</small> : null}
           </ListRow>
         </div>
