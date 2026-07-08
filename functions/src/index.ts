@@ -212,6 +212,13 @@ const sendCheckPushNotification = async (
 ) => {
   const subscription = subscriptionDocument.data() as PushSubscription & { locale?: string } | undefined;
   if (!subscription) return;
+  const recordDispatch = async (result: 'success' | 'failed' | 'invalidated', error?: unknown) => {
+    await subscriptionDocument.ref.set({
+      lastDispatchResult: result,
+      lastDispatchAt: FieldValue.serverTimestamp(),
+      ...(error ? { lastDispatchError: String((error as { message?: string }).message ?? error).slice(0, 180) } : { lastDispatchError: FieldValue.delete() }),
+    }, { merge: true });
+  };
   try {
     const payload = buildCheckNotificationPayload({
       sessionId: check.sessionId,
@@ -223,10 +230,16 @@ const sendCheckPushNotification = async (
       locale: subscription.locale,
     });
     await webpush.sendNotification(subscription, JSON.stringify(payload), { TTL: 120 });
+    await recordDispatch('success');
   } catch (error) {
     const statusCode = (error as { statusCode?: number }).statusCode;
-    if (statusCode === 404 || statusCode === 410) await subscriptionDocument.ref.delete();
-    else console.error('Unable to send Web Push notification', error);
+    if (statusCode === 404 || statusCode === 410) {
+      await recordDispatch('invalidated', error);
+      await subscriptionDocument.ref.delete();
+    } else {
+      await recordDispatch('failed', error);
+      console.error('Unable to send Web Push notification', error);
+    }
   }
 };
 
@@ -526,6 +539,8 @@ export const savePushSubscription = onCall({ region, cors, enforceAppCheck: true
     endpoint,
     keys: { p256dh, auth },
     locale,
+    endpointPresent: true,
+    lastSuccessfulSaveAt: FieldValue.serverTimestamp(),
     ...(preferences ? { preferences } : {}),
     updatedAt: FieldValue.serverTimestamp(),
   });

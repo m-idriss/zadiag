@@ -13,6 +13,7 @@ const initialRemoteState = (): AppState => {
   return {
     locale: preferences.locale ?? browserLocale(),
     notificationsEnabled: false,
+    pushHealth: { permission: 'Notification' in window ? Notification.permission : 'unsupported', endpointPresent: false },
     role: preferences.role,
     preferences: normalizeAppPreferences(preferences),
     family: { linked: false, childLinked: false, childName: '', linkingCode: '', parentRecoveryCode: '', consented: false },

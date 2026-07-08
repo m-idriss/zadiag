@@ -41,6 +41,13 @@ interface UserProfile {
   parentRecoveryCode?: string;
   notificationsEnabled?: boolean;
 }
+interface PushSubscriptionDocument {
+  endpoint?: string;
+  lastSuccessfulSaveAt?: { toDate?: () => Date } | string;
+  lastDispatchResult?: 'success' | 'failed' | 'invalidated';
+  lastDispatchAt?: { toDate?: () => Date } | string;
+  lastDispatchError?: string;
+}
 interface FamilyDocument {
   childName: string;
   linkingCode?: string;
@@ -54,6 +61,7 @@ const initialState = (): AppState => {
   return {
     locale: preferences.locale ?? browserLocale(),
     notificationsEnabled: false,
+    pushHealth: { permission: 'Notification' in window ? Notification.permission : 'unsupported', endpointPresent: false },
     role: preferences.role,
     preferences: normalizeAppPreferences(preferences),
     family: { linked: false, childLinked: false, childName: '', linkingCode: '', parentRecoveryCode: '', consented: false },
@@ -240,6 +248,12 @@ export class FirebaseRepository implements AppRepository {
       preferences: normalizeAppPreferences(this.state.preferences),
     });
     this.state.notificationsEnabled = true;
+    this.state.pushHealth = {
+      ...this.state.pushHealth,
+      permission: 'Notification' in window ? Notification.permission : 'unsupported',
+      endpointPresent: Boolean(subscription.endpoint),
+      lastSuccessfulSaveAt: new Date().toISOString(),
+    };
     this.emit();
   }
 
@@ -345,6 +359,11 @@ export class FirebaseRepository implements AppRepository {
     if (!profile.exists()) { this.emit(); return; }
     const data = profile.data() as UserProfile;
     this.state.notificationsEnabled = data.notificationsEnabled === true;
+    this.state.pushHealth = {
+      ...this.state.pushHealth,
+      permission: 'Notification' in window ? Notification.permission : 'unsupported',
+      endpointPresent: this.state.pushHealth?.endpointPresent ?? false,
+    };
     this.state.family.linkingCode = data.linkingCode ?? '';
     this.state.family.parentRecoveryCode = data.parentRecoveryCode ?? '';
     await this.attachFamily(data.familyId, data.role);
@@ -377,6 +396,30 @@ export class FirebaseRepository implements AppRepository {
       await migrateRoutines({ familyId });
     });
     const familyRef = doc(this.services.db, 'families', familyId);
+    if (role === 'child' && this.user) {
+      this.remoteSubscriptions.push(onSnapshot(doc(familyRef, 'pushSubscriptions', this.user.uid), (snapshot) => {
+        const data = snapshot.data() as PushSubscriptionDocument | undefined;
+        const toIso = (value: PushSubscriptionDocument['lastSuccessfulSaveAt']) =>
+          typeof value === 'string' ? value : value?.toDate?.().toISOString();
+        this.state.pushHealth = {
+          permission: 'Notification' in window ? Notification.permission : 'unsupported',
+          endpointPresent: Boolean(data?.endpoint),
+          lastSuccessfulSaveAt: toIso(data?.lastSuccessfulSaveAt),
+          lastDispatchResult: data?.lastDispatchResult,
+          lastDispatchAt: toIso(data?.lastDispatchAt),
+          lastDispatchError: data?.lastDispatchError,
+        };
+        this.emit();
+      }, (error) => {
+        console.error('Unable to load push subscription health', error);
+        this.state.pushHealth = {
+          ...this.state.pushHealth,
+          permission: 'Notification' in window ? Notification.permission : 'unsupported',
+          endpointPresent: false,
+        };
+        this.emit();
+      }));
+    }
     this.remoteSubscriptions.push(onSnapshot(familyRef, async (snapshot) => {
       if (!snapshot.exists()) return;
       const family = snapshot.data() as FamilyDocument;

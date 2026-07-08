@@ -28,6 +28,13 @@ const renderSettings = () => {
         reset={() => undefined}
         role="parent"
         notificationsEnabled={false}
+        pushHealth={{
+          permission: 'granted',
+          endpointPresent: true,
+          lastSuccessfulSaveAt: '2026-07-07T19:40:00.000Z',
+          lastDispatchResult: 'success',
+          lastDispatchAt: '2026-07-07T19:42:00.000Z',
+        }}
         preferences={defaultAppPreferences}
         setPreferences={async () => undefined}
         childInstalled
@@ -59,6 +66,12 @@ describe('SettingsScreen recovery diagnostics', () => {
     expect(container.textContent).toContain('Completed');
     expect(container.textContent).toContain('Notifications');
     expect(container.textContent).toContain('Not enabled');
+    expect(container.textContent).toContain('Push permission');
+    expect(container.textContent).toContain('granted');
+    expect(container.textContent).toContain('Push endpoint');
+    expect(container.textContent).toContain('Yes');
+    expect(container.textContent).toContain('Last push result');
+    expect(container.textContent).toContain('success');
     expect(container.textContent).toContain('App version');
     expect(container.textContent).toContain('Service worker');
     expect(container.textContent).toContain('Registered');

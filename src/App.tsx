@@ -374,6 +374,7 @@ export function App() {
       : tab === 'settings'
         ? <SettingsScreen
             notificationsEnabled={state.notificationsEnabled}
+            pushHealth={state.pushHealth}
             preferences={preferences}
             setPreferences={async (nextPreferences) => { await repository.setPreferences(nextPreferences); sync(); }}
             childInstalled={state.family.childLinked}
