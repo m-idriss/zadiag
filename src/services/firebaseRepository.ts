@@ -234,7 +234,7 @@ export class FirebaseRepository implements AppRepository {
   }
 
   async savePushSubscription(subscription: PushSubscriptionJSON) {
-    if (!this.state.family.id || this.state.role !== 'child') throw new Error('permission_denied');
+    if (!this.state.family.id || !['child', 'parent'].includes(String(this.state.role))) throw new Error('permission_denied');
     const savePushSubscription = httpsCallable<{
       familyId: string;
       subscription: PushSubscriptionJSON;
@@ -396,7 +396,7 @@ export class FirebaseRepository implements AppRepository {
       await migrateRoutines({ familyId });
     });
     const familyRef = doc(this.services.db, 'families', familyId);
-    if (role === 'child' && this.user) {
+    if ((role === 'child' || role === 'parent') && this.user) {
       this.remoteSubscriptions.push(onSnapshot(doc(familyRef, 'pushSubscriptions', this.user.uid), (snapshot) => {
         const data = snapshot.data() as PushSubscriptionDocument | undefined;
         const toIso = (value: PushSubscriptionDocument['lastSuccessfulSaveAt']) =>
@@ -494,7 +494,7 @@ export class FirebaseRepository implements AppRepository {
   }
 
   private async syncPushSubscriptionLocale() {
-    if (this.state.role !== 'child' || !this.user || !this.state.family.id || !this.state.notificationsEnabled) return;
+    if (!['child', 'parent'].includes(String(this.state.role)) || !this.user || !this.state.family.id || !this.state.notificationsEnabled) return;
     try {
       await updateDoc(doc(this.services.db, 'families', this.state.family.id, 'pushSubscriptions', this.user.uid), {
         locale: this.state.locale,
