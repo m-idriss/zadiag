@@ -59,6 +59,11 @@ describe('SettingsScreen recovery diagnostics', () => {
     const { container, root } = renderSettings();
 
     expect(container.textContent).toContain('Recovery diagnostics');
+    const diagnosticsToggle = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.getAttribute('aria-label') === 'Recovery diagnostics',
+    );
+    act(() => diagnosticsToggle?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+
     expect(container.textContent).toContain('Family ID');
     expect(container.textContent).toContain('family-1');
     expect(container.textContent).toContain('Role');
