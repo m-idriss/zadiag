@@ -10,7 +10,7 @@ import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, isFr
 import { analyzeWithGemini, parseImageDataUrl, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
 import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
 import { createDefaultRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, routineFromCatalog, type RoutineAssignmentDocument } from './routines.js';
-import { buildCheckNotificationPayload, buildReviewNotificationPayload } from './notifications.js';
+import { buildCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload } from './notifications.js';
 import { normalizeReminderRepeatMinutes, shouldSendCheckReminder } from './reminders.js';
 
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
@@ -591,6 +591,31 @@ export const savePushSubscription = onCall({ region, cors, enforceAppCheck: true
   });
   batch.update(profile.ref, { notificationsEnabled: true, updatedAt: FieldValue.serverTimestamp() });
   await batch.commit();
+});
+
+export const sendTestPushNotification = onCall({
+  region,
+  cors,
+  enforceAppCheck: true,
+  secrets: [vapidPrivateKey, vapidPublicKey],
+}, async (request) => {
+  const uid = requireUid(request.auth);
+  const familyId = String(request.data?.familyId ?? '');
+  const profile = await db.collection('users').doc(uid).get();
+  const role = profile.data()?.role;
+  if (!profile.exists || profile.data()?.familyId !== familyId || (role !== 'child' && role !== 'parent')) {
+    throw new HttpsError('permission-denied', 'Only family members can send a test notification.');
+  }
+  const subscriptionDocument = await db.collection('families').doc(familyId).collection('pushSubscriptions').doc(uid).get();
+  const subscription = subscriptionDocument.data() as (PushSubscription & { locale?: string }) | undefined;
+  if (!subscription?.endpoint) {
+    throw new HttpsError('failed-precondition', 'No push subscription is available for this device.');
+  }
+  webpush.setVapidDetails('https://www.zadiag.com', vapidPublicKey.value(), vapidPrivateKey.value());
+  await sendPushPayload(subscriptionDocument, buildTestNotificationPayload({
+    locale: subscription.locale,
+    role,
+  }));
 });
 
 export const updateNotificationPreferences = onCall({ region, cors, enforceAppCheck: true }, async (request) => {

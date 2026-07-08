@@ -16,6 +16,7 @@ export interface AppRepository {
   requestCheckNow(routineId?: string): Promise<void>;
   updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode): Promise<void>;
   savePushSubscription(subscription: PushSubscriptionJSON): Promise<void>;
+  sendTestPushNotification(): Promise<void>;
   savePlan(plan: MonitoringPlan, routineId?: string): Promise<void>;
   activeSession(): VerificationEvent | undefined;
   submitCapture(sessionId: string, capturedAt: Date, imageDataUrl: string): Promise<VerificationEvent>;

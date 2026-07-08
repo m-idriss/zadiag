@@ -337,6 +337,18 @@ export class DemoRepository implements AppRepository {
     this.persist();
   }
 
+  async sendTestPushNotification() {
+    if (!this.state.notificationsEnabled) throw new Error('push_not_enabled');
+    this.state.pushHealth = {
+      permission: this.state.pushHealth?.permission ?? 'granted',
+      endpointPresent: this.state.pushHealth?.endpointPresent ?? true,
+      ...this.state.pushHealth,
+      lastDispatchResult: 'success',
+      lastDispatchAt: new Date().toISOString(),
+    };
+    this.persist();
+  }
+
   async savePlan(plan: MonitoringPlan, routineId = DEFAULT_ROUTINE_ID) {
     const assignment = this.state.routineAssignments.find((item) => item.routineId === routineId);
     if (!assignment) throw new Error('routine_not_found');

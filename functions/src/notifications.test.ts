@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildCheckNotificationPayload, buildReviewNotificationPayload } from './notifications.js';
+import { buildCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload } from './notifications.js';
 
 test('builds the current French check notification payload', () => {
   const payload = buildCheckNotificationPayload({
@@ -53,4 +53,15 @@ test('builds a French review notification payload for responsible users only', (
   assert.equal(payload.body, 'Une preuve attend votre validation.');
   assert.equal(payload.tag, 'review:check-1');
   assert.equal(payload.path, '/?open=review');
+});
+
+test('builds a localized test notification payload', () => {
+  const payload = buildTestNotificationPayload({ locale: 'fr', role: 'parent' });
+
+  assert.equal(payload.version, 2);
+  assert.equal(payload.kind, 'test');
+  assert.equal(payload.title, 'Notification test Zadiag');
+  assert.equal(payload.body, 'Ce téléphone peut recevoir les notifications.');
+  assert.equal(payload.tag, 'test:parent');
+  assert.equal(payload.path, '/?open=settings');
 });

@@ -257,6 +257,12 @@ export class FirebaseRepository implements AppRepository {
     this.emit();
   }
 
+  async sendTestPushNotification() {
+    if (!this.state.family.id || !['child', 'parent'].includes(String(this.state.role))) throw new Error('permission_denied');
+    const sendTestPushNotification = httpsCallable<{ familyId: string }, void>(this.services.functions, 'sendTestPushNotification');
+    await sendTestPushNotification({ familyId: this.state.family.id });
+  }
+
   async savePlan(plan: MonitoringPlan, routineId = DEFAULT_ROUTINE_ID) {
     if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
     const updatePlan = httpsCallable<{ familyId: string; routineId: string; plan: MonitoringPlan }, void>(this.services.functions, 'updatePlan');
