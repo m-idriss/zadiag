@@ -7,7 +7,7 @@ import { translate, type MessageKey } from './services/i18n';
 import { BottomNav, type Tab } from './components/BottomNav';
 import { SplashScreen } from './components/SplashScreen';
 import { Snackbar } from './components/Snackbar';
-import { WebPushGateway } from './services/webPush';
+import { PushSetupError, WebPushGateway } from './services/webPush';
 import { firebaseEnabled } from './services/firebaseConfig';
 import { browserRouteContext, isLocalDemoEnvironment, routineCentricUiEnabled } from './services/browserEnvironment';
 import { describeAppUpdate, fetchLatestAppVersion, refreshServiceWorkerRegistration, runWhenStartupIsIdle, type AppUpdateInfo } from './services/appUpdate';
@@ -215,7 +215,8 @@ export function App() {
     }
     const push = new WebPushGateway();
     const permission = await push.permission();
-    if (permission !== 'granted') throw new Error('notification_permission_denied');
+    if (permission === 'denied') throw new PushSetupError('notification_permission_denied');
+    if (permission !== 'granted') throw new PushSetupError('notification_permission_reset');
     const subscription = await push.subscribe();
     await repository.savePushSubscription(subscription.toJSON());
   };
