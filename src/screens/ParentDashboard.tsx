@@ -28,7 +28,7 @@ export function ParentDashboard({
 }) {
   const [regenerating, setRegenerating] = useState(false);
   const [codeError, setCodeError] = useState(false);
-  const [summaryRange, setSummaryRange] = useState<SummaryRange>('twoDays');
+  const [summaryRange, setSummaryRange] = useState<SummaryRange>('day');
   const [proofUrls, setProofUrls] = useState<Record<string, string>>({});
   const [proofErrors, setProofErrors] = useState<Record<string, boolean>>({});
   const [reviewingId, setReviewingId] = useState<string>();
