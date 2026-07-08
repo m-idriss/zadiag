@@ -16,6 +16,8 @@ export function ParentDashboard({
   getProofImageUrl,
   reviewCheck,
   requestCheck,
+  summaryRange: controlledSummaryRange,
+  onSummaryRangeChange,
   t,
 }: {
   state: AppState;
@@ -24,11 +26,13 @@ export function ParentDashboard({
   getProofImageUrl?: (eventId: string) => Promise<string>;
   reviewCheck?: (eventId: string, decision: 'detected' | 'not_detected') => Promise<void>;
   requestCheck?: (routineId: string) => Promise<void>;
+  summaryRange?: SummaryRange;
+  onSummaryRangeChange?: (range: SummaryRange) => void;
   t: (key: MessageKey) => string;
 }) {
   const [regenerating, setRegenerating] = useState(false);
   const [codeError, setCodeError] = useState(false);
-  const [summaryRange, setSummaryRange] = useState<SummaryRange>('day');
+  const [localSummaryRange, setLocalSummaryRange] = useState<SummaryRange>('day');
   const [proofUrls, setProofUrls] = useState<Record<string, string>>({});
   const [proofErrors, setProofErrors] = useState<Record<string, boolean>>({});
   const [reviewingId, setReviewingId] = useState<string>();
@@ -37,6 +41,8 @@ export function ParentDashboard({
   const [activeReminderStatus, setActiveReminderStatus] = useState<'sent' | 'error'>();
   const [enlargedProofUrl, setEnlargedProofUrl] = useState<string>();
   const swipeStartRef = useRef<{ eventId: string; x: number; y: number } | undefined>(undefined);
+  const summaryRange = controlledSummaryRange ?? localSummaryRange;
+  const setSummaryRange = onSummaryRangeChange ?? setLocalSummaryRange;
   const now = Date.now();
   const displayEvents = useMemo(() => withResolvedEventStatuses(state.events, now), [now, state.events]);
   const rangedEvents = filterEventsBySummaryRange(displayEvents, summaryRange, now);

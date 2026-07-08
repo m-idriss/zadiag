@@ -23,15 +23,21 @@ export function ChildDashboard({
   active,
   start,
   retake,
+  summaryRange: controlledSummaryRange,
+  onSummaryRangeChange,
   t,
 }: {
   state: AppState;
   active?: VerificationEvent;
   start: (event: VerificationEvent) => void;
   retake?: (event: VerificationEvent) => void;
+  summaryRange?: SummaryRange;
+  onSummaryRangeChange?: (range: SummaryRange) => void;
   t: (key: MessageKey) => string;
 }) {
-  const [summaryRange, setSummaryRange] = useState<SummaryRange>('day');
+  const [localSummaryRange, setLocalSummaryRange] = useState<SummaryRange>('day');
+  const summaryRange = controlledSummaryRange ?? localSummaryRange;
+  const setSummaryRange = onSummaryRangeChange ?? setLocalSummaryRange;
   const now = Date.now();
   const participantInitial = state.family.childName.trim().charAt(0).toUpperCase() || '?';
   const today = state.events.filter((event) => isToday(event.requestedAt));
