@@ -236,6 +236,9 @@ describe('ParentDashboard', () => {
         expiresAt: '2026-07-02T09:00:00.000Z',
         capturedAt: '2026-07-02T08:04:00.000Z',
         status: 'uncertain',
+        analysisSource: 'ai',
+        confidence: 0.67,
+        imageQuality: 0.82,
         proofImagePath: 'families/family/checks/review/proof.jpg',
         reviewStatus: 'pending',
         reason: 'The proof is unclear.',
@@ -256,6 +259,10 @@ describe('ParentDashboard', () => {
     });
 
     expect(container.textContent).toContain('Checks to verify');
+    expect(container.textContent).toContain('Source: AI');
+    expect(container.textContent).toContain('AI result: Needs review');
+    expect(container.textContent).toContain('Confidence 67%');
+    expect(container.textContent).toContain('Estimated quality 82%');
     expect(getProofImageUrl).toHaveBeenCalledWith('review');
     const validate = Array.from(container.querySelectorAll('button')).find((button) => button.getAttribute('aria-label') === 'Validate');
 

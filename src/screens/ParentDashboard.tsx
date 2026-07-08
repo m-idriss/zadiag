@@ -66,6 +66,13 @@ export function ParentDashboard({
     event.reason && event.reason !== 'analysis_unavailable' && event.reason !== 'self_validated'
       ? event.reason
       : undefined;
+  const formatScore = (value?: number) => value === undefined ? undefined : `${Math.round(value * 100)}%`;
+  const analysisSourceLabel = (event: VerificationEvent) => {
+    if (event.analysisSource === 'ai') return t('analysisSourceAi');
+    if (event.analysisSource === 'fallback') return t('analysisSourceFallback');
+    if (event.analysisSource === 'self') return t('analysisSourceSelf');
+    return undefined;
+  };
 
   useEffect(() => {
     if (!getProofImageUrl) return;
@@ -198,6 +205,9 @@ export function ParentDashboard({
             {reviewEvents.map((event) => {
               const proofUrl = proofUrls[event.id];
               const reason = displayReason(event);
+              const source = analysisSourceLabel(event);
+              const confidence = formatScore(event.confidence);
+              const quality = formatScore(event.imageQuality);
               const renderImage = () => proofUrls[event.id]
                 ? <img src={proofUrls[event.id]} alt={t('responsibleReviewImageAlt')} />
                 : <div role="status">{proofErrors[event.id] ? t('responsibleReviewImageError') : t('loadingProofImage')}</div>;
@@ -232,6 +242,14 @@ export function ParentDashboard({
                           <small>{formatDateTime(event.capturedAt ?? event.requestedAt)}</small>
                         </div>
                       </div>
+                      {(source || confidence || quality) ? (
+                        <div className="parent-review-analysis">
+                          {source ? <span>{t('analysisSource')}: {source}</span> : null}
+                          <span>{t('analysisVerdict')}: {t('uncertain')}</span>
+                          {confidence ? <span>{t('analysisConfidence')} {confidence}</span> : null}
+                          {quality ? <span>{t('analysisQuality')} {quality}</span> : null}
+                        </div>
+                      ) : null}
                       {reason ? <p>{reason}</p> : null}
                       {reviewErrorId === event.id ? <p className="request-feedback error">{t('responsibleReviewError')}</p> : null}
                     </div>

@@ -486,6 +486,8 @@ ion-input {
 .parent-review-copy strong { display: block; overflow: hidden; color: var(--navy); font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
 .parent-review-copy small { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; font-weight: 800; }
 .parent-review-copy p { display: -webkit-box; margin: 0; overflow: hidden; color: var(--muted); font-size: 12px; line-height: 1.32; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.parent-review-analysis { display: flex; flex-wrap: wrap; gap: 4px 8px; color: var(--teal); font-size: 10px; font-weight: 850; line-height: 1.2; }
+.parent-review-analysis span { white-space: nowrap; }
 .parent-review-actions { display: grid; grid-template-columns: repeat(2, 46px); gap: 7px; align-self: center; justify-content: end; }
 .parent-review-button { width: 46px; min-height: 46px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 12px; font-size: 22px; font-weight: 850; }
 .parent-review-button .app-icon { font-size: 23px; }
