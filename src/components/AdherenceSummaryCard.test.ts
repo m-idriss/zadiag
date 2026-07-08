@@ -23,4 +23,16 @@ describe('filterEventsBySummaryRange', () => {
 
     expect(result.map((item) => item.id)).toEqual(['today-morning']);
   });
+
+  it('filters the two day range from the current time', () => {
+    const now = new Date('2026-07-04T17:00:00').getTime();
+
+    const result = filterEventsBySummaryRange([
+      event('outside-range', '2026-07-02T16:59:59'),
+      event('inside-range', '2026-07-02T17:00:00'),
+      event('today', '2026-07-04T08:00:00'),
+    ], 'twoDays', now);
+
+    expect(result.map((item) => item.id)).toEqual(['inside-range', 'today']);
+  });
 });

@@ -31,7 +31,7 @@ export function ChildDashboard({
   retake?: (event: VerificationEvent) => void;
   t: (key: MessageKey) => string;
 }) {
-  const [summaryRange, setSummaryRange] = useState<SummaryRange>('day');
+  const [summaryRange, setSummaryRange] = useState<SummaryRange>('twoDays');
   const now = Date.now();
   const participantInitial = state.family.childName.trim().charAt(0).toUpperCase() || '?';
   const today = state.events.filter((event) => isToday(event.requestedAt));

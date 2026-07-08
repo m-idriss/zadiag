@@ -3,7 +3,7 @@ import { adherenceSummary } from '../domain/adherence';
 import type { VerificationEvent, VerificationStatus } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 
-export type SummaryRange = 'day' | 'week' | 'month' | 'quarter';
+export type SummaryRange = 'day' | 'twoDays' | 'week' | 'month' | 'quarter';
 
 const ranges: Array<{
   id: SummaryRange;
@@ -12,6 +12,7 @@ const ranges: Array<{
   titleKey: MessageKey;
 }> = [
   { id: 'day', days: 1, labelKey: 'range1Day', titleKey: 'summary1Day' },
+  { id: 'twoDays', days: 2, labelKey: 'range2Days', titleKey: 'summary2Days' },
   { id: 'week', days: 7, labelKey: 'range1Week', titleKey: 'summary1Week' },
   { id: 'month', days: 30, labelKey: 'range1Month', titleKey: 'summary1Month' },
   { id: 'quarter', days: 90, labelKey: 'range3Months', titleKey: 'summary3Months' },
