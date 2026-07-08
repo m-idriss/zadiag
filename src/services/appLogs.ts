@@ -1,4 +1,4 @@
-import type { Locale, Role, VerificationEvent } from '../domain/models';
+import type { Locale, PushSubscriptionHealth, Role, VerificationEvent } from '../domain/models';
 import { firebaseConfig, firebaseEnabled } from './firebaseConfig';
 
 type LogLevel = 'log' | 'info' | 'warn' | 'error' | 'debug';
@@ -15,6 +15,7 @@ interface DiagnosticsInput {
   role: Role;
   familyId?: string;
   notificationsEnabled: boolean;
+  pushHealth?: PushSubscriptionHealth;
   childInstalled: boolean;
   pendingChecks: number;
   totalChecks: number;
@@ -192,6 +193,11 @@ export const buildDiagnosticsEmailBody = (input: DiagnosticsInput): string => {
     `Locale: ${input.locale}`,
     `Role: ${input.role}`,
     `NotificationsEnabled: ${String(input.notificationsEnabled)}`,
+    `PushPermission: ${input.pushHealth?.permission ?? 'unknown'}`,
+    `PushEndpointPresent: ${String(input.pushHealth?.endpointPresent ?? false)}`,
+    `PushLastSuccessfulSaveAt: ${input.pushHealth?.lastSuccessfulSaveAt ?? 'missing'}`,
+    `PushLastDispatchResult: ${input.pushHealth?.lastDispatchResult ?? 'missing'}`,
+    `PushLastDispatchAt: ${input.pushHealth?.lastDispatchAt ?? 'missing'}`,
     `ChildInstalled: ${String(input.childInstalled)}`,
     `PendingChecks: ${String(input.pendingChecks)}`,
     `TotalChecks: ${String(input.totalChecks)}`,

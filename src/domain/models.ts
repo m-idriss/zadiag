@@ -131,6 +131,15 @@ export interface FamilyState {
   consented: boolean;
 }
 
+export interface PushSubscriptionHealth {
+  permission: NotificationPermission | 'unsupported';
+  endpointPresent: boolean;
+  lastSuccessfulSaveAt?: string;
+  lastDispatchResult?: 'success' | 'failed' | 'invalidated';
+  lastDispatchAt?: string;
+  lastDispatchError?: string;
+}
+
 export interface AppPreferences {
   compactMode: boolean;
   notificationWindowStart: string;
@@ -154,6 +163,7 @@ export interface AppState {
   role?: Role;
   locale: Locale;
   notificationsEnabled: boolean;
+  pushHealth?: PushSubscriptionHealth;
   preferences?: AppPreferences;
   family: FamilyState;
   routineAssignments: RoutineAssignment[];

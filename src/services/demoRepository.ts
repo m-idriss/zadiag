@@ -161,6 +161,7 @@ function initialState(): AppState {
   return {
     locale: browserLocale(),
     notificationsEnabled: false,
+    pushHealth: { permission: 'default', endpointPresent: false },
     preferences: normalizeAppPreferences(),
     family: {
       linked: false,
@@ -328,6 +329,11 @@ export class DemoRepository implements AppRepository {
 
   async savePushSubscription(_subscription: PushSubscriptionJSON) {
     this.state.notificationsEnabled = true;
+    this.state.pushHealth = {
+      permission: 'granted',
+      endpointPresent: true,
+      lastSuccessfulSaveAt: new Date().toISOString(),
+    };
     this.persist();
   }
 

@@ -9,7 +9,7 @@ import {
   timeOutline,
   trashOutline,
 } from 'ionicons/icons';
-import type { AppPreferences, Locale, Role, VerificationEvent } from '../domain/models';
+import type { AppPreferences, Locale, PushSubscriptionHealth, Role, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { buildDiagnosticsEmailBody, createCorrelationId } from '../services/appLogs';
 import type { AppUpdateInfo } from '../services/appUpdate';
@@ -28,6 +28,7 @@ export function SettingsScreen({
   reset,
   role,
   notificationsEnabled,
+  pushHealth,
   preferences,
   setPreferences,
   childInstalled,
@@ -49,6 +50,7 @@ export function SettingsScreen({
   reset: () => void;
   role: Role;
   notificationsEnabled: boolean;
+  pushHealth?: PushSubscriptionHealth;
   preferences: AppPreferences;
   setPreferences: (preferences: Partial<AppPreferences>) => Promise<void>;
   childInstalled: boolean;
@@ -97,6 +99,7 @@ export function SettingsScreen({
         role,
         familyId,
         notificationsEnabled,
+        pushHealth,
         childInstalled,
         pendingChecks,
         totalChecks,
@@ -177,6 +180,17 @@ export function SettingsScreen({
       minute: '2-digit',
     }).format(new Date(lastSyncAt))
     : t('settingsDiagnosticsMissing');
+  const formatDiagnosticDate = (value?: string) => {
+    if (!value) return t('settingsDiagnosticsMissing');
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-US', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date);
+  };
   const linkCodeAction = (
     <>
       <button type="button" className="regenerate-code" disabled={regenerating} onClick={() => { void regenerate(); }}>
@@ -270,6 +284,11 @@ export function SettingsScreen({
               <div><dt>{t('settingsDiagnosticsRole')}</dt><dd>{t(role)}</dd></div>
               <div><dt>{t('settingsDiagnosticsParticipant')}</dt><dd>{childInstalled ? t('settingsChildInstallStatusLinked') : t('settingsChildInstallStatusPending')}</dd></div>
               <div><dt>{t('settingsDiagnosticsNotifications')}</dt><dd>{notificationsEnabled ? t('settingsNotificationsStatusEnabled') : t('settingsNotificationsStatusDisabled')}</dd></div>
+              <div><dt>{t('settingsDiagnosticsPushPermission')}</dt><dd>{pushHealth?.permission ?? t('settingsDiagnosticsMissing')}</dd></div>
+              <div><dt>{t('settingsDiagnosticsPushEndpoint')}</dt><dd>{pushHealth?.endpointPresent ? t('yes') : t('no')}</dd></div>
+              <div><dt>{t('settingsDiagnosticsPushSaved')}</dt><dd>{formatDiagnosticDate(pushHealth?.lastSuccessfulSaveAt)}</dd></div>
+              <div><dt>{t('settingsDiagnosticsPushDispatch')}</dt><dd>{pushHealth?.lastDispatchResult ?? t('settingsDiagnosticsMissing')}</dd></div>
+              <div><dt>{t('settingsDiagnosticsPushDispatchAt')}</dt><dd>{formatDiagnosticDate(pushHealth?.lastDispatchAt)}</dd></div>
               <div><dt>{t('settingsDiagnosticsAppVersion')}</dt><dd>{import.meta.env.VITE_APP_VERSION}</dd></div>
               <div><dt>{t('settingsDiagnosticsServiceWorker')}</dt><dd>{t(serviceWorkerDetailKey)}</dd></div>
               <div><dt>{t('settingsDiagnosticsLastSync')}</dt><dd>{formattedLastSync}</dd></div>

@@ -33,6 +33,11 @@ service cloud.firestore {
         allow read: if familyMember(familyId);
         allow create, update, delete: if false;
       }
+
+      match /pushSubscriptions/{subscriptionId} {
+        allow read: if familyMember(familyId);
+        allow create, update, delete: if false;
+      }
     }
 
     match /linkCodes/{codeHash} {
