@@ -218,6 +218,44 @@ describe('ParentDashboard', () => {
     vi.useRealTimers();
   });
 
+  it('hides resend actions for older missed checks after a newer check succeeds', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-07T12:45:00.000Z'));
+    const assignment = createDefaultRoutineAssignment();
+    const state: AppState = {
+      role: 'parent',
+      locale: 'en',
+      notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      routineAssignments: [assignment],
+      events: [
+        {
+          id: 'successful-relance',
+          routineId: assignment.routineId,
+          sessionId: 'two',
+          requestedAt: '2026-07-07T10:50:00.000Z',
+          expiresAt: '2026-07-07T11:30:00.000Z',
+          capturedAt: '2026-07-07T11:02:00.000Z',
+          status: 'detected',
+        },
+        {
+          id: 'older-missed',
+          routineId: assignment.routineId,
+          sessionId: 'one',
+          requestedAt: '2026-07-07T10:31:00.000Z',
+          expiresAt: '2026-07-07T10:45:00.000Z',
+          status: 'pending',
+        },
+      ],
+    };
+
+    act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} requestCheck={vi.fn()} t={(key) => translate('en', key)} />));
+
+    const resendButtons = Array.from(container.querySelectorAll('button')).filter((button) => button.getAttribute('aria-label') === 'Resend reminder');
+    expect(resendButtons).toHaveLength(0);
+    vi.useRealTimers();
+  });
+
   it('lets the responsible person review an uncertain proof', async () => {
     const assignment = createDefaultRoutineAssignment();
     const getProofImageUrl = vi.fn().mockResolvedValue('data:image/png;base64,TEST');

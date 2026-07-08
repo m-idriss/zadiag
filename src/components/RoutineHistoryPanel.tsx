@@ -70,9 +70,9 @@ export function RoutineHistoryPanel({
     const ids = new Set<string>();
     const seenRoutineIds = new Set<string>();
     sortedEvents.forEach((event) => {
-      if (event.status !== 'missed' || seenRoutineIds.has(event.routineId)) return;
+      if (seenRoutineIds.has(event.routineId)) return;
       seenRoutineIds.add(event.routineId);
-      ids.add(event.id);
+      if (event.status === 'missed') ids.add(event.id);
     });
     return ids;
   }, [sortedEvents]);
