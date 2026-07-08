@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import type { ReactNode } from 'react';
-import { defaultAppPreferences, type VerificationEvent } from '../domain/models';
+import { defaultAppPreferences, type PushSubscriptionHealth, type VerificationEvent } from '../domain/models';
 import { translate } from '../services/i18n';
 import { SettingsScreen } from './SettingsScreen';
 
@@ -13,7 +13,21 @@ vi.mock('@ionic/react', () => ({
   IonIcon: () => null,
 }));
 
-const renderSettings = () => {
+const renderSettings = ({
+  notificationsEnabled = false,
+  pushHealth = {
+    permission: 'granted',
+    endpointPresent: true,
+    lastSuccessfulSaveAt: '2026-07-07T19:40:00.000Z',
+    lastDispatchResult: 'success',
+    lastDispatchAt: '2026-07-07T19:42:00.000Z',
+  },
+  sendTestPushNotification = async () => undefined,
+}: {
+  notificationsEnabled?: boolean;
+  pushHealth?: PushSubscriptionHealth;
+  sendTestPushNotification?: () => Promise<void>;
+} = {}) => {
   const container = document.createElement('div');
   document.body.appendChild(container);
   const root = createRoot(container);
@@ -27,18 +41,12 @@ const renderSettings = () => {
         forceAppUpdate={async () => false}
         reset={() => undefined}
         role="parent"
-        notificationsEnabled={false}
-        pushHealth={{
-          permission: 'granted',
-          endpointPresent: true,
-          lastSuccessfulSaveAt: '2026-07-07T19:40:00.000Z',
-          lastDispatchResult: 'success',
-          lastDispatchAt: '2026-07-07T19:42:00.000Z',
-        }}
+        notificationsEnabled={notificationsEnabled}
+        pushHealth={pushHealth}
         preferences={defaultAppPreferences}
         setPreferences={async () => undefined}
         enableNotifications={async () => undefined}
-        sendTestPushNotification={async () => undefined}
+        sendTestPushNotification={sendTestPushNotification}
         childInstalled
         familyId="family-1"
         events={[] as VerificationEvent[]}
@@ -85,6 +93,37 @@ describe('SettingsScreen recovery diagnostics', () => {
     expect(container.textContent).toContain('Service worker');
     expect(container.textContent).toContain('Registered');
     expect(container.textContent).toContain('Last sync');
+
+    act(() => root.unmount());
+    container.remove();
+  });
+});
+
+describe('SettingsScreen push diagnostics', () => {
+  it('treats a successful test push as endpoint evidence', async () => {
+    const { container, root } = renderSettings({
+      notificationsEnabled: true,
+      pushHealth: {
+        permission: 'granted',
+        endpointPresent: false,
+      },
+      sendTestPushNotification: async () => undefined,
+    });
+
+    const diagnosticsToggle = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.getAttribute('aria-label') === 'Recovery diagnostics',
+    );
+    act(() => diagnosticsToggle?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(container.textContent).toContain('Push endpoint');
+    expect(container.textContent).toContain('No');
+
+    const testButton = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent === 'Send test',
+    );
+    await act(async () => testButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+
+    expect(container.textContent).toContain('Test notification sent to this device.');
+    expect(container.textContent).toContain('Yes');
 
     act(() => root.unmount());
     container.remove();

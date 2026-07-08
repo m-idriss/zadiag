@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { IonButton, IonIcon } from '@ionic/react';
 import {
   chevronDownOutline,
@@ -79,6 +79,38 @@ export function SettingsScreen({
   const [enablingNotifications, setEnablingNotifications] = useState(false);
   const [testingPush, setTestingPush] = useState(false);
   const [testPushStatus, setTestPushStatus] = useState<'idle' | 'success' | 'error' | 'enableError'>('idle');
+  const [localPushEndpointPresent, setLocalPushEndpointPresent] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const refreshLocalPushEndpoint = async () => {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        if (!cancelled) setLocalPushEndpointPresent(false);
+        return;
+      }
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        if (!cancelled) setLocalPushEndpointPresent(Boolean(subscription?.endpoint));
+      } catch {
+        if (!cancelled) setLocalPushEndpointPresent(false);
+      }
+    };
+    void refreshLocalPushEndpoint();
+    return () => { cancelled = true; };
+  }, [notificationsEnabled, diagnosticsOpen, testPushStatus]);
+
+  const effectivePushHealth: PushSubscriptionHealth | undefined = pushHealth
+    ? {
+      ...pushHealth,
+      endpointPresent: pushHealth.endpointPresent || localPushEndpointPresent || testPushStatus === 'success',
+    }
+    : localPushEndpointPresent || testPushStatus === 'success'
+      ? {
+        permission: 'Notification' in window ? Notification.permission : 'unsupported',
+        endpointPresent: true,
+      }
+      : pushHealth;
 
   const regenerate = async () => {
     if (!window.confirm(t('regenerateCodeConfirm'))) return;
@@ -107,7 +139,7 @@ export function SettingsScreen({
         role,
         familyId,
         notificationsEnabled,
-        pushHealth,
+        pushHealth: effectivePushHealth,
         childInstalled,
         pendingChecks,
         totalChecks,
@@ -148,6 +180,7 @@ export function SettingsScreen({
     setTestingPush(true);
     try {
       await sendTestPushNotification();
+      setLocalPushEndpointPresent(true);
       setTestPushStatus('success');
     } catch (error) {
       console.error(error);
@@ -161,6 +194,7 @@ export function SettingsScreen({
     setEnablingNotifications(true);
     try {
       await enableNotifications();
+      setLocalPushEndpointPresent(true);
     } catch (error) {
       console.error(error);
       setTestPushStatus('enableError');
@@ -315,11 +349,11 @@ export function SettingsScreen({
                   <div><dt>{t('settingsDiagnosticsRole')}</dt><dd>{t(role)}</dd></div>
                   <div><dt>{t('settingsDiagnosticsParticipant')}</dt><dd>{childInstalled ? t('settingsChildInstallStatusLinked') : t('settingsChildInstallStatusPending')}</dd></div>
                   <div><dt>{t('settingsDiagnosticsNotifications')}</dt><dd>{notificationsEnabled ? t('settingsNotificationsStatusEnabled') : t('settingsNotificationsStatusDisabled')}</dd></div>
-                  <div><dt>{t('settingsDiagnosticsPushPermission')}</dt><dd>{pushHealth?.permission ?? t('settingsDiagnosticsMissing')}</dd></div>
-                  <div><dt>{t('settingsDiagnosticsPushEndpoint')}</dt><dd>{pushHealth?.endpointPresent ? t('yes') : t('no')}</dd></div>
-                  <div><dt>{t('settingsDiagnosticsPushSaved')}</dt><dd>{formatDiagnosticDate(pushHealth?.lastSuccessfulSaveAt)}</dd></div>
-                  <div><dt>{t('settingsDiagnosticsPushDispatch')}</dt><dd>{pushHealth?.lastDispatchResult ?? t('settingsDiagnosticsMissing')}</dd></div>
-                  <div><dt>{t('settingsDiagnosticsPushDispatchAt')}</dt><dd>{formatDiagnosticDate(pushHealth?.lastDispatchAt)}</dd></div>
+                  <div><dt>{t('settingsDiagnosticsPushPermission')}</dt><dd>{effectivePushHealth?.permission ?? t('settingsDiagnosticsMissing')}</dd></div>
+                  <div><dt>{t('settingsDiagnosticsPushEndpoint')}</dt><dd>{effectivePushHealth?.endpointPresent ? t('yes') : t('no')}</dd></div>
+                  <div><dt>{t('settingsDiagnosticsPushSaved')}</dt><dd>{formatDiagnosticDate(effectivePushHealth?.lastSuccessfulSaveAt)}</dd></div>
+                  <div><dt>{t('settingsDiagnosticsPushDispatch')}</dt><dd>{effectivePushHealth?.lastDispatchResult ?? t('settingsDiagnosticsMissing')}</dd></div>
+                  <div><dt>{t('settingsDiagnosticsPushDispatchAt')}</dt><dd>{formatDiagnosticDate(effectivePushHealth?.lastDispatchAt)}</dd></div>
                   <div><dt>{t('settingsDiagnosticsServiceWorker')}</dt><dd>{t(serviceWorkerDetailKey)}</dd></div>
                 </>
               ) : null}
