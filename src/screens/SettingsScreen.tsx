@@ -31,6 +31,7 @@ export function SettingsScreen({
   pushHealth,
   preferences,
   setPreferences,
+  enableNotifications,
   sendTestPushNotification,
   childInstalled,
   familyId,
@@ -54,6 +55,7 @@ export function SettingsScreen({
   pushHealth?: PushSubscriptionHealth;
   preferences: AppPreferences;
   setPreferences: (preferences: Partial<AppPreferences>) => Promise<void>;
+  enableNotifications: () => Promise<void>;
   sendTestPushNotification: () => Promise<void>;
   childInstalled: boolean;
   familyId?: string;
@@ -74,8 +76,9 @@ export function SettingsScreen({
   const [codeError, setCodeError] = useState(false);
   const [sensitiveOpen, setSensitiveOpen] = useState(false);
   const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
+  const [enablingNotifications, setEnablingNotifications] = useState(false);
   const [testingPush, setTestingPush] = useState(false);
-  const [testPushStatus, setTestPushStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [testPushStatus, setTestPushStatus] = useState<'idle' | 'success' | 'error' | 'enableError'>('idle');
 
   const regenerate = async () => {
     if (!window.confirm(t('regenerateCodeConfirm'))) return;
@@ -151,6 +154,18 @@ export function SettingsScreen({
       setTestPushStatus('error');
     } finally {
       setTestingPush(false);
+    }
+  };
+  const activateNotifications = async () => {
+    setTestPushStatus('idle');
+    setEnablingNotifications(true);
+    try {
+      await enableNotifications();
+    } catch (error) {
+      console.error(error);
+      setTestPushStatus('enableError');
+    } finally {
+      setEnablingNotifications(false);
     }
   };
   const notificationDetailKey = notificationsEnabled
@@ -328,15 +343,20 @@ export function SettingsScreen({
               <button
                 type="button"
                 className="settings-inline-action settings-inline-action-contained"
-                disabled={testingPush || !notificationsEnabled}
-                onClick={() => { void testPush(); }}
+                disabled={testingPush || enablingNotifications}
+                onClick={() => { void (notificationsEnabled ? testPush() : activateNotifications()); }}
               >
-                {testingPush ? t('settingsTestNotificationSending') : t('settingsTestNotificationAction')}
+                {testingPush || enablingNotifications
+                  ? t('settingsTestNotificationSending')
+                  : notificationsEnabled
+                    ? t('settingsTestNotificationAction')
+                    : t('settingsEnableNotificationsAction')}
               </button>
             )}
           >
             {testPushStatus === 'success' ? <small>{t('settingsTestNotificationSuccess')}</small> : null}
             {testPushStatus === 'error' ? <small className="settings-action-error">{t('settingsTestNotificationError')}</small> : null}
+            {testPushStatus === 'enableError' ? <small className="settings-action-error">{t('settingsEnableNotificationsError')}</small> : null}
           </ListRow>
           <ListRow
             icon={<IonIcon icon={informationCircleOutline} />}

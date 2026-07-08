@@ -37,6 +37,7 @@ const renderSettings = () => {
         }}
         preferences={defaultAppPreferences}
         setPreferences={async () => undefined}
+        enableNotifications={async () => undefined}
         sendTestPushNotification={async () => undefined}
         childInstalled
         familyId="family-1"

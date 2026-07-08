@@ -378,6 +378,7 @@ export function App() {
             pushHealth={state.pushHealth}
             preferences={preferences}
             setPreferences={async (nextPreferences) => { await repository.setPreferences(nextPreferences); sync(); }}
+            enableNotifications={async () => { await enableNotifications(); sync(); }}
             sendTestPushNotification={async () => { await repository.sendTestPushNotification(); sync(); }}
             childInstalled={state.family.childLinked}
             familyId={state.family.id}
