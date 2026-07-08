@@ -277,19 +277,21 @@ export function SettingsScreen({
         <div className="card settings-list">
           <ListRow
             icon={<IonIcon icon={informationCircleOutline} />}
-            title={t('settingsRecoveryDiagnosticsTitle')}
-            detail={t('settingsRecoveryDiagnosticsDetail')}
-            trailing={(
-              <button
-                type="button"
-                className="settings-diagnostics-toggle"
-                aria-expanded={diagnosticsOpen}
-                aria-label={t('settingsRecoveryDiagnosticsTitle')}
-                onClick={() => setDiagnosticsOpen((open) => !open)}
-              >
-                <IonIcon className={diagnosticsOpen ? 'expanded' : undefined} icon={chevronDownOutline} aria-hidden="true" />
-              </button>
+            title={(
+              <span className="settings-diagnostics-header">
+                <span>{t('settingsRecoveryDiagnosticsTitle')}</span>
+                <button
+                  type="button"
+                  className="settings-diagnostics-toggle"
+                  aria-expanded={diagnosticsOpen}
+                  aria-label={t('settingsRecoveryDiagnosticsTitle')}
+                  onClick={() => setDiagnosticsOpen((open) => !open)}
+                >
+                  <IonIcon className={diagnosticsOpen ? 'expanded' : undefined} icon={chevronDownOutline} aria-hidden="true" />
+                </button>
+              </span>
             )}
+            detail={t('settingsRecoveryDiagnosticsDetail')}
           >
             <dl className="settings-diagnostics-list">
               {diagnosticsOpen ? (
