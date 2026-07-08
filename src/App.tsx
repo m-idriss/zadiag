@@ -7,6 +7,7 @@ import { translate, type MessageKey } from './services/i18n';
 import { BottomNav, type Tab } from './components/BottomNav';
 import { SplashScreen } from './components/SplashScreen';
 import { Snackbar } from './components/Snackbar';
+import type { SummaryRange } from './components/AdherenceSummaryCard';
 import { PushSetupError, WebPushGateway } from './services/webPush';
 import { firebaseEnabled } from './services/firebaseConfig';
 import { browserRouteContext, isLocalDemoEnvironment, routineCentricUiEnabled } from './services/browserEnvironment';
@@ -70,6 +71,7 @@ export function App() {
   const [savingRoutineId, setSavingRoutineId] = useState<string>();
   const [selectedSessionId, setSelectedSessionId] = useState<string>();
   const [lastSyncAt, setLastSyncAt] = useState<string>();
+  const [dashboardSummaryRange, setDashboardSummaryRange] = useState<SummaryRange>('day');
   const [serviceWorkerStatus, setServiceWorkerStatus] = useState<'unsupported' | 'registered' | 'notRegistered'>(
     () => ('serviceWorker' in navigator ? 'notRegistered' : 'unsupported'),
   );
@@ -406,9 +408,19 @@ export function App() {
               getProofImageUrl={(eventId) => repository.getProofImageUrl(eventId)}
               reviewCheck={async (eventId, decision) => { await repository.reviewCheck(eventId, decision); sync(); }}
               requestCheck={async (routineId) => { await repository.requestCheckNow(routineId); sync(); }}
+              summaryRange={dashboardSummaryRange}
+              onSummaryRangeChange={setDashboardSummaryRange}
               t={t}
             />
-          : <ChildDashboard state={state} active={repository.activeSession()} start={startCapture} retake={retryCapture} t={t} />;
+          : <ChildDashboard
+              state={state}
+              active={repository.activeSession()}
+              start={startCapture}
+              retake={retryCapture}
+              summaryRange={dashboardSummaryRange}
+              onSummaryRangeChange={setDashboardSummaryRange}
+              t={t}
+            />;
     content = <div className="app-shell">{screen}<BottomNav tab={tab} role={role} routineCentricEnabled={routineCentricUiEnabled} onChange={setTab} t={t} /></div>;
   }
 
