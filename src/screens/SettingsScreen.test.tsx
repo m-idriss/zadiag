@@ -124,6 +124,10 @@ describe('SettingsScreen push diagnostics', () => {
 
     expect(container.textContent).toContain('Test notification sent to this device.');
     expect(container.textContent).toContain('Yes');
+    expect(container.textContent).toContain('Last push result');
+    expect(container.textContent).toContain('success');
+    expect(container.textContent).toContain('Last push at');
+    expect(container.textContent).not.toContain('Last push atMissing');
 
     act(() => root.unmount());
     container.remove();

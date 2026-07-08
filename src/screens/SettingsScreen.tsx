@@ -80,6 +80,7 @@ export function SettingsScreen({
   const [testingPush, setTestingPush] = useState(false);
   const [testPushStatus, setTestPushStatus] = useState<'idle' | 'success' | 'error' | 'enableError'>('idle');
   const [localPushEndpointPresent, setLocalPushEndpointPresent] = useState(false);
+  const [localPushDispatchAt, setLocalPushDispatchAt] = useState<string>();
 
   useEffect(() => {
     let cancelled = false;
@@ -100,17 +101,16 @@ export function SettingsScreen({
     return () => { cancelled = true; };
   }, [notificationsEnabled, diagnosticsOpen, testPushStatus]);
 
-  const effectivePushHealth: PushSubscriptionHealth | undefined = pushHealth
+  const hasLocalPushEvidence = localPushEndpointPresent || testPushStatus === 'success' || Boolean(localPushDispatchAt);
+  const effectivePushHealth: PushSubscriptionHealth | undefined = pushHealth || hasLocalPushEvidence
     ? {
+      permission: pushHealth?.permission ?? ('Notification' in window ? Notification.permission : 'unsupported'),
       ...pushHealth,
-      endpointPresent: pushHealth.endpointPresent || localPushEndpointPresent || testPushStatus === 'success',
+      endpointPresent: pushHealth?.endpointPresent || hasLocalPushEvidence,
+      lastDispatchResult: localPushDispatchAt ? 'success' : pushHealth?.lastDispatchResult,
+      lastDispatchAt: localPushDispatchAt ?? pushHealth?.lastDispatchAt,
     }
-    : localPushEndpointPresent || testPushStatus === 'success'
-      ? {
-        permission: 'Notification' in window ? Notification.permission : 'unsupported',
-        endpointPresent: true,
-      }
-      : pushHealth;
+    : pushHealth;
 
   const regenerate = async () => {
     if (!window.confirm(t('regenerateCodeConfirm'))) return;
@@ -180,7 +180,9 @@ export function SettingsScreen({
     setTestingPush(true);
     try {
       await sendTestPushNotification();
+      const testedAt = new Date().toISOString();
       setLocalPushEndpointPresent(true);
+      setLocalPushDispatchAt(testedAt);
       setTestPushStatus('success');
     } catch (error) {
       console.error(error);
@@ -249,6 +251,11 @@ export function SettingsScreen({
       minute: '2-digit',
     }).format(date);
   };
+  const pushSavedDiagnostic = effectivePushHealth?.lastSuccessfulSaveAt
+    ? formatDiagnosticDate(effectivePushHealth.lastSuccessfulSaveAt)
+    : effectivePushHealth?.endpointPresent
+      ? t('yes')
+      : t('settingsDiagnosticsMissing');
   const linkCodeAction = (
     <>
       <button type="button" className="regenerate-code" disabled={regenerating} onClick={() => { void regenerate(); }}>
@@ -351,7 +358,7 @@ export function SettingsScreen({
                   <div><dt>{t('settingsDiagnosticsNotifications')}</dt><dd>{notificationsEnabled ? t('settingsNotificationsStatusEnabled') : t('settingsNotificationsStatusDisabled')}</dd></div>
                   <div><dt>{t('settingsDiagnosticsPushPermission')}</dt><dd>{effectivePushHealth?.permission ?? t('settingsDiagnosticsMissing')}</dd></div>
                   <div><dt>{t('settingsDiagnosticsPushEndpoint')}</dt><dd>{effectivePushHealth?.endpointPresent ? t('yes') : t('no')}</dd></div>
-                  <div><dt>{t('settingsDiagnosticsPushSaved')}</dt><dd>{formatDiagnosticDate(effectivePushHealth?.lastSuccessfulSaveAt)}</dd></div>
+                  <div><dt>{t('settingsDiagnosticsPushSaved')}</dt><dd>{pushSavedDiagnostic}</dd></div>
                   <div><dt>{t('settingsDiagnosticsPushDispatch')}</dt><dd>{effectivePushHealth?.lastDispatchResult ?? t('settingsDiagnosticsMissing')}</dd></div>
                   <div><dt>{t('settingsDiagnosticsPushDispatchAt')}</dt><dd>{formatDiagnosticDate(effectivePushHealth?.lastDispatchAt)}</dd></div>
                   <div><dt>{t('settingsDiagnosticsServiceWorker')}</dt><dd>{t(serviceWorkerDetailKey)}</dd></div>
