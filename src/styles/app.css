@@ -890,7 +890,14 @@ ion-input {
 .routine-tabs button { position: relative; padding: 9px 3px; border: 0; background: transparent; color: var(--muted); font-size: 11px; font-weight: 800; }
 .routine-tabs button.active { color: var(--navy); }
 .routine-tabs button.active::after { content: ''; position: absolute; left: 6px; right: 6px; bottom: -1px; height: 2px; border-radius: 99px; background: var(--routine-accent, var(--teal)); }
-.routine-tab-panel { display: grid; gap: 14px; padding-top: 14px; }
+.routine-tab-panel {
+  --heatmap-success: color-mix(in srgb, var(--routine-accent, var(--teal)) 88%, #ffffff);
+  --heatmap-attention: color-mix(in srgb, var(--routine-accent, var(--teal)) 58%, #ffffff);
+  --heatmap-missed: color-mix(in srgb, var(--routine-accent, var(--teal)) 28%, #ffffff);
+  display: grid;
+  gap: 14px;
+  padding-top: 14px;
+}
 .routine-plan-tab-panel { gap: 0; padding-top: 10px; }
 .routine-tab-panel > h2, .routine-copy h2 { font-size: 17px; }
 .next-check-card { display: flex; align-items: center; justify-content: space-between; padding: var(--block-padding); border-radius: 18px; background: linear-gradient(120deg, color-mix(in srgb, var(--routine-accent) 12%, white), #f5fbf9); }
@@ -943,9 +950,6 @@ ion-input {
 .progress-summary dl div { display: flex; justify-content: space-between; gap: 15px; font-size: 12px; }
 .progress-summary dd { margin: 0; font-weight: 900; }
 .routine-heatmap {
-  --heatmap-success: color-mix(in srgb, var(--routine-accent, var(--teal)) 88%, #ffffff);
-  --heatmap-attention: color-mix(in srgb, var(--routine-accent, var(--teal)) 58%, #ffffff);
-  --heatmap-missed: color-mix(in srgb, var(--routine-accent, var(--teal)) 28%, #ffffff);
   display: grid;
   gap: 11px;
   align-items: start;
