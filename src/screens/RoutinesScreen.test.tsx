@@ -26,11 +26,11 @@ describe('participant routines navigation', () => {
   it('replaces Progress with Routines for participants', () => {
     act(() => root.render(<BottomNav tab="home" role="child" onChange={() => undefined} t={(key) => translate('en', key)} />));
 
-    expect(container.textContent).toContain('Activity');
+    expect(container.textContent).toContain('Home');
     expect(container.textContent).toContain('Routines');
     expect(container.textContent).not.toContain('My progress');
     expect(container.querySelector('nav')?.getAttribute('aria-label')).toBe('Primary navigation');
-    expect(container.querySelector('button[aria-current="page"]')?.textContent).toContain('Activity');
+    expect(container.querySelector('button[aria-current="page"]')?.textContent).toContain('Home');
   });
 
   it('can roll participant navigation back with the feature flag', () => {
@@ -41,7 +41,7 @@ describe('participant routines navigation', () => {
 
   it('uses the routine tab for responsible navigation too', () => {
     act(() => root.render(<BottomNav tab="home" role="parent" onChange={() => undefined} t={(key) => translate('en', key)} />));
-    expect(container.textContent).toContain('Overview');
+    expect(container.textContent).toContain('Home');
     expect(container.textContent).toContain('Routines');
     expect(container.textContent).toContain('Settings');
     expect(container.textContent).not.toContain('History');
