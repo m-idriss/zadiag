@@ -943,6 +943,9 @@ ion-input {
 .progress-summary dl div { display: flex; justify-content: space-between; gap: 15px; font-size: 12px; }
 .progress-summary dd { margin: 0; font-weight: 900; }
 .routine-heatmap {
+  --heatmap-success: color-mix(in srgb, var(--routine-accent, var(--teal)) 88%, #ffffff);
+  --heatmap-attention: color-mix(in srgb, var(--routine-accent, var(--teal)) 58%, #ffffff);
+  --heatmap-missed: color-mix(in srgb, var(--routine-accent, var(--teal)) 28%, #ffffff);
   display: grid;
   gap: 11px;
   align-items: start;
@@ -1033,9 +1036,9 @@ ion-input {
   opacity: 0;
   background: linear-gradient(
     90deg,
-    color-mix(in srgb, var(--routine-accent, var(--teal)) 84%, #ffffff) 0 var(--success-share),
-    #f2a72b var(--success-share) var(--attention-end),
-    #d97a66 var(--attention-end) 100%
+    var(--heatmap-success) 0 var(--success-share),
+    var(--heatmap-attention) var(--success-share) var(--attention-end),
+    var(--heatmap-missed) var(--attention-end) 100%
   );
 }
 .routine-heatmap-day.has-activity::before { opacity: .9; }
@@ -1069,9 +1072,9 @@ ion-input {
 .heatmap-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px; color: var(--muted); font-size: 10px; font-weight: 850; }
 .heatmap-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .heatmap-legend i { width: 17px; height: 8px; border-radius: 99px; background: #e5ebe8; }
-.heatmap-legend .success { background: color-mix(in srgb, var(--routine-accent, var(--teal)) 84%, #ffffff); }
-.heatmap-legend .attention { background: #f2a72b; }
-.heatmap-legend .missed { background: #d97a66; }
+.heatmap-legend .success { background: var(--heatmap-success); }
+.heatmap-legend .attention { background: var(--heatmap-attention); }
+.heatmap-legend .missed { background: var(--heatmap-missed); }
 .streak-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; }
 .streak-grid > div { display: grid; padding: var(--block-padding); border-radius: 15px; background: linear-gradient(120deg, #eef6f3, #f8fbfa); }
 .streak-grid small { color: var(--muted); }
