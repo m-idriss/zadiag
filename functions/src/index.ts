@@ -728,14 +728,22 @@ export const requestCheckNow = onCall({
       throw new HttpsError('failed-precondition', 'The routine is not active.');
     }
 
-    const activePendingCheck = pending.docs.find((doc) => Date.parse(String(doc.data().expiresAt)) > Date.now());
-    if (activePendingCheck) {
-      return { check: { id: activePendingCheck.id, ...activePendingCheck.data() } as RequestedCheck, resend: true };
-    }
-
     const now = new Date();
     const parsedPlan = monitoringPlanSchema.safeParse(assignment.data()?.plan);
-    const expiresAt = checkExpiresAt(parsedPlan.success ? parsedPlan.data : defaultPlan, now);
+    const plan = parsedPlan.success ? parsedPlan.data : defaultPlan;
+    const activePendingCheck = pending.docs.find((doc) => Date.parse(String(doc.data().expiresAt)) > now.getTime());
+    if (activePendingCheck) {
+      const currentCheck = { id: activePendingCheck.id, ...activePendingCheck.data() } as RequestedCheck;
+      const renewedExpiresAt = checkExpiresAt(plan, now);
+      if (renewedExpiresAt.getTime() > Date.parse(currentCheck.expiresAt)) {
+        const expiresAt = renewedExpiresAt.toISOString();
+        transaction.update(activePendingCheck.ref, { expiresAt });
+        return { check: { ...currentCheck, expiresAt }, resend: true };
+      }
+      return { check: currentCheck, resend: true };
+    }
+
+    const expiresAt = checkExpiresAt(plan, now);
     const check = {
       routineId,
       sessionId: crypto.randomUUID(),

@@ -127,6 +127,23 @@ describe('monitoring plan helpers', () => {
     expect(expiresAt.getMinutes()).toBe(30);
   });
 
+  it('keeps zero response delay until the next planned window end outside active windows', () => {
+    const groups = [{
+      id: 'g1',
+      weekdays: [2],
+      windows: [
+        { id: 'morning', start: '07:30', end: '09:30' },
+        { id: 'midday', start: '12:00', end: '14:00' },
+      ],
+    }];
+
+    const plan = buildMonitoringPlanFromGroups({ expiryMinutes: 0 }, groups);
+    const expiresAt = responseWindowExpiresAt(plan, new Date(2026, 6, 7, 10, 15));
+
+    expect(expiresAt.getHours()).toBe(14);
+    expect(expiresAt.getMinutes()).toBe(0);
+  });
+
   it('caps fixed response delay at the active window end', () => {
     const groups = [{
       id: 'g1',

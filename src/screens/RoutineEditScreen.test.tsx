@@ -112,6 +112,33 @@ describe('RoutineEditScreen', () => {
     expect(save.mock.calls[0][0].timeZone).toBeTruthy();
   });
 
+  it('lets legacy 20 minute response windows be saved as the full slot', async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+
+    act(() => root.render(
+      <RoutineEditScreen
+        plan={planWithWindows(1)}
+        routineId="daily-hydration"
+        onSave={save}
+        onCancel={vi.fn()}
+        busy={false}
+        embedded
+        t={(key) => translate('en', key)}
+      />
+    ));
+
+    const saveButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Save') as HTMLButtonElement | undefined;
+    expect(saveButton?.disabled).toBe(false);
+
+    await act(async () => {
+      saveButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(save.mock.calls[0][0].expiryMinutes).toBe(0);
+  });
+
   it('saves response window changes', async () => {
     const save = vi.fn().mockResolvedValue(undefined);
 

@@ -172,12 +172,13 @@ export const responseWindowExpiresAt = (
   fallbackMinutes = FALLBACK_EXPIRY_MINUTES,
 ) => {
   const currentWindowEnd = currentPlannedWindow(plan, now)?.end;
+  const nextWindowEnd = nextPlannedWindow(plan, now)?.end;
   if (Number.isInteger(plan.expiryMinutes) && plan.expiryMinutes > 0) {
     const fixedDelayEnd = new Date(now.getTime() + plan.expiryMinutes * 60_000);
     return currentWindowEnd && currentWindowEnd.getTime() < fixedDelayEnd.getTime() ? currentWindowEnd : fixedDelayEnd;
   }
 
-  return currentWindowEnd ?? new Date(now.getTime() + fallbackMinutes * 60_000);
+  return currentWindowEnd ?? nextWindowEnd ?? new Date(now.getTime() + fallbackMinutes * 60_000);
 };
 
 export const flattenScheduleGroups = (groups: ScheduleGroup[]) => {

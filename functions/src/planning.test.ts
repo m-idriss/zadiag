@@ -31,6 +31,12 @@ test('uses the end of the active window when no response delay is configured', (
   assert.equal(expiresAt.toISOString(), '2026-07-02T07:30:00.000Z');
 });
 
+test('uses the next window end when full-slot checks are requested between windows', () => {
+  const now = new Date('2026-07-02T08:15:00.000Z');
+  const expiresAt = checkExpiresAt({ ...plan, expiryMinutes: 0 }, now);
+  assert.equal(expiresAt.toISOString(), '2026-07-02T12:00:00.000Z');
+});
+
 test('caps fixed response delays at the active window end', () => {
   const now = new Date('2026-07-02T07:00:00.000Z');
   const expiresAt = checkExpiresAt({ ...plan, expiryMinutes: 60 }, now);

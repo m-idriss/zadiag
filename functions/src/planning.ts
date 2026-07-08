@@ -173,6 +173,28 @@ export const getWindowForDate = (plan: MonitoringPlan, date: Date, timeZone: str
     : getWindowForMinutes(plan, (parts.hour * 60) + parts.minute);
 };
 
+const weekdayAfterOffset = (weekday: number, offset: number) => ((weekday + offset - 1) % 7) + 1;
+
+const nextWindowEndDelayMinutes = (plan: MonitoringPlan, now: Date) => {
+  const localParts = getLocalDateParts(now, plan.timeZone);
+  const localMinutes = (localParts.hour * 60) + localParts.minute;
+
+  for (let dayOffset = 0; dayOffset < 14; dayOffset += 1) {
+    const weekday = weekdayAfterOffset(localParts.weekday, dayOffset);
+    const windows = getWindowsForWeekday(plan, weekday)
+      .slice()
+      .sort((a, b) => minutesForTime(a.start) - minutesForTime(b.start));
+
+    for (const window of windows) {
+      const windowEnd = minutesForTime(window.end);
+      if (dayOffset === 0 && localMinutes >= windowEnd) continue;
+      return (dayOffset * 24 * 60) + windowEnd - localMinutes;
+    }
+  }
+
+  return undefined;
+};
+
 export const checkExpiresAt = (plan: MonitoringPlan, now: Date, fallbackMinutes = 20) => {
   const localMinutes = getLocalTimeMinutes(now, plan.timeZone);
   const window = getWindowForDate(plan, now, plan.timeZone);
@@ -185,7 +207,8 @@ export const checkExpiresAt = (plan: MonitoringPlan, now: Date, fallbackMinutes 
     return windowEnd && windowEnd.getTime() < fixedDelayEnd.getTime() ? windowEnd : fixedDelayEnd;
   }
 
-  return windowEnd ?? new Date(now.getTime() + fallbackMinutes * 60 * 1000);
+  const fullWindowDelayMinutes = nextWindowEndDelayMinutes(plan, now);
+  return new Date(now.getTime() + (fullWindowDelayMinutes ?? fallbackMinutes) * 60 * 1000);
 };
 
 export const shouldAutoDispatchCheck = (

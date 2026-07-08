@@ -52,6 +52,11 @@ const normalizedExpiryMinutes = (value: number | undefined) =>
     ? Number(value)
     : 0;
 
+const storedExpiryMinutes = (value: number | undefined) =>
+  Number.isInteger(value) && Number(value) >= 0 && Number(value) <= 120
+    ? Number(value)
+    : 0;
+
 type TimePickerState = {
   groupId: string;
   windowId: string;
@@ -89,7 +94,7 @@ export function RoutineEditScreen({
   const flattened = flattenScheduleGroups(groups);
   const totalWindowCount = flattened.windows.length;
   const initialGroupsSignature = useMemo(() => scheduleGroupsSignature(groupsFromLegacyPlan(plan)), [plan]);
-  const initialExpiryMinutes = useMemo(() => normalizedExpiryMinutes(plan.expiryMinutes), [plan.expiryMinutes]);
+  const initialExpiryMinutes = useMemo(() => storedExpiryMinutes(plan.expiryMinutes), [plan.expiryMinutes]);
   const currentGroupsSignature = useMemo(() => scheduleGroupsSignature(groups), [groups]);
   const hasChanges = currentGroupsSignature !== initialGroupsSignature
     || draftExpiryMinutes !== initialExpiryMinutes
