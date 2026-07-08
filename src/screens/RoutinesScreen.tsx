@@ -312,7 +312,14 @@ export function RoutinesScreen({
                           {requesting ? t('requestingCheck') : next ? t('requestCheckAgain') : t('requestCheckNow')}
                         </button>
                       )}
-                      <button type="button" className="routine-list-detail-button" onClick={() => openDetails(assignment.id)}>{t('details')}</button>
+                      <button
+                        type="button"
+                        className="routine-list-detail-button"
+                        aria-label={t('details')}
+                        onClick={() => openDetails(assignment.id)}
+                      >
+                        <AppIcon name="settings" />
+                      </button>
                       {edit && onDeleteRoutine && (
                         <button
                           type="button"

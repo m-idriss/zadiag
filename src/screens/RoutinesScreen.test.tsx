@@ -112,8 +112,7 @@ describe('participant routines navigation', () => {
     expect(container.textContent).toContain('Next check');
     expect(container.textContent).toContain('07:30–09:30');
 
-    const details = Array.from(container.querySelectorAll('button'))
-      .find((button) => button.textContent === 'Details');
+    const details = container.querySelector('button[aria-label="Details"]');
     await act(async () => {
       details?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       await new Promise((resolve) => window.setTimeout(resolve, 100));

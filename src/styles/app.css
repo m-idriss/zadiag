@@ -756,6 +756,7 @@ ion-input {
 .routine-card-heading p { margin-top: 2px; color: var(--muted); font-size: 11px; }
 .routine-list-detail-button, .routine-list-edit-button, .routine-list-delete-button { min-height: 34px; padding: 7px 11px; border: 0; border-radius: 12px; background: color-mix(in srgb, var(--routine-accent, var(--teal)) 10%, white); color: var(--routine-accent, var(--teal)); font-size: 12px; font-weight: 850; }
 .routine-list-detail-button { background: var(--navy); color: #fff; }
+.routine-list-detail-button .app-icon { font-size: 19px; }
 .routine-list-delete-button { min-width: 40px; color: #91a0a7; }
 .routine-list-delete-button:disabled { opacity: .55; }
 .routine-icon { display: grid; place-items: center; font-size: 21px; }
@@ -826,6 +827,7 @@ ion-input {
 .routine-card-actions { width: 100%; display: flex; align-items: stretch; justify-content: flex-end; gap: 8px; }
 .routine-card-actions .routine-list-detail-button,
 .routine-card-actions .routine-list-delete-button { min-height: 40px; }
+.routine-card-actions .routine-list-detail-button { width: 40px; display: grid; place-items: center; padding: 0; }
 .routine-list-request { flex: 1 1 auto; min-width: 0; margin-top: 0; min-height: 40px; padding: 11px; }
 .routine-plan-list-card .routine-list-request { background: var(--routine-accent, var(--teal)); }
 .routine-card-next { display: flex; align-items: flex-end; justify-content: space-between; padding-top: 2px; }
