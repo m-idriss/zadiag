@@ -73,6 +73,7 @@ export function SettingsScreen({
   const [regenerating, setRegenerating] = useState(false);
   const [codeError, setCodeError] = useState(false);
   const [sensitiveOpen, setSensitiveOpen] = useState(false);
+  const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
   const [testingPush, setTestingPush] = useState(false);
   const [testPushStatus, setTestPushStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
@@ -278,19 +279,34 @@ export function SettingsScreen({
             icon={<IonIcon icon={informationCircleOutline} />}
             title={t('settingsRecoveryDiagnosticsTitle')}
             detail={t('settingsRecoveryDiagnosticsDetail')}
+            trailing={(
+              <button
+                type="button"
+                className="settings-diagnostics-toggle"
+                aria-expanded={diagnosticsOpen}
+                aria-label={t('settingsRecoveryDiagnosticsTitle')}
+                onClick={() => setDiagnosticsOpen((open) => !open)}
+              >
+                <IonIcon className={diagnosticsOpen ? 'expanded' : undefined} icon={chevronDownOutline} aria-hidden="true" />
+              </button>
+            )}
           >
             <dl className="settings-diagnostics-list">
-              <div><dt>{t('settingsDiagnosticsFamilyId')}</dt><dd>{familyId ?? t('settingsDiagnosticsMissing')}</dd></div>
-              <div><dt>{t('settingsDiagnosticsRole')}</dt><dd>{t(role)}</dd></div>
-              <div><dt>{t('settingsDiagnosticsParticipant')}</dt><dd>{childInstalled ? t('settingsChildInstallStatusLinked') : t('settingsChildInstallStatusPending')}</dd></div>
-              <div><dt>{t('settingsDiagnosticsNotifications')}</dt><dd>{notificationsEnabled ? t('settingsNotificationsStatusEnabled') : t('settingsNotificationsStatusDisabled')}</dd></div>
-              <div><dt>{t('settingsDiagnosticsPushPermission')}</dt><dd>{pushHealth?.permission ?? t('settingsDiagnosticsMissing')}</dd></div>
-              <div><dt>{t('settingsDiagnosticsPushEndpoint')}</dt><dd>{pushHealth?.endpointPresent ? t('yes') : t('no')}</dd></div>
-              <div><dt>{t('settingsDiagnosticsPushSaved')}</dt><dd>{formatDiagnosticDate(pushHealth?.lastSuccessfulSaveAt)}</dd></div>
-              <div><dt>{t('settingsDiagnosticsPushDispatch')}</dt><dd>{pushHealth?.lastDispatchResult ?? t('settingsDiagnosticsMissing')}</dd></div>
-              <div><dt>{t('settingsDiagnosticsPushDispatchAt')}</dt><dd>{formatDiagnosticDate(pushHealth?.lastDispatchAt)}</dd></div>
+              {diagnosticsOpen ? (
+                <>
+                  <div><dt>{t('settingsDiagnosticsFamilyId')}</dt><dd>{familyId ?? t('settingsDiagnosticsMissing')}</dd></div>
+                  <div><dt>{t('settingsDiagnosticsRole')}</dt><dd>{t(role)}</dd></div>
+                  <div><dt>{t('settingsDiagnosticsParticipant')}</dt><dd>{childInstalled ? t('settingsChildInstallStatusLinked') : t('settingsChildInstallStatusPending')}</dd></div>
+                  <div><dt>{t('settingsDiagnosticsNotifications')}</dt><dd>{notificationsEnabled ? t('settingsNotificationsStatusEnabled') : t('settingsNotificationsStatusDisabled')}</dd></div>
+                  <div><dt>{t('settingsDiagnosticsPushPermission')}</dt><dd>{pushHealth?.permission ?? t('settingsDiagnosticsMissing')}</dd></div>
+                  <div><dt>{t('settingsDiagnosticsPushEndpoint')}</dt><dd>{pushHealth?.endpointPresent ? t('yes') : t('no')}</dd></div>
+                  <div><dt>{t('settingsDiagnosticsPushSaved')}</dt><dd>{formatDiagnosticDate(pushHealth?.lastSuccessfulSaveAt)}</dd></div>
+                  <div><dt>{t('settingsDiagnosticsPushDispatch')}</dt><dd>{pushHealth?.lastDispatchResult ?? t('settingsDiagnosticsMissing')}</dd></div>
+                  <div><dt>{t('settingsDiagnosticsPushDispatchAt')}</dt><dd>{formatDiagnosticDate(pushHealth?.lastDispatchAt)}</dd></div>
+                  <div><dt>{t('settingsDiagnosticsServiceWorker')}</dt><dd>{t(serviceWorkerDetailKey)}</dd></div>
+                </>
+              ) : null}
               <div><dt>{t('settingsDiagnosticsAppVersion')}</dt><dd>{import.meta.env.VITE_APP_VERSION}</dd></div>
-              <div><dt>{t('settingsDiagnosticsServiceWorker')}</dt><dd>{t(serviceWorkerDetailKey)}</dd></div>
               <div><dt>{t('settingsDiagnosticsLastSync')}</dt><dd>{formattedLastSync}</dd></div>
             </dl>
           </ListRow>
