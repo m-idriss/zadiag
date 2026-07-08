@@ -77,7 +77,7 @@ const messages = {
     routineValidation: 'Validation', routineValidationHint: 'Choose how proofs are validated for this routine.',
     validationAuto: 'Auto-validation', validationAutoHint: 'Proof is saved and marked valid immediately.',
     validationAi: 'AI analysis', validationAiHint: 'Zadiag checks that the proof matches the routine.',
-    summaryRange: 'Summary range', range1Day: 'Today', range2Days: '2 days', range1Week: 'Last 7 days', range1Month: '1 month', range3Months: '3 months',
+    summaryRange: 'Summary range', range1Day: 'Today', range2Days: '2 days', range1Week: '7 days', range1Month: '1 month', range3Months: '3 months',
     summary1Day: 'Today', summary2Days: 'Last 2 days', summary1Week: 'Last 7 days', summary1Month: 'Last month', summary3Months: 'Last 3 months',
     attention: 'Needs attention', checksDay: 'max checks each day', minutesRespond: 'minutes to respond', fullWindowRespond: 'full window to respond',
     hi: 'Hi', smallCheck: 'One small check at a time.', checkReady: 'CHECK READY',
