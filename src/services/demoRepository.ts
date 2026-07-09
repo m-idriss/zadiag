@@ -189,15 +189,26 @@ function initialState(): AppState {
   };
 }
 
+const readStoredState = () => {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (!saved) return undefined;
+  try {
+    return JSON.parse(saved) as AppState & { plan?: MonitoringPlan };
+  } catch {
+    localStorage.removeItem(STORAGE_KEY);
+    return undefined;
+  }
+};
+
 export class DemoRepository implements AppRepository {
   private state: AppState;
   private consumedSessions = new Set<string>();
   private listeners = new Set<() => void>();
 
   constructor() {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    this.state = saved ? this.migrateState(JSON.parse(saved) as AppState & { plan?: MonitoringPlan }) : initialState();
-    if (saved) localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+    const savedState = readStoredState();
+    this.state = savedState ? this.migrateState(savedState) : initialState();
+    if (savedState) localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
     this.state.family.childLinked ??= this.state.role === 'child';
     this.ensureDemoProgressEvents();
     this.ensureActiveSession();

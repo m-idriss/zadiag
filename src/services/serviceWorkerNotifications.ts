@@ -26,6 +26,13 @@ export const notificationOptionsForPayload = (payload?: PushPayload): Notificati
 export const notificationClickPath = (notification: Pick<Notification, 'data'>) =>
   String((notification.data as { path?: string } | undefined)?.path ?? '/');
 
+const CHECK_NOTIFICATION_TAG_PREFIXES = ['verification:', 'reminder:'];
+const CHECK_NOTIFICATION_TAGS = new Set(['verification']);
+
+export const isCheckNotificationTag = (tag = '') =>
+  CHECK_NOTIFICATION_TAGS.has(tag)
+  || CHECK_NOTIFICATION_TAG_PREFIXES.some((prefix) => tag.startsWith(prefix));
+
 export const clearBadgeAndCheckNotifications = async (
   registration: Pick<ServiceWorkerRegistration, 'getNotifications'>,
   badgeApi: { clearAppBadge?: () => Promise<void> } = navigator,
@@ -33,6 +40,6 @@ export const clearBadgeAndCheckNotifications = async (
   await badgeApi.clearAppBadge?.();
   const notifications = await registration.getNotifications();
   notifications
-    .filter((notification) => ['verification', 'verification:', 'reminder:'].some((prefix) => notification.tag === prefix || notification.tag.startsWith(prefix)))
+    .filter((notification) => isCheckNotificationTag(notification.tag))
     .forEach((notification) => notification.close());
 };

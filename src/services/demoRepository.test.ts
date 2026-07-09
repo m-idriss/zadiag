@@ -51,6 +51,16 @@ describe('DemoRepository compatibility', () => {
     expect(new DemoRepository().snapshot().notificationsEnabled).toBe(true);
   });
 
+  test('recovers from corrupted local demo state', () => {
+    localStorage.setItem('zadiag.demo.v1', '{not-json');
+
+    const state = new DemoRepository().snapshot();
+
+    expect(state.family.childName).toBe('Maya');
+    expect(state.routineAssignments.some((assignment) => assignment.routineId === DEFAULT_ROUTINE_ID)).toBe(true);
+    expect(localStorage.getItem('zadiag.demo.v1')).toBeNull();
+  });
+
   test('adds demo progress events to existing local states so the heatmap is visible', () => {
     localStorage.setItem('zadiag.demo.v1', JSON.stringify({
       locale: 'en',
