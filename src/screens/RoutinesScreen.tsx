@@ -1,6 +1,6 @@
 import { IonIcon } from '@ionic/react';
 import { addOutline } from 'ionicons/icons';
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import type { AppState, MonitoringPlan, RoutineAssignment, RoutineValidationMode, ScheduleGroup, VerificationEvent } from '../domain/models';
 import { groupsFromLegacyPlan, nextPlannedWindow, summarizeWeekdaysShort } from '../domain/monitoringPlan';
 import type { MessageKey } from '../services/i18n';
@@ -8,14 +8,9 @@ import { AppIcon, routineIconName } from '../components/Icon';
 import { presentRoutine } from '../domain/routinePresentation';
 import { assignableRoutineTemplates, marketplaceFromTemplates, presentRoutineTemplate } from '../domain/routineMarketplace';
 import { withResolvedEventStatuses } from '../domain/adherence';
+import { readUiStorageJson, readUiStorageString, removeUiStorageItem, writeUiStorageString } from '../services/uiStorage';
 
 const RoutineDetailScreen = lazy(() => import('./RoutineDetailScreen').then((module) => ({ default: module.RoutineDetailScreen })));
-
-const completionRate = (assignment: RoutineAssignment, events: VerificationEvent[]) => {
-  const completed = withResolvedEventStatuses(events).filter((event) => event.routineId === assignment.routineId && !['pending', 'analyzing'].includes(event.status));
-  if (!completed.length) return 0;
-  return completed.filter((event) => event.status === 'detected').length / completed.length;
-};
 
 type RequestStatus = 'idle' | 'sent' | 'active' | 'error';
 interface RequestRetryState {
@@ -27,46 +22,43 @@ const ROUTINES_CATALOG_OPEN_KEY = 'zadiag.routines.catalogOpen';
 const ROUTINES_SELECTED_ASSIGNMENT_KEY = 'zadiag.routines.selectedAssignment';
 const ROUTINES_EXPANDED_SCHEDULES_KEY = 'zadiag.routines.expandedSchedules';
 
-const readStoredString = (key: string) => {
-  try {
-    return localStorage.getItem(key) ?? undefined;
-  } catch {
-    return undefined;
-  }
-};
-
 const readStoredBoolean = (key: string) => {
-  const value = readStoredString(key);
+  const value = readUiStorageString(key);
   if (value === 'true') return true;
   if (value === 'false') return false;
   return undefined;
 };
 
 const readStoredStringSet = (key: string) => {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return new Set<string>();
-    const parsed = JSON.parse(raw) as unknown;
-    return new Set(Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : []);
-  } catch {
-    return new Set<string>();
-  }
+  return readUiStorageJson(key, new Set<string>(), (parsed) =>
+    new Set(Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : []));
 };
 
-const writeStorage = (key: string, value: string) => {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    // Routines UI state remains usable when storage is unavailable.
-  }
+const routineCompletionRatesById = (events: VerificationEvent[]) => {
+  const stats = new Map<string, { completed: number; successful: number }>();
+  events.forEach((event) => {
+    if (event.status === 'pending' || event.status === 'analyzing') return;
+    const current = stats.get(event.routineId) ?? { completed: 0, successful: 0 };
+    current.completed += 1;
+    if (event.status === 'detected') current.successful += 1;
+    stats.set(event.routineId, current);
+  });
+  return new Map([...stats].map(([routineId, item]) => [
+    routineId,
+    item.completed ? item.successful / item.completed : 0,
+  ]));
 };
 
-const removeStorage = (key: string) => {
-  try {
-    localStorage.removeItem(key);
-  } catch {
-    // Routines UI state remains usable when storage is unavailable.
-  }
+const activePendingEventsByRoutineId = (events: VerificationEvent[], now: number) => {
+  const byRoutineId = new Map<string, VerificationEvent>();
+  events.forEach((event) => {
+    if (event.status !== 'pending' || Date.parse(event.expiresAt) <= now) return;
+    const current = byRoutineId.get(event.routineId);
+    if (!current || Date.parse(event.expiresAt) < Date.parse(current.expiresAt)) {
+      byRoutineId.set(event.routineId, event);
+    }
+  });
+  return byRoutineId;
 };
 
 const responseWindowSummary = (expiryMinutes: number, t: (key: MessageKey) => string) =>
@@ -126,7 +118,7 @@ export function RoutinesScreen({
   savingRoutineId?: string;
   t: (key: MessageKey) => string;
 }) {
-  const [selectedId, setSelectedId] = useState<string | undefined>(() => readStoredString(ROUTINES_SELECTED_ASSIGNMENT_KEY));
+  const [selectedId, setSelectedId] = useState<string | undefined>(() => readUiStorageString(ROUTINES_SELECTED_ASSIGNMENT_KEY));
   const [requestingRoutineId, setRequestingRoutineId] = useState<string>();
   const [requestStatuses, setRequestStatuses] = useState<Record<string, RequestStatus>>({});
   const [requestRetries, setRequestRetries] = useState<Record<string, RequestRetryState>>({});
@@ -143,7 +135,12 @@ export function RoutinesScreen({
   const selected = state.routineAssignments.find((assignment) => assignment.id === selectedId);
   const canManageRoutines = state.role === 'parent' && Boolean(edit);
   const canAssignRoutine = state.role === 'parent' && Boolean(onAssignRoutine);
-  const marketplace = marketplaceFromTemplates();
+  const now = Date.now();
+  const nowDate = new Date(now);
+  const marketplace = useMemo(() => marketplaceFromTemplates(), []);
+  const resolvedEvents = useMemo(() => withResolvedEventStatuses(state.events), [state.events]);
+  const completionRatesByRoutineId = useMemo(() => routineCompletionRatesById(resolvedEvents), [resolvedEvents]);
+  const activePendingByRoutineId = useMemo(() => activePendingEventsByRoutineId(state.events, now), [now, state.events]);
   const retryDelayForAttempt = (attempt: number) => Math.min(30_000, 2 ** Math.max(0, attempt - 1) * 2_000);
   const openDetails = (assignmentId: string, initialTab?: 'overview' | 'plan') => {
     setDetailInitialTab(initialTab);
@@ -162,22 +159,22 @@ export function RoutinesScreen({
 
   useEffect(() => {
     if (selectedId && !selected) {
-      removeStorage(ROUTINES_SELECTED_ASSIGNMENT_KEY);
+      removeUiStorageItem(ROUTINES_SELECTED_ASSIGNMENT_KEY);
       setSelectedId(undefined);
     }
   }, [selected, selectedId]);
 
   useEffect(() => {
-    if (selectedId) writeStorage(ROUTINES_SELECTED_ASSIGNMENT_KEY, selectedId);
-    else removeStorage(ROUTINES_SELECTED_ASSIGNMENT_KEY);
+    if (selectedId) writeUiStorageString(ROUTINES_SELECTED_ASSIGNMENT_KEY, selectedId);
+    else removeUiStorageItem(ROUTINES_SELECTED_ASSIGNMENT_KEY);
   }, [selectedId]);
 
   useEffect(() => {
-    writeStorage(ROUTINES_CATALOG_OPEN_KEY, String(catalogOpen));
+    writeUiStorageString(ROUTINES_CATALOG_OPEN_KEY, String(catalogOpen));
   }, [catalogOpen]);
 
   useEffect(() => {
-    writeStorage(ROUTINES_EXPANDED_SCHEDULES_KEY, JSON.stringify([...expandedScheduleIds]));
+    writeUiStorageString(ROUTINES_EXPANDED_SCHEDULES_KEY, JSON.stringify([...expandedScheduleIds]));
   }, [expandedScheduleIds]);
 
   if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={backToList} start={start} edit={canManageRoutines} initialTab={detailInitialTab} getProofImageUrl={getProofImageUrl} onSaveMonitoringPlan={canManageRoutines && onSaveMonitoringPlan ? (plan, validationMode) => onSaveMonitoringPlan(selected.routineId, plan, validationMode) : undefined} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
@@ -320,16 +317,15 @@ export function RoutinesScreen({
         <h2 id="routines-list-title">{t('routines')}</h2>
         <div className="routine-list">
           {state.routineAssignments.map((assignment) => {
-            const now = new Date();
-            const next = state.events.find((event) => event.routineId === assignment.routineId && event.status === 'pending' && Date.parse(event.expiresAt) > now.getTime());
-            const rate = completionRate(assignment, state.events);
+            const next = activePendingByRoutineId.get(assignment.routineId);
+            const rate = completionRatesByRoutineId.get(assignment.routineId) ?? 0;
             const visual = presentRoutine(assignment.routine, state.locale);
             const locale = state.locale === 'fr' ? 'fr-FR' : 'en-US';
-            const planned = next ? undefined : nextPlannedWindow(assignment.plan, now);
+            const planned = next ? undefined : nextPlannedWindow(assignment.plan, nowDate);
             const nextLabel = next
               ? `${t('before')} ${formatRoutineTime(new Date(next.expiresAt), locale)}`
               : planned
-                ? routineWindowLabel(planned.start, planned.end, now, locale, t)
+                ? routineWindowLabel(planned.start, planned.end, nowDate, locale, t)
                 : t('noPendingTask');
             const groups = groupsFromLegacyPlan(assignment.plan);
             const planScheduleGroups = groups.map((group, groupIndex) => ({

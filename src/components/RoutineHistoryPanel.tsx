@@ -6,6 +6,7 @@ import { AppIcon, routineIconName } from './Icon';
 import { StatusPill } from './StatusPill';
 import { canRetakeCapture, stalePendingCheckReason, withResolvedEventStatuses } from '../domain/adherence';
 import { EmptyState, ListRow } from './ui';
+import { readUiStorageJson, writeUiStorageString } from '../services/uiStorage';
 
 const eventTimestamp = (event: VerificationEvent) =>
   Date.parse(event.capturedAt ?? event.requestedAt);
@@ -18,17 +19,14 @@ const displayReason = (reason?: string) =>
 const historyFilterStorageKey = (titleId: string) => `zadiag.historyFilters.${titleId}`;
 
 const readStoredFilters = (titleId: string) => {
-  try {
-    const raw = localStorage.getItem(historyFilterStorageKey(titleId));
-    if (!raw) return { statuses: [] as VerificationStatus[], routineIds: [] as string[] };
-    const parsed = JSON.parse(raw) as Partial<{ statuses: VerificationStatus[]; routineIds: string[] }>;
+  const empty = { statuses: [] as VerificationStatus[], routineIds: [] as string[] };
+  return readUiStorageJson(historyFilterStorageKey(titleId), empty, (value) => {
+    const parsed = value as Partial<{ statuses: VerificationStatus[]; routineIds: string[] }>;
     return {
       statuses: Array.isArray(parsed.statuses) ? parsed.statuses : [],
       routineIds: Array.isArray(parsed.routineIds) ? parsed.routineIds : [],
     };
-  } catch {
-    return { statuses: [] as VerificationStatus[], routineIds: [] as string[] };
-  }
+  });
 };
 
 const analysisTag = (event: VerificationEvent, locale: Locale) => {
@@ -71,11 +69,16 @@ export function RoutineHistoryPanel({
   const [requestingEventId, setRequestingEventId] = useState<string>();
   const [hiddenRequestEventIds, setHiddenRequestEventIds] = useState<Record<string, string>>({});
   const formatterLocale = locale === 'fr' ? 'fr-FR' : 'en-US';
-  const displayEvents = useMemo(() => withResolvedEventStatuses(events), [events]);
-  const formatDateTime = (value: string) => new Intl.DateTimeFormat(formatterLocale, {
+  const dateTimeFormatter = useMemo(() => new Intl.DateTimeFormat(formatterLocale, {
     dateStyle: 'short',
     timeStyle: 'short',
-  }).format(new Date(value));
+  }), [formatterLocale]);
+  const displayEvents = useMemo(() => withResolvedEventStatuses(events), [events]);
+  const formatDateTime = (value: string) => dateTimeFormatter.format(new Date(value));
+  const routinePresentationsById = useMemo(() => new Map(assignments.map((assignment) => [
+    assignment.routineId,
+    presentRoutine(assignment.routine, locale),
+  ])), [assignments, locale]);
   const sortedEvents = useMemo(
     () => [...displayEvents].sort((a, b) => eventTimestamp(b) - eventTimestamp(a)),
     [displayEvents],
@@ -94,15 +97,13 @@ export function RoutineHistoryPanel({
     () => Array.from(new Set(sortedEvents.map((event) => event.status))),
     [sortedEvents],
   );
+  const excludedStatusSet = useMemo(() => new Set(excludedStatuses), [excludedStatuses]);
+  const excludedRoutineIdSet = useMemo(() => new Set(excludedRoutineIds), [excludedRoutineIds]);
   useEffect(() => {
-    try {
-      localStorage.setItem(historyFilterStorageKey(titleId), JSON.stringify({
-        statuses: excludedStatuses,
-        routineIds: excludedRoutineIds,
-      }));
-    } catch {
-      // Filter persistence is a convenience; the panel should still work without storage.
-    }
+    writeUiStorageString(historyFilterStorageKey(titleId), JSON.stringify({
+      statuses: excludedStatuses,
+      routineIds: excludedRoutineIds,
+    }));
   }, [excludedRoutineIds, excludedStatuses, titleId]);
   const toggleRoutineFilter = (routineId: string) => {
     setExcludedRoutineIds((current) =>
@@ -116,14 +117,11 @@ export function RoutineHistoryPanel({
         ? current.filter((item) => item !== status)
         : [...current, status]);
   };
-  const filtered = sortedEvents.filter((event) =>
-    !excludedStatuses.includes(event.status)
-    && !excludedRoutineIds.includes(event.routineId)
-  );
-  const presentationFor = (event: VerificationEvent) => {
-    const assignment = assignments.find((item) => item.routineId === event.routineId);
-    return assignment ? presentRoutine(assignment.routine, locale) : undefined;
-  };
+  const filtered = useMemo(() => sortedEvents.filter((event) =>
+    !excludedStatusSet.has(event.status)
+    && !excludedRoutineIdSet.has(event.routineId)
+  ), [excludedRoutineIdSet, excludedStatusSet, sortedEvents]);
+  const presentationFor = (event: VerificationEvent) => routinePresentationsById.get(event.routineId);
   const requestCheck = async (event: VerificationEvent) => {
     if (!onRequestCheck || requestingEventId) return;
     setRequestingEventId(event.id);

@@ -11,12 +11,14 @@ import { isSummaryRange, type SummaryRange } from './components/AdherenceSummary
 import { PushSetupError, WebPushGateway } from './services/webPush';
 import { firebaseEnabled } from './services/firebaseConfig';
 import { browserRouteContext, isLocalDemoEnvironment, routineCentricUiEnabled } from './services/browserEnvironment';
-import { describeAppUpdate, fetchLatestAppVersion, refreshServiceWorkerRegistration, runWhenStartupIsIdle, type AppUpdateInfo } from './services/appUpdate';
+import { runWhenStartupIsIdle } from './services/appUpdate';
 import { InstallScreen } from './screens/InstallScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
 import { ChildDashboard } from './screens/ChildDashboard';
 import { canRetakeCapture } from './domain/adherence';
 import { cleanupClientAfterReset } from './services/resetCleanup';
+import { readUiStorageString, writeUiStorageString } from './services/uiStorage';
+import { useAppUpdateController } from './hooks/useAppUpdateController';
 
 const lazyScreen = <TProps extends object>(
   load: () => Promise<Record<string, ComponentType<TProps>>>,
@@ -40,12 +42,8 @@ const appBadgeApi = navigator as Navigator & {
 const DASHBOARD_SUMMARY_RANGE_KEY = 'zadiag.dashboard.summaryRange';
 
 const readDashboardSummaryRange = (): SummaryRange => {
-  try {
-    const stored = localStorage.getItem(DASHBOARD_SUMMARY_RANGE_KEY);
-    return isSummaryRange(stored) ? stored : 'day';
-  } catch {
-    return 'day';
-  }
+  const stored = readUiStorageString(DASHBOARD_SUMMARY_RANGE_KEY);
+  return isSummaryRange(stored) ? stored : 'day';
 };
 
 export const appBadgeCountForState = (
@@ -65,17 +63,10 @@ export function App() {
   const [route, setRoute] = useState<AppRoute>(() => routeForState(state, browserRouteContext()));
   const [ready, setReady] = useState(false);
   const [startupError, setStartupError] = useState(false);
-  const [appUpdateInfo, setAppUpdateInfo] = useState<AppUpdateInfo>(() => ({
-    available: false,
-    currentVersion: import.meta.env.VITE_APP_VERSION,
-    severity: 'unknown',
-  }));
   const [splashProgress, setSplashProgress] = useState(40);
   const [splashMessage, setSplashMessage] = useState<MessageKey>('splashLoading');
   const [tab, setTab] = useState<Tab>('home');
   const [busy, setBusy] = useState(false);
-  const [updateActionBusy, setUpdateActionBusy] = useState(false);
-  const [dismissedUpdateId, setDismissedUpdateId] = useState<string>();
   const [result, setResult] = useState<VerificationEvent>();
   const [submitError, setSubmitError] = useState<string>();
   const [resetNoticeKey, setResetNoticeKey] = useState<MessageKey>();
@@ -90,13 +81,20 @@ export function App() {
   const t = (key: MessageKey) => translate(state.locale, key);
   const preferences = normalizeAppPreferences(state.preferences);
   const appRootClassName = 'app-root app-compact';
+  const {
+    appUpdateInfo,
+    applySnackbarUpdate,
+    dismissUpdate,
+    forceAppUpdate,
+    refreshAppUpdateInfo,
+    resetDismissedUpdate,
+    showUpdateSnackbar,
+    updateActionBusy,
+    updateSnackbarId,
+  } = useAppUpdateController(ready);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(DASHBOARD_SUMMARY_RANGE_KEY, dashboardSummaryRange);
-    } catch {
-      // The dashboard still works if browser storage is unavailable.
-    }
+    writeUiStorageString(DASHBOARD_SUMMARY_RANGE_KEY, dashboardSummaryRange);
   }, [dashboardSummaryRange]);
 
   useEffect(() => {
@@ -154,7 +152,7 @@ export function App() {
       window.clearInterval(startupProgressTicker);
       unsubscribe();
     };
-  }, [repository]);
+  }, [repository, refreshAppUpdateInfo]);
 
   useEffect(() => {
     let alive = true;
@@ -223,7 +221,7 @@ export function App() {
     setSubmitError(undefined);
     setSelectedSessionId(undefined);
     setSavingRoutineId(undefined);
-    setDismissedUpdateId(undefined);
+    resetDismissedUpdate();
     setResetNoticeKey(resetNoticeMessageKey(previousRole));
     setRoute('welcome');
     setTab('home');
@@ -241,58 +239,11 @@ export function App() {
     const subscription = await push.subscribe();
     await repository.savePushSubscription(subscription.toJSON());
   };
-  const refreshAppUpdateInfo = async (shouldApply: () => boolean = () => true): Promise<ServiceWorkerRegistration | undefined> => {
-    const [registration, latestVersion] = await Promise.all([
-      refreshServiceWorkerRegistration(),
-      fetchLatestAppVersion().catch((error) => {
-        console.error(error);
-        return undefined;
-      }),
-    ]);
-    const versionUpdate = describeAppUpdate(import.meta.env.VITE_APP_VERSION, latestVersion);
-    const waiting = Boolean(registration?.waiting);
-    if (!shouldApply()) return registration;
-    setAppUpdateInfo(versionUpdate ?? {
-      available: waiting,
-      currentVersion: import.meta.env.VITE_APP_VERSION,
-      latestVersion,
-      severity: waiting ? 'unknown' : 'patch',
-    });
-    return registration;
-  };
-  const forceAppUpdate = async (): Promise<boolean> => {
-    const registration = await refreshAppUpdateInfo();
-    if (!registration?.waiting) return false;
-    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-    await new Promise<void>((resolve) => {
-      const timer = window.setTimeout(resolve, 1500);
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        window.clearTimeout(timer);
-        resolve();
-      }, { once: true });
-    });
-    window.location.reload();
-    return true;
-  };
-  const updateSnackbarId = appUpdateInfo.available
-    ? appUpdateInfo.latestVersion ?? appUpdateInfo.badgeLabel ?? 'waiting-service-worker'
-    : undefined;
   const updateSnackbarMessage = appUpdateInfo.severity === 'major'
     ? t('snackbarUpdateMajorAvailable')
     : appUpdateInfo.severity === 'minor'
       ? t('snackbarUpdateMinorAvailable')
       : t('snackbarUpdateAvailable');
-  const showUpdateSnackbar = Boolean(ready && appUpdateInfo.available && updateSnackbarId && dismissedUpdateId !== updateSnackbarId);
-  const applySnackbarUpdate = async () => {
-    setUpdateActionBusy(true);
-    try {
-      await forceAppUpdate();
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setUpdateActionBusy(false);
-    }
-  };
 
   if (startupError) {
     return (
@@ -460,7 +411,7 @@ export function App() {
           actionLabel={t('settingsUpdateAction')}
           closeLabel={t('close')}
           onAction={() => { void applySnackbarUpdate(); }}
-          onClose={() => setDismissedUpdateId(updateSnackbarId)}
+          onClose={() => dismissUpdate(updateSnackbarId)}
           busy={updateActionBusy}
         />
       ) : null}

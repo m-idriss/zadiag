@@ -54,10 +54,22 @@ export function ParentDashboard({
     .sort((a, b) => Date.parse(b.capturedAt ?? b.requestedAt) - Date.parse(a.capturedAt ?? a.requestedAt)),
   [state.events]);
   const locale = state.locale === 'fr' ? 'fr-FR' : 'en-US';
-  const activePendingEvents = state.events.filter((event) => event.status === 'pending' && Date.parse(event.expiresAt) > now);
-  const upcomingChecks = state.routineAssignments
+  const nowDate = useMemo(() => new Date(now), [now]);
+  const dateTimeFormatter = useMemo(() => new Intl.DateTimeFormat(locale, {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }), [locale]);
+  const routinePresentationsById = useMemo(() => new Map(state.routineAssignments.map((assignment) => [
+    assignment.routineId,
+    presentRoutine(assignment.routine, state.locale),
+  ])), [state.locale, state.routineAssignments]);
+  const activePendingEvents = useMemo(
+    () => state.events.filter((event) => event.status === 'pending' && Date.parse(event.expiresAt) > now),
+    [now, state.events],
+  );
+  const upcomingChecks = useMemo(() => state.routineAssignments
     .map((assignment) => {
-      const planned = nextPlannedWindow(assignment.plan, new Date(now));
+      const planned = nextPlannedWindow(assignment.plan, nowDate);
       if (!planned) return undefined;
       return {
         id: assignment.id,
@@ -67,7 +79,8 @@ export function ParentDashboard({
     })
     .filter((item): item is NonNullable<typeof item> => Boolean(item))
     .sort((a, b) => a.planned.start.getTime() - b.planned.start.getTime())
-    .slice(0, 3);
+    .slice(0, 3),
+  [now, state.locale, state.routineAssignments]);
   const responsibleEmptyState = !state.family.childLinked
     ? { icon: 'link' as const, title: t('responsibleEmptyParticipantNotLinkedTitle'), hint: t('responsibleEmptyParticipantNotLinkedHint') }
     : !state.routineAssignments.length
@@ -75,21 +88,11 @@ export function ParentDashboard({
       : !state.events.length && !upcomingChecks.length
           ? { icon: 'notifications' as const, title: t('responsibleEmptyNoCheckTitle'), hint: t('responsibleEmptyNoCheckHint') }
           : undefined;
-  const formatDateTime = (value: string) => new Intl.DateTimeFormat(locale, {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(new Date(value));
-  const routineNameFor = (event: VerificationEvent) => {
-    const assignment = state.routineAssignments.find((item) => item.routineId === event.routineId);
-    return assignment ? presentRoutine(assignment.routine, state.locale).name : t('routine');
-  };
-  const routinePresentationFor = (event: VerificationEvent) => {
-    const assignment = state.routineAssignments.find((item) => item.routineId === event.routineId);
-    return assignment ? presentRoutine(assignment.routine, state.locale) : { name: t('routine'), icon: undefined, style: {} };
-  };
-  const formatTime = (value: string) => new Intl.DateTimeFormat(locale, {
-    timeStyle: 'short',
-  }).format(new Date(value));
+  const formatDateTime = (value: string) => dateTimeFormatter.format(new Date(value));
+  const routineNameFor = (event: VerificationEvent) =>
+    routinePresentationsById.get(event.routineId)?.name ?? t('routine');
+  const routinePresentationFor = (event: VerificationEvent) =>
+    routinePresentationsById.get(event.routineId) ?? { name: t('routine'), icon: undefined, style: {} };
   const displayReason = (event: VerificationEvent) =>
     event.reason && event.reason !== 'analysis_unavailable' && event.reason !== 'self_validated'
       ? event.reason
