@@ -91,21 +91,29 @@ describe('ParentDashboard', () => {
     expect(container.querySelectorAll('.parent-history-row')).toHaveLength(2);
 
     const elasticsButton = Array.from(container.querySelectorAll('.filter-chips button')).find((button) => button.textContent === 'Orthodontic Elastics');
+    const hydrationButton = Array.from(container.querySelectorAll('.filter-chips button')).find((button) => button.textContent === 'Hydration');
     const missedButton = Array.from(container.querySelectorAll('.filter-chips button')).find((button) => button.textContent === 'Missed');
     const validatedButton = Array.from(container.querySelectorAll('.filter-chips button')).find((button) => button.textContent === 'Validated');
 
-    act(() => elasticsButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(elasticsButton?.getAttribute('aria-pressed')).toBe('true');
+    expect(hydrationButton?.getAttribute('aria-pressed')).toBe('true');
+    expect(missedButton?.getAttribute('aria-pressed')).toBe('true');
+    expect(validatedButton?.getAttribute('aria-pressed')).toBe('true');
+
+    act(() => hydrationButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     act(() => missedButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
 
     expect(elasticsButton?.getAttribute('aria-pressed')).toBe('true');
-    expect(missedButton?.getAttribute('aria-pressed')).toBe('true');
-    expect(container.querySelectorAll('.parent-history-row')).toHaveLength(0);
+    expect(hydrationButton?.getAttribute('aria-pressed')).toBe('false');
+    expect(missedButton?.getAttribute('aria-pressed')).toBe('false');
+    expect(container.querySelectorAll('.parent-history-row')).toHaveLength(1);
 
     act(() => missedButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     act(() => validatedButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
 
-    expect(validatedButton?.getAttribute('aria-pressed')).toBe('true');
-    expect(container.querySelectorAll('.parent-history-row')).toHaveLength(1);
+    expect(missedButton?.getAttribute('aria-pressed')).toBe('true');
+    expect(validatedButton?.getAttribute('aria-pressed')).toBe('false');
+    expect(container.querySelectorAll('.parent-history-row')).toHaveLength(0);
   });
 
   it('shows a first routine creation block when no routine exists', () => {

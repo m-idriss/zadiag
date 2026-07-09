@@ -50,8 +50,8 @@ export function RoutineHistoryPanel({
   onRequestCheck?: (routineId: string) => Promise<void>;
   t: (key: MessageKey) => string;
 }) {
-  const [statusFilters, setStatusFilters] = useState<VerificationStatus[]>([]);
-  const [routineFilters, setRoutineFilters] = useState<string[]>([]);
+  const [excludedStatuses, setExcludedStatuses] = useState<VerificationStatus[]>([]);
+  const [excludedRoutineIds, setExcludedRoutineIds] = useState<string[]>([]);
   const [requestingEventId, setRequestingEventId] = useState<string>();
   const [hiddenRequestEventIds, setHiddenRequestEventIds] = useState<Record<string, string>>({});
   const formatterLocale = locale === 'fr' ? 'fr-FR' : 'en-US';
@@ -79,20 +79,20 @@ export function RoutineHistoryPanel({
     [sortedEvents],
   );
   const toggleRoutineFilter = (routineId: string) => {
-    setRoutineFilters((current) =>
+    setExcludedRoutineIds((current) =>
       current.includes(routineId)
         ? current.filter((item) => item !== routineId)
         : [...current, routineId]);
   };
   const toggleStatusFilter = (status: VerificationStatus) => {
-    setStatusFilters((current) =>
+    setExcludedStatuses((current) =>
       current.includes(status)
         ? current.filter((item) => item !== status)
         : [...current, status]);
   };
   const filtered = sortedEvents.filter((event) =>
-    (statusFilters.length === 0 || statusFilters.includes(event.status))
-    && (routineFilters.length === 0 || routineFilters.includes(event.routineId))
+    !excludedStatuses.includes(event.status)
+    && !excludedRoutineIds.includes(event.routineId)
   );
   const presentationFor = (event: VerificationEvent) => {
     const assignment = assignments.find((item) => item.routineId === event.routineId);
@@ -128,7 +128,7 @@ export function RoutineHistoryPanel({
               <div className="filter-chips">
                 {assignments.map((assignment) => {
                   const visual = presentRoutine(assignment.routine, locale);
-                  const active = routineFilters.includes(assignment.routineId);
+                  const active = !excludedRoutineIds.includes(assignment.routineId);
                   return <button type="button" key={assignment.id} aria-pressed={active} className={active ? 'active' : ''} onClick={() => toggleRoutineFilter(assignment.routineId)}>{visual.name}</button>;
                 })}
               </div>
@@ -137,7 +137,7 @@ export function RoutineHistoryPanel({
               <span>{t('filterByStatus')}</span>
               <div className="filter-chips">
                 {statuses.map((status) => {
-                  const active = statusFilters.includes(status);
+                  const active = !excludedStatuses.includes(status);
                   return <button type="button" key={status} aria-pressed={active} className={`filter-status-${status} ${active ? 'active' : ''}`} onClick={() => toggleStatusFilter(status)}>{t(statusLabelKey(status))}</button>;
                 })}
               </div>
