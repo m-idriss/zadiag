@@ -84,7 +84,7 @@ describe('ParentDashboard', () => {
     expect(container.textContent).not.toContain('ZD-123456');
   });
 
-  it('distinguishes no requested check from an active proof waiting on the participant', () => {
+  it('distinguishes no requested check from an active check to complete', () => {
     const assignment = createDefaultRoutineAssignment();
     const baseState: AppState = {
       role: 'parent',
@@ -113,11 +113,15 @@ describe('ParentDashboard', () => {
           }],
         }}
         regenerateCode={vi.fn()}
+        requestCheck={vi.fn()}
         t={(key) => translate('en', key)}
       />,
     ));
 
-    expect(container.textContent).toContain('Waiting for participant proof');
+    expect(container.textContent).toContain('1 check to complete');
+    expect(container.textContent).toContain('Orthodontic Elastics');
+    expect(container.textContent).toContain('Remind');
+    expect(container.textContent).not.toContain('Waiting for participant proof');
   });
 
   it('lets the responsible person resend active pending checks from current checks', async () => {
@@ -143,6 +147,7 @@ describe('ParentDashboard', () => {
 
     const resend = Array.from(container.querySelectorAll('button')).find((button) => button.getAttribute('aria-label') === 'Resend reminder');
     expect(resend).toBeTruthy();
+    expect(resend?.textContent).toContain('Remind');
 
     await act(async () => {
       resend?.dispatchEvent(new MouseEvent('click', { bubbles: true }));

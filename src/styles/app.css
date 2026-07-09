@@ -716,8 +716,13 @@ ion-input {
 .today-pending-panel { padding: 0; border-radius: 0; background: transparent; box-shadow: none; }
 .today-panel-heading { margin-bottom: -1px; }
 .today-pending-panel .today-task { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; justify-content: stretch; gap: 13px; padding: 15px; border: 0; border-radius: 18px; background: white; box-shadow: none; }
-.today-pending-panel .today-routine-card {
+.today-pending-panel .today-routine-card,
+.parent-active-check-card {
   position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  justify-content: stretch;
   gap: 10px;
   padding: var(--row-padding-y) var(--row-padding-x);
   border: 1px solid rgba(255,255,255,.92);
@@ -725,6 +730,7 @@ ion-input {
   background: var(--surface);
   box-shadow: var(--shadow-sm);
 }
+.parent-active-check-card { border: 0; }
 .today-routine-main {
   display: grid;
   gap: 10px;
@@ -756,6 +762,21 @@ ion-input {
 .today-task-icon .app-icon { font-size: 20px; }
 .today-pending-panel .today-task .primary-action-button { width: auto; min-width: 0; margin: 0; border-radius: 12px; min-height: 40px; background: var(--routine-accent, var(--teal)); color: white; font-weight: 850; }
 .today-pending-panel .today-proof-button { justify-self: end; padding: 10px 14px; font-size: 12px; white-space: nowrap; }
+.parent-remind-button {
+  width: auto;
+  min-width: 0;
+  min-height: 40px;
+  justify-self: end;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--routine-accent, var(--teal));
+  color: white;
+  font-size: 12px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+.parent-remind-button:disabled { opacity: .62; }
 .today-routine-primary > .status-pill { justify-self: stretch; align-self: center; text-align: center; padding-block: 13px; border-radius: 14px; }
 .today-task-stack { width: 100%; justify-self: stretch; display: grid; gap: 7px; padding: calc(var(--row-padding-y) - 2px) calc(var(--row-padding-x) - 2px); border: 1px solid color-mix(in srgb, var(--routine-accent, var(--teal)) 10%, white); border-radius: 16px; background: color-mix(in srgb, var(--routine-accent, var(--teal)) 5%, #f8fbfa); }
 .today-task-stack-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; }
@@ -1431,6 +1452,7 @@ ion-input {
 }
 .app-compact .parent-review-card,
 .app-compact .today-pending-panel .today-routine-card,
+.app-compact .parent-active-check-card,
 .app-compact .upcoming-check-card,
 .app-compact .today-task.completed,
 .app-compact .parent-create-routine-card,

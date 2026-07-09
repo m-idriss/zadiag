@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type TouchEvent } from 'react';
 import type { AppState, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
-import { AppIcon } from '../components/Icon';
+import { AppIcon, routineIconName } from '../components/Icon';
 import { CodeBox } from '../components/CodeBox';
 import { RoutineHistoryPanel } from '../components/RoutineHistoryPanel';
 import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } from '../components/AdherenceSummaryCard';
 import { presentRoutine } from '../domain/routinePresentation';
+import { dayPeriodLabelKey } from '../domain/taskTimeLabel';
 import { withResolvedEventStatuses } from '../domain/adherence';
 import { EmptyState } from '../components/ui';
 
@@ -57,9 +58,7 @@ export function ParentDashboard({
     ? { icon: 'link' as const, title: t('responsibleEmptyParticipantNotLinkedTitle'), hint: t('responsibleEmptyParticipantNotLinkedHint') }
     : !state.routineAssignments.length
       ? { icon: 'add' as const, title: t('responsibleEmptyNoRoutineTitle'), hint: t('responsibleEmptyNoRoutineHint') }
-      : activePendingEvents.length
-        ? { icon: 'send' as const, title: t('responsibleEmptyWaitingProofTitle'), hint: t('responsibleEmptyWaitingProofHint') }
-        : !state.events.length
+      : !state.events.length
           ? { icon: 'notifications' as const, title: t('responsibleEmptyNoCheckTitle'), hint: t('responsibleEmptyNoCheckHint') }
           : undefined;
   const formatDateTime = (value: string) => new Intl.DateTimeFormat(locale, {
@@ -70,6 +69,13 @@ export function ParentDashboard({
     const assignment = state.routineAssignments.find((item) => item.routineId === event.routineId);
     return assignment ? presentRoutine(assignment.routine, state.locale).name : t('routine');
   };
+  const routinePresentationFor = (event: VerificationEvent) => {
+    const assignment = state.routineAssignments.find((item) => item.routineId === event.routineId);
+    return assignment ? presentRoutine(assignment.routine, state.locale) : { name: t('routine'), icon: undefined, style: {} };
+  };
+  const formatTime = (value: string) => new Intl.DateTimeFormat(locale, {
+    timeStyle: 'short',
+  }).format(new Date(value));
   const displayReason = (event: VerificationEvent) =>
     event.reason && event.reason !== 'analysis_unavailable' && event.reason !== 'self_validated'
       ? event.reason
@@ -120,12 +126,12 @@ export function ParentDashboard({
       setReviewingId(undefined);
     }
   };
-  const resendActiveReminders = async () => {
+  const resendActiveReminders = async (routineId?: string) => {
     if (!requestCheck || requestingActiveReminder) return;
     setRequestingActiveReminder(true);
     setActiveReminderStatus(undefined);
     try {
-      const routineIds = Array.from(new Set(activePendingEvents.map((event) => event.routineId)));
+      const routineIds = routineId ? [routineId] : Array.from(new Set(activePendingEvents.map((event) => event.routineId)));
       await Promise.all(routineIds.map((routineId) => requestCheck(routineId)));
       setActiveReminderStatus('sent');
     } catch (error) {
@@ -168,11 +174,50 @@ export function ParentDashboard({
         <div className="avatar" aria-hidden="true">{state.family.childName.trim().charAt(0).toUpperCase() || '?'}</div>
       </header>
 
-      {(responsibleEmptyState || (!state.family.childLinked && state.family.linkingCode) || (!state.routineAssignments.length && onCreateRoutine)) ? (
+      {(responsibleEmptyState || activePendingEvents.length || (!state.family.childLinked && state.family.linkingCode) || (!state.routineAssignments.length && onCreateRoutine)) ? (
         <section className="settings-section parent-setup-section" aria-labelledby="parent-setup-title">
-          <h2 id="parent-setup-title">{t('responsibleCurrentChecksTitle')}</h2>
+          <h2 id="parent-setup-title">{activePendingEvents.length ? `${activePendingEvents.length} ${t(activePendingEvents.length === 1 ? 'checkToComplete' : 'checksToComplete')}` : t('responsibleCurrentChecksTitle')}</h2>
 
           <div className="today-task-list">
+            {activePendingEvents.length ? (
+              <>
+                {activePendingEvents
+                  .slice()
+                  .sort((a, b) => Date.parse(a.expiresAt) - Date.parse(b.expiresAt))
+                  .map((event) => {
+                    const presentation = routinePresentationFor(event);
+                    return (
+                      <article className="today-task today-routine-card parent-active-check-card actionable" style={presentation.style} key={event.id}>
+                        <div className="today-routine-main">
+                          <div className="today-routine-primary">
+                            <div className="today-task-copy">
+                              <span className="settings-row-icon today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(presentation.icon)} /></span>
+                              <div>
+                                <h3>{presentation.name}</h3>
+                                <p className="today-task-time">{t(dayPeriodLabelKey(event.expiresAt))} · {t('before')} {formatTime(event.expiresAt)}</p>
+                              </div>
+                            </div>
+                            {requestCheck ? (
+                              <button
+                                type="button"
+                                className="primary-action-button today-proof-button parent-remind-button"
+                                aria-label={t('requestCheckAgain')}
+                                disabled={requestingActiveReminder}
+                                onClick={() => { void resendActiveReminders(event.routineId); }}
+                              >
+                                {requestingActiveReminder ? t('requestingCheck') : t('requestCheckShort')}
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                {activeReminderStatus === 'sent' ? <span className="request-feedback success">{t('requestCheckSent')}</span> : null}
+                {activeReminderStatus === 'error' ? <span className="request-feedback error">{t('requestCheckError')}</span> : null}
+              </>
+            ) : null}
+
             {responsibleEmptyState ? (
               <EmptyState
                 className="responsible-state-card"
