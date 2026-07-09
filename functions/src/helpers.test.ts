@@ -31,6 +31,7 @@ test('accepts only fresh pending check submissions', () => {
   assert.equal(isFreshCheckSubmission({ ...pending, status: 'analyzing', capturedAt: '2026-07-02T07:59:00.000Z' }, '2026-07-02T07:59:00.000Z', now), true);
   assert.equal(isFreshCheckSubmission({ ...pending, status: 'not_detected', capturedAt: '2026-07-02T07:59:00.000Z' }, '2026-07-02T08:00:00.000Z', now), true);
   assert.equal(isFreshCheckSubmission({ ...pending, status: 'uncertain', capturedAt: '2026-07-02T07:59:00.000Z' }, '2026-07-02T08:00:00.000Z', now), true);
+  assert.equal(isFreshCheckSubmission({ ...pending, requestedAt: '2026-07-02T07:40:00.000Z', status: 'uncertain', capturedAt: '2026-07-02T07:44:00.000Z' }, '2026-07-02T08:00:00.000Z', now), false);
   assert.equal(isFreshCheckSubmission({ ...pending, expiresAt: '2026-07-02T07:59:00.000Z' }, '2026-07-02T07:58:00.000Z', now), false);
   assert.equal(isFreshCheckSubmission(pending, '2026-07-02T08:01:00.000Z', now), false);
   assert.equal(isFreshCheckSubmission({ ...pending, capturedAt: '2026-07-02T07:58:00.000Z' }, '2026-07-02T07:59:00.000Z', now), false);

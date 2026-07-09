@@ -51,7 +51,7 @@ describe('participant Today screen', () => {
     container.remove();
   });
 
-  it('shows only today pending and completed tasks with an action for the active task', () => {
+  it('shows today pending tasks with an action for the active task', () => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const pending = event('pending', 'pending', atToday(18));
@@ -68,9 +68,9 @@ describe('participant Today screen', () => {
     act(() => root.render(<ChildDashboard state={state} active={pending} start={start} t={(key) => translate('en', key)} />));
 
     expect(container.textContent).toContain('1 check to complete');
-    expect(container.textContent).toContain('Completed today1');
+    expect(container.textContent).not.toContain('Completed today');
     expect(container.textContent).not.toContain('This week');
-    expect(container.querySelectorAll('.today-task')).toHaveLength(2);
+    expect(container.querySelectorAll('.today-task')).toHaveLength(1);
 
     const complete = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Proof'));
     act(() => complete?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
@@ -152,12 +152,12 @@ describe('participant Today screen', () => {
     act(() => root.render(<ChildDashboard state={reloadedState} start={() => undefined} t={(key) => translate('en', key)} />));
 
     expect(container.textContent).toContain('0 checks to complete');
-    expect(container.textContent).toContain('Completed today1');
+    expect(container.textContent).not.toContain('Completed today');
     expect(container.textContent).toContain('Missed');
     expect(container.textContent).toContain('Expired');
   });
 
-  it('counts a check as completed today when the proof was captured today', () => {
+  it('keeps a captured check in the overview and history without a completed-today section', () => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const submittedToday = {
@@ -175,7 +175,9 @@ describe('participant Today screen', () => {
 
     act(() => root.render(<ChildDashboard state={state} start={() => undefined} t={(key) => translate('en', key)} />));
 
-    expect(container.textContent).toContain('Completed today1');
+    expect(container.textContent).not.toContain('Completed today');
+    expect(container.textContent).toContain('1 clear checks out of');
+    expect(container.textContent).toContain('Validated');
   });
 
   it('shows upcoming checks when no task is currently waiting', () => {
@@ -218,7 +220,7 @@ describe('participant Today screen', () => {
     vi.useRealTimers();
   });
 
-  it('shows completed checks before missed pending checks when no action is available', () => {
+  it('shows settled and missed checks in recent history when no action is available', () => {
     const expiredPending = event('expired-pending', 'pending', atToday(8), atToday(9));
     const state: AppState = {
       role: 'child',
@@ -233,7 +235,8 @@ describe('participant Today screen', () => {
 
     const content = container.textContent ?? '';
     expect(content).toContain('0 checks to complete');
-    expect(content.indexOf('Completed today1')).toBeLessThan(content.indexOf('Recent history'));
-    expect(content.indexOf('Validated')).toBeLessThan(content.indexOf('Missed'));
+    expect(content).not.toContain('Completed today');
+    expect(content).toContain('Validated');
+    expect(content).toContain('Missed');
   });
 });

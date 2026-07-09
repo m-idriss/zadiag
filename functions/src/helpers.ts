@@ -1,5 +1,7 @@
 import { createHash, randomInt } from 'node:crypto';
 
+const retakeWindowMs = 15 * 60_000;
+
 export const normalizeLinkCode = (code: string) => code.trim().toUpperCase();
 
 export const hashLinkCode = (code: string) => createHash('sha256')
@@ -34,11 +36,18 @@ export const isFreshCheckSubmission = (
   const isNewSubmission = check.status === 'pending' && !check.capturedAt;
   const isLegacySubmission = check.status === 'analyzing' && String(check.capturedAt) === String(capturedAt);
   const isRetakeSubmission = ['not_detected', 'uncertain'].includes(String(check.status)) && Boolean(check.capturedAt);
+  const firstCapturedAtMs = Date.parse(String(check.capturedAt ?? ''));
+  const retakeExpiresAtMs = firstCapturedAtMs + retakeWindowMs;
   return (isNewSubmission || isLegacySubmission || isRetakeSubmission)
     && Number.isFinite(requestedAtMs)
     && Number.isFinite(expiresAtMs)
     && Number.isFinite(capturedAtMs)
     && capturedAtMs >= requestedAtMs
+    && (!isRetakeSubmission || (
+      Number.isFinite(firstCapturedAtMs)
+      && capturedAtMs >= firstCapturedAtMs
+      && now <= retakeExpiresAtMs
+    ))
     && capturedAtMs <= now + 30_000
     && now <= expiresAtMs;
 };

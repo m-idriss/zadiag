@@ -516,6 +516,37 @@ ion-input {
 .parent-review-button.approve { background: var(--navy); color: white; }
 .parent-review-button.reject { background: color-mix(in srgb, var(--coral) 10%, white); color: color-mix(in srgb, var(--coral) 84%, var(--navy)); }
 .parent-review-button:disabled { opacity: .62; }
+.participant-review-section { margin-top: 18px; }
+.participant-review-card { border-color: color-mix(in srgb, var(--routine-accent, var(--teal)) 12%, white); }
+.participant-review-image {
+  place-items: center;
+  background: color-mix(in srgb, var(--routine-accent, var(--teal)) 8%, white);
+}
+.participant-review-image .today-task-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+}
+.participant-review-actions {
+  grid-template-columns: minmax(92px, auto);
+}
+.participant-retake-button {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--routine-accent, var(--teal));
+  color: white;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1;
+  white-space: nowrap;
+}
+.participant-retake-button .app-icon { font-size: 18px; }
 .proof-lightbox {
   position: fixed;
   inset: 0;
@@ -558,6 +589,8 @@ ion-input {
   .parent-review-actions { grid-column: auto; grid-template-columns: repeat(2, 40px); gap: 6px; }
   .parent-review-button { width: 40px; min-height: 40px; border-radius: 11px; font-size: 20px; }
   .parent-review-button .app-icon { font-size: 21px; }
+  .participant-review-actions { grid-template-columns: minmax(88px, auto); }
+  .participant-retake-button { min-height: 40px; padding: 9px 12px; }
 }
 .history-results-heading { margin-top: 0; margin-bottom: 0; }
 .parent-history-list { display: grid; gap: 10px; }
@@ -660,7 +693,6 @@ ion-input {
 }
 .today-empty h2 { margin: 0; color: var(--navy); font-size: 18px; }
 .today-empty p { max-width: 28ch; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.35; }
-.today-empty-copy { margin: 0; padding: 14px 4px; font-size: 13px; }
 .history-list { display: grid; gap: 0; }
 .bottom-nav { position: absolute; z-index: 10; bottom: 0; left: 0; right: 0; max-width: 640px; margin: auto; display: flex; justify-content: space-around; padding: 9px 12px calc(8px + env(safe-area-inset-bottom)); background: rgba(255,255,255,.92); border-top: 1px solid rgba(227, 235, 232, .9); box-shadow: 0 -10px 24px rgba(21, 50, 75, .04); backdrop-filter: blur(18px); }
 .bottom-nav button { flex: 1; border: 0; background: transparent; color: #78858d; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; font-weight: 800; }
@@ -682,9 +714,7 @@ ion-input {
 .today-section { margin-top: 16px; }
 .content-screen > .today-section { margin-top: 0; }
 .today-pending-panel { padding: 0; border-radius: 0; background: transparent; box-shadow: none; }
-.today-panel-heading { display: flex; align-items: center; justify-content: space-between; padding: 0 4px 13px; color: var(--navy); }
-.today-panel-heading small, .completed-panel-heading small { font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
-.today-panel-heading h2 { margin-top: 5px; color: var(--navy); font-size: 18px; }
+.today-panel-heading { margin-bottom: -1px; }
 .today-pending-panel .today-task { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; justify-content: stretch; gap: 13px; padding: 15px; border: 0; border-radius: 18px; background: white; box-shadow: none; }
 .today-pending-panel .today-routine-card {
   position: relative;
@@ -732,9 +762,7 @@ ion-input {
 .today-task-stack-row span:first-child { min-width: 0; overflow: hidden; color: var(--muted); font-size: 12px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
 .today-task-stack-row .status-pill { flex: 0 0 96px; padding: 6px 9px; font-size: 10px; text-align: center; }
 .upcoming-checks-section { margin-top: 14px; }
-.upcoming-checks-heading { padding: 0 4px 9px; color: var(--navy); }
-.upcoming-checks-heading small { font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
-.upcoming-checks-heading h2 { margin-top: 4px; font-size: 17px; }
+.upcoming-checks-heading { margin-bottom: -1px; }
 .upcoming-checks-list { display: grid; gap: 9px; }
 .upcoming-check-card {
   display: grid;
@@ -749,8 +777,6 @@ ion-input {
 }
 .upcoming-check-card h3 { margin: 0; overflow: hidden; color: var(--navy); font-size: 14px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
 .upcoming-check-card p { margin: 3px 0 0; color: var(--muted); font-size: 12px; font-weight: 800; }
-.completed-panel-heading { margin: 20px 0 10px; padding: var(--row-padding-y) var(--row-padding-x); border-radius: 22px; background: var(--surface); }
-.completed-panel-heading p { margin: 4px 0 0; font-size: 13px; }
 .today-task.completed { padding: var(--row-padding-y) var(--row-padding-x); border-radius: 22px; }
 @media (max-width: 430px) {
   .today-routine-primary { grid-template-columns: minmax(0, 1fr) auto; gap: 9px; }
@@ -1314,9 +1340,6 @@ ion-input {
 .app-compact .section-heading h2,
 .app-compact .dashboard-summary-section > h2,
 .app-compact .section-heading small,
-.app-compact .today-panel-heading small,
-.app-compact .completed-panel-heading small,
-.app-compact .upcoming-checks-heading small,
 .app-compact .filter-group > span,
 .app-compact .routine-catalog-heading small,
 .app-compact .routine-plan-stats small {
@@ -1455,6 +1478,9 @@ ion-input {
   grid-template-columns: repeat(2, 36px);
   gap: 6px;
 }
+.app-compact .participant-review-actions {
+  grid-template-columns: minmax(82px, auto);
+}
 .app-compact .parent-review-button {
   width: 36px;
   min-height: 36px;
@@ -1463,6 +1489,10 @@ ion-input {
   font-size: 19px;
 }
 .app-compact .parent-review-button .app-icon { font-size: 20px; }
+.app-compact .participant-retake-button {
+  min-height: 36px;
+  padding: 7px 10px;
+}
 .app-compact .today-routine-primary { gap: 9px; }
 .app-compact .today-task-stack {
   gap: 5px;
@@ -1620,7 +1650,6 @@ ion-input {
   box-shadow: none;
 }
 .today-pending-panel .today-task { border-radius: 19px; box-shadow: 0 10px 24px color-mix(in srgb, var(--routine-accent, var(--teal)) 18%, transparent); }
-.completed-panel-heading { border: 1px solid rgba(255,255,255,.76); box-shadow: inset 0 1px rgba(255,255,255,.62); }
 
 .routine-card {
   border: 1px solid rgba(255,255,255,.94);

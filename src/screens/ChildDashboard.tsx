@@ -51,6 +51,12 @@ export function ChildDashboard({
     && isToday(event.capturedAt)
     && !['pending', 'analyzing'].includes(event.status)
   ));
+  const attentionCompleted = completed
+    .map((event) => ({
+      event,
+      canRetake: Boolean(retake) && canRetakeCapture(event, state.events, new Date(now)),
+    }))
+    .filter((entry) => entry.canRetake);
   const historyEvents = useMemo(
     () => withResolvedEventStatuses(state.events, now)
       .filter((event) => !['pending', 'analyzing'].includes(event.status)),
@@ -101,7 +107,7 @@ export function ChildDashboard({
   const pendingSection = (
     <section className="today-section" aria-labelledby="pending-tasks-title">
       <div className="today-pending-panel">
-        <div className="today-panel-heading"><div><small>{t('toDoToday')}</small><h2 id="pending-tasks-title">{actionableCount} {t(actionableCount === 1 ? 'checkToComplete' : 'checksToComplete')}</h2></div></div>
+        <div className="section-heading today-panel-heading"><h2 id="pending-tasks-title">{actionableCount} {t(actionableCount === 1 ? 'checkToComplete' : 'checksToComplete')}</h2></div>
         <div className="today-task-list">
         {pendingGroups.map((group) => {
           const main = group.events.find((event) => event.id === active?.id) ?? group.events[0];
@@ -142,33 +148,49 @@ export function ChildDashboard({
       </div>
     </section>
   );
-  const completedSection = (
-    <section className="today-section" aria-labelledby="completed-tasks-title">
-      <div className="completed-panel-heading"><div><small id="completed-tasks-title">{t('completedToday')}</small><p>{completed.length} {t(completed.length === 1 ? 'checkCompleted' : 'checksCompleted')}</p></div></div>
-      <div className="today-task-list">
-        {completed.map((event) => {
-          const canRetake = Boolean(retake) && canRetakeCapture(event, state.events, new Date(now));
+  const attentionSection = attentionCompleted.length > 0 && (
+    <section className="settings-section parent-review-section participant-review-section" aria-labelledby="participant-review-title">
+      <div className="section-heading parent-review-heading">
+        <h2 id="participant-review-title">{t('participantReviewTitle')}</h2>
+        <span>{attentionCompleted.length}</span>
+      </div>
+      <div className="parent-review-list participant-review-list">
+        {attentionCompleted.map(({ event }) => {
+          const presentation = presentationFor(event);
+          const statusLabel = event.status === 'not_detected' ? t('notDetected') : t('uncertain');
           return (
-            <article className="card today-task completed" style={presentationFor(event).style} key={event.id}>
-              <div className="today-task-copy"><span className="settings-row-icon today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(presentationFor(event).icon)} /></span><div><h3>{presentationFor(event).name}</h3><p>{formatTime(event.capturedAt ?? event.expiresAt)}</p></div></div>
-              <div className="today-task-actions">
-                <StatusPill status={event.status} t={t} />
-                {canRetake ? <button type="button" className="history-retake-button today-retake-button" onClick={() => retake?.(event)}>{t('retakeShort')}</button> : null}
+            <article className="card parent-review-card participant-review-card" style={presentation.style} key={event.id}>
+              <div className="parent-review-main participant-review-main">
+                <div className="parent-review-image participant-review-image" aria-hidden="true">
+                  <span className="settings-row-icon today-task-icon"><AppIcon name={routineIconName(presentation.icon)} /></span>
+                </div>
+                <div className="parent-review-copy participant-review-copy">
+                  <div className="parent-review-title-row">
+                    <strong>{presentation.name}</strong>
+                    <small>{formatTime(event.capturedAt ?? event.expiresAt)}</small>
+                  </div>
+                  <div className="parent-review-analysis">
+                    <span>{t('analysisVerdict')}: {statusLabel}</span>
+                  </div>
+                  <p>{t('participantReviewHint')}</p>
+                </div>
+                <div className="parent-review-actions participant-review-actions">
+                  <button type="button" className="primary-action-button participant-retake-button today-retake-button" onClick={() => retake?.(event)}>
+                    <AppIcon name="camera" />
+                    {t('retakeShort')}
+                  </button>
+                </div>
               </div>
             </article>
           );
         })}
-        {!completed.length && <p className="today-empty-copy">{t('nothingCompletedYet')}</p>}
       </div>
     </section>
   );
   const upcomingSection = upcomingChecks.length > 0 && (
     <section className="today-section upcoming-checks-section" aria-labelledby="upcoming-checks-title">
-      <div className="upcoming-checks-heading">
-        <div>
-          <small>{t('upcomingChecks')}</small>
-          <h2 id="upcoming-checks-title">{t('nextControls')}</h2>
-        </div>
+      <div className="section-heading upcoming-checks-heading">
+        <h2 id="upcoming-checks-title">{t('upcomingChecks')}</h2>
       </div>
       <div className="upcoming-checks-list">
         {upcomingChecks.map((item) => (
@@ -198,7 +220,7 @@ export function ChildDashboard({
       </header>
       {pendingSection}
       {upcomingSection}
-      {completedSection}
+      {attentionSection}
       {historySection}
       <Disclaimer t={t} />
     </div>

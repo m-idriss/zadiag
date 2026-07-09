@@ -7,6 +7,7 @@ const finalStatuses = new Set([
   'missed',
   'expired',
 ]);
+const retakeWindowMs = 15 * 60_000;
 
 export function adherenceSummary(events: VerificationEvent[]) {
   const completed = events.filter((event) => finalStatuses.has(event.status));
@@ -57,8 +58,11 @@ export function isFreshCapture(
   const expiresAt = new Date(event.expiresAt);
   const isNewSubmission = event.status === 'pending' && !event.capturedAt;
   const isRetake = ['not_detected', 'uncertain'].includes(event.status) && Boolean(event.capturedAt);
+  const firstCapturedAt = event.capturedAt ? new Date(event.capturedAt) : undefined;
+  const retakeExpiresAt = firstCapturedAt ? new Date(firstCapturedAt.getTime() + retakeWindowMs) : undefined;
   return (
     capturedAt >= requestedAt &&
+    (!isRetake || (firstCapturedAt !== undefined && retakeExpiresAt !== undefined && capturedAt >= firstCapturedAt && now <= retakeExpiresAt)) &&
     capturedAt <= now &&
     now <= expiresAt &&
     (isNewSubmission || isRetake)
@@ -73,12 +77,16 @@ export function canRetakeCapture(
   if (!['not_detected', 'uncertain'].includes(event.status) || !event.capturedAt) return false;
   const requestedAt = Date.parse(event.requestedAt);
   const expiresAt = Date.parse(event.expiresAt);
+  const firstCapturedAt = Date.parse(event.capturedAt);
   const nowTime = now.getTime();
+  if (!Number.isFinite(firstCapturedAt)) return false;
+  if (nowTime < firstCapturedAt) return false;
   const nextRoutineCheck = events
     .filter((candidate) => candidate.routineId === event.routineId && Date.parse(candidate.requestedAt) > requestedAt)
     .sort((a, b) => Date.parse(a.requestedAt) - Date.parse(b.requestedAt))[0];
   const nextCheckAt = nextRoutineCheck ? Date.parse(nextRoutineCheck.requestedAt) : undefined;
-  const retryUntil = nextCheckAt ? Math.min(expiresAt, nextCheckAt) : expiresAt;
+  const retakeExpiresAt = firstCapturedAt + retakeWindowMs;
+  const retryUntil = nextCheckAt ? Math.min(expiresAt, nextCheckAt, retakeExpiresAt) : Math.min(expiresAt, retakeExpiresAt);
   if (!Number.isFinite(retryUntil)) return false;
   return nextCheckAt && nextCheckAt <= expiresAt ? nowTime < retryUntil : nowTime <= retryUntil;
 }

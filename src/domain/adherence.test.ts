@@ -52,7 +52,7 @@ describe('isFreshCapture', () => {
     expect(isFreshCapture({ ...pending, capturedAt: '2026-06-30T12:03:00.000Z' }, new Date('2026-06-30T12:05:00.000Z'), new Date('2026-06-30T12:06:00.000Z'))).toBe(false);
   });
 
-  it('allows a retake for non-positive results while the check window is still open', () => {
+  it('allows a prompt retake for non-positive results while the check window is still open', () => {
     const failed = { ...event('not_detected'), capturedAt: '2026-06-30T12:04:00.000Z' };
     const unclear = { ...event('uncertain'), capturedAt: '2026-06-30T12:04:00.000Z' };
     const success = { ...event('detected'), capturedAt: '2026-06-30T12:04:00.000Z' };
@@ -60,14 +60,18 @@ describe('isFreshCapture', () => {
     expect(isFreshCapture(unclear, new Date('2026-06-30T12:07:00.000Z'), new Date('2026-06-30T12:08:00.000Z'))).toBe(true);
     expect(isFreshCapture(success, new Date('2026-06-30T12:07:00.000Z'), new Date('2026-06-30T12:08:00.000Z'))).toBe(false);
     expect(isFreshCapture(failed, new Date('2026-06-30T12:07:00.000Z'), new Date('2026-06-30T12:21:00.000Z'))).toBe(false);
+    expect(isFreshCapture(failed, new Date('2026-06-30T12:20:00.000Z'), new Date('2026-06-30T12:20:00.000Z'))).toBe(false);
   });
 });
 
 describe('canRetakeCapture', () => {
-  it('allows non-positive captured results until their window or next routine check starts', () => {
+  it('allows non-positive captured results for a short retake window', () => {
     const failed = { ...event('not_detected'), capturedAt: '2026-06-30T12:04:00.000Z' };
     expect(canRetakeCapture(failed, [failed], new Date('2026-06-30T12:08:00.000Z'))).toBe(true);
+    expect(canRetakeCapture(failed, [failed], new Date('2026-06-30T12:19:00.000Z'))).toBe(true);
+    expect(canRetakeCapture(failed, [failed], new Date('2026-06-30T12:20:00.000Z'))).toBe(false);
     expect(canRetakeCapture(failed, [failed], new Date('2026-06-30T12:21:00.000Z'))).toBe(false);
+    expect(canRetakeCapture(failed, [failed], new Date('2026-06-30T12:03:00.000Z'))).toBe(false);
     expect(canRetakeCapture({ ...failed, status: 'detected' }, [failed], new Date('2026-06-30T12:08:00.000Z'))).toBe(false);
   });
 
