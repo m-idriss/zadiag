@@ -7,7 +7,6 @@ import { BottomNav, type Tab } from './components/BottomNav';
 import { SplashScreen } from './components/SplashScreen';
 import { Snackbar } from './components/Snackbar';
 import { isSummaryRange, type SummaryRange } from './components/AdherenceSummaryCard';
-import { PushSetupError, WebPushGateway } from './services/webPush';
 import { firebaseEnabled } from './services/firebaseConfig';
 import { browserRouteContext, isLocalDemoEnvironment, routineCentricUiEnabled } from './services/browserEnvironment';
 import { runWhenStartupIsIdle } from './services/appUpdate';
@@ -231,6 +230,7 @@ export function App() {
       await repository.savePushSubscription({ endpoint: 'local-demo' } as PushSubscriptionJSON);
       return;
     }
+    const { PushSetupError, WebPushGateway } = await import('./services/webPush');
     const push = new WebPushGateway();
     const permission = await push.permission();
     if (permission === 'denied') throw new PushSetupError('notification_permission_denied');

@@ -18,7 +18,6 @@ import {
   DEFAULT_ROUTINE_ID,
   normalizeAppPreferences,
   type AppPreferences,
-  type AppState,
   type Locale,
   type MonitoringPlan,
   type Role,
@@ -29,10 +28,7 @@ import {
 } from '../domain/models';
 import { routineFromCatalog } from '../domain/routineCatalog';
 import { isFreshCapture } from '../domain/adherence';
-
-const PREFERENCES_KEY = 'zadiag.preferences.v1';
-
-const browserLocale = (): Locale => navigator.language?.startsWith('fr') ? 'fr' : 'en';
+import { initialRemoteState, PREFERENCES_KEY } from './appStateDefaults';
 
 interface UserProfile {
   familyId: string;
@@ -55,22 +51,6 @@ interface FamilyDocument {
   members?: Record<string, string>;
   notificationPreferences?: Partial<Pick<AppPreferences, 'reminderRepeatMinutes'>>;
 }
-
-const initialState = (): AppState => {
-  const preferences = JSON.parse(localStorage.getItem(PREFERENCES_KEY) ?? '{}') as Partial<AppPreferences> & { locale?: Locale; role?: Role };
-  return {
-    locale: preferences.locale ?? browserLocale(),
-    notificationsEnabled: false,
-    pushHealth: { permission: 'Notification' in window ? Notification.permission : 'unsupported', endpointPresent: false },
-    role: preferences.role,
-    preferences: normalizeAppPreferences(preferences),
-    family: { linked: false, childLinked: false, childName: '', linkingCode: '', parentRecoveryCode: '', consented: false },
-    routineAssignments: [],
-    routinesLoaded: false,
-    routinesError: false,
-    events: [],
-  };
-};
 
 const asReviewStatus = (value: unknown): VerificationEvent['reviewStatus'] =>
   value === 'pending' || value === 'approved' || value === 'rejected' ? value : undefined;
@@ -125,7 +105,7 @@ const asRoutineAssignment = (id: string, data: DocumentData): RoutineAssignment 
 
 export class FirebaseRepository implements AppRepository {
   private readonly services: FirebaseServices = getFirebaseServices();
-  private state = initialState();
+  private state = initialRemoteState();
   private listeners = new Set<() => void>();
   private remoteSubscriptions: Unsubscribe[] = [];
   private user?: User;
@@ -354,7 +334,7 @@ export class FirebaseRepository implements AppRepository {
     }
     await signOut(this.services.auth);
     localStorage.removeItem(PREFERENCES_KEY);
-    this.state = initialState();
+    this.state = initialRemoteState();
     this.emit();
     await this.initialize();
   }

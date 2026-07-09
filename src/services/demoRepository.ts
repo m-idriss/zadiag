@@ -12,12 +12,11 @@ import { routineFromCatalog } from '../domain/routineCatalog';
 import { isFreshCapture } from '../domain/adherence';
 import { responseWindowExpiresAt } from '../domain/monitoringPlan';
 import type { AppRepository } from './contracts';
+import { browserLocale } from './appStateDefaults';
 
 const STORAGE_KEY = 'zadiag.demo.v1';
 const HYDRATION_ROUTINE_ID = 'daily-hydration';
 const DEMO_PROGRESS_EVENT_PREFIX = 'demo-progress-';
-
-const browserLocale = (): AppState['locale'] => navigator.language?.startsWith('fr') ? 'fr' : 'en';
 
 const dayInMonth = (now: Date, monthOffset: number, dayOfMonth: number, hour: number) => {
   const year = now.getFullYear();
