@@ -21,6 +21,8 @@ export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureP
   const [opening, setOpening] = useState(false);
   const [permissionState, setPermissionState] = useState<PermissionState | 'unknown'>('unknown');
   const autoOpenedRef = useRef(false);
+  const captureMaxSide = 1600;
+  const captureJpegQuality = 0.9;
 
   const stopCamera = () => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -40,8 +42,8 @@ export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureP
         audio: false,
         video: {
           facingMode: 'user',
-          width: { ideal: 1280 },
-          height: { ideal: 960 },
+          width: { ideal: 1920 },
+          height: { ideal: 1440 },
         },
       });
       streamRef.current = stream;
@@ -92,8 +94,7 @@ export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureP
     const video = videoRef.current;
     if (!video || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
     const canvas = document.createElement('canvas');
-    const maxSide = 960;
-    const scale = Math.min(1, maxSide / Math.max(video.videoWidth, video.videoHeight));
+    const scale = Math.min(1, captureMaxSide / Math.max(video.videoWidth, video.videoHeight));
     canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
     canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
     canvas.getContext('2d')?.drawImage(video, 0, 0);
@@ -101,7 +102,7 @@ export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureP
     setCapturedAt(timestamp);
     setLocalCheckError(undefined);
     setLocalCheckWarning(undefined);
-    setPreview(canvas.toDataURL('image/jpeg', 0.72));
+    setPreview(canvas.toDataURL('image/jpeg', captureJpegQuality));
     stopCamera();
   };
 
