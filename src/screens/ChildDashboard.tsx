@@ -7,7 +7,7 @@ import { AppIcon, routineIconName } from '../components/Icon';
 import { RoutineHistoryPanel } from '../components/RoutineHistoryPanel';
 import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } from '../components/AdherenceSummaryCard';
 import { presentRoutine } from '../domain/routinePresentation';
-import { dayPeriodLabelKey, plannedWindowLabel } from '../domain/taskTimeLabel';
+import { eventWindowLabel, plannedWindowLabel } from '../domain/taskTimeLabel';
 import { canRetakeCapture, resolvedEventStatus, withResolvedEventStatuses } from '../domain/adherence';
 import { nextPlannedWindow } from '../domain/monitoringPlan';
 
@@ -122,7 +122,7 @@ export function ChildDashboard({
                     <span className="settings-row-icon today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(presentation.icon)} /></span>
                     <div>
                       <h3>{presentation.name}</h3>
-                      <p className="today-task-time">{t(dayPeriodLabelKey(main.expiresAt))} · {t('before')} {formatTime(main.expiresAt)}</p>
+                      <p className="today-task-time">{eventWindowLabel(main.requestedAt, main.expiresAt, new Date(now), locale, t)}</p>
                     </div>
                   </div>
                   {actionable
@@ -133,7 +133,7 @@ export function ChildDashboard({
                   <div className="today-task-stack">
                     {stacked.map((event) => (
                       <div className="today-task-stack-row" key={event.id}>
-                        <span>{t(dayPeriodLabelKey(event.expiresAt))} · {t('before')} {formatTime(event.expiresAt)}</span>
+                        <span>{eventWindowLabel(event.requestedAt, event.expiresAt, new Date(now), locale, t)}</span>
                         <StatusPill status={resolvedEventStatus(event, now)} t={t} />
                       </div>
                     ))}
@@ -198,7 +198,7 @@ export function ChildDashboard({
             <span className="settings-row-icon today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(item.presentation.icon)} /></span>
             <div>
               <h3>{item.presentation.name}</h3>
-              <p>{plannedWindowLabel(item.planned.end, new Date(now), locale, t)}</p>
+              <p>{plannedWindowLabel(item.planned.start, item.planned.end, new Date(now), locale, t)}</p>
             </div>
           </article>
         ))}

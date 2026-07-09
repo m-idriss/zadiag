@@ -6,7 +6,7 @@ import { CodeBox } from '../components/CodeBox';
 import { RoutineHistoryPanel } from '../components/RoutineHistoryPanel';
 import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } from '../components/AdherenceSummaryCard';
 import { presentRoutine } from '../domain/routinePresentation';
-import { dayPeriodLabelKey, plannedWindowLabel } from '../domain/taskTimeLabel';
+import { eventWindowLabel, plannedWindowLabel } from '../domain/taskTimeLabel';
 import { withResolvedEventStatuses } from '../domain/adherence';
 import { EmptyState } from '../components/ui';
 import { nextPlannedWindow } from '../domain/monitoringPlan';
@@ -208,7 +208,7 @@ export function ParentDashboard({
                               <span className="settings-row-icon today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(presentation.icon)} /></span>
                               <div>
                                 <h3>{presentation.name}</h3>
-                                <p className="today-task-time">{t(dayPeriodLabelKey(event.expiresAt))} · {t('before')} {formatTime(event.expiresAt)}</p>
+                                <p className="today-task-time">{eventWindowLabel(event.requestedAt, event.expiresAt, new Date(now), locale, t)}</p>
                               </div>
                             </div>
                             {requestCheck ? (
@@ -305,7 +305,7 @@ export function ParentDashboard({
                 <span className="settings-row-icon today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(item.presentation.icon)} /></span>
                 <div>
                   <h3>{item.presentation.name}</h3>
-                  <p>{plannedWindowLabel(item.planned.end, new Date(now), locale, t)}</p>
+                  <p>{plannedWindowLabel(item.planned.start, item.planned.end, new Date(now), locale, t)}</p>
                 </div>
               </article>
             ))}

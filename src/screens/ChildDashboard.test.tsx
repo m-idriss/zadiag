@@ -195,7 +195,7 @@ describe('participant Today screen', () => {
     expect(container.textContent).toContain('0 checks to complete');
     expect(container.textContent).toContain('Upcoming checks');
     expect(container.textContent).toContain('Orthodontic Elastics');
-    expect(container.textContent).toContain('Before');
+    expect(container.textContent).not.toContain('Before');
   });
 
   it('labels morning checks without calling them evening', () => {

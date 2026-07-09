@@ -19,15 +19,25 @@ const nextDay = (date: Date) => {
 };
 
 export const plannedWindowLabel = (
+  windowStart: Date,
   windowEnd: Date,
   now: Date,
   locale: string,
   t: (key: MessageKey) => string,
 ) => {
-  const dayLabel = isSameLocalDay(windowEnd, now)
-    ? t(dayPeriodLabelKey(windowEnd.toISOString()))
-    : isSameLocalDay(windowEnd, nextDay(now))
+  const dayLabel = isSameLocalDay(windowStart, now)
+    ? t(dayPeriodLabelKey(windowStart.toISOString()))
+    : isSameLocalDay(windowStart, nextDay(now))
       ? t('tomorrow')
-      : new Intl.DateTimeFormat(locale, { weekday: 'long' }).format(windowEnd);
-  return `${dayLabel} · ${t('before')} ${new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(windowEnd)}`;
+      : new Intl.DateTimeFormat(locale, { weekday: 'long' }).format(windowStart);
+  const formatter = new Intl.DateTimeFormat(locale, { timeStyle: 'short' });
+  return `${dayLabel} · ${formatter.format(windowStart)}-${formatter.format(windowEnd)}`;
 };
+
+export const eventWindowLabel = (
+  windowStart: string,
+  windowEnd: string,
+  now: Date,
+  locale: string,
+  t: (key: MessageKey) => string,
+) => plannedWindowLabel(new Date(windowStart), new Date(windowEnd), now, locale, t);
