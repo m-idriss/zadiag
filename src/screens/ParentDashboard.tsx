@@ -6,9 +6,10 @@ import { CodeBox } from '../components/CodeBox';
 import { RoutineHistoryPanel } from '../components/RoutineHistoryPanel';
 import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } from '../components/AdherenceSummaryCard';
 import { presentRoutine } from '../domain/routinePresentation';
-import { dayPeriodLabelKey } from '../domain/taskTimeLabel';
+import { dayPeriodLabelKey, plannedWindowLabel } from '../domain/taskTimeLabel';
 import { withResolvedEventStatuses } from '../domain/adherence';
 import { EmptyState } from '../components/ui';
+import { nextPlannedWindow } from '../domain/monitoringPlan';
 
 export function ParentDashboard({
   state,
@@ -54,11 +55,24 @@ export function ParentDashboard({
   [state.events]);
   const locale = state.locale === 'fr' ? 'fr-FR' : 'en-US';
   const activePendingEvents = state.events.filter((event) => event.status === 'pending' && Date.parse(event.expiresAt) > now);
+  const upcomingChecks = state.routineAssignments
+    .map((assignment) => {
+      const planned = nextPlannedWindow(assignment.plan, new Date(now));
+      if (!planned) return undefined;
+      return {
+        id: assignment.id,
+        planned,
+        presentation: presentRoutine(assignment.routine, state.locale),
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
+    .sort((a, b) => a.planned.start.getTime() - b.planned.start.getTime())
+    .slice(0, 3);
   const responsibleEmptyState = !state.family.childLinked
     ? { icon: 'link' as const, title: t('responsibleEmptyParticipantNotLinkedTitle'), hint: t('responsibleEmptyParticipantNotLinkedHint') }
     : !state.routineAssignments.length
       ? { icon: 'add' as const, title: t('responsibleEmptyNoRoutineTitle'), hint: t('responsibleEmptyNoRoutineHint') }
-      : !state.events.length
+      : !state.events.length && !upcomingChecks.length
           ? { icon: 'notifications' as const, title: t('responsibleEmptyNoCheckTitle'), hint: t('responsibleEmptyNoCheckHint') }
           : undefined;
   const formatDateTime = (value: string) => new Intl.DateTimeFormat(locale, {
@@ -276,6 +290,25 @@ export function ParentDashboard({
                 <button type="button" className="request-check" onClick={onCreateRoutine}>{t('chooseRoutine')}</button>
               </section>
             ) : null}
+          </div>
+        </section>
+      ) : null}
+
+      {!activePendingEvents.length && state.family.childLinked && state.routineAssignments.length && upcomingChecks.length ? (
+        <section className="today-section upcoming-checks-section" aria-labelledby="responsible-upcoming-checks-title">
+          <div className="section-heading upcoming-checks-heading">
+            <h2 id="responsible-upcoming-checks-title">{t('upcomingChecks')}</h2>
+          </div>
+          <div className="upcoming-checks-list">
+            {upcomingChecks.map((item) => (
+              <article className="upcoming-check-card" style={item.presentation.style} key={item.id}>
+                <span className="settings-row-icon today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(item.presentation.icon)} /></span>
+                <div>
+                  <h3>{item.presentation.name}</h3>
+                  <p>{plannedWindowLabel(item.planned.end, new Date(now), locale, t)}</p>
+                </div>
+              </article>
+            ))}
           </div>
         </section>
       ) : null}

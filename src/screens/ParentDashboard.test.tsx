@@ -50,6 +50,25 @@ describe('ParentDashboard', () => {
     expect(container.textContent).not.toContain('Needs attention');
   });
 
+  it('shows upcoming checks when no responsible check is active', () => {
+    const assignment = createDefaultRoutineAssignment();
+    const state: AppState = {
+      role: 'parent',
+      locale: 'en',
+      notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      routineAssignments: [assignment],
+      events: [],
+    };
+
+    act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
+
+    expect(container.textContent).toContain('Upcoming checks');
+    expect(container.textContent).toContain('Orthodontic Elastics');
+    expect(container.textContent).not.toContain('Active checks');
+    expect(container.textContent).not.toContain('No active check yet');
+  });
+
   it('combines routine and status filter push buttons without all buttons', () => {
     const hydration = routineFromCatalog('daily-hydration');
     if (!hydration) throw new Error('missing_hydration_routine');
@@ -165,7 +184,7 @@ describe('ParentDashboard', () => {
     expect(container.textContent).not.toContain('ZD-123456');
   });
 
-  it('distinguishes no requested check from an active check to complete', () => {
+  it('distinguishes upcoming checks from an active check to complete', () => {
     const assignment = createDefaultRoutineAssignment();
     const baseState: AppState = {
       role: 'parent',
@@ -178,7 +197,8 @@ describe('ParentDashboard', () => {
 
     act(() => root.render(<ParentDashboard state={baseState} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
 
-    expect(container.textContent).toContain('No check requested yet');
+    expect(container.textContent).toContain('Upcoming checks');
+    expect(container.textContent).not.toContain('Active checks');
 
     act(() => root.render(
       <ParentDashboard
