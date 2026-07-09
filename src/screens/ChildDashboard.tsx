@@ -9,7 +9,7 @@ import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } f
 import { presentRoutine } from '../domain/routinePresentation';
 import { eventWindowLabel, plannedWindowLabel } from '../domain/taskTimeLabel';
 import { canRetakeCapture, resolvedEventStatus, withResolvedEventStatuses } from '../domain/adherence';
-import { nextPlannedWindow } from '../domain/monitoringPlan';
+import { upcomingRoutineChecks } from '../domain/dashboardChecks';
 
 const isToday = (value: string, now = new Date()) => {
   const date = new Date(value);
@@ -39,6 +39,7 @@ export function ChildDashboard({
   const summaryRange = controlledSummaryRange ?? localSummaryRange;
   const setSummaryRange = onSummaryRangeChange ?? setLocalSummaryRange;
   const now = Date.now();
+  const nowDate = useMemo(() => new Date(now), [now]);
   const participantInitial = state.family.childName.trim().charAt(0).toUpperCase() || '?';
   const today = state.events.filter((event) => isToday(event.requestedAt));
   const pending = today.filter((event) => (
@@ -54,7 +55,7 @@ export function ChildDashboard({
   const attentionCompleted = completed
     .map((event) => ({
       event,
-      canRetake: Boolean(retake) && canRetakeCapture(event, state.events, new Date(now)),
+      canRetake: Boolean(retake) && canRetakeCapture(event, state.events, nowDate),
     }))
     .filter((entry) => entry.canRetake);
   const historyEvents = useMemo(
@@ -90,20 +91,12 @@ export function ChildDashboard({
       if (aActive !== bActive) return aActive ? -1 : 1;
       return Date.parse(a.events[0]?.expiresAt ?? '') - Date.parse(b.events[0]?.expiresAt ?? '');
     });
-  const upcomingChecks = state.routineAssignments
-    .map((assignment) => {
-      const planned = nextPlannedWindow(assignment.plan, new Date(now));
-      if (!planned) return undefined;
-      return {
-        id: assignment.id,
-        routineId: assignment.routineId,
-        planned,
-        presentation: presentRoutine(assignment.routine, state.locale),
-      };
-    })
-    .filter((item): item is NonNullable<typeof item> => Boolean(item))
-    .sort((a, b) => a.planned.start.getTime() - b.planned.start.getTime())
-    .slice(0, 3);
+  const upcomingChecks = useMemo(() => upcomingRoutineChecks(state.routineAssignments, nowDate)
+    .map((item) => ({
+      ...item,
+      presentation: presentRoutine(item.assignment.routine, state.locale),
+    })),
+  [nowDate, state.locale, state.routineAssignments]);
   const pendingSection = (
     <section className="today-section" aria-labelledby="pending-tasks-title">
       <div className="today-pending-panel">
@@ -122,7 +115,7 @@ export function ChildDashboard({
                     <span className="settings-row-icon today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(presentation.icon)} /></span>
                     <div>
                       <h3>{presentation.name}</h3>
-                      <p className="today-task-time">{eventWindowLabel(main.requestedAt, main.expiresAt, new Date(now), locale, t)}</p>
+                      <p className="today-task-time">{eventWindowLabel(main.requestedAt, main.expiresAt, nowDate, locale, t)}</p>
                     </div>
                   </div>
                   {actionable
@@ -133,7 +126,7 @@ export function ChildDashboard({
                   <div className="today-task-stack">
                     {stacked.map((event) => (
                       <div className="today-task-stack-row" key={event.id}>
-                        <span>{eventWindowLabel(event.requestedAt, event.expiresAt, new Date(now), locale, t)}</span>
+                        <span>{eventWindowLabel(event.requestedAt, event.expiresAt, nowDate, locale, t)}</span>
                         <StatusPill status={resolvedEventStatus(event, now)} t={t} />
                       </div>
                     ))}
@@ -198,7 +191,7 @@ export function ChildDashboard({
             <span className="settings-row-icon today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(item.presentation.icon)} /></span>
             <div>
               <h3>{item.presentation.name}</h3>
-              <p>{plannedWindowLabel(item.planned.start, item.planned.end, new Date(now), locale, t)}</p>
+              <p>{plannedWindowLabel(item.planned.start, item.planned.end, nowDate, locale, t)}</p>
             </div>
           </article>
         ))}

@@ -9,7 +9,7 @@ import { presentRoutine } from '../domain/routinePresentation';
 import { eventWindowLabel, plannedWindowLabel } from '../domain/taskTimeLabel';
 import { withResolvedEventStatuses } from '../domain/adherence';
 import { EmptyState } from '../components/ui';
-import { nextPlannedWindow } from '../domain/monitoringPlan';
+import { activePendingEvents as activePendingChecks, upcomingRoutineChecks } from '../domain/dashboardChecks';
 
 export function ParentDashboard({
   state,
@@ -64,23 +64,15 @@ export function ParentDashboard({
     presentRoutine(assignment.routine, state.locale),
   ])), [state.locale, state.routineAssignments]);
   const activePendingEvents = useMemo(
-    () => state.events.filter((event) => event.status === 'pending' && Date.parse(event.expiresAt) > now),
+    () => activePendingChecks(state.events, now),
     [now, state.events],
   );
-  const upcomingChecks = useMemo(() => state.routineAssignments
-    .map((assignment) => {
-      const planned = nextPlannedWindow(assignment.plan, nowDate);
-      if (!planned) return undefined;
-      return {
-        id: assignment.id,
-        planned,
-        presentation: presentRoutine(assignment.routine, state.locale),
-      };
-    })
-    .filter((item): item is NonNullable<typeof item> => Boolean(item))
-    .sort((a, b) => a.planned.start.getTime() - b.planned.start.getTime())
-    .slice(0, 3),
-  [now, state.locale, state.routineAssignments]);
+  const upcomingChecks = useMemo(() => upcomingRoutineChecks(state.routineAssignments, nowDate)
+    .map((item) => ({
+      ...item,
+      presentation: presentRoutine(item.assignment.routine, state.locale),
+    })),
+  [nowDate, state.locale, state.routineAssignments]);
   const responsibleEmptyState = !state.family.childLinked
     ? { icon: 'link' as const, title: t('responsibleEmptyParticipantNotLinkedTitle'), hint: t('responsibleEmptyParticipantNotLinkedHint') }
     : !state.routineAssignments.length
@@ -211,7 +203,7 @@ export function ParentDashboard({
                               <span className="settings-row-icon today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(presentation.icon)} /></span>
                               <div>
                                 <h3>{presentation.name}</h3>
-                                <p className="today-task-time">{eventWindowLabel(event.requestedAt, event.expiresAt, new Date(now), locale, t)}</p>
+                                <p className="today-task-time">{eventWindowLabel(event.requestedAt, event.expiresAt, nowDate, locale, t)}</p>
                               </div>
                             </div>
                             {requestCheck ? (
@@ -308,7 +300,7 @@ export function ParentDashboard({
                 <span className="settings-row-icon today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(item.presentation.icon)} /></span>
                 <div>
                   <h3>{item.presentation.name}</h3>
-                  <p>{plannedWindowLabel(item.planned.start, item.planned.end, new Date(now), locale, t)}</p>
+                  <p>{plannedWindowLabel(item.planned.start, item.planned.end, nowDate, locale, t)}</p>
                 </div>
               </article>
             ))}
