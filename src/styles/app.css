@@ -452,15 +452,15 @@ ion-input {
 .filter-chips .filter-status-uncertain { background: #fff0d9; color: #b87218; }
 .filter-chips .filter-status-missed,
 .filter-chips .filter-status-expired,
-.filter-chips .filter-status-pending,
 .filter-chips .filter-status-analyzing { background: #edf0f2; color: #697983; }
+.filter-chips .filter-status-pending { background: #e8f1f7; color: var(--navy); }
 .filter-chips .filter-status-not_detected { background: #fdebe7; color: var(--coral); }
 .filter-chips .filter-status-detected.active { background: var(--teal); color: white; }
 .filter-chips .filter-status-uncertain.active { background: #b87218; color: white; }
 .filter-chips .filter-status-missed.active,
 .filter-chips .filter-status-expired.active,
-.filter-chips .filter-status-pending.active,
 .filter-chips .filter-status-analyzing.active { background: #697983; color: white; }
+.filter-chips .filter-status-pending.active { background: var(--navy); color: white; }
 .filter-chips .filter-status-not_detected.active { background: var(--coral); color: white; }
 .parent-create-routine-card { display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: center; gap: 12px; margin-top: 12px; padding: var(--row-padding-y) var(--row-padding-x); }
 .parent-create-routine-icon,
@@ -639,6 +639,7 @@ ion-input {
 .status-pill { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; white-space: nowrap; padding: 7px 10px; border-radius: 99px; background: #eef2f4; color: var(--navy); font-weight: 900; font-size: 11px; text-transform: capitalize; }
 .status-detected { background: var(--mint); color: var(--teal); }
 .status-uncertain { background: #fff0d9; color: #b87218; }
+.status-pending { background: #e8f1f7; color: var(--navy); }
 .status-missed, .status-expired { background: #edf0f2; color: #697983; }
 .status-not_detected { background: #fdebe7; color: var(--coral); }
 
