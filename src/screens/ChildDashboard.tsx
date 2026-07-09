@@ -93,9 +93,13 @@ export function ChildDashboard({
     });
   const settledToday = withResolvedEventStatuses(today, now)
     .filter((event) => !['pending', 'analyzing'].includes(event.status));
+  const missedTodayCount = settledToday.filter((event) => ['missed', 'expired'].includes(event.status)).length;
   const hasAttentionToday = settledToday.some((event) => event.status !== 'detected');
   const emptyTodayTitle = hasAttentionToday ? t('keepGoing') : t('niceWork');
   const emptyTodayHint = hasAttentionToday ? t('missedTodayHint') : t('nextCheckHint');
+  const missedTodayLabel = missedTodayCount > 0
+    ? t(missedTodayCount === 1 ? 'missedTodayCountOne' : 'missedTodayCountMany').replace('{count}', String(missedTodayCount))
+    : undefined;
   const upcomingChecks = useMemo(() => upcomingRoutineChecks(state.routineAssignments, nowDate)
     .map((item) => ({
       ...item,
@@ -141,7 +145,14 @@ export function ChildDashboard({
             </article>
           );
         })}
-        {!pending.length && <section className="check-card today-empty"><span className="eyebrow">{t('allDone')}</span><h2>{emptyTodayTitle}</h2><p>{emptyTodayHint}</p></section>}
+        {!pending.length && (
+          <section className={`check-card today-empty${hasAttentionToday ? ' has-attention' : ''}`}>
+            <span className="eyebrow">{t('allDone')}</span>
+            {missedTodayLabel ? <strong className="missed-today-badge">{missedTodayLabel}</strong> : null}
+            <h2>{emptyTodayTitle}</h2>
+            <p>{emptyTodayHint}</p>
+          </section>
+        )}
         </div>
       </div>
     </section>

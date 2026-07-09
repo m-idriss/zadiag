@@ -154,6 +154,8 @@ describe('participant Today screen', () => {
     expect(container.textContent).toContain('0 checks to complete');
     expect(container.textContent).not.toContain('Completed today');
     expect(container.textContent).toContain('Keep going.');
+    expect(container.textContent).toContain('2 missed checks');
+    expect(container.querySelector('.missed-today-badge')?.textContent).toBe('2 missed checks');
     expect(container.textContent).not.toContain('Nice work!');
     expect(container.textContent).toContain('Missed');
     expect(container.textContent).toContain('Expired');
@@ -176,7 +178,9 @@ describe('participant Today screen', () => {
 
     expect(container.textContent).toContain('0 contrôles à réaliser');
     expect(container.textContent).toContain('On garde le cap.');
-    expect(container.textContent).toContain('Des contrôles ont été manqués aujourd’hui.');
+    expect(container.textContent).toContain('2 contrôles manqués');
+    expect(container.querySelector('.missed-today-badge')?.textContent).toBe('2 contrôles manqués');
+    expect(container.textContent).toContain('Le prochain créneau permettra de reprendre le rythme.');
     expect(container.textContent).not.toContain('Bravo !');
   });
 

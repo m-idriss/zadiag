@@ -743,8 +743,29 @@ button {
   letter-spacing: .08em;
   box-shadow: inset 0 1px rgba(255,255,255,.82);
 }
+.check-card.today-empty.has-attention {
+  border-color: color-mix(in srgb, var(--coral) 18%, white);
+}
+.check-card.today-empty.has-attention::before {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--coral) 82%, white), var(--coral));
+}
+.missed-today-badge {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  margin-top: 2px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--coral) 11%, white);
+  color: color-mix(in srgb, var(--coral) 86%, var(--navy));
+  font-size: 11px;
+  font-weight: 950;
+  line-height: 1;
+  box-shadow: inset 0 1px rgba(255,255,255,.82);
+}
 .today-empty h2 { margin: 0; color: var(--navy); font-size: 18px; }
-.today-empty p { max-width: 28ch; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.35; }
+.today-empty p { max-width: 24ch; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.35; }
 .history-list { display: grid; gap: 0; }
 .bottom-nav { position: absolute; z-index: 10; bottom: 0; left: 0; right: 0; max-width: 640px; margin: auto; display: flex; justify-content: space-around; padding: 9px 12px calc(8px + env(safe-area-inset-bottom)); background: rgba(255,255,255,.92); border-top: 1px solid rgba(227, 235, 232, .9); box-shadow: 0 -10px 24px rgba(21, 50, 75, .04); backdrop-filter: blur(18px); }
 .bottom-nav button { flex: 1; border: 0; background: transparent; color: #78858d; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; font-weight: 800; }
