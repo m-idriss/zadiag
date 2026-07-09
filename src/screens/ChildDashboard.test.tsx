@@ -153,8 +153,31 @@ describe('participant Today screen', () => {
 
     expect(container.textContent).toContain('0 checks to complete');
     expect(container.textContent).not.toContain('Completed today');
+    expect(container.textContent).toContain('Keep going.');
+    expect(container.textContent).not.toContain('Nice work!');
     expect(container.textContent).toContain('Missed');
     expect(container.textContent).toContain('Expired');
+  });
+
+  it('does not congratulate the participant after missed checks today', () => {
+    const state: AppState = {
+      role: 'child',
+      locale: 'fr',
+      notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Yoan', linkingCode: '', parentRecoveryCode: '', consented: false },
+      routineAssignments: [createDefaultRoutineAssignment()],
+      events: [
+        event('missed-one', 'missed', atToday(8), atToday(9)),
+        event('missed-two', 'missed', atToday(10), atToday(11)),
+      ],
+    };
+
+    act(() => root.render(<ChildDashboard state={state} start={() => undefined} t={(key) => translate('fr', key)} />));
+
+    expect(container.textContent).toContain('0 contrôles à réaliser');
+    expect(container.textContent).toContain('On garde le cap.');
+    expect(container.textContent).toContain('Des contrôles ont été manqués aujourd’hui.');
+    expect(container.textContent).not.toContain('Bravo !');
   });
 
   it('keeps a captured check in the overview and history without a completed-today section', () => {

@@ -91,6 +91,11 @@ export function ChildDashboard({
       if (aActive !== bActive) return aActive ? -1 : 1;
       return Date.parse(a.events[0]?.expiresAt ?? '') - Date.parse(b.events[0]?.expiresAt ?? '');
     });
+  const settledToday = withResolvedEventStatuses(today, now)
+    .filter((event) => !['pending', 'analyzing'].includes(event.status));
+  const hasAttentionToday = settledToday.some((event) => event.status !== 'detected');
+  const emptyTodayTitle = hasAttentionToday ? t('keepGoing') : t('niceWork');
+  const emptyTodayHint = hasAttentionToday ? t('missedTodayHint') : t('nextCheckHint');
   const upcomingChecks = useMemo(() => upcomingRoutineChecks(state.routineAssignments, nowDate)
     .map((item) => ({
       ...item,
@@ -136,7 +141,7 @@ export function ChildDashboard({
             </article>
           );
         })}
-        {!pending.length && <section className="check-card today-empty"><span className="eyebrow">{t('allDone')}</span><h2>{t('niceWork')}</h2><p>{t('nextCheckHint')}</p></section>}
+        {!pending.length && <section className="check-card today-empty"><span className="eyebrow">{t('allDone')}</span><h2>{emptyTodayTitle}</h2><p>{emptyTodayHint}</p></section>}
         </div>
       </div>
     </section>
