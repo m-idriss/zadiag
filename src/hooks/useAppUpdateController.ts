@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import {
   describeAppUpdate,
   fetchLatestAppVersion,
+  isMandatoryAppUpdate,
   refreshServiceWorkerRegistration,
   type AppUpdateInfo,
 } from '../services/appUpdate';
@@ -55,11 +56,12 @@ export const useAppUpdateController = (ready: boolean) => {
   const updateSnackbarId = appUpdateInfo.available
     ? appUpdateInfo.latestVersion ?? appUpdateInfo.badgeLabel ?? 'waiting-service-worker'
     : undefined;
+  const mandatoryUpdate = isMandatoryAppUpdate(appUpdateInfo);
 
   const showUpdateSnackbar = Boolean(ready
     && appUpdateInfo.available
     && updateSnackbarId
-    && dismissedUpdateId !== updateSnackbarId);
+    && (mandatoryUpdate || dismissedUpdateId !== updateSnackbarId));
 
   const applySnackbarUpdate = useCallback(async () => {
     setUpdateActionBusy(true);
@@ -72,11 +74,17 @@ export const useAppUpdateController = (ready: boolean) => {
     }
   }, [forceAppUpdate]);
 
+  const dismissUpdate = useCallback((updateId: string) => {
+    if (mandatoryUpdate) return;
+    setDismissedUpdateId(updateId);
+  }, [mandatoryUpdate]);
+
   return useMemo(() => ({
     appUpdateInfo,
     applySnackbarUpdate,
-    dismissUpdate: setDismissedUpdateId,
+    dismissUpdate,
     forceAppUpdate,
+    mandatoryUpdate,
     refreshAppUpdateInfo,
     resetDismissedUpdate: () => setDismissedUpdateId(undefined),
     showUpdateSnackbar,
@@ -85,7 +93,9 @@ export const useAppUpdateController = (ready: boolean) => {
   }), [
     appUpdateInfo,
     applySnackbarUpdate,
+    dismissUpdate,
     forceAppUpdate,
+    mandatoryUpdate,
     refreshAppUpdateInfo,
     showUpdateSnackbar,
     updateActionBusy,

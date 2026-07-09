@@ -8,9 +8,9 @@ export function Snackbar({
 }: {
   message: string;
   actionLabel?: string;
-  closeLabel: string;
+  closeLabel?: string;
   onAction?: () => void;
-  onClose: () => void;
+  onClose?: () => void;
   busy?: boolean;
 }) {
   return (
@@ -21,7 +21,9 @@ export function Snackbar({
           {actionLabel}
         </button>
       ) : null}
-      <button type="button" className="app-snackbar-close" aria-label={closeLabel} onClick={onClose}>x</button>
+      {closeLabel && onClose ? (
+        <button type="button" className="app-snackbar-close" aria-label={closeLabel} onClick={onClose}>x</button>
+      ) : null}
     </div>
   );
 }

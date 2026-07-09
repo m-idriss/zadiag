@@ -68,6 +68,10 @@ export const describeAppUpdate = (currentVersion: string, latestVersion?: string
   };
 };
 
+export const isMandatoryAppUpdate = (updateInfo: Pick<AppUpdateInfo, 'available' | 'severity'>) => (
+  updateInfo.available && (updateInfo.severity === 'minor' || updateInfo.severity === 'major')
+);
+
 export const fetchLatestAppVersion = async (): Promise<string | undefined> => {
   const response = await fetch(`/app-version.json?t=${Date.now()}`, {
     cache: 'no-store',

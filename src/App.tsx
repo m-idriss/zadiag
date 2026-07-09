@@ -84,6 +84,7 @@ export function App() {
     applySnackbarUpdate,
     dismissUpdate,
     forceAppUpdate,
+    mandatoryUpdate,
     refreshAppUpdateInfo,
     resetDismissedUpdate,
     showUpdateSnackbar,
@@ -408,9 +409,9 @@ export function App() {
         <Snackbar
           message={updateSnackbarMessage}
           actionLabel={t('settingsUpdateAction')}
-          closeLabel={t('close')}
           onAction={() => { void applySnackbarUpdate(); }}
-          onClose={() => dismissUpdate(updateSnackbarId)}
+          closeLabel={mandatoryUpdate ? undefined : t('close')}
+          onClose={mandatoryUpdate ? undefined : () => dismissUpdate(updateSnackbarId)}
           busy={updateActionBusy}
         />
       ) : null}
