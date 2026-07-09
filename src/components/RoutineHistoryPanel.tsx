@@ -7,9 +7,6 @@ import { StatusPill } from './StatusPill';
 import { canRetakeCapture, stalePendingCheckReason, withResolvedEventStatuses } from '../domain/adherence';
 import { EmptyState, ListRow } from './ui';
 
-type StatusFilter = VerificationStatus | 'all';
-type RoutineFilter = string | 'all';
-
 const eventTimestamp = (event: VerificationEvent) =>
   Date.parse(event.capturedAt ?? event.requestedAt);
 
@@ -53,8 +50,8 @@ export function RoutineHistoryPanel({
   onRequestCheck?: (routineId: string) => Promise<void>;
   t: (key: MessageKey) => string;
 }) {
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [routineFilter, setRoutineFilter] = useState<RoutineFilter>('all');
+  const [statusFilters, setStatusFilters] = useState<VerificationStatus[]>([]);
+  const [routineFilters, setRoutineFilters] = useState<string[]>([]);
   const [requestingEventId, setRequestingEventId] = useState<string>();
   const [hiddenRequestEventIds, setHiddenRequestEventIds] = useState<Record<string, string>>({});
   const formatterLocale = locale === 'fr' ? 'fr-FR' : 'en-US';
@@ -81,9 +78,21 @@ export function RoutineHistoryPanel({
     () => Array.from(new Set(sortedEvents.map((event) => event.status))),
     [sortedEvents],
   );
+  const toggleRoutineFilter = (routineId: string) => {
+    setRoutineFilters((current) =>
+      current.includes(routineId)
+        ? current.filter((item) => item !== routineId)
+        : [...current, routineId]);
+  };
+  const toggleStatusFilter = (status: VerificationStatus) => {
+    setStatusFilters((current) =>
+      current.includes(status)
+        ? current.filter((item) => item !== status)
+        : [...current, status]);
+  };
   const filtered = sortedEvents.filter((event) =>
-    (statusFilter === 'all' || event.status === statusFilter)
-    && (routineFilter === 'all' || event.routineId === routineFilter)
+    (statusFilters.length === 0 || statusFilters.includes(event.status))
+    && (routineFilters.length === 0 || routineFilters.includes(event.routineId))
   );
   const presentationFor = (event: VerificationEvent) => {
     const assignment = assignments.find((item) => item.routineId === event.routineId);
@@ -117,18 +126,20 @@ export function RoutineHistoryPanel({
             <div className="filter-group">
               <span>{t('filterByRoutine')}</span>
               <div className="filter-chips">
-                <button type="button" className={routineFilter === 'all' ? 'active' : ''} onClick={() => setRoutineFilter('all')}>{t('allRoutines')}</button>
                 {assignments.map((assignment) => {
                   const visual = presentRoutine(assignment.routine, locale);
-                  return <button type="button" key={assignment.id} className={routineFilter === assignment.routineId ? 'active' : ''} onClick={() => setRoutineFilter(assignment.routineId)}>{visual.name}</button>;
+                  const active = routineFilters.includes(assignment.routineId);
+                  return <button type="button" key={assignment.id} aria-pressed={active} className={active ? 'active' : ''} onClick={() => toggleRoutineFilter(assignment.routineId)}>{visual.name}</button>;
                 })}
               </div>
             </div>
             <div className="filter-group">
               <span>{t('filterByStatus')}</span>
               <div className="filter-chips">
-                <button type="button" className={statusFilter === 'all' ? 'active' : ''} onClick={() => setStatusFilter('all')}>{t('allStatuses')}</button>
-                {statuses.map((status) => <button type="button" key={status} className={`filter-status-${status} ${statusFilter === status ? 'active' : ''}`} onClick={() => setStatusFilter(status)}>{t(statusLabelKey(status))}</button>)}
+                {statuses.map((status) => {
+                  const active = statusFilters.includes(status);
+                  return <button type="button" key={status} aria-pressed={active} className={`filter-status-${status} ${active ? 'active' : ''}`} onClick={() => toggleStatusFilter(status)}>{t(statusLabelKey(status))}</button>;
+                })}
               </div>
             </div>
           </section>

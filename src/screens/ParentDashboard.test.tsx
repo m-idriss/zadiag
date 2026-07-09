@@ -1,7 +1,8 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createDefaultRoutineAssignment, type AppState } from '../domain/models';
+import { createDefaultRoutineAssignment, createRoutineAssignment, type AppState } from '../domain/models';
+import { routineFromCatalog } from '../domain/routineCatalog';
 import { translate } from '../services/i18n';
 import { ParentDashboard } from './ParentDashboard';
 
@@ -42,9 +43,69 @@ describe('ParentDashboard', () => {
     expect(container.textContent).toContain('Participant phone not linked');
     expect(container.textContent).toContain('Participant linking code');
     expect(container.textContent).toContain('Recent history');
-    expect(container.textContent).toContain('StatusAll');
+    expect(container.textContent).toContain('Status');
+    expect(container.textContent).not.toContain('StatusAll');
     expect(container.textContent).not.toContain('Monitoring plan');
     expect(container.textContent).not.toContain('Needs attention');
+  });
+
+  it('combines routine and status filter push buttons without all buttons', () => {
+    const hydration = routineFromCatalog('daily-hydration');
+    if (!hydration) throw new Error('missing_hydration_routine');
+    const elastics = createDefaultRoutineAssignment();
+    const hydrationAssignment = createRoutineAssignment(hydration);
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - 60 * 60_000).toISOString();
+    const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60_000).toISOString();
+    const inThirtyMinutes = new Date(now.getTime() + 30 * 60_000).toISOString();
+    const state: AppState = {
+      role: 'parent',
+      locale: 'en',
+      notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      routineAssignments: [elastics, hydrationAssignment],
+      events: [
+        {
+          id: 'elastics-ok',
+          routineId: elastics.routineId,
+          sessionId: 'one',
+          requestedAt: oneHourAgo,
+          expiresAt: inThirtyMinutes,
+          capturedAt: thirtyMinutesAgo,
+          status: 'detected',
+        },
+        {
+          id: 'hydration-missed',
+          routineId: hydrationAssignment.routineId,
+          sessionId: 'two',
+          requestedAt: thirtyMinutesAgo,
+          expiresAt: inThirtyMinutes,
+          status: 'missed',
+        },
+      ],
+    };
+
+    act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
+
+    expect(Array.from(container.querySelectorAll('.filter-chips button')).some((button) => button.textContent === 'All')).toBe(false);
+    expect(container.querySelectorAll('.parent-history-row')).toHaveLength(2);
+
+    const elasticsButton = Array.from(container.querySelectorAll('.filter-chips button')).find((button) => button.textContent === 'Orthodontic Elastics');
+    const missedButton = Array.from(container.querySelectorAll('.filter-chips button')).find((button) => button.textContent === 'Missed');
+    const validatedButton = Array.from(container.querySelectorAll('.filter-chips button')).find((button) => button.textContent === 'Validated');
+
+    act(() => elasticsButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    act(() => missedButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+
+    expect(elasticsButton?.getAttribute('aria-pressed')).toBe('true');
+    expect(missedButton?.getAttribute('aria-pressed')).toBe('true');
+    expect(container.querySelectorAll('.parent-history-row')).toHaveLength(0);
+
+    act(() => missedButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    act(() => validatedButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+
+    expect(validatedButton?.getAttribute('aria-pressed')).toBe('true');
+    expect(container.querySelectorAll('.parent-history-row')).toHaveLength(1);
   });
 
   it('shows a first routine creation block when no routine exists', () => {
