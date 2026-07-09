@@ -33,17 +33,27 @@ describe('ResultScreen', () => {
 
   it('offers to retake proof when a non-positive result can be retried', () => {
     const retake = vi.fn();
-    act(() => root.render(<ResultScreen event={event('not_detected')} retake={retake} done={() => undefined} t={(key) => translate('en', key)} />));
+    const done = vi.fn();
+    act(() => root.render(<ResultScreen event={event('not_detected')} retake={retake} done={done} t={(key) => translate('en', key)} />));
 
     const retakeButton = Array.from(container.querySelectorAll('ion-button')).find((button) => button.textContent === 'Retake proof');
     expect(retakeButton).not.toBeUndefined();
     act(() => retakeButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(retake).toHaveBeenCalled();
+
+    const sendAsIsButton = Array.from(container.querySelectorAll('ion-button')).find((button) => button.textContent === 'Send as is');
+    expect(sendAsIsButton).not.toBeUndefined();
+    expect(container.textContent).toContain('send it as is for responsible review');
+    act(() => sendAsIsButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(done).toHaveBeenCalled();
   });
 
   it('does not show a retake action on successful results', () => {
     act(() => root.render(<ResultScreen event={event('detected')} done={() => undefined} t={(key) => translate('en', key)} />));
 
     expect(container.textContent).not.toContain('Retake proof');
+    expect(container.textContent).toContain('Back to today');
+    expect(container.textContent).not.toContain('Send as is');
+    expect(container.textContent).not.toContain('send it as is for responsible review');
   });
 });

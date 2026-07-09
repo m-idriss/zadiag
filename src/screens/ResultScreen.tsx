@@ -39,8 +39,9 @@ export function ResultScreen({
       ) : null}
       {quality != null && quality <= 60 ? <p className="result-reason">{t('analysisQualityHint')}</p> : null}
       <Disclaimer t={t} />
+      {retake ? <p className="result-choice-hint">{t('sendAsIsHint')}</p> : null}
       {retake ? <IonButton expand="block" onClick={retake}>{t('retakeProof')}</IonButton> : null}
-      <IonButton expand="block" fill={retake ? 'outline' : 'solid'} onClick={done}>{t('backToday')}</IonButton>
+      <IonButton expand="block" fill={retake ? 'outline' : 'solid'} onClick={done}>{t(retake ? 'sendAsIs' : 'backToday')}</IonButton>
     </main>
   );
 }

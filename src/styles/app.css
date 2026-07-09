@@ -1631,6 +1631,7 @@ ion-input {
 .result-icon.success { background: var(--mint); color: var(--teal); }
 .result-page .status-pill { margin: 10px 0; }
 .result-reason { margin: 8px 0 0; max-width: 24ch; color: var(--ink); line-height: 1.45; }
+.result-choice-hint { margin: 10px 0 2px; max-width: 34ch; color: var(--muted); font-size: 14px; line-height: 1.45; }
 .result-metrics { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 12px; }
 .result-metrics span { padding: 8px 12px; border-radius: 999px; background: #eef2f4; color: var(--navy); font-size: 12px; font-weight: 800; }
 .result-page ion-button { width: 100%; }
