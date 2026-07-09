@@ -148,6 +148,55 @@ describe('participant routines navigation', () => {
     expect(container.textContent).toContain('My routines');
   });
 
+  it('keeps participant routine management read-only even when edit callbacks are provided', async () => {
+    await import('./RoutineDetailScreen');
+    const assignment = createDefaultRoutineAssignment();
+    const state: AppState = {
+      role: 'child',
+      locale: 'en',
+      notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: false },
+      routineAssignments: [assignment],
+      events: [],
+    };
+    const requestCheck = vi.fn().mockResolvedValue(undefined);
+    const assignRoutine = vi.fn().mockResolvedValue(undefined);
+    const deleteRoutine = vi.fn().mockResolvedValue(undefined);
+    const saveMonitoringPlan = vi.fn().mockResolvedValue(undefined);
+
+    act(() => root.render(
+      <RoutinesScreen
+        state={state}
+        edit
+        requestCheck={requestCheck}
+        onAssignRoutine={assignRoutine}
+        onDeleteRoutine={deleteRoutine}
+        onSaveMonitoringPlan={saveMonitoringPlan}
+        t={(key) => translate('en', key)}
+      />,
+    ));
+
+    expect(container.querySelector('.add-routine-button')).toBeNull();
+
+    const scheduleToggle = container.querySelector('button[aria-label="Show schedule"]');
+    act(() => scheduleToggle?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(container.textContent).not.toContain('Request a check now');
+    expect(container.querySelector('button[aria-label^="Delete"]')).toBeNull();
+
+    const details = container.querySelector('button[aria-label="Details"]');
+    await act(async () => {
+      details?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await new Promise((resolve) => window.setTimeout(resolve, 100));
+    });
+
+    expect(Array.from(container.querySelectorAll('.routine-tabs button')).map((button) => button.textContent)).toEqual(['Info', 'Tracking']);
+    expect(container.textContent).not.toContain('Edit');
+    expect(requestCheck).not.toHaveBeenCalled();
+    expect(assignRoutine).not.toHaveBeenCalled();
+    expect(deleteRoutine).not.toHaveBeenCalled();
+    expect(saveMonitoringPlan).not.toHaveBeenCalled();
+  });
+
   it('uses custom routine presentation and localized content without new UI code', () => {
     const assignment = createDefaultRoutineAssignment();
     assignment.id = 'hydration';

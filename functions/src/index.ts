@@ -786,17 +786,15 @@ export const assignRoutine = onCall({
       transaction.get(familyRef),
       transaction.get(assignmentRef),
     ]);
-    const profileRole = profile.data()?.role;
-    const role = profileRole === 'parent' || profileRole === 'child' ? profileRole : undefined;
-    if (!profile.exists || profile.data()?.familyId !== familyId || !role) {
-      throw new HttpsError('permission-denied', 'Only family members can assign a routine.');
+    if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'parent') {
+      throw new HttpsError('permission-denied', 'Only the responsible person can assign a routine.');
     }
-    if (!family.exists || family.data()?.members?.[uid] !== role) {
+    if (!family.exists || family.data()?.members?.[uid] !== 'parent') {
       throw new HttpsError('not-found', 'The family could not be found.');
     }
     if (assignment.exists) throw new HttpsError('already-exists', 'This routine is already assigned.');
 
-    transaction.create(assignmentRef, createRoutineAssignment(routine, defaultPlan, new Date().toISOString(), role));
+    transaction.create(assignmentRef, createRoutineAssignment(routine, defaultPlan, new Date().toISOString(), 'parent'));
   });
 
   return { success: true };
@@ -826,12 +824,10 @@ export const deleteRoutine = onCall({
       transaction.get(assignmentRef),
       transaction.get(routineChecks),
     ]);
-    const profileRole = profile.data()?.role;
-    const role = profileRole === 'parent' || profileRole === 'child' ? profileRole : undefined;
-    if (!profile.exists || profile.data()?.familyId !== familyId || !role) {
-      throw new HttpsError('permission-denied', 'Only family members can delete a routine.');
+    if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'parent') {
+      throw new HttpsError('permission-denied', 'Only the responsible person can delete a routine.');
     }
-    if (!family.exists || family.data()?.members?.[uid] !== role) {
+    if (!family.exists || family.data()?.members?.[uid] !== 'parent') {
       throw new HttpsError('not-found', 'The family could not be found.');
     }
     if (!assignment.exists) throw new HttpsError('not-found', 'The routine could not be found.');
@@ -873,10 +869,8 @@ export const updateRoutineAssignment = onCall({
 
     // Check authorization
     const authorizationProfile = await userRef.get();
-    const profileRole = authorizationProfile.data()?.role;
-    const role = profileRole === 'parent' || profileRole === 'child' ? profileRole : undefined;
-    if (!authorizationProfile.exists || authorizationProfile.data()?.familyId !== familyId || !role) {
-      throw new HttpsError('permission-denied', 'Only family members can update a routine.');
+    if (!authorizationProfile.exists || authorizationProfile.data()?.familyId !== familyId || authorizationProfile.data()?.role !== 'parent') {
+      throw new HttpsError('permission-denied', 'Only the responsible person can update a routine.');
     }
 
     await ensureFamilyRoutineMigration(familyRef);

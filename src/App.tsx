@@ -347,19 +347,20 @@ export function App() {
     content = <ResultScreen event={result} retake={canRetake ? () => retryCapture(result) : undefined} done={() => { setResult(undefined); setRoute('app'); }} t={t} />;
   } else {
     const role = state.role ?? 'child';
+    const canManageRoutines = role === 'parent';
     const screen = tab === 'history'
       ? <HistoryScreen events={state.events} locale={state.locale} t={t} />
       : routineCentricUiEnabled && tab === 'routines'
         ? <RoutinesScreen
             state={state}
             start={role === 'child' ? () => startCapture() : undefined}
-            edit
-            requestCheck={role === 'parent' ? async (routineId) => { await repository.requestCheckNow(routineId); sync(); } : undefined}
+            edit={canManageRoutines}
+            requestCheck={canManageRoutines ? async (routineId) => { await repository.requestCheckNow(routineId); sync(); } : undefined}
             getProofImageUrl={(eventId) => repository.getProofImageUrl(eventId)}
-            onAssignRoutine={async (routineId) => { await repository.assignRoutine(routineId); sync(); }}
-            onDeleteRoutine={async (routineId) => { await repository.deleteRoutine(routineId); sync(); }}
+            onAssignRoutine={canManageRoutines ? async (routineId) => { await repository.assignRoutine(routineId); sync(); } : undefined}
+            onDeleteRoutine={canManageRoutines ? async (routineId) => { await repository.deleteRoutine(routineId); sync(); } : undefined}
             onRetryRoutines={repository.retryRemoteSync ? async () => { await repository.retryRemoteSync?.(); sync(); } : undefined}
-            onSaveMonitoringPlan={async (routineId, plan, validationMode) => {
+            onSaveMonitoringPlan={canManageRoutines ? async (routineId, plan, validationMode) => {
               setSavingRoutineId(routineId);
               try {
                 await repository.updateRoutine(routineId, plan, validationMode);
@@ -370,7 +371,7 @@ export function App() {
               } finally {
                 setSavingRoutineId(undefined);
               }
-            }}
+            } : undefined}
             savingRoutineId={savingRoutineId}
             t={t}
           />

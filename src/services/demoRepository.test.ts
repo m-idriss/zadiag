@@ -36,6 +36,7 @@ describe('DemoRepository compatibility', () => {
 
   test('resends an immediate check without duplicating it', async () => {
     const repository = new DemoRepository();
+    await repository.selectRole('parent');
     const before = repository.snapshot().events.filter((event) => event.status === 'pending').length;
 
     await expect(repository.requestCheckNow()).resolves.toBeUndefined();
@@ -76,24 +77,28 @@ describe('DemoRepository compatibility', () => {
     expect(repository.snapshot().family.childLinked).toBe(true);
   });
 
-  test('self-validates participant-created routines without AI analysis', async () => {
+  test('keeps routine management restricted to the responsible role', async () => {
     const repository = new DemoRepository();
     await repository.selectRole('child');
+
+    await expect(repository.assignRoutine('medication')).rejects.toThrow('permission_denied');
+    await expect(repository.deleteRoutine(DEFAULT_ROUTINE_ID)).rejects.toThrow('permission_denied');
+    await expect(repository.updateRoutine(DEFAULT_ROUTINE_ID, defaultPlan)).rejects.toThrow('permission_denied');
+    await expect(repository.requestCheckNow(DEFAULT_ROUTINE_ID)).rejects.toThrow('permission_denied');
+
+    expect(repository.snapshot().routineAssignments.some((assignment) => assignment.routineId === DEFAULT_ROUTINE_ID)).toBe(true);
+  });
+
+  test('keeps parent-created demo routines on AI validation', async () => {
+    const repository = new DemoRepository();
+    await repository.selectRole('parent');
     await repository.deleteRoutine(DEFAULT_ROUTINE_ID);
     await repository.deleteRoutine('daily-hydration');
     await repository.assignRoutine('medication');
 
     const assignment = repository.snapshot().routineAssignments[0];
-    expect(assignment).toMatchObject({ routineId: 'medication', createdBy: 'child', validationMode: 'auto' });
 
-    await repository.requestCheckNow('medication');
-    const sessionId = repository.snapshot().events.find((event) => event.routineId === 'medication' && event.status === 'pending')?.sessionId;
-    expect(sessionId).toBeTruthy();
-
-    const result = await repository.submitCapture(sessionId!, new Date(), 'data:image/png;base64,photo');
-
-    expect(result.status).toBe('detected');
-    expect(result.analysisSource).toBe('self');
+    expect(assignment).toMatchObject({ routineId: 'medication', createdBy: 'parent', validationMode: 'ai' });
   });
 
   test('migrates legacy local state to the default routine idempotently', () => {

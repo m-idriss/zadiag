@@ -271,6 +271,7 @@ export class DemoRepository implements AppRepository {
   }
 
   async assignRoutine(routineId: string) {
+    if (this.state.role !== 'parent') throw new Error('permission_denied');
     if (this.state.routineAssignments.some((assignment) => assignment.routineId === routineId)) {
       throw new Error('routine_already_assigned');
     }
@@ -283,13 +284,14 @@ export class DemoRepository implements AppRepository {
       plan: structuredClone(this.state.routineAssignments[0]?.plan ?? createDefaultRoutineAssignment().plan),
       status: 'active',
       assignedAt: new Date().toISOString(),
-      createdBy: this.state.role === 'child' ? 'child' : 'parent',
-      validationMode: this.state.role === 'child' ? 'auto' : 'ai',
+      createdBy: 'parent',
+      validationMode: 'ai',
     });
     this.persist();
   }
 
   async deleteRoutine(routineId: string) {
+    if (this.state.role !== 'parent') throw new Error('permission_denied');
     const assignment = this.state.routineAssignments.find((item) => item.routineId === routineId);
     if (!assignment) throw new Error('routine_not_found');
     this.state.routineAssignments = this.state.routineAssignments.filter((item) => item.routineId !== routineId);
@@ -298,6 +300,7 @@ export class DemoRepository implements AppRepository {
   }
 
   async requestCheckNow(routineId?: string) {
+    if (this.state.role !== 'parent') throw new Error('permission_denied');
     if (this.activeSession()) {
       this.persist();
       return;
@@ -319,6 +322,7 @@ export class DemoRepository implements AppRepository {
   }
 
   async updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode) {
+    if (this.state.role !== 'parent') throw new Error('permission_denied');
     const assignment = this.state.routineAssignments.find((r) => r.routineId === routineId);
     if (assignment) {
       assignment.plan = plan;

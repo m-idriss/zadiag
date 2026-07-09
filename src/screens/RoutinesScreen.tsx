@@ -86,7 +86,7 @@ export function RoutinesScreen({
   const [requestRetries, setRequestRetries] = useState<Record<string, RequestRetryState>>({});
   const [retryTick, setRetryTick] = useState(Date.now());
   const [retryingRoutines, setRetryingRoutines] = useState(false);
-  const [catalogOpen, setCatalogOpen] = useState(() => Boolean(onAssignRoutine && !state.routineAssignments.length));
+  const [catalogOpen, setCatalogOpen] = useState(() => Boolean(state.role === 'parent' && onAssignRoutine && !state.routineAssignments.length));
   const [assigningRoutineId, setAssigningRoutineId] = useState<string>();
   const [assignError, setAssignError] = useState(false);
   const [deletingRoutineId, setDeletingRoutineId] = useState<string>();
@@ -94,6 +94,8 @@ export function RoutinesScreen({
   const [detailInitialTab, setDetailInitialTab] = useState<'overview' | 'plan'>();
   const [expandedScheduleIds, setExpandedScheduleIds] = useState<Set<string>>(() => new Set());
   const selected = state.routineAssignments.find((assignment) => assignment.id === selectedId);
+  const canManageRoutines = state.role === 'parent' && Boolean(edit);
+  const canAssignRoutine = state.role === 'parent' && Boolean(onAssignRoutine);
   const marketplace = marketplaceFromTemplates();
   const retryDelayForAttempt = (attempt: number) => Math.min(30_000, 2 ** Math.max(0, attempt - 1) * 2_000);
   const openDetails = (assignmentId: string, initialTab?: 'overview' | 'plan') => {
@@ -107,7 +109,7 @@ export function RoutinesScreen({
     return () => window.clearInterval(timer);
   }, [requestRetries]);
 
-  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={() => setSelectedId(undefined)} start={start} edit={edit} initialTab={detailInitialTab} getProofImageUrl={getProofImageUrl} onSaveMonitoringPlan={onSaveMonitoringPlan ? (plan, validationMode) => onSaveMonitoringPlan(selected.routineId, plan, validationMode) : undefined} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
+  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={() => setSelectedId(undefined)} start={start} edit={canManageRoutines} initialTab={detailInitialTab} getProofImageUrl={getProofImageUrl} onSaveMonitoringPlan={canManageRoutines && onSaveMonitoringPlan ? (plan, validationMode) => onSaveMonitoringPlan(selected.routineId, plan, validationMode) : undefined} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
 
   const setRequestStatus = (routineId: string, status: RequestStatus) => {
     setRequestStatuses((current) => ({ ...current, [routineId]: status }));
@@ -152,7 +154,7 @@ export function RoutinesScreen({
   const assignedRoutineIds = new Set(state.routineAssignments.map((assignment) => assignment.routineId));
   const assignableTemplates = assignableRoutineTemplates(marketplace, [...assignedRoutineIds]);
   const assignRoutine = async (routineId: string) => {
-    if (!onAssignRoutine || assignedRoutineIds.has(routineId)) return;
+    if (!canAssignRoutine || !onAssignRoutine || assignedRoutineIds.has(routineId)) return;
     setAssigningRoutineId(routineId);
     setAssignError(false);
     try {
@@ -166,7 +168,7 @@ export function RoutinesScreen({
     }
   };
   const deleteRoutine = async (assignment: RoutineAssignment, routineName: string) => {
-    if (!onDeleteRoutine || deletingRoutineId) return;
+    if (!canManageRoutines || !onDeleteRoutine || deletingRoutineId) return;
     if (!window.confirm(t('confirmDeleteRoutine').replace('{routine}', routineName))) return;
     setDeletingRoutineId(assignment.routineId);
     setDeleteErrorRoutineId(undefined);
@@ -204,13 +206,13 @@ export function RoutinesScreen({
     <div className="content-screen routines-screen">
       <header className="screen-header participant-header">
         <div><h1>{t('myRoutines')}</h1><p>{t('routinesHint')}</p></div>
-        {onAssignRoutine && (
+        {canAssignRoutine && (
           <button type="button" className="add-routine-button" aria-label={t('addRoutine')} aria-expanded={catalogOpen} onClick={() => setCatalogOpen((open) => !open)}>
             <IonIcon icon={addOutline} aria-hidden="true" />
           </button>
         )}
       </header>
-      {catalogOpen && (
+      {canAssignRoutine && catalogOpen && (
         <section className="card routine-catalog-card" aria-labelledby="routine-catalog-title">
           <div className="routine-catalog-heading">
             <div>
@@ -307,7 +309,7 @@ export function RoutinesScreen({
                       ))}
                     </div>
                     <div className="routine-card-actions">
-                      {edit && requestCheck && (
+                      {canManageRoutines && requestCheck && (
                         <button className="request-check routine-list-request" disabled={requesting || retryBlocked} onClick={() => { void requestNow(assignment.routineId); }}>
                           {requesting ? t('requestingCheck') : next ? t('requestCheckAgain') : t('requestCheckNow')}
                         </button>
@@ -320,7 +322,7 @@ export function RoutinesScreen({
                       >
                         <AppIcon name="settings" />
                       </button>
-                      {edit && onDeleteRoutine && (
+                      {canManageRoutines && onDeleteRoutine && (
                         <button
                           type="button"
                           className="routine-list-delete-button"
@@ -332,7 +334,7 @@ export function RoutinesScreen({
                         </button>
                       )}
                     </div>
-                    {edit && requestCheck && (
+                    {canManageRoutines && requestCheck && (
                       <>
                         {next && <p role="status" className="request-feedback">{t('requestCheckActive')}</p>}
                         {requestStatus === 'sent' && <p role="status" aria-live="polite" className="request-feedback success">{t('requestCheckSent')}</p>}
@@ -355,7 +357,7 @@ export function RoutinesScreen({
           {!state.routineAssignments.length && !catalogOpen && (
             <section className="card routines-empty-card">
               <h2>{t('noRoutines')}</h2>
-              <p>{onAssignRoutine ? t('noRoutinesAddHint') : t('noRoutinesWaitHint')}</p>
+              <p>{canAssignRoutine ? t('noRoutinesAddHint') : t('noRoutinesWaitHint')}</p>
             </section>
           )}
         </div>
