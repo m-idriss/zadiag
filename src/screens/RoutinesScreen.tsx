@@ -23,6 +23,52 @@ interface RequestRetryState {
   retryAt: number;
 }
 
+const ROUTINES_CATALOG_OPEN_KEY = 'zadiag.routines.catalogOpen';
+const ROUTINES_SELECTED_ASSIGNMENT_KEY = 'zadiag.routines.selectedAssignment';
+const ROUTINES_EXPANDED_SCHEDULES_KEY = 'zadiag.routines.expandedSchedules';
+
+const readStoredString = (key: string) => {
+  try {
+    return localStorage.getItem(key) ?? undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+const readStoredBoolean = (key: string) => {
+  const value = readStoredString(key);
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return undefined;
+};
+
+const readStoredStringSet = (key: string) => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return new Set<string>();
+    const parsed = JSON.parse(raw) as unknown;
+    return new Set(Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : []);
+  } catch {
+    return new Set<string>();
+  }
+};
+
+const writeStorage = (key: string, value: string) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Routines UI state remains usable when storage is unavailable.
+  }
+};
+
+const removeStorage = (key: string) => {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Routines UI state remains usable when storage is unavailable.
+  }
+};
+
 const responseWindowSummary = (expiryMinutes: number, t: (key: MessageKey) => string) =>
   expiryMinutes > 0
     ? <><b>{expiryMinutes}</b> {t('minutesRespond')}</>
@@ -80,19 +126,20 @@ export function RoutinesScreen({
   savingRoutineId?: string;
   t: (key: MessageKey) => string;
 }) {
-  const [selectedId, setSelectedId] = useState<string>();
+  const [selectedId, setSelectedId] = useState<string | undefined>(() => readStoredString(ROUTINES_SELECTED_ASSIGNMENT_KEY));
   const [requestingRoutineId, setRequestingRoutineId] = useState<string>();
   const [requestStatuses, setRequestStatuses] = useState<Record<string, RequestStatus>>({});
   const [requestRetries, setRequestRetries] = useState<Record<string, RequestRetryState>>({});
   const [retryTick, setRetryTick] = useState(Date.now());
   const [retryingRoutines, setRetryingRoutines] = useState(false);
-  const [catalogOpen, setCatalogOpen] = useState(() => Boolean(state.role === 'parent' && onAssignRoutine && !state.routineAssignments.length));
+  const [catalogOpen, setCatalogOpen] = useState(() =>
+    readStoredBoolean(ROUTINES_CATALOG_OPEN_KEY) ?? Boolean(state.role === 'parent' && onAssignRoutine && !state.routineAssignments.length));
   const [assigningRoutineId, setAssigningRoutineId] = useState<string>();
   const [assignError, setAssignError] = useState(false);
   const [deletingRoutineId, setDeletingRoutineId] = useState<string>();
   const [deleteErrorRoutineId, setDeleteErrorRoutineId] = useState<string>();
   const [detailInitialTab, setDetailInitialTab] = useState<'overview' | 'plan'>();
-  const [expandedScheduleIds, setExpandedScheduleIds] = useState<Set<string>>(() => new Set());
+  const [expandedScheduleIds, setExpandedScheduleIds] = useState<Set<string>>(() => readStoredStringSet(ROUTINES_EXPANDED_SCHEDULES_KEY));
   const selected = state.routineAssignments.find((assignment) => assignment.id === selectedId);
   const canManageRoutines = state.role === 'parent' && Boolean(edit);
   const canAssignRoutine = state.role === 'parent' && Boolean(onAssignRoutine);
@@ -102,6 +149,10 @@ export function RoutinesScreen({
     setDetailInitialTab(initialTab);
     setSelectedId(assignmentId);
   };
+  const backToList = () => {
+    setDetailInitialTab(undefined);
+    setSelectedId(undefined);
+  };
 
   useEffect(() => {
     if (!Object.keys(requestRetries).length) return undefined;
@@ -109,7 +160,27 @@ export function RoutinesScreen({
     return () => window.clearInterval(timer);
   }, [requestRetries]);
 
-  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={() => setSelectedId(undefined)} start={start} edit={canManageRoutines} initialTab={detailInitialTab} getProofImageUrl={getProofImageUrl} onSaveMonitoringPlan={canManageRoutines && onSaveMonitoringPlan ? (plan, validationMode) => onSaveMonitoringPlan(selected.routineId, plan, validationMode) : undefined} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
+  useEffect(() => {
+    if (selectedId && !selected) {
+      removeStorage(ROUTINES_SELECTED_ASSIGNMENT_KEY);
+      setSelectedId(undefined);
+    }
+  }, [selected, selectedId]);
+
+  useEffect(() => {
+    if (selectedId) writeStorage(ROUTINES_SELECTED_ASSIGNMENT_KEY, selectedId);
+    else removeStorage(ROUTINES_SELECTED_ASSIGNMENT_KEY);
+  }, [selectedId]);
+
+  useEffect(() => {
+    writeStorage(ROUTINES_CATALOG_OPEN_KEY, String(catalogOpen));
+  }, [catalogOpen]);
+
+  useEffect(() => {
+    writeStorage(ROUTINES_EXPANDED_SCHEDULES_KEY, JSON.stringify([...expandedScheduleIds]));
+  }, [expandedScheduleIds]);
+
+  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={backToList} start={start} edit={canManageRoutines} initialTab={detailInitialTab} getProofImageUrl={getProofImageUrl} onSaveMonitoringPlan={canManageRoutines && onSaveMonitoringPlan ? (plan, validationMode) => onSaveMonitoringPlan(selected.routineId, plan, validationMode) : undefined} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
 
   const setRequestStatus = (routineId: string, status: RequestStatus) => {
     setRequestStatuses((current) => ({ ...current, [routineId]: status }));

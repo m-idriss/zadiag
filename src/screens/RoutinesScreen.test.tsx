@@ -12,6 +12,7 @@ describe('participant routines navigation', () => {
 
   beforeEach(() => {
     (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    localStorage.clear();
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
@@ -195,6 +196,58 @@ describe('participant routines navigation', () => {
     expect(assignRoutine).not.toHaveBeenCalled();
     expect(deleteRoutine).not.toHaveBeenCalled();
     expect(saveMonitoringPlan).not.toHaveBeenCalled();
+  });
+
+  it('restores routine page and detail tab state after returning to the page', async () => {
+    await import('./RoutineDetailScreen');
+    const assignment = createDefaultRoutineAssignment();
+    const state: AppState = {
+      role: 'child',
+      locale: 'en',
+      notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: false },
+      routineAssignments: [assignment],
+      events: [
+        { id: 'done', routineId: assignment.routineId, sessionId: 'one', requestedAt: '2026-07-02T08:00:00.000Z', expiresAt: '2026-07-02T09:00:00.000Z', status: 'detected' },
+      ],
+    };
+
+    act(() => root.render(<RoutinesScreen state={state} t={(key) => translate('en', key)} />));
+
+    const scheduleToggle = container.querySelector('button[aria-label="Show schedule"]');
+    act(() => scheduleToggle?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(scheduleToggle?.getAttribute('aria-expanded')).toBe('true');
+
+    const details = container.querySelector('button[aria-label="Details"]');
+    await act(async () => {
+      details?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await new Promise((resolve) => window.setTimeout(resolve, 100));
+    });
+
+    const tracking = Array.from(container.querySelectorAll('.routine-tabs button')).find((button) => button.textContent === 'Tracking');
+    act(() => tracking?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(tracking?.getAttribute('aria-current')).toBe('page');
+
+    act(() => root.render(<div />));
+    await act(async () => {
+      root.render(<RoutinesScreen state={state} t={(key) => translate('en', key)} />);
+      await new Promise((resolve) => window.setTimeout(resolve, 100));
+    });
+
+    expect(container.textContent).toContain('Recent history');
+    const restoredTracking = Array.from(container.querySelectorAll('.routine-tabs button')).find((button) => button.textContent === 'Tracking');
+    expect(restoredTracking?.getAttribute('aria-current')).toBe('page');
+
+    const back = container.querySelector('.detail-back');
+    act(() => back?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(container.textContent).toContain('My routines');
+    const restoredScheduleToggle = container.querySelector('button[aria-label="Hide schedule"]');
+    expect(restoredScheduleToggle?.getAttribute('aria-expanded')).toBe('true');
+
+    act(() => root.render(<div />));
+    act(() => root.render(<RoutinesScreen state={state} t={(key) => translate('en', key)} />));
+    expect(container.textContent).toContain('My routines');
+    expect(container.querySelector('.routine-tabs')).toBeNull();
   });
 
   it('uses custom routine presentation and localized content without new UI code', () => {

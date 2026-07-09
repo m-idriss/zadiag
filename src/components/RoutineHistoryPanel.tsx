@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Locale, RoutineAssignment, VerificationEvent, VerificationStatus } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { presentRoutine } from '../domain/routinePresentation';
@@ -14,6 +14,22 @@ const hiddenReasonCodes = new Set(['analysis_unavailable', 'self_validated']);
 
 const displayReason = (reason?: string) =>
   reason && !hiddenReasonCodes.has(reason) ? reason : undefined;
+
+const historyFilterStorageKey = (titleId: string) => `zadiag.historyFilters.${titleId}`;
+
+const readStoredFilters = (titleId: string) => {
+  try {
+    const raw = localStorage.getItem(historyFilterStorageKey(titleId));
+    if (!raw) return { statuses: [] as VerificationStatus[], routineIds: [] as string[] };
+    const parsed = JSON.parse(raw) as Partial<{ statuses: VerificationStatus[]; routineIds: string[] }>;
+    return {
+      statuses: Array.isArray(parsed.statuses) ? parsed.statuses : [],
+      routineIds: Array.isArray(parsed.routineIds) ? parsed.routineIds : [],
+    };
+  } catch {
+    return { statuses: [] as VerificationStatus[], routineIds: [] as string[] };
+  }
+};
 
 const analysisTag = (event: VerificationEvent, locale: Locale) => {
   if (event.analysisSource === 'ai') return locale === 'fr' ? 'IA' : 'AI';
@@ -50,8 +66,8 @@ export function RoutineHistoryPanel({
   onRequestCheck?: (routineId: string) => Promise<void>;
   t: (key: MessageKey) => string;
 }) {
-  const [excludedStatuses, setExcludedStatuses] = useState<VerificationStatus[]>([]);
-  const [excludedRoutineIds, setExcludedRoutineIds] = useState<string[]>([]);
+  const [excludedStatuses, setExcludedStatuses] = useState<VerificationStatus[]>(() => readStoredFilters(titleId).statuses);
+  const [excludedRoutineIds, setExcludedRoutineIds] = useState<string[]>(() => readStoredFilters(titleId).routineIds);
   const [requestingEventId, setRequestingEventId] = useState<string>();
   const [hiddenRequestEventIds, setHiddenRequestEventIds] = useState<Record<string, string>>({});
   const formatterLocale = locale === 'fr' ? 'fr-FR' : 'en-US';
@@ -78,6 +94,16 @@ export function RoutineHistoryPanel({
     () => Array.from(new Set(sortedEvents.map((event) => event.status))),
     [sortedEvents],
   );
+  useEffect(() => {
+    try {
+      localStorage.setItem(historyFilterStorageKey(titleId), JSON.stringify({
+        statuses: excludedStatuses,
+        routineIds: excludedRoutineIds,
+      }));
+    } catch {
+      // Filter persistence is a convenience; the panel should still work without storage.
+    }
+  }, [excludedRoutineIds, excludedStatuses, titleId]);
   const toggleRoutineFilter = (routineId: string) => {
     setExcludedRoutineIds((current) =>
       current.includes(routineId)

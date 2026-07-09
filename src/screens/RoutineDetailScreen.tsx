@@ -13,6 +13,28 @@ import { RoutineEditScreen } from './RoutineEditScreen';
 type DetailTab = 'details' | 'tracking' | 'plan';
 type DetailInitialTab = DetailTab | 'overview';
 
+const detailTabStorageKey = (assignmentId: string) => `zadiag.routineDetail.${assignmentId}.tab`;
+
+const isDetailTab = (value: unknown): value is DetailTab =>
+  value === 'details' || value === 'tracking' || value === 'plan';
+
+const readStoredDetailTab = (assignmentId: string) => {
+  try {
+    const stored = localStorage.getItem(detailTabStorageKey(assignmentId));
+    return isDetailTab(stored) ? stored : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+const defaultDetailTab = (assignmentId: string, edit?: boolean, initialTab?: DetailInitialTab): DetailTab => {
+  if (initialTab === 'plan') return 'plan';
+  if (initialTab === 'overview') return 'details';
+  const stored = readStoredDetailTab(assignmentId);
+  if (stored && (stored !== 'plan' || edit)) return stored;
+  return edit ? 'plan' : 'details';
+};
+
 const sameLocalDay = (value: string, day = new Date()) => {
   const date = new Date(value);
   return date.getFullYear() === day.getFullYear() && date.getMonth() === day.getMonth() && date.getDate() === day.getDate();
@@ -137,7 +159,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   onSaveMonitoringPlan?: (plan: RoutineAssignment['plan'], validationMode?: RoutineValidationMode) => Promise<void>;
   routinePlanBusy?: boolean;
 }) {
-  const [tab, setTab] = useState<DetailTab>(initialTab === 'plan' ? 'plan' : (edit ? 'plan' : 'details'));
+  const [tab, setTab] = useState<DetailTab>(() => defaultDetailTab(assignment.id, edit, initialTab));
   const [proofUrls, setProofUrls] = useState<Record<string, string>>({});
   const [proofErrors, setProofErrors] = useState<Record<string, boolean>>({});
   const [enlargedProofUrl, setEnlargedProofUrl] = useState<string>();
@@ -155,6 +177,18 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   const monthSections = calendarMonthSections(days, locale);
   const currentStreak = streakFor(events);
   const tabs: DetailTab[] = edit ? ['plan', 'details', 'tracking'] : ['details', 'tracking'];
+
+  useEffect(() => {
+    if (!tabs.includes(tab)) {
+      setTab(tabs[0]);
+      return;
+    }
+    try {
+      localStorage.setItem(detailTabStorageKey(assignment.id), tab);
+    } catch {
+      // Routine detail tab persistence is optional.
+    }
+  }, [assignment.id, tab, tabs]);
 
   useEffect(() => {
     if (tab !== 'tracking') return;

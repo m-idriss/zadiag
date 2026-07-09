@@ -12,6 +12,7 @@ describe('ParentDashboard', () => {
 
   beforeEach(() => {
     (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    localStorage.clear();
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
@@ -113,6 +114,17 @@ describe('ParentDashboard', () => {
 
     expect(missedButton?.getAttribute('aria-pressed')).toBe('true');
     expect(validatedButton?.getAttribute('aria-pressed')).toBe('false');
+    expect(container.querySelectorAll('.parent-history-row')).toHaveLength(0);
+
+    act(() => root.render(<div />));
+    act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
+
+    const restoredHydrationButton = Array.from(container.querySelectorAll('.filter-chips button')).find((button) => button.textContent === 'Hydration');
+    const restoredMissedButton = Array.from(container.querySelectorAll('.filter-chips button')).find((button) => button.textContent === 'Missed');
+    const restoredValidatedButton = Array.from(container.querySelectorAll('.filter-chips button')).find((button) => button.textContent === 'Validated');
+    expect(restoredHydrationButton?.getAttribute('aria-pressed')).toBe('false');
+    expect(restoredMissedButton?.getAttribute('aria-pressed')).toBe('true');
+    expect(restoredValidatedButton?.getAttribute('aria-pressed')).toBe('false');
     expect(container.querySelectorAll('.parent-history-row')).toHaveLength(0);
   });
 

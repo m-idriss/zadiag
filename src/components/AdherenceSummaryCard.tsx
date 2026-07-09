@@ -5,6 +5,11 @@ import type { MessageKey } from '../services/i18n';
 
 export type SummaryRange = 'day' | 'twoDays' | 'week' | 'month' | 'quarter';
 
+const summaryRangeIds: SummaryRange[] = ['day', 'twoDays', 'week', 'month', 'quarter'];
+
+export const isSummaryRange = (value: unknown): value is SummaryRange =>
+  typeof value === 'string' && summaryRangeIds.includes(value as SummaryRange);
+
 const ranges: Array<{
   id: SummaryRange;
   days: number;

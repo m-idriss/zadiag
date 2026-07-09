@@ -7,7 +7,7 @@ import { translate, type MessageKey } from './services/i18n';
 import { BottomNav, type Tab } from './components/BottomNav';
 import { SplashScreen } from './components/SplashScreen';
 import { Snackbar } from './components/Snackbar';
-import type { SummaryRange } from './components/AdherenceSummaryCard';
+import { isSummaryRange, type SummaryRange } from './components/AdherenceSummaryCard';
 import { PushSetupError, WebPushGateway } from './services/webPush';
 import { firebaseEnabled } from './services/firebaseConfig';
 import { browserRouteContext, isLocalDemoEnvironment, routineCentricUiEnabled } from './services/browserEnvironment';
@@ -35,6 +35,17 @@ const RoutinesScreen = lazyScreen(() => import('./screens/RoutinesScreen'), 'Rou
 const appBadgeApi = navigator as Navigator & {
   setAppBadge?: (contents?: number) => Promise<void>;
   clearAppBadge?: () => Promise<void>;
+};
+
+const DASHBOARD_SUMMARY_RANGE_KEY = 'zadiag.dashboard.summaryRange';
+
+const readDashboardSummaryRange = (): SummaryRange => {
+  try {
+    const stored = localStorage.getItem(DASHBOARD_SUMMARY_RANGE_KEY);
+    return isSummaryRange(stored) ? stored : 'day';
+  } catch {
+    return 'day';
+  }
 };
 
 export const appBadgeCountForState = (
@@ -71,7 +82,7 @@ export function App() {
   const [savingRoutineId, setSavingRoutineId] = useState<string>();
   const [selectedSessionId, setSelectedSessionId] = useState<string>();
   const [lastSyncAt, setLastSyncAt] = useState<string>();
-  const [dashboardSummaryRange, setDashboardSummaryRange] = useState<SummaryRange>('day');
+  const [dashboardSummaryRange, setDashboardSummaryRange] = useState<SummaryRange>(readDashboardSummaryRange);
   const [serviceWorkerStatus, setServiceWorkerStatus] = useState<'unsupported' | 'registered' | 'notRegistered'>(
     () => ('serviceWorker' in navigator ? 'notRegistered' : 'unsupported'),
   );
@@ -79,6 +90,14 @@ export function App() {
   const t = (key: MessageKey) => translate(state.locale, key);
   const preferences = normalizeAppPreferences(state.preferences);
   const appRootClassName = 'app-root app-compact';
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(DASHBOARD_SUMMARY_RANGE_KEY, dashboardSummaryRange);
+    } catch {
+      // The dashboard still works if browser storage is unavailable.
+    }
+  }, [dashboardSummaryRange]);
 
   useEffect(() => {
     let alive = true;
