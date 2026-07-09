@@ -1,4 +1,3 @@
-import { IonIcon } from '@ionic/react';
 import { addOutline } from 'ionicons/icons';
 import { useEffect, useMemo, useState } from 'react';
 import type { MonitoringPlan, RoutineValidationMode, ScheduleGroup } from '../domain/models';
@@ -15,6 +14,7 @@ import {
   summarizeWeekdays,
   validateScheduleGroupsDraft,
 } from '../domain/monitoringPlan';
+import { SvgIcon } from '../components/SvgIcon';
 
 const dayOptions = [
   { label: 'mondayShort', longLabel: 'monday', day: 1 },
@@ -318,13 +318,13 @@ export function RoutineEditScreen({
             ))}
           </div>
           <button type="button" className="plan-add-button schedule-add-window" disabled={totalWindowCount >= MAX_TIME_WINDOWS} onClick={() => addWindow(group.id)}>
-            <IonIcon icon={addOutline} aria-hidden="true" />{t('addTimeSlot')}
+            <SvgIcon icon={addOutline} />{t('addTimeSlot')}
           </button>
         </section>
       ))}
 
       <button type="button" className="plan-add-button schedule-add-group" disabled={groups.length >= MAX_SCHEDULE_GROUPS || totalWindowCount >= MAX_TIME_WINDOWS} onClick={addGroup}>
-        <IonIcon icon={addOutline} aria-hidden="true" />{t('addScheduleGroup')}
+        <SvgIcon icon={addOutline} />{t('addScheduleGroup')}
       </button>
 
       {error && <p className="form-error">{error}</p>}

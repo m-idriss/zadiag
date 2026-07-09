@@ -1,4 +1,3 @@
-import { IonIcon } from '@ionic/react';
 import { addOutline } from 'ionicons/icons';
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import type { AppState, MonitoringPlan, RoutineAssignment, RoutineValidationMode, ScheduleGroup, VerificationEvent } from '../domain/models';
@@ -9,6 +8,7 @@ import { presentRoutine } from '../domain/routinePresentation';
 import { assignableRoutineTemplates, marketplaceFromTemplates, presentRoutineTemplate } from '../domain/routineMarketplace';
 import { withResolvedEventStatuses } from '../domain/adherence';
 import { readUiStorageJson, readUiStorageString, removeUiStorageItem, writeUiStorageString } from '../services/uiStorage';
+import { SvgIcon } from '../components/SvgIcon';
 
 const RoutineDetailScreen = lazy(() => import('./RoutineDetailScreen').then((module) => ({ default: module.RoutineDetailScreen })));
 
@@ -276,7 +276,7 @@ export function RoutinesScreen({
         <div><h1>{t('myRoutines')}</h1><p>{t('routinesHint')}</p></div>
         {canAssignRoutine && (
           <button type="button" className="add-routine-button" aria-label={t('addRoutine')} aria-expanded={catalogOpen} onClick={() => setCatalogOpen((open) => !open)}>
-            <IonIcon icon={addOutline} aria-hidden="true" />
+            <SvgIcon icon={addOutline} />
           </button>
         )}
       </header>

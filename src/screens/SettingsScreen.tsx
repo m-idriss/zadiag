@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { IonButton, IonIcon } from '@ionic/react';
 import {
   chevronDownOutline,
   informationCircleOutline,
@@ -15,7 +14,8 @@ import { buildDiagnosticsEmailBody, createCorrelationId } from '../services/appL
 import type { AppUpdateInfo } from '../services/appUpdate';
 import { Disclaimer } from '../components/Disclaimer';
 import { CodeBox } from '../components/CodeBox';
-import { ListRow, SegmentedControl, Switch } from '../components/ui';
+import { ActionButton, ListRow, SegmentedControl, Switch } from '../components/ui';
+import { SvgIcon } from '../components/SvgIcon';
 
 const SUPPORT_EMAIL = 'contact@3dime.com';
 
@@ -272,7 +272,7 @@ export function SettingsScreen({
         <h2 id="settings-device-heading">{t('settingsDeviceSection')}</h2>
         <div className="card settings-list">
           <ListRow
-            icon={<IonIcon icon={languageOutline} />}
+            icon={<SvgIcon icon={languageOutline} />}
             title={t('settingsLanguageTitle')}
             detail={t(languageDetailKey)}
             trailing={(
@@ -289,7 +289,7 @@ export function SettingsScreen({
           />
           {role === 'child' ? (
             <ListRow
-              icon={<IonIcon icon={timeOutline} />}
+              icon={<SvgIcon icon={timeOutline} />}
               title={t('settingsNotificationWindowTitle')}
               detail={`${t('settingsNotificationWindowDetail')} ${notificationWindowLabel}`}
               trailing={(
@@ -312,7 +312,7 @@ export function SettingsScreen({
           ) : null}
           {role === 'parent' ? (
             <ListRow
-              icon={<IonIcon icon={notificationsOutline} />}
+              icon={<SvgIcon icon={notificationsOutline} />}
               title={t('settingsReminderRepeatTitle')}
               detail={reminderRepeatLabel}
               trailing={(
@@ -332,7 +332,7 @@ export function SettingsScreen({
         <h2 id="settings-support-heading">{t('settingsSupportSection')}</h2>
         <div className="card settings-list">
           <ListRow
-            icon={<IonIcon icon={informationCircleOutline} />}
+            icon={<SvgIcon icon={informationCircleOutline} />}
             title={(
               <span className="settings-diagnostics-header">
                 <span>{t('settingsRecoveryDiagnosticsTitle')}</span>
@@ -343,7 +343,7 @@ export function SettingsScreen({
                   aria-label={t('settingsRecoveryDiagnosticsTitle')}
                   onClick={() => setDiagnosticsOpen((open) => !open)}
                 >
-                  <IonIcon className={diagnosticsOpen ? 'expanded' : undefined} icon={chevronDownOutline} aria-hidden="true" />
+                  <SvgIcon className={diagnosticsOpen ? 'expanded' : undefined} icon={chevronDownOutline} />
                 </button>
               </span>
             )}
@@ -369,7 +369,7 @@ export function SettingsScreen({
             </dl>
           </ListRow>
           <ListRow
-            icon={<IonIcon icon={mailOutline} />}
+            icon={<SvgIcon icon={mailOutline} />}
             title={t('settingsDebugMailTitle')}
             detail={t('settingsDebugMailDetail')}
             trailing={<button type="button" className="settings-inline-action settings-inline-action-contained" onClick={sendDiagnosticsEmail}>{t('settingsDebugMailSend')}</button>}
@@ -377,7 +377,7 @@ export function SettingsScreen({
             {mailError ? <small className="settings-action-error">{t('settingsDebugMailError')}</small> : null}
           </ListRow>
           <ListRow
-            icon={<IonIcon icon={notificationsOutline} />}
+            icon={<SvgIcon icon={notificationsOutline} />}
             title={t('settingsTestNotificationTitle')}
             detail={notificationsEnabled ? t('settingsTestNotificationDetail') : t('settingsTestNotificationDisabledDetail')}
             trailing={(
@@ -400,7 +400,7 @@ export function SettingsScreen({
             {testPushStatus === 'enableError' ? <small className="settings-action-error">{t('settingsEnableNotificationsError')}</small> : null}
           </ListRow>
           <ListRow
-            icon={<IonIcon icon={informationCircleOutline} />}
+            icon={<SvgIcon icon={informationCircleOutline} />}
             title={t('settingsUpdateTitle')}
             detail={updateDetail}
             trailing={(
@@ -423,10 +423,10 @@ export function SettingsScreen({
       </section>
       <Disclaimer t={t} />
       {contactMailError ? <small className="settings-action-error">{t('settingsContactError')}</small> : null}
-      <IonButton className="settings-contact-button" expand="block" onClick={contactSupport}>
-        <IonIcon slot="start" icon={mailOutline} />
+      <ActionButton className="settings-contact-button" tone="navy" onClick={contactSupport}>
+        <SvgIcon icon={mailOutline} />
         {t('settingsContactButton')}
-      </IonButton>
+      </ActionButton>
       <section className="settings-section" aria-labelledby="settings-install-heading">
         <h2 id="settings-install-heading">{t('settingsInstallSection')}</h2>
         {role === 'parent' ? (
@@ -463,7 +463,7 @@ export function SettingsScreen({
               <strong>{t('childLinkCode')}</strong>
               <small>{childLinkingCode ? t('settingsSensitiveCodeHint') : t('childLinkCodeEmpty')}</small>
             </div>
-            <IonIcon className={sensitiveOpen ? 'expanded' : undefined} icon={chevronDownOutline} aria-hidden="true" />
+            <SvgIcon className={sensitiveOpen ? 'expanded' : undefined} icon={chevronDownOutline} />
           </button>
           {sensitiveOpen ? (
             <div id="settings-link-code-panel">
@@ -507,7 +507,7 @@ export function SettingsScreen({
               <strong>{t('parentRecoveryCode')}</strong>
               <small>{t('settingsSensitiveCodeHint')}</small>
             </div>
-            <IonIcon className={sensitiveOpen ? 'expanded' : undefined} icon={chevronDownOutline} aria-hidden="true" />
+            <SvgIcon className={sensitiveOpen ? 'expanded' : undefined} icon={chevronDownOutline} />
           </button>
           {sensitiveOpen ? (
             <div id="settings-recovery-code-panel">
@@ -522,10 +522,10 @@ export function SettingsScreen({
           ) : null}
         </section>
       ) : null}
-      <IonButton className="settings-reset-button" expand="block" onClick={confirmReset}>
-        <IonIcon slot="start" icon={trashOutline} />
+      <ActionButton className="settings-reset-button" tone="danger" onClick={confirmReset}>
+        <SvgIcon icon={trashOutline} />
         {t('resetDemo')}
-      </IonButton>
+      </ActionButton>
       </section>
     </div>
   );

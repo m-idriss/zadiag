@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { IonIcon } from '@ionic/react';
 import { checkmarkOutline, copyOutline, eyeOffOutline, eyeOutline } from 'ionicons/icons';
 import type { MessageKey } from '../services/i18n';
+import { SvgIcon } from './SvgIcon';
 
 async function copyToClipboard(value: string) {
   if (navigator.clipboard?.writeText) {
@@ -88,7 +88,7 @@ export function CodeBox({
                 title={visibilityLabel}
                 onClick={() => setRevealed((current) => !current)}
               >
-                <IonIcon aria-hidden="true" icon={revealed ? eyeOffOutline : eyeOutline} />
+                <SvgIcon icon={revealed ? eyeOffOutline : eyeOutline} />
                 <span>{visibilityLabel}</span>
               </button>
             ) : null}
@@ -102,7 +102,7 @@ export function CodeBox({
           aria-live="polite"
           onClick={() => { void handleCopy(); }}
         >
-          <IonIcon aria-hidden="true" icon={copyState === 'copied' ? checkmarkOutline : copyOutline} />
+          <SvgIcon icon={copyState === 'copied' ? checkmarkOutline : copyOutline} />
           <span className="copy-code-label">{copyLabel}</span>
         </button>
       </div>

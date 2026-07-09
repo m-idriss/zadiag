@@ -1,17 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
-import type { ReactNode } from 'react';
 import { defaultAppPreferences, type PushSubscriptionHealth, type VerificationEvent } from '../domain/models';
 import { translate } from '../services/i18n';
 import { SettingsScreen } from './SettingsScreen';
-
-vi.mock('@ionic/react', () => ({
-  IonButton: ({ children, onClick }: { children: ReactNode; onClick?: () => void }) => (
-    <button type="button" onClick={onClick}>{children}</button>
-  ),
-  IonIcon: () => null,
-}));
 
 const renderSettings = ({
   notificationsEnabled = false,

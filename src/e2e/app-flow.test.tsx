@@ -1,32 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
-import type { ReactNode } from 'react';
 import type { AppRepository } from '../services/contracts';
 import type { AppState, MonitoringPlan, VerificationEvent } from '../domain/models';
 import { createDefaultRoutineAssignment, DEFAULT_ROUTINE_ID, defaultPlan } from '../domain/models';
 
 let fakeRepository: AppRepository;
-
-vi.mock('@ionic/react', () => ({
-  IonApp: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  IonButton: ({
-    children,
-    onClick,
-    disabled,
-    type = 'button',
-  }: {
-    children: ReactNode;
-    onClick?: () => void;
-    disabled?: boolean;
-    type?: 'button' | 'submit' | 'reset';
-  }) => (
-    <button type={type} disabled={disabled} onClick={onClick}>
-      {children}
-    </button>
-  ),
-  IonIcon: () => null,
-  IonSpinner: () => <span>loading</span>,
-}));
 
 vi.mock('../screens/ChildDashboard', () => ({
   ChildDashboard: ({ start, state }: { start: () => void; state: { family: { childName: string } } }) => (

@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { IonButton, IonCheckbox, IonInput } from '@ionic/react';
 import type { Role } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { Disclaimer } from '../components/Disclaimer';
 import { CodeBox } from '../components/CodeBox';
 import { SetupProgress } from '../components/SetupProgress';
+import { ActionButton } from '../components/ui';
 
 export function LinkScreen({
   role,
@@ -54,20 +54,17 @@ export function LinkScreen({
       <h1>{parent ? t('createLink') : t('joinFamily')}</h1>
       <p>{parent ? (mode === 'recover' ? t('parentRecoverHint') : t('parentLinkHint')) : t('childLinkHint')}</p>
       <section className="card link-card">
-        <IonInput
-          label={parent ? (mode === 'recover' ? t('parentRecoveryCode') : t('childNickname')) : t('linkingCode')}
-          labelPlacement="stacked"
-          fill="outline"
-          value={value}
-          onIonInput={(event) => setValue(String(event.detail.value ?? ''))}
-        />
+        <label className="native-input-field">
+          <span>{parent ? (mode === 'recover' ? t('parentRecoveryCode') : t('childNickname')) : t('linkingCode')}</span>
+          <input value={value} onChange={(event) => setValue(event.currentTarget.value)} />
+        </label>
         {parent && (
           <>
             {mode === 'create' ? (
               <>
                 {code && <CodeBox label={t('linkingCode')} hint={t('shareCodeHint')} value={code} t={t} />}
                 <label className="consent-row">
-                  <IonCheckbox checked={consent} onIonChange={(event) => setConsent(event.detail.checked)} />
+                  <input className="native-checkbox" type="checkbox" checked={consent} onChange={(event) => setConsent(event.currentTarget.checked)} />
                   <span>{t('consent')}</span>
                 </label>
               </>
@@ -83,9 +80,9 @@ export function LinkScreen({
       {parent ? <button className="regenerate-code" type="button" onClick={() => { setMode(mode === 'create' ? 'recover' : 'create'); setValue(''); setConsent(false); }}>
         {mode === 'create' ? t('recoverExistingFamily') : t('createNewFamily')}
       </button> : null}
-      <IonButton expand="block" disabled={busy || !value.trim() || (parent && mode === 'create' && !consent)} onClick={submit}>
+      <ActionButton disabled={busy || !value.trim() || (parent && mode === 'create' && !consent)} onClick={submit}>
         {parent ? (mode === 'recover' ? t('recoverContinue') : t('createContinue')) : t('linkContinue')}
-      </IonButton>
+      </ActionButton>
       <small className="link-version">v{import.meta.env.VITE_APP_VERSION}</small>
     </main>
   );

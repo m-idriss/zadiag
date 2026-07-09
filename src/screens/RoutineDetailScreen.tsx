@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { IonButton, IonIcon } from '@ionic/react';
 import { cameraOutline, chevronBackOutline, chevronForwardOutline, ellipsisHorizontal, peopleOutline, sendOutline, timeOutline } from 'ionicons/icons';
 import { adherenceSummary, withResolvedEventStatuses } from '../domain/adherence';
 import { presentRoutine } from '../domain/routinePresentation';
@@ -9,6 +8,8 @@ import { AppIcon, routineIconName } from '../components/Icon';
 import { StatusPill } from '../components/StatusPill';
 import { dayPeriodLabelKey } from '../domain/taskTimeLabel';
 import { RoutineEditScreen } from './RoutineEditScreen';
+import { SvgIcon } from '../components/SvgIcon';
+import { ActionButton } from '../components/ui';
 
 type DetailTab = 'details' | 'tracking' | 'plan';
 type DetailInitialTab = DetailTab | 'overview';
@@ -142,8 +143,8 @@ const streakFor = (events: VerificationEvent[]) => {
 };
 
 const renderRoutineStepIcon = (icon: string) => {
-  if (icon === '▣') return <IonIcon icon={cameraOutline} />;
-  if (icon === '➤') return <IonIcon icon={sendOutline} />;
+  if (icon === '▣') return <SvgIcon icon={cameraOutline} />;
+  if (icon === '➤') return <SvgIcon icon={sendOutline} />;
   return icon;
 };
 
@@ -220,24 +221,24 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
         <span className={`submission-thumb ${event.proofImagePath ? 'submission-thumb-loading' : ''}`} aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
       )}
       <div><strong>{formatDateTime(event.requestedAt)}</strong><small>{event.reason ?? t('noAnalysisYet')}</small></div>
-      <StatusPill status={event.status} t={t} /><span aria-hidden="true"><IonIcon icon={chevronForwardOutline} /></span>
+      <StatusPill status={event.status} t={t} /><span aria-hidden="true"><SvgIcon icon={chevronForwardOutline} /></span>
     </article>
     );
   };
 
   const detailsPanel = (
     <div className="routine-tab-panel">
-      <section className="next-check-card"><div><small>{t('nextCheck')}</small><h2>{next ? t(dayPeriodLabelKey(next.expiresAt)) : t('noPendingTask')}</h2>{next && <p>{t('before')} {formatTime(next.expiresAt)}</p>}</div><span aria-hidden="true"><IonIcon icon={timeOutline} /></span></section>
+      <section className="next-check-card"><div><small>{t('nextCheck')}</small><h2>{next ? t(dayPeriodLabelKey(next.expiresAt)) : t('noPendingTask')}</h2>{next && <p>{t('before')} {formatTime(next.expiresAt)}</p>}</div><span aria-hidden="true"><SvgIcon icon={timeOutline} /></span></section>
       <section className="routine-copy"><h2>{t('routineSummary')}</h2><p>{visual.description}</p></section>
       <section className="routine-meta-card">
-        <div className="routine-plan-meta"><span aria-hidden="true"><IonIcon icon={timeOutline} /></span><b>{t('monitoringPlan')}</b><p>{assignment.plan.checksPerDay} {t('checksDay')}</p>{edit && <button type="button" onClick={() => setTab('plan')} className="routine-edit-plan-button">{t('edit')}</button>}</div>
-        <div><span aria-hidden="true"><IonIcon icon={cameraOutline} /></span><b>{t('expectedProof')}</b><p>{visual.proofType}</p><i><IonIcon icon={chevronForwardOutline} /></i></div>
-        <div><span aria-hidden="true"><IonIcon icon={peopleOutline} /></span><b>{t('responsible')}</b><p>{visual.responsibleName}</p><i><IonIcon icon={chevronForwardOutline} /></i></div>
+        <div className="routine-plan-meta"><span aria-hidden="true"><SvgIcon icon={timeOutline} /></span><b>{t('monitoringPlan')}</b><p>{assignment.plan.checksPerDay} {t('checksDay')}</p>{edit && <button type="button" onClick={() => setTab('plan')} className="routine-edit-plan-button">{t('edit')}</button>}</div>
+        <div><span aria-hidden="true"><SvgIcon icon={cameraOutline} /></span><b>{t('expectedProof')}</b><p>{visual.proofType}</p><i><SvgIcon icon={chevronForwardOutline} /></i></div>
+        <div><span aria-hidden="true"><SvgIcon icon={peopleOutline} /></span><b>{t('responsible')}</b><p>{visual.responsibleName}</p><i><SvgIcon icon={chevronForwardOutline} /></i></div>
       </section>
       <section className="routine-copy"><h2>{t('instructions')}</h2><p>{visual.instructions}</p></section>
       <div className="routine-instruction-list">{visual.instructionSteps.map((step, index) => <article key={step.id}><b>{index + 1}</b><span aria-hidden="true">{renderRoutineStepIcon(step.icon)}</span><div><h3>{step.title}</h3><p>{step.description}</p></div></article>)}</div>
       <aside className="routine-advice"><b>{t('advice')}</b><p>{t('routineAdvice')}</p></aside>
-      {next && start && <IonButton className="routine-proof-action" expand="block" onClick={start}><IonIcon icon={cameraOutline} slot="start" />{t('sendProof')}</IonButton>}
+      {next && start && <ActionButton className="routine-proof-action" onClick={start}><SvgIcon icon={cameraOutline} />{t('sendProof')}</ActionButton>}
     </div>
   );
 
@@ -285,7 +286,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   return (
     <div className="content-screen routine-detail-screen" style={visual.style}>
       <div className="routine-detail-topbar">
-        <button type="button" className="detail-back" onClick={back} aria-label={t('backToRoutines')}><IonIcon icon={chevronBackOutline} /></button>
+        <button type="button" className="detail-back" onClick={back} aria-label={t('backToRoutines')}><SvgIcon icon={chevronBackOutline} /></button>
         <header className="routine-detail-hero">
           <span className="routine-hero-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
           <div className="routine-detail-title">
@@ -293,7 +294,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
             <p>{assignment.plan.checksPerDay} {t('checksDay')}</p>
           </div>
         </header>
-        <button type="button" className="more-button" aria-label={t('moreOptions')}><IonIcon icon={ellipsisHorizontal} /></button>
+        <button type="button" className="more-button" aria-label={t('moreOptions')}><SvgIcon icon={ellipsisHorizontal} /></button>
       </div>
       <nav className="routine-tabs" aria-label={t('routineSections')}>
         {tabs.map((item) => <button type="button" className={tab === item ? 'active' : ''} aria-current={tab === item ? 'page' : undefined} onClick={() => setTab(item)} key={item}>{t(item === 'details' ? 'infoTab' : item === 'plan' ? 'monitoringPlan' : 'trackingTab')}</button>)}

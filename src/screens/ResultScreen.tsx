@@ -1,8 +1,8 @@
-import { IonButton } from '@ionic/react';
 import type { Locale, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { Disclaimer } from '../components/Disclaimer';
 import { StatusPill } from '../components/StatusPill';
+import { ActionButton } from '../components/ui';
 
 export function ResultScreen({
   event,
@@ -40,8 +40,8 @@ export function ResultScreen({
       {quality != null && quality <= 60 ? <p className="result-reason">{t('analysisQualityHint')}</p> : null}
       <Disclaimer t={t} />
       {retake ? <p className="result-choice-hint">{t('sendAsIsHint')}</p> : null}
-      {retake ? <IonButton expand="block" onClick={retake}>{t('retakeProof')}</IonButton> : null}
-      <IonButton expand="block" fill={retake ? 'outline' : 'solid'} onClick={done}>{t(retake ? 'sendAsIs' : 'backToday')}</IonButton>
+      {retake ? <ActionButton onClick={retake}>{t('retakeProof')}</ActionButton> : null}
+      <ActionButton fill={retake ? 'outline' : 'solid'} onClick={done}>{t(retake ? 'sendAsIs' : 'backToday')}</ActionButton>
     </main>
   );
 }

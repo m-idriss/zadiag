@@ -1,5 +1,4 @@
 import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType } from 'react';
-import { IonApp } from '@ionic/react';
 import { normalizeAppPreferences, type Role, type VerificationEvent } from './domain/models';
 import { routeForState, type AppRoute } from './domain/appRouting';
 import { createRepository } from './services/repositoryFactory';
@@ -247,7 +246,7 @@ export function App() {
 
   if (startupError) {
     return (
-      <IonApp className={appRootClassName}>
+      <div className={appRootClassName}>
         <main className="page startup-recovery-page">
           <section className="startup-recovery-card" aria-live="polite">
             <img src="/icons/icon-192.png" alt="" />
@@ -259,15 +258,15 @@ export function App() {
             </button>
           </section>
         </main>
-      </IonApp>
+      </div>
     );
   }
 
   if (!ready) {
     return (
-      <IonApp className={appRootClassName}>
+      <div className={appRootClassName}>
         <SplashScreen progress={splashProgress} message={t(splashMessage)} />
-      </IonApp>
+      </div>
     );
   }
 
@@ -396,7 +395,7 @@ export function App() {
   }
 
   return (
-    <IonApp className={appRootClassName}>
+    <div className={appRootClassName}>
       <Suspense fallback={<SplashScreen progress={ready ? 96 : splashProgress} message={t(ready ? 'splashFinalizing' : splashMessage)} />}>
         {content}
       </Suspense>
@@ -422,6 +421,6 @@ export function App() {
           onClose={() => setResetNoticeKey(undefined)}
         />
       ) : null}
-    </IonApp>
+    </div>
   );
 }

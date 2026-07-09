@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { IonButton, IonIcon } from '@ionic/react';
 import { notificationsOutline } from 'ionicons/icons';
 import type { MessageKey } from '../services/i18n';
 import { SetupProgress } from '../components/SetupProgress';
 import { PushSetupError } from '../services/webPush';
+import { SvgIcon } from '../components/SvgIcon';
+import { ActionButton } from '../components/ui';
 
 export const notificationSetupErrorMessageKey = (error: unknown): MessageKey => {
   const code = error instanceof PushSetupError
@@ -55,7 +56,7 @@ export function NotificationSetupScreen({
   return (
     <main className="page setup-page notification-setup-page">
       <SetupProgress current={3} t={t} />
-      <div className="setup-hero-icon bell" aria-hidden="true"><IonIcon icon={notificationsOutline} /></div>
+      <div className="setup-hero-icon bell" aria-hidden="true"><SvgIcon icon={notificationsOutline} /></div>
       <p className="setup-eyebrow">{t('setupStepThree')}</p>
       <h1>{t('setupNotifyTitle')}</h1>
       <p className="setup-intro">{t('setupNotifyIntro')}</p>
@@ -68,9 +69,9 @@ export function NotificationSetupScreen({
 
       <aside className="setup-help"><span aria-hidden="true">ⓘ</span><p>{t('setupNotifyHelp')}</p></aside>
       {errorKey ? <p className="setup-error" role="alert">{t(errorKey)}</p> : null}
-      <IonButton expand="block" disabled={status === 'busy'} onClick={() => { void enable(); }}>
+      <ActionButton disabled={status === 'busy'} onClick={() => { void enable(); }}>
         {status === 'busy' ? t('enablingReminders') : t('setupNotifyAction')}
-      </IonButton>
+      </ActionButton>
       <small className="required-note">{t('setupRequiredNote')}</small>
     </main>
   );

@@ -12,9 +12,6 @@ importers:
 
   .:
     dependencies:
-      '@ionic/react':
-        specifier: ^8.8.12
-        version: 8.8.12(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       firebase:
         specifier: ^12.15.0
         version: 12.15.0
@@ -1238,16 +1235,6 @@ packages:
     peerDependenciesMeta:
       '@types/node':
         optional: true
-
-  '@ionic/core@8.8.12':
-    resolution: {integrity: sha512-nR3Us+NICa4eACvPXb4yUzza1URxQ23ELjjLmK1KRFHlk4DhhlzNrYAad0aibTRFh4toXqvFMTADFPB+JiTTFg==}
-    engines: {node: '>= 16'}
-
-  '@ionic/react@8.8.12':
-    resolution: {integrity: sha512-rTweY7/zf4htD5CgG1ENzBBUyOF4t1dvUA4odAwmLE72qAIy2XfRkGlOgTVAPSXygJZGHt2LXCFTWk1v66APdw==}
-    peerDependencies:
-      react: '>=16.8.6'
-      react-dom: '>=16.8.6'
 
   '@isaacs/cliui@8.0.2':
     resolution: {integrity: sha512-O8jcjabXaleOG9DQ0+ARXWZBTfnP4WNAqzuiJK7ll44AmxGKv/J2M4TPjxjY3znBCfvBXFzucm1twdyFybFqEA==}
@@ -6262,20 +6249,6 @@ snapshots:
   '@inquirer/type@3.0.10(@types/node@26.1.0)':
     optionalDependencies:
       '@types/node': 26.1.0
-
-  '@ionic/core@8.8.12':
-    dependencies:
-      '@stencil/core': 4.43.5
-      ionicons: 8.0.13
-      tslib: 2.8.1
-
-  '@ionic/react@8.8.12(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
-    dependencies:
-      '@ionic/core': 8.8.12
-      ionicons: 8.0.13
-      react: 19.2.7
-      react-dom: 19.2.7(react@19.2.7)
-      tslib: 2.8.1
 
   '@isaacs/cliui@8.0.2':
     dependencies:

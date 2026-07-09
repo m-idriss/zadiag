@@ -1,4 +1,3 @@
-import { IonIcon } from '@ionic/react';
 import {
   cameraOutline,
   chevronDownOutline,
@@ -19,6 +18,7 @@ import {
   todayOutline,
   waterOutline,
 } from 'ionicons/icons';
+import { SvgIcon } from './SvgIcon';
 
 export type AppIconName =
   | 'camera'
@@ -67,11 +67,7 @@ const icons: Record<AppIconName, string> = {
 
 export function AppIcon({ name, className }: { name: AppIconName; className?: string }) {
   return (
-    <IonIcon
-      className={className ? `app-icon ${className}` : 'app-icon'}
-      icon={icons[name]}
-      aria-hidden="true"
-    />
+    <SvgIcon icon={icons[name]} className={className ? `app-icon ${className}` : 'app-icon'} />
   );
 }
 

@@ -1,4 +1,4 @@
-import type { CSSProperties, HTMLAttributes, ReactElement, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes, ReactElement, ReactNode } from 'react';
 import { AppIcon, type AppIconName } from './Icon';
 
 const joinClassNames = (...names: Array<string | undefined | false>) =>
@@ -145,6 +145,30 @@ export function Switch({
       onClick={() => onChange(!checked)}
     >
       <span aria-hidden="true" />
+    </button>
+  );
+}
+
+export function ActionButton({
+  block = true,
+  children,
+  className,
+  fill = 'solid',
+  tone = 'primary',
+  type = 'button',
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  block?: boolean;
+  fill?: 'solid' | 'outline';
+  tone?: 'primary' | 'light' | 'navy' | 'danger';
+}) {
+  return (
+    <button
+      type={type}
+      className={joinClassNames('action-button', block && 'block', `fill-${fill}`, `tone-${tone}`, className)}
+      {...props}
+    >
+      {children}
     </button>
   );
 }

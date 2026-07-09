@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { IonButton, IonIcon, IonSpinner } from '@ionic/react';
 import { camera, checkmark, refresh } from 'ionicons/icons';
 import type { MessageKey } from '../services/i18n';
+import { SvgIcon } from './SvgIcon';
+import { ActionButton } from './ui';
 
 interface CameraCaptureProps {
   t: (key: MessageKey) => string;
@@ -233,10 +234,10 @@ export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureP
       {error && <p className="form-error" role="alert">{error}</p>}
 
       {!streamRef.current && !preview && (
-        <IonButton expand="block" color="light" disabled={opening} onClick={openCamera}>
-          {opening ? <IonSpinner name="crescent" /> : <IonIcon icon={camera} slot="start" />}
+        <ActionButton tone="light" disabled={opening} onClick={openCamera}>
+          {opening ? <span className="button-spinner" aria-hidden="true" /> : <SvgIcon icon={camera} />}
           {permissionState === 'denied' ? t('openCameraSettings') : t('openCamera')}
-        </IonButton>
+        </ActionButton>
       )}
 
       {streamRef.current && !preview && (
@@ -247,13 +248,13 @@ export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureP
 
       {preview && capturedAt && (
         <div className="camera-actions">
-          <IonButton fill="outline" color="light" disabled={busy} onClick={openCamera}>
-            <IonIcon icon={refresh} slot="start" />{t('retake')}
-          </IonButton>
-          <IonButton disabled={busy} onClick={() => void submitPreview()}>
-            {busy ? <IonSpinner name="crescent" /> : <IonIcon icon={checkmark} slot="start" />}
+          <ActionButton fill="outline" tone="light" disabled={busy} onClick={openCamera}>
+            <SvgIcon icon={refresh} />{t('retake')}
+          </ActionButton>
+          <ActionButton disabled={busy} onClick={() => void submitPreview()}>
+            {busy ? <span className="button-spinner" aria-hidden="true" /> : <SvgIcon icon={checkmark} />}
             {busy ? t('analyzing') : t('usePhoto')}
-          </IonButton>
+          </ActionButton>
         </div>
       )}
       {localCheckError ? <p className="form-error" role="alert">{localCheckError}</p> : null}
