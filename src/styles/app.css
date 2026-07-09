@@ -744,10 +744,19 @@ button {
   box-shadow: inset 0 1px rgba(255,255,255,.82);
 }
 .check-card.today-empty.has-attention {
-  border-color: color-mix(in srgb, var(--coral) 18%, white);
+  border-color: color-mix(in srgb, #d88412 24%, white);
+  background:
+    radial-gradient(circle at 12% 0%, color-mix(in srgb, #d88412 13%, transparent), transparent 38%),
+    linear-gradient(135deg, color-mix(in srgb, #d88412 9%, white), rgba(255,255,255,.9));
+  box-shadow: 0 14px 34px color-mix(in srgb, #d88412 9%, transparent), inset 0 1px rgba(255,255,255,.78);
 }
 .check-card.today-empty.has-attention::before {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--coral) 82%, white), var(--coral));
+  background: linear-gradient(180deg, color-mix(in srgb, #d88412 82%, white), #d88412);
+}
+.check-card.today-empty.has-attention .eyebrow {
+  border-color: color-mix(in srgb, #d88412 18%, white);
+  background: color-mix(in srgb, #d88412 13%, white);
+  color: #9a5a00;
 }
 .missed-today-badge {
   width: fit-content;
@@ -757,8 +766,8 @@ button {
   margin-top: 2px;
   padding: 6px 10px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--coral) 11%, white);
-  color: color-mix(in srgb, var(--coral) 86%, var(--navy));
+  background: color-mix(in srgb, #d88412 13%, white);
+  color: #9a5a00;
   font-size: 11px;
   font-weight: 950;
   line-height: 1;

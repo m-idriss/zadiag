@@ -156,6 +156,7 @@ describe('participant Today screen', () => {
     expect(container.textContent).toContain('Keep going.');
     expect(container.textContent).toContain('2 missed checks');
     expect(container.querySelector('.missed-today-badge')?.textContent).toBe('2 missed checks');
+    expect(container.querySelector('.today-empty')?.firstElementChild?.className).toBe('missed-today-badge');
     expect(container.textContent).not.toContain('Nice work!');
     expect(container.textContent).toContain('Missed');
     expect(container.textContent).toContain('Expired');
