@@ -147,8 +147,10 @@ export function ChildDashboard({
         })}
         {!pending.length && (
           <section className={`check-card today-empty${hasAttentionToday ? ' has-attention' : ''}`}>
-            {missedTodayLabel ? <strong className="missed-today-badge">{missedTodayLabel}</strong> : null}
-            <span className="eyebrow">{t('allDone')}</span>
+            <div className="today-empty-status-row">
+              <span className="eyebrow">{t('allDone')}</span>
+              {missedTodayLabel ? <strong className="missed-today-badge">{missedTodayLabel}</strong> : null}
+            </div>
             <h2>{emptyTodayTitle}</h2>
             <p>{emptyTodayHint}</p>
           </section>

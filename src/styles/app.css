@@ -733,6 +733,12 @@ button {
   width: 5px;
   background: linear-gradient(180deg, color-mix(in srgb, var(--teal) 84%, white), var(--teal));
 }
+.today-empty-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
 .check-card.today-empty .eyebrow {
   width: fit-content;
   padding: 6px 10px;
@@ -763,7 +769,6 @@ button {
   display: inline-flex;
   align-items: center;
   min-height: 26px;
-  margin-top: 2px;
   padding: 6px 10px;
   border-radius: 999px;
   background: color-mix(in srgb, #d88412 13%, white);
