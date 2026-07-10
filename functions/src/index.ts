@@ -775,14 +775,17 @@ export const requestCheckNow = onCall({
     const parsedPlan = monitoringPlanSchema.safeParse(assignment.data()?.plan);
     const plan = parsedPlan.success ? parsedPlan.data : defaultPlan;
     const activePendingCheck = pending.docs.find((doc) => Date.parse(String(doc.data().expiresAt)) > now.getTime());
+    const lockUpdate = { lastCheckRequestAt: now.toISOString() };
     if (activePendingCheck) {
       const currentCheck = { id: activePendingCheck.id, ...activePendingCheck.data() } as RequestedCheck;
       const renewedExpiresAt = checkExpiresAt(plan, now);
       if (renewedExpiresAt.getTime() > Date.parse(currentCheck.expiresAt)) {
         const expiresAt = renewedExpiresAt.toISOString();
+        transaction.update(assignmentRef, lockUpdate);
         transaction.update(activePendingCheck.ref, { expiresAt });
         return { check: { ...currentCheck, expiresAt }, resend: true };
       }
+      transaction.update(assignmentRef, lockUpdate);
       return { check: currentCheck, resend: true };
     }
 
@@ -796,6 +799,7 @@ export const requestCheckNow = onCall({
       requestedBy: uid,
     };
 
+    transaction.update(assignmentRef, lockUpdate);
     transaction.create(checkRef, check);
     return { check: { id: checkRef.id, ...check }, resend: false };
   });
@@ -1041,6 +1045,7 @@ export const dispatchPlannedChecks = onSchedule({
           false,
         );
         if (!freshDecision.shouldDispatch || freshDecision.dispatchKey !== decision.dispatchKey) return false;
+        transaction.update(freshAssignmentRef, { lastScheduledCheckDispatchAt: now.toISOString() });
         transaction.create(checkRef, check);
         return true;
       });
