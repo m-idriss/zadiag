@@ -221,6 +221,7 @@ describe('ParentDashboard', () => {
 
     expect(container.textContent).toContain('1 check to complete');
     expect(container.textContent).toContain('Orthodontic Elastics');
+    expect(container.textContent).toContain('Expected proof: Mouth photo');
     expect(container.textContent).toContain('Remind');
     expect(container.textContent).not.toContain('Waiting for participant proof');
   });
@@ -437,6 +438,7 @@ describe('ParentDashboard', () => {
     });
 
     expect(container.textContent).toContain('Checks to verify');
+    expect(container.textContent).toContain('Expected proof: Mouth photo');
     expect(container.textContent).toContain('Source: AI');
     expect(container.textContent).toContain('AI result: Needs review');
     expect(container.textContent).toContain('Confidence 67%');
