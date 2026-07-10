@@ -9,6 +9,7 @@ export interface AppRepository {
   createParticipant?(displayName: string, selfManaged?: boolean): Promise<string>;
   inviteParticipantMember?(participantId: string, role: Exclude<MembershipRole, 'owner'>): Promise<{ code: string; expiresAt: string }>;
   acceptParticipantInvitation?(code: string): Promise<string>;
+  leaveParticipant?(participantId: string): Promise<void>;
   setLocale(locale: Locale): Promise<void>;
   setPreferences(preferences: Partial<AppPreferences>): Promise<void>;
   linkParent(childName: string): Promise<void>;

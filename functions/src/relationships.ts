@@ -102,6 +102,11 @@ export const canRemoveMembership = ({
   && target?.status === 'active'
   && !(target.role === 'owner' && activeOwnerCount <= 1);
 
+export const canLeaveMembership = (
+  target: Partial<MembershipDocument> | undefined,
+  activeOwnerCount: number,
+) => target?.status === 'active' && !(target.role === 'owner' && activeOwnerCount <= 1);
+
 export interface LegacyFamilyDocument {
   childName?: unknown;
   members?: Record<string, unknown>;
