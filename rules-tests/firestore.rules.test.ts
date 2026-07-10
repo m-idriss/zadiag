@@ -6,7 +6,7 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
 import { afterAll, beforeAll, beforeEach, describe, test } from 'vitest';
 
 const projectId = 'zadiag-rules-test';
@@ -54,11 +54,24 @@ describe('family isolation', () => {
     await assertSucceeds(getDoc(doc(parentDb, 'families/family-1/routineAssignments/orthodontic-elastics')));
   });
 
+  test('allows family members to run client collection queries for routines and checks', async () => {
+    const parentDb = environment.authenticatedContext('parent').firestore();
+    await assertSucceeds(getDocs(query(
+      collection(parentDb, 'families/family-1/routineAssignments'),
+      orderBy('assignedAt', 'asc'),
+    )));
+    await assertSucceeds(getDocs(query(
+      collection(parentDb, 'families/family-1/checks'),
+      orderBy('requestedAt', 'desc'),
+    )));
+  });
+
   test('denies outsiders and hides linking documents', async () => {
     const outsiderDb = environment.authenticatedContext('outsider').firestore();
     const parentDb = environment.authenticatedContext('parent').firestore();
     await assertFails(getDoc(doc(outsiderDb, 'families/family-1')));
     await assertFails(getDoc(doc(outsiderDb, 'families/family-1/routineAssignments/orthodontic-elastics')));
+    await assertFails(getDocs(collection(outsiderDb, 'families/family-1/checks')));
     await assertFails(getDoc(doc(parentDb, 'linkCodes/private-hash')));
   });
 });
