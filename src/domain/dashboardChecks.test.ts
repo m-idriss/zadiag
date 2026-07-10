@@ -51,6 +51,15 @@ describe('dashboard check helpers', () => {
     ], now).map((item) => item.id)).toEqual(['latest-active', 'expired-pending', 'detected']);
   });
 
+  it('hides an older active pending check after a newer routine event is completed', () => {
+    const now = Date.parse('2026-07-09T10:00:00.000Z');
+
+    expect(activePendingEvents([
+      event('older-active', 'pending', '2026-07-09T11:00:00.000Z', 'orthodontic-elastics', '2026-07-09T10:15:00.000Z'),
+      event('completed-relance', 'detected', '2026-07-09T11:00:00.000Z', 'orthodontic-elastics', '2026-07-09T10:18:00.000Z'),
+    ], now)).toEqual([]);
+  });
+
   it('sorts upcoming routine checks and caps the result count', () => {
     const hydration = routineFromCatalog('daily-hydration');
     if (!hydration) throw new Error('missing_hydration_routine');

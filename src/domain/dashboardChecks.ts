@@ -12,9 +12,17 @@ export interface UpcomingRoutineCheck {
 }
 
 export const activePendingEvents = (events: VerificationEvent[], now = Date.now()) => {
+  const latestEventByRoutineId = new Map<string, VerificationEvent>();
+  events.forEach((event) => {
+    const current = latestEventByRoutineId.get(event.routineId);
+    if (!current || Date.parse(event.requestedAt) > Date.parse(current.requestedAt)) {
+      latestEventByRoutineId.set(event.routineId, event);
+    }
+  });
   const byRoutineId = new Map<string, VerificationEvent>();
   events.forEach((event) => {
     if (event.status !== 'pending' || Date.parse(event.expiresAt) <= now) return;
+    if (latestEventByRoutineId.get(event.routineId)?.id !== event.id) return;
     const current = byRoutineId.get(event.routineId);
     if (!current || Date.parse(event.requestedAt) > Date.parse(current.requestedAt)) {
       byRoutineId.set(event.routineId, event);
