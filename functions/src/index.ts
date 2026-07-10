@@ -105,31 +105,42 @@ type ReviewedCheckPayload = Record<string, unknown> & {
 };
 
 const requireFamilyRole = async (uid: string, familyId: string, role: 'parent' | 'child') => {
-  const [profile, family] = await Promise.all([
+  const familyRef = db.collection('families').doc(familyId);
+  const participantRef = db.collection('participants').doc(familyId);
+  const [profile, family, participant, membership] = await Promise.all([
     db.collection('users').doc(uid).get(),
-    db.collection('families').doc(familyId).get(),
+    familyRef.get(),
+    participantRef.get(),
+    participantRef.collection('memberships').doc(uid).get(),
   ]);
   const profileMatches = profile.exists
     && profile.data()?.familyId === familyId
     && profile.data()?.role === role;
   const familyMatches = family.exists && family.data()?.members?.[uid] === role;
-  if (!profileMatches && !familyMatches) {
+  if (profileMatches || familyMatches) return familyRef;
+  const permission = role === 'parent' ? 'reviewProofs' : 'submitChecks';
+  if (participant.exists && hasParticipantPermission(membership.data(), permission)) return participantRef;
+  {
     throw new HttpsError('permission-denied', `Only the linked ${role} can perform this action.`);
   }
-  return profile;
 };
 
 const requireFamilyMember = async (uid: string, familyId: string) => {
-  const [profile, family] = await Promise.all([
+  const familyRef = db.collection('families').doc(familyId);
+  const participantRef = db.collection('participants').doc(familyId);
+  const [profile, family, participant, membership] = await Promise.all([
     db.collection('users').doc(uid).get(),
-    db.collection('families').doc(familyId).get(),
+    familyRef.get(),
+    participantRef.get(),
+    participantRef.collection('memberships').doc(uid).get(),
   ]);
   const profileMatches = profile.exists && profile.data()?.familyId === familyId;
   const familyMatches = family.exists && typeof family.data()?.members?.[uid] === 'string';
-  if (!profileMatches && !familyMatches) {
+  if (profileMatches || familyMatches) return familyRef;
+  if (participant.exists && hasParticipantPermission(membership.data(), 'view')) return participantRef;
+  {
     throw new HttpsError('permission-denied', 'Only a linked family member can perform this action.');
   }
-  return profile;
 };
 
 const imageExtensionFor = (mimeType: string) => {
@@ -138,9 +149,9 @@ const imageExtensionFor = (mimeType: string) => {
   return 'jpg';
 };
 
-const storeProofImage = async (familyId: string, checkId: string, imageDataUrl: string) => {
+const storeProofImage = async (aggregate: 'families' | 'participants', familyId: string, checkId: string, imageDataUrl: string) => {
   const { mimeType, data } = parseImageDataUrl(imageDataUrl);
-  const path = `families/${familyId}/checks/${checkId}/proof.${imageExtensionFor(mimeType)}`;
+  const path = `${aggregate}/${familyId}/checks/${checkId}/proof.${imageExtensionFor(mimeType)}`;
   const file = bucket.file(path);
   await file.save(Buffer.from(data, 'base64'), {
     resumable: false,
@@ -1543,11 +1554,11 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
   const capturedAt = String(request.data?.capturedAt ?? '');
   const imageDataUrl = String(request.data?.imageDataUrl ?? '');
   const locale = request.data?.locale === 'fr' ? 'fr' : 'en';
-  await requireFamilyRole(uid, familyId, 'child');
+  const aggregateRef = await requireFamilyRole(uid, familyId, 'child');
   if (!/^data:image\/(?:jpeg|png|webp);base64,/.test(imageDataUrl) || imageDataUrl.length > maxImageDataUrlLength) {
     throw new HttpsError('invalid-argument', 'A valid image is required.');
   }
-  const checkRef = db.collection('families').doc(familyId).collection('checks').doc(checkId);
+  const checkRef = aggregateRef.collection('checks').doc(checkId);
   const routineId = await db.runTransaction(async (transaction) => {
     const check = await transaction.get(checkRef);
     const checkData = check.data();
@@ -1566,7 +1577,7 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
   });
   let proofImagePath: string | undefined;
   try {
-    proofImagePath = await storeProofImage(familyId, checkId, imageDataUrl);
+    proofImagePath = await storeProofImage(aggregateRef.parent.id as 'families' | 'participants', familyId, checkId, imageDataUrl);
   } catch (error) {
     console.error('Unable to store proof image for review', error);
     await checkRef.update({
@@ -1576,7 +1587,7 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
     });
     throw new HttpsError('unavailable', 'The proof image could not be stored. Please retake the photo.');
   }
-  const assignment = await db.collection('families').doc(familyId).collection('routineAssignments').doc(routineId).get();
+  const assignment = await aggregateRef.collection('routineAssignments').doc(routineId).get();
   const assignmentData = assignment.data() as Partial<RoutineAssignmentDocument> | undefined;
   if (assignmentData?.validationMode === 'auto') {
     const autoUpdate = {
@@ -1689,8 +1700,8 @@ export const getProofImageUrl = onCall({ region, cors, enforceAppCheck: true }, 
   const uid = requireUid(request.auth);
   const familyId = String(request.data?.familyId ?? '');
   const checkId = String(request.data?.checkId ?? '');
-  await requireFamilyMember(uid, familyId);
-  const checkRef = db.collection('families').doc(familyId).collection('checks').doc(checkId);
+  const aggregateRef = await requireFamilyMember(uid, familyId);
+  const checkRef = aggregateRef.collection('checks').doc(checkId);
   const check = await checkRef.get();
   if (!check.exists) {
     throw new HttpsError('not-found', 'No proof image is available for this check.');
@@ -1701,6 +1712,9 @@ export const getProofImageUrl = onCall({ region, cors, enforceAppCheck: true }, 
     `families/${familyId}/checks/${checkId}/proof.jpg`,
     `families/${familyId}/checks/${checkId}/proof.png`,
     `families/${familyId}/checks/${checkId}/proof.webp`,
+    `participants/${familyId}/checks/${checkId}/proof.jpg`,
+    `participants/${familyId}/checks/${checkId}/proof.png`,
+    `participants/${familyId}/checks/${checkId}/proof.webp`,
   ];
   const uniqueCandidatePaths = [...new Set(candidatePaths)];
   let proofImagePath: string | undefined;
@@ -1746,8 +1760,8 @@ export const reviewCheck = onCall({ region, cors, enforceAppCheck: true }, async
   if (!['detected', 'not_detected'].includes(decision)) {
     throw new HttpsError('invalid-argument', 'A valid review decision is required.');
   }
-  await requireFamilyRole(uid, familyId, 'parent');
-  const checkRef = db.collection('families').doc(familyId).collection('checks').doc(checkId);
+  const aggregateRef = await requireFamilyRole(uid, familyId, 'parent');
+  const checkRef = aggregateRef.collection('checks').doc(checkId);
   const reviewedAt = new Date().toISOString();
   const reviewedCheck = await db.runTransaction<ReviewedCheckPayload>(async (transaction) => {
     const check = await transaction.get(checkRef);
