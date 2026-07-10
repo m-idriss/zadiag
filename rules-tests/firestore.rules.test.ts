@@ -41,6 +41,65 @@ beforeEach(async () => {
     });
     await setDoc(doc(db, 'users/parent'), { familyId: 'family-1', role: 'parent' });
     await setDoc(doc(db, 'linkCodes/private-hash'), { familyId: 'family-1' });
+    await setDoc(doc(db, 'participants/participant-1'), { displayName: 'Maya', status: 'active' });
+    await setDoc(doc(db, 'participants/participant-1/memberships/parent'), {
+      uid: 'parent', role: 'owner', status: 'active', permissions: { view: true },
+    });
+    await setDoc(doc(db, 'participants/participant-1/memberships/coparent'), {
+      uid: 'coparent', role: 'caregiver', status: 'active', permissions: { view: true },
+    });
+    await setDoc(doc(db, 'participants/participant-1/memberships/suspended'), {
+      uid: 'suspended', role: 'caregiver', status: 'suspended', permissions: { view: true },
+    });
+    await setDoc(doc(db, 'participants/participant-1/checks/check-1'), { status: 'pending' });
+    await setDoc(doc(db, 'participants/participant-1/routineAssignments/routine-1'), { status: 'active' });
+    await setDoc(doc(db, 'users/parent/participantRefs/participant-1'), {
+      participantId: 'participant-1', role: 'owner', status: 'active',
+    });
+    await setDoc(doc(db, 'participants/self-managed'), { displayName: 'Jordan', status: 'active', userId: 'jordan' });
+    await setDoc(doc(db, 'participants/self-managed/memberships/jordan'), {
+      uid: 'jordan', role: 'owner', label: 'self', status: 'active', permissions: { view: true },
+    });
+    await setDoc(doc(db, 'relationshipInvitations/private-invitation'), { participantId: 'participant-1' });
+  });
+});
+
+describe('participant relationship isolation', () => {
+  test('allows two active caregivers to read the same participant data', async () => {
+    for (const uid of ['parent', 'coparent']) {
+      const memberDb = environment.authenticatedContext(uid).firestore();
+      await assertSucceeds(getDoc(doc(memberDb, 'participants/participant-1')));
+      await assertSucceeds(getDocs(collection(memberDb, 'participants/participant-1/memberships')));
+      await assertSucceeds(getDoc(doc(memberDb, 'participants/participant-1/checks/check-1')));
+      await assertSucceeds(getDoc(doc(memberDb, 'participants/participant-1/routineAssignments/routine-1')));
+    }
+  });
+
+  test('allows a self-managed owner to read their participant', async () => {
+    const selfDb = environment.authenticatedContext('jordan').firestore();
+    await assertSucceeds(getDoc(doc(selfDb, 'participants/self-managed')));
+  });
+
+  test('denies unrelated and suspended users', async () => {
+    for (const uid of ['outsider', 'suspended']) {
+      const deniedDb = environment.authenticatedContext(uid).firestore();
+      await assertFails(getDoc(doc(deniedDb, 'participants/participant-1')));
+      await assertFails(getDocs(collection(deniedDb, 'participants/participant-1/checks')));
+    }
+  });
+
+  test('allows only the account owner to read participant indexes', async () => {
+    const parentDb = environment.authenticatedContext('parent').firestore();
+    const coparentDb = environment.authenticatedContext('coparent').firestore();
+    await assertSucceeds(getDoc(doc(parentDb, 'users/parent/participantRefs/participant-1')));
+    await assertFails(getDoc(doc(coparentDb, 'users/parent/participantRefs/participant-1')));
+  });
+
+  test('denies all direct relationship writes and invitation reads', async () => {
+    const parentDb = environment.authenticatedContext('parent').firestore();
+    await assertFails(updateDoc(doc(parentDb, 'participants/participant-1'), { displayName: 'Changed' }));
+    await assertFails(updateDoc(doc(parentDb, 'participants/participant-1/memberships/coparent'), { role: 'owner' }));
+    await assertFails(getDoc(doc(parentDb, 'relationshipInvitations/private-invitation')));
   });
 });
 
