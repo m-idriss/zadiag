@@ -555,6 +555,22 @@ export class FirebaseRepository implements AppRepository {
     this.state.routinesLoaded = false;
     this.state.routinesError = false;
     const participantRef = doc(this.services.db, 'participants', participantId);
+    if (this.user) {
+      this.remoteSubscriptions.push(onSnapshot(doc(participantRef, 'pushSubscriptions', this.user.uid), (snapshot) => {
+        const data = snapshot.data() as PushSubscriptionDocument | undefined;
+        const toIso = (value: PushSubscriptionDocument['lastSuccessfulSaveAt']) =>
+          typeof value === 'string' ? value : value?.toDate?.().toISOString();
+        this.state.pushHealth = {
+          permission: 'Notification' in window ? Notification.permission : 'unsupported',
+          endpointPresent: Boolean(data?.endpoint),
+          lastSuccessfulSaveAt: toIso(data?.lastSuccessfulSaveAt),
+          lastDispatchResult: data?.lastDispatchResult,
+          lastDispatchAt: toIso(data?.lastDispatchAt),
+          lastDispatchError: data?.lastDispatchError,
+        };
+        this.emit();
+      }));
+    }
     const assignments = query(collection(participantRef, 'routineAssignments'), orderBy('assignedAt', 'asc'));
     this.remoteSubscriptions.push(onSnapshot(assignments, (snapshot) => {
       this.state.routineAssignments = snapshot.docs.map((item) => asRoutineAssignment(item.id, item.data()));

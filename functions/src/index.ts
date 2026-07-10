@@ -137,6 +137,15 @@ const requireFamilyRole = async (uid: string, familyId: string, role: 'parent' |
 
 const requireFamilyMember = (uid: string, familyId: string) => requireAggregatePermission(uid, familyId, 'view');
 
+const pushRoleForAggregate = async (uid: string, aggregateRef: FirebaseFirestore.DocumentReference): Promise<PushRecipientRole> => {
+  if (aggregateRef.parent.id === 'families') {
+    const profile = await db.collection('users').doc(uid).get();
+    return profile.data()?.role === 'child' ? 'child' : 'parent';
+  }
+  const membership = await aggregateRef.collection('memberships').doc(uid).get();
+  return membership.data()?.role === 'participant' ? 'child' : 'parent';
+};
+
 const imageExtensionFor = (mimeType: string) => {
   if (mimeType === 'image/png') return 'png';
   if (mimeType === 'image/webp') return 'webp';
@@ -971,13 +980,10 @@ export const savePushSubscription = onCall({ region, cors, enforceAppCheck: true
     throw new HttpsError('invalid-argument', 'A valid push subscription is required.');
   }
 
-  const profile = await db.collection('users').doc(uid).get();
-  const role = profile.data()?.role;
-  if (!profile.exists || profile.data()?.familyId !== familyId || (role !== 'child' && role !== 'parent')) {
-    throw new HttpsError('permission-denied', 'Only family members can enable notifications.');
-  }
-
-  const subscriptionRef = db.collection('families').doc(familyId).collection('pushSubscriptions').doc(uid);
+  const aggregateRef = await requireAggregatePermission(uid, familyId, 'view');
+  const role = await pushRoleForAggregate(uid, aggregateRef);
+  const userRef = db.collection('users').doc(uid);
+  const subscriptionRef = aggregateRef.collection('pushSubscriptions').doc(uid);
   const batch = db.batch();
   batch.set(subscriptionRef, {
     endpoint,
@@ -989,7 +995,7 @@ export const savePushSubscription = onCall({ region, cors, enforceAppCheck: true
     ...(preferences ? { preferences } : {}),
     updatedAt: FieldValue.serverTimestamp(),
   });
-  batch.update(profile.ref, { notificationsEnabled: true, updatedAt: FieldValue.serverTimestamp() });
+  batch.set(userRef, { notificationsEnabled: true, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
   await batch.commit();
 });
 
@@ -1001,12 +1007,9 @@ export const sendTestPushNotification = onCall({
 }, async (request) => {
   const uid = requireUid(request.auth);
   const familyId = String(request.data?.familyId ?? '');
-  const profile = await db.collection('users').doc(uid).get();
-  const role = profile.data()?.role;
-  if (!profile.exists || profile.data()?.familyId !== familyId || (role !== 'child' && role !== 'parent')) {
-    throw new HttpsError('permission-denied', 'Only family members can send a test notification.');
-  }
-  const subscriptionDocument = await db.collection('families').doc(familyId).collection('pushSubscriptions').doc(uid).get();
+  const aggregateRef = await requireAggregatePermission(uid, familyId, 'view');
+  const role = await pushRoleForAggregate(uid, aggregateRef);
+  const subscriptionDocument = await aggregateRef.collection('pushSubscriptions').doc(uid).get();
   const subscription = subscriptionDocument.data() as (PushSubscription & { locale?: string }) | undefined;
   if (!subscription?.endpoint) {
     throw new HttpsError('failed-precondition', 'No push subscription is available for this device.');
@@ -1022,12 +1025,8 @@ export const updateNotificationPreferences = onCall({ region, cors, enforceAppCh
   const uid = requireUid(request.auth);
   const familyId = String(request.data?.familyId ?? '');
   const reminderRepeatMinutes = normalizeReminderRepeatMinutes(request.data?.reminderRepeatMinutes);
-  const profile = await db.collection('users').doc(uid).get();
-  if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'parent') {
-    throw new HttpsError('permission-denied', 'Only the parent can update notification preferences.');
-  }
-
-  await db.collection('families').doc(familyId).update({
+  const aggregateRef = await requireAggregatePermission(uid, familyId, 'manageRoutines', 'parent');
+  await aggregateRef.update({
     'notificationPreferences.reminderRepeatMinutes': reminderRepeatMinutes,
     updatedAt: FieldValue.serverTimestamp(),
   });
