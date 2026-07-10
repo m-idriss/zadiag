@@ -363,6 +363,12 @@ export function App() {
             serviceWorkerStatus={serviceWorkerStatus}
             lastSyncAt={lastSyncAt}
             regenerateLinkCode={async () => { await repository.regenerateLinkCode(); sync(); }}
+            participantAccess={state.participantAccess}
+            activeParticipantId={state.activeParticipantId}
+            selectParticipant={repository.selectActiveParticipant ? async (participantId) => { await repository.selectActiveParticipant?.(participantId); sync(); } : undefined}
+            createParticipant={repository.createParticipant ? async (displayName, selfManaged) => { const id = await repository.createParticipant?.(displayName, selfManaged); sync(); return id!; } : undefined}
+            inviteParticipantMember={repository.inviteParticipantMember ? (participantId, membershipRole) => repository.inviteParticipantMember!(participantId, membershipRole) : undefined}
+            acceptParticipantInvitation={repository.acceptParticipantInvitation ? async (code) => { const id = await repository.acceptParticipantInvitation?.(code); sync(); return id!; } : undefined}
             locale={state.locale}
             setLocale={async (locale) => { await repository.setLocale(locale); sync(); }}
             updateInfo={appUpdateInfo}
