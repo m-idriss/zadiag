@@ -85,6 +85,8 @@ export function ParentDashboard({
     routinePresentationsById.get(event.routineId)?.name ?? t('routine');
   const routinePresentationFor = (event: VerificationEvent) =>
     routinePresentationsById.get(event.routineId) ?? { name: t('routine'), icon: undefined, style: {} };
+  const routineProofExampleFor = (event: VerificationEvent) =>
+    routinePresentationsById.get(event.routineId)?.proofExample;
   const displayReason = (event: VerificationEvent) =>
     event.reason && event.reason !== 'analysis_unavailable' && event.reason !== 'self_validated'
       ? event.reason
@@ -195,6 +197,7 @@ export function ParentDashboard({
                   .sort((a, b) => Date.parse(a.expiresAt) - Date.parse(b.expiresAt))
                   .map((event) => {
                     const presentation = routinePresentationFor(event);
+                    const proofExample = routineProofExampleFor(event);
                     return (
                       <article className="today-task today-routine-card parent-active-check-card actionable" style={presentation.style} key={event.id}>
                         <div className="today-routine-main">
@@ -204,6 +207,7 @@ export function ParentDashboard({
                               <div>
                                 <h3>{presentation.name}</h3>
                                 <p className="today-task-time">{eventWindowLabel(event.requestedAt, event.expiresAt, nowDate, locale, t)}</p>
+                                {proofExample ? <p className="routine-proof-context"><b>{t('expectedProof')}:</b> {proofExample}</p> : null}
                               </div>
                             </div>
                             {requestCheck ? (
@@ -321,6 +325,7 @@ export function ParentDashboard({
               const source = analysisSourceLabel(event);
               const confidence = formatScore(event.confidence);
               const quality = formatScore(event.imageQuality);
+              const proofExample = routineProofExampleFor(event);
               const renderImage = () => proofUrls[event.id]
                 ? <img src={proofUrls[event.id]} alt={t('responsibleReviewImageAlt')} />
                 : <div role="status">{proofErrors[event.id] ? t('responsibleReviewImageError') : t('loadingProofImage')}</div>;
@@ -353,6 +358,7 @@ export function ParentDashboard({
                         <div>
                           <strong>{routineNameFor(event)}</strong>
                           <small>{formatDateTime(event.capturedAt ?? event.requestedAt)}</small>
+                          {proofExample ? <p className="routine-proof-context"><b>{t('expectedProof')}:</b> {proofExample}</p> : null}
                         </div>
                       </div>
                       {(source || confidence || quality) ? (
