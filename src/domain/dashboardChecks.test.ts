@@ -8,11 +8,13 @@ const event = (
   id: string,
   status: VerificationEvent['status'],
   expiresAt: string,
+  routineId = 'orthodontic-elastics',
+  requestedAt = '2026-07-09T08:00:00.000Z',
 ): VerificationEvent => ({
   id,
-  routineId: 'orthodontic-elastics',
+  routineId,
   sessionId: `session-${id}`,
-  requestedAt: '2026-07-09T08:00:00.000Z',
+  requestedAt,
   expiresAt,
   status,
 });
@@ -26,6 +28,16 @@ describe('dashboard check helpers', () => {
       event('expired', 'pending', '2026-07-09T09:30:00.000Z'),
       event('analyzing', 'analyzing', '2026-07-09T10:30:00.000Z'),
     ], now).map((item) => item.id)).toEqual(['active']);
+  });
+
+  it('coalesces duplicate active pending checks by routine', () => {
+    const now = Date.parse('2026-07-09T10:00:00.000Z');
+
+    expect(activePendingEvents([
+      event('older-elastics', 'pending', '2026-07-09T11:00:00.000Z', 'orthodontic-elastics', '2026-07-09T10:15:00.000Z'),
+      event('hydration', 'pending', '2026-07-09T10:45:00.000Z', 'daily-hydration', '2026-07-09T10:05:00.000Z'),
+      event('relanced-elastics', 'pending', '2026-07-09T11:00:00.000Z', 'orthodontic-elastics', '2026-07-09T10:18:00.000Z'),
+    ], now).map((item) => item.id)).toEqual(['hydration', 'relanced-elastics']);
   });
 
   it('sorts upcoming routine checks and caps the result count', () => {
