@@ -13,6 +13,7 @@ import { createDefaultRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTIN
 import { buildCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload } from './notifications.js';
 import { normalizeReminderRepeatMinutes, shouldSendCheckReminder } from './reminders.js';
 import { recordAuditEvent } from './audit.js';
+import { expiredPendingCheckCleanupUpdate, staleCleanupCutoffs } from './cleanup.js';
 
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
   ?? (process.env.GCLOUD_PROJECT ? `${process.env.GCLOUD_PROJECT}.firebasestorage.app` : undefined);
@@ -1420,6 +1421,57 @@ export const cleanupExpiredProofImages = onSchedule({
       proofImageExpiresAt: FieldValue.delete(),
     });
   }));
+});
+
+export const cleanupStaleOperationalData = onSchedule({
+  region,
+  schedule: 'every 24 hours',
+  timeZone: 'UTC',
+}, async () => {
+  const now = new Date();
+  const cutoffs = staleCleanupCutoffs(now);
+  const [
+    expiredLinks,
+    consumedLinks,
+    expiredRecoveryCodes,
+    staleRecoveryAttempts,
+    expiredPendingChecks,
+  ] = await Promise.all([
+    db.collection('linkCodes').where('expiresAt', '<', cutoffs.expiredBefore).limit(200).get(),
+    db.collection('linkCodes').where('consumedAt', '<', cutoffs.consumedBefore).limit(200).get(),
+    db.collection('parentRecoveryCodes').where('expiresAt', '<', cutoffs.expiredBefore).limit(200).get(),
+    db.collection('recoveryAttempts').where('windowStartedAt', '<', cutoffs.recoveryAttemptBefore).limit(200).get(),
+    db.collectionGroup('checks')
+      .where('status', '==', 'pending')
+      .where('expiresAt', '<', cutoffs.pendingCheckExpiredBefore)
+      .limit(200)
+      .get(),
+  ]);
+
+  const batch = db.batch();
+  const touchedPaths = new Set<string>();
+  const deleteOnce = (document: FirebaseFirestore.QueryDocumentSnapshot) => {
+    if (touchedPaths.has(document.ref.path)) return;
+    touchedPaths.add(document.ref.path);
+    batch.delete(document.ref);
+  };
+  expiredLinks.docs.forEach(deleteOnce);
+  consumedLinks.docs.forEach(deleteOnce);
+  expiredRecoveryCodes.docs.forEach(deleteOnce);
+  staleRecoveryAttempts.docs.forEach(deleteOnce);
+  const missedUpdate = expiredPendingCheckCleanupUpdate(now);
+  expiredPendingChecks.docs.forEach((document) => {
+    if (touchedPaths.has(document.ref.path)) return;
+    touchedPaths.add(document.ref.path);
+    batch.update(document.ref, missedUpdate);
+  });
+  const operationCount = expiredLinks.size
+    + consumedLinks.size
+    + expiredRecoveryCodes.size
+    + staleRecoveryAttempts.size
+    + expiredPendingChecks.size;
+  if (operationCount === 0) return;
+  await batch.commit();
 });
 
 export const deleteAccountData = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
