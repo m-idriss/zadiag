@@ -10,6 +10,7 @@ import { eventWindowLabel, plannedWindowLabel } from '../domain/taskTimeLabel';
 import { withResolvedEventStatuses } from '../domain/adherence';
 import { EmptyState } from '../components/ui';
 import { activePendingEvents as activePendingChecks, upcomingRoutineChecks } from '../domain/dashboardChecks';
+import { ParticipantSelector } from '../components/ParticipantSelector';
 
 export function ParentDashboard({
   state,
@@ -20,6 +21,7 @@ export function ParentDashboard({
   requestCheck,
   summaryRange: controlledSummaryRange,
   onSummaryRangeChange,
+  onSelectParticipant,
   t,
 }: {
   state: AppState;
@@ -30,6 +32,7 @@ export function ParentDashboard({
   requestCheck?: (routineId: string) => Promise<void>;
   summaryRange?: SummaryRange;
   onSummaryRangeChange?: (range: SummaryRange) => void;
+  onSelectParticipant?: (participantId: string) => void;
   t: (key: MessageKey) => string;
 }) {
   const [regenerating, setRegenerating] = useState(false);
@@ -184,6 +187,8 @@ export function ParentDashboard({
         <div><h1>{t('activity')}</h1><p>{t('participantTodaySubtitle').replace('{name}', state.family.childName)}</p></div>
         <div className="avatar" aria-hidden="true">{state.family.childName.trim().charAt(0).toUpperCase() || '?'}</div>
       </header>
+
+      <ParticipantSelector access={state.participantAccess} activeParticipantId={state.activeParticipantId} label={t('followedPerson')} onSelect={onSelectParticipant} />
 
       {(responsibleEmptyState || activePendingEvents.length || (!state.family.childLinked && state.family.linkingCode) || (!state.routineAssignments.length && onCreateRoutine)) ? (
         <section className="settings-section parent-setup-section" aria-labelledby="parent-setup-title">

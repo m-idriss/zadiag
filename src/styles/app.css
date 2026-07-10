@@ -705,6 +705,8 @@ button {
 .week-card progress { width: 100%; height: 14px; accent-color: var(--teal); }
 .today-section { margin-top: 22px; }
 .today-task-list { display: grid; gap: 11px; }
+.participant-selector { display: grid; gap: 6px; margin: 0 0 16px; color: var(--muted); font-size: 12px; font-weight: 800; }
+.participant-selector select { width: 100%; min-height: 44px; padding: 0 40px 0 14px; border: 1px solid var(--border); border-radius: 14px; background: white; color: var(--navy); font: inherit; font-size: 15px; }
 .today-task { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .today-task.actionable { border-color: rgba(29, 138, 122, .3); box-shadow: 0 14px 32px rgba(29, 138, 122, .1); }
 .today-task-copy { display: flex; align-items: center; gap: 11px; min-width: 0; }
