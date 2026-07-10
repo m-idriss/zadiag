@@ -250,7 +250,17 @@ export function RoutinesScreen({
   };
   const deleteRoutine = async (assignment: RoutineAssignment, routineName: string) => {
     if (!canManageRoutines || !onDeleteRoutine || deletingRoutineId) return;
-    if (!window.confirm(t('confirmDeleteRoutine').replace('{routine}', routineName))) return;
+    if (state.routineAssignments.length <= 1) {
+      setDeleteErrorRoutineId(assignment.routineId);
+      return;
+    }
+    const routineEvents = state.events.filter((event) => event.routineId === assignment.routineId);
+    const activeChecks = routineEvents.filter((event) => event.status === 'pending' && Date.parse(event.expiresAt) > Date.now()).length;
+    const confirmation = t('confirmDeleteRoutine')
+      .replace('{routine}', routineName)
+      .replace('{checks}', String(routineEvents.length))
+      .replace('{activeChecks}', String(activeChecks));
+    if (!window.confirm(confirmation)) return;
     setDeletingRoutineId(assignment.routineId);
     setDeleteErrorRoutineId(undefined);
     try {
@@ -360,6 +370,7 @@ export function RoutinesScreen({
             const retryBlocked = Boolean(retryState && retryInSeconds > 0);
             const requesting = requestingRoutineId === assignment.routineId;
             const scheduleExpanded = expandedScheduleIds.has(assignment.id);
+            const deletingLastRoutine = state.routineAssignments.length <= 1;
             return (
               <section className="card routine-card routine-plan-list-card" style={visual.style} key={assignment.id}>
                 <div className="routine-list-card-title">
@@ -412,13 +423,14 @@ export function RoutinesScreen({
                           type="button"
                           className="routine-list-delete-button"
                           aria-label={t('deleteRoutine').replace('{routine}', visual.name)}
-                          disabled={deletingRoutineId === assignment.routineId}
+                          disabled={deletingRoutineId === assignment.routineId || deletingLastRoutine}
                           onClick={() => { void deleteRoutine(assignment, visual.name); }}
                         >
                           <span aria-hidden="true">×</span>
                         </button>
                       )}
                     </div>
+                    {canManageRoutines && onDeleteRoutine && deletingLastRoutine ? <p className="request-feedback">{t('routineDeleteLastGuard')}</p> : null}
                     {canManageRoutines && requestCheck && (
                       <>
                         {next && <p role="status" className="request-feedback">{t('requestCheckActive')}</p>}
