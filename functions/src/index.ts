@@ -6,7 +6,7 @@ import { defineSecret } from 'firebase-functions/params';
 import { GoogleAuth } from 'google-auth-library';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import webpush, { type PushSubscription } from 'web-push';
-import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, normalizeLinkCode } from './helpers.js';
+import { assertChildName, createLinkCode, createRecoveryCode, createRelationshipInvitationCode, hashLinkCode, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, isRelationshipInvitationCode, normalizeLinkCode } from './helpers.js';
 import { analyzeWithGemini, parseImageDataUrl, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
 import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
 import { createDefaultRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, routineFromCatalog, type RoutineAssignmentDocument } from './routines.js';
@@ -15,6 +15,7 @@ import { normalizeReminderRepeatMinutes, shouldSendCheckReminder } from './remin
 import { recordAuditEvent } from './audit.js';
 import { expiredPendingCheckCleanupUpdate, staleCleanupCutoffs } from './cleanup.js';
 import { reportOperationalAlert } from './observability.js';
+import { createMembership, hasParticipantPermission, membershipRoles, type MembershipRole } from './relationships.js';
 
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
   ?? (process.env.GCLOUD_PROJECT ? `${process.env.GCLOUD_PROJECT}.firebasestorage.app` : undefined);
@@ -88,6 +89,7 @@ const defaultPlan = {
   timeZone: 'Europe/Paris',
 };
 const recoveryLifetimeMs = 90 * 24 * 60 * 60 * 1000;
+const relationshipInvitationLifetimeMs = 24 * 60 * 60 * 1000;
 const maxImageDataUrlLength = 5 * 1024 * 1024;
 const proofImageSignedUrlMinutes = 5;
 const proofImageRetentionDays = 30;
@@ -336,6 +338,158 @@ const getRoutineNotificationNames = (
     },
   };
 };
+
+export const createParticipant = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = requireUid(request.auth);
+  let displayName: string;
+  try { displayName = assertChildName(request.data?.displayName); }
+  catch { throw new HttpsError('invalid-argument', 'A valid participant name is required.'); }
+  const selfManaged = request.data?.selfManaged === true;
+  const participantRef = db.collection('participants').doc();
+  const membershipRef = participantRef.collection('memberships').doc(uid);
+  const participantIndexRef = db.collection('users').doc(uid).collection('participantRefs').doc(participantRef.id);
+  const userRef = db.collection('users').doc(uid);
+  const now = new Date().toISOString();
+
+  await db.runTransaction(async (transaction) => {
+    transaction.create(participantRef, {
+      displayName,
+      ...(selfManaged ? { userId: uid } : {}),
+      status: 'active',
+      createdBy: uid,
+      relationshipModelVersion: 2,
+      createdAt: now,
+      updatedAt: now,
+    });
+    transaction.create(membershipRef, createMembership({
+      uid,
+      role: 'owner',
+      ...(selfManaged ? { label: 'self' as const } : {}),
+      now,
+    }));
+    transaction.set(participantIndexRef, {
+      participantId: participantRef.id,
+      role: 'owner',
+      status: 'active',
+      updatedAt: now,
+    });
+    transaction.set(userRef, { relationshipModelVersion: 2, updatedAt: now }, { merge: true });
+  });
+  await recordAuditEvent(db, {
+    action: 'create_participant',
+    actorUid: uid,
+    participantId: participantRef.id,
+    metadata: { selfManaged },
+  });
+  return { participantId: participantRef.id };
+});
+
+export const createRelationshipInvitation = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = requireUid(request.auth);
+  const participantId = String(request.data?.participantId ?? '');
+  const intendedRole = String(request.data?.role ?? '') as MembershipRole;
+  if (!participantId) throw new HttpsError('invalid-argument', 'Participant ID is required.');
+  if (!membershipRoles.includes(intendedRole) || intendedRole === 'owner') {
+    throw new HttpsError('invalid-argument', 'The invitation role is invalid.');
+  }
+  const membership = await db.collection('participants').doc(participantId).collection('memberships').doc(uid).get();
+  if (!hasParticipantPermission(membership.data(), 'manageCaregivers')) {
+    throw new HttpsError('permission-denied', 'Only an owner can invite another member.');
+  }
+  const code = createRelationshipInvitationCode();
+  const invitationRef = db.collection('relationshipInvitations').doc(hashLinkCode(code));
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + relationshipInvitationLifetimeMs);
+  await invitationRef.create({
+    participantId,
+    intendedRole,
+    permissions: createMembership({ uid: 'invited', role: intendedRole }).permissions,
+    createdBy: uid,
+    createdAt: now.toISOString(),
+    expiresAt: expiresAt.toISOString(),
+    consumedAt: null,
+  });
+  await recordAuditEvent(db, {
+    action: 'create_relationship_invitation',
+    actorUid: uid,
+    participantId,
+    metadata: { intendedRole },
+  });
+  return { code, expiresAt: expiresAt.toISOString() };
+});
+
+export const acceptRelationshipInvitation = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = requireUid(request.auth);
+  const code = normalizeLinkCode(String(request.data?.code ?? ''));
+  if (!isRelationshipInvitationCode(code)) throw new HttpsError('invalid-argument', 'The invitation code is invalid.');
+  const invitationRef = db.collection('relationshipInvitations').doc(hashLinkCode(code));
+
+  const participantId = await db.runTransaction(async (transaction) => {
+    const invitation = await transaction.get(invitationRef);
+    if (!invitation.exists) throw new HttpsError('not-found', 'The invitation code is invalid.');
+    const invitationData = invitation.data() ?? {};
+    const targetParticipantId = String(invitationData.participantId ?? '');
+    const intendedRole = String(invitationData.intendedRole ?? '') as MembershipRole;
+    if (!targetParticipantId || !membershipRoles.includes(intendedRole) || intendedRole === 'owner') {
+      throw new HttpsError('failed-precondition', 'The invitation is invalid.');
+    }
+    if (invitationData.consumedAt) {
+      if (invitationData.consumedBy === uid) return targetParticipantId;
+      throw new HttpsError('failed-precondition', 'The invitation has already been used.');
+    }
+    if (Date.parse(String(invitationData.expiresAt ?? '')) <= Date.now()) {
+      throw new HttpsError('failed-precondition', 'The invitation has expired.');
+    }
+    const participantRef = db.collection('participants').doc(targetParticipantId);
+    const membershipRef = participantRef.collection('memberships').doc(uid);
+    const participantIndexRef = db.collection('users').doc(uid).collection('participantRefs').doc(targetParticipantId);
+    const userRef = db.collection('users').doc(uid);
+    const [participant, existingMembership] = await Promise.all([
+      transaction.get(participantRef),
+      transaction.get(membershipRef),
+    ]);
+    if (!participant.exists || participant.data()?.status !== 'active') {
+      throw new HttpsError('not-found', 'The participant could not be found.');
+    }
+    if (existingMembership.exists && (
+      existingMembership.data()?.status !== 'active'
+      || existingMembership.data()?.role !== intendedRole
+    )) {
+      throw new HttpsError('already-exists', 'This account already has a different relationship.');
+    }
+    if (intendedRole === 'participant') {
+      const participantUserId = participant.data()?.userId;
+      if (participantUserId && participantUserId !== uid) {
+        throw new HttpsError('already-exists', 'The participant is already linked to another account.');
+      }
+      if (!participantUserId) transaction.update(participantRef, { userId: uid, updatedAt: new Date().toISOString() });
+    }
+    const now = new Date().toISOString();
+    if (!existingMembership.exists) {
+      transaction.create(membershipRef, createMembership({
+        uid,
+        role: intendedRole,
+        invitedBy: String(invitationData.createdBy ?? ''),
+        now,
+      }));
+    }
+    transaction.set(participantIndexRef, {
+      participantId: targetParticipantId,
+      role: intendedRole,
+      status: 'active',
+      updatedAt: now,
+    });
+    transaction.set(userRef, { relationshipModelVersion: 2, updatedAt: now }, { merge: true });
+    transaction.update(invitationRef, { consumedAt: now, consumedBy: uid });
+    return targetParticipantId;
+  });
+  await recordAuditEvent(db, {
+    action: 'accept_relationship_invitation',
+    actorUid: uid,
+    participantId,
+  });
+  return { participantId };
+});
 
 export const createFamily = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { assertChildName, createLinkCode, createRecoveryCode, hashLinkCode, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, normalizeLinkCode } from './helpers.js';
+import { assertChildName, createLinkCode, createRecoveryCode, createRelationshipInvitationCode, hashLinkCode, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, isRelationshipInvitationCode, normalizeLinkCode } from './helpers.js';
 
 test('normalizes and hashes codes consistently', () => {
   assert.equal(normalizeLinkCode(' zd-123456 '), 'ZD-123456');
@@ -12,6 +12,8 @@ test('creates a non-ambiguous code shape', () => {
   assert.equal(isRecoveryCode(createRecoveryCode()), true);
   assert.equal(isRecoveryCode('PR-O0II-1111-AAAA'), false);
   assert.equal(isLegacyRecoveryCode('PR-123456'), true);
+  assert.equal(isRelationshipInvitationCode(createRelationshipInvitationCode()), true);
+  assert.equal(isRelationshipInvitationCode('ZD-123456'), false);
 });
 
 test('validates child names', () => {
