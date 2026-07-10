@@ -199,3 +199,12 @@ export const isCompatibleParticipantRefMigration = (
   && existing.role === expected.role
   && existing.status === 'active'
 );
+
+export const isCompatibleLegacyContentTarget = (
+  existing: Record<string, unknown> | undefined,
+  familyId: string,
+  sourcePath: string,
+) => !existing || (
+  existing.relationshipSourceFamilyId === familyId
+  && existing.relationshipSourcePath === sourcePath
+);

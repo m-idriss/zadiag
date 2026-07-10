@@ -15,7 +15,7 @@ import { normalizeReminderRepeatMinutes, shouldSendCheckReminder } from './remin
 import { recordAuditEvent } from './audit.js';
 import { expiredPendingCheckCleanupUpdate, staleCleanupCutoffs } from './cleanup.js';
 import { reportOperationalAlert } from './observability.js';
-import { createMembership, hasParticipantPermission, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, membershipRoles, migrateLegacyFamilyRelationships, type MembershipRole } from './relationships.js';
+import { createMembership, hasParticipantPermission, isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, membershipRoles, migrateLegacyFamilyRelationships, type MembershipRole } from './relationships.js';
 
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
   ?? (process.env.GCLOUD_PROJECT ? `${process.env.GCLOUD_PROJECT}.firebasestorage.app` : undefined);
@@ -192,6 +192,36 @@ const ensureFamilyRoutineMigration = async (familyRef: FirebaseFirestore.Documen
     updatedAt: FieldValue.serverTimestamp(),
   });
   return assignmentRef.get();
+};
+
+const copyLegacyParticipantSubcollection = async (
+  familyId: string,
+  source: FirebaseFirestore.CollectionReference,
+  target: FirebaseFirestore.CollectionReference,
+) => {
+  const sourceSnapshot = await source.get();
+  const chunkSize = 150;
+  for (let offset = 0; offset < sourceSnapshot.docs.length; offset += chunkSize) {
+    const sourceDocuments = sourceSnapshot.docs.slice(offset, offset + chunkSize);
+    await db.runTransaction(async (transaction) => {
+      const targetRefs = sourceDocuments.map((document) => target.doc(document.id));
+      const targetSnapshots = await transaction.getAll(...targetRefs);
+      sourceDocuments.forEach((sourceDocument, index) => {
+        const targetSnapshot = targetSnapshots[index];
+        if (!isCompatibleLegacyContentTarget(targetSnapshot.data(), familyId, sourceDocument.ref.path)) {
+          throw new HttpsError('already-exists', `Conflicting migrated content at ${targetRefs[index].path}.`);
+        }
+        if (!targetSnapshot.exists) {
+          transaction.create(targetRefs[index], {
+            ...sourceDocument.data(),
+            relationshipSourceFamilyId: familyId,
+            relationshipSourcePath: sourceDocument.ref.path,
+          });
+        }
+      });
+    });
+  }
+  return sourceSnapshot.size;
 };
 
 const recordRecoveryAttempt = async (uid: string) => {
@@ -630,6 +660,59 @@ export const migrateFamilyRelationships = onCall({ region, cors, enforceAppCheck
     participantId: familyId,
   });
   return { participantId: familyId };
+});
+
+export const migrateFamilyContent = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = requireUid(request.auth);
+  const familyId = String(request.data?.familyId ?? '');
+  if (!familyId) throw new HttpsError('invalid-argument', 'Family ID is required.');
+  const familyRef = db.collection('families').doc(familyId);
+  const participantRef = db.collection('participants').doc(familyId);
+  const [family, participant, profile] = await Promise.all([
+    familyRef.get(),
+    participantRef.get(),
+    db.collection('users').doc(uid).get(),
+  ]);
+  if (
+    !family.exists
+    || !participant.exists
+    || !profile.exists
+    || profile.data()?.familyId !== familyId
+    || family.data()?.members?.[uid] !== 'parent'
+    || participant.data()?.sourceFamilyId !== familyId
+  ) {
+    throw new HttpsError('permission-denied', 'Only a linked owner can migrate family content.');
+  }
+  const [routineAssignments, checks, pushSubscriptions] = await Promise.all([
+    copyLegacyParticipantSubcollection(
+      familyId,
+      familyRef.collection('routineAssignments'),
+      participantRef.collection('routineAssignments'),
+    ),
+    copyLegacyParticipantSubcollection(
+      familyId,
+      familyRef.collection('checks'),
+      participantRef.collection('checks'),
+    ),
+    copyLegacyParticipantSubcollection(
+      familyId,
+      familyRef.collection('pushSubscriptions'),
+      participantRef.collection('pushSubscriptions'),
+    ),
+  ]);
+  const migratedAt = new Date().toISOString();
+  await Promise.all([
+    familyRef.set({ relationshipContentMigrationVersion: 1, relationshipContentMigratedAt: migratedAt }, { merge: true }),
+    participantRef.set({ contentMigrationVersion: 1, contentMigratedAt: migratedAt }, { merge: true }),
+  ]);
+  await recordAuditEvent(db, {
+    action: 'migrate_family_content',
+    actorUid: uid,
+    familyId,
+    participantId: familyId,
+    metadata: { routineAssignments, checks, pushSubscriptions },
+  });
+  return { participantId: familyId, routineAssignments, checks, pushSubscriptions };
 });
 
 export const recoverParent = onCall({ region, cors, enforceAppCheck: true }, async (request) => {

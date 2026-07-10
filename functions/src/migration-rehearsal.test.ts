@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { DEFAULT_ROUTINE_ID, migrateCheckRoutineId } from './routines.js';
-import { isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, migrateLegacyFamilyRelationships } from './relationships.js';
+import { isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, migrateLegacyFamilyRelationships } from './relationships.js';
 
 test('rehearses routine migration against representative legacy checks', () => {
   const legacyChecks = [
@@ -75,4 +75,18 @@ test('relationship migration accepts reruns but detects conflicting target data'
   assert.equal(isCompatibleMembershipMigration({ ...migrated.memberships[0], role: 'viewer' }, migrated.memberships[0]), false);
   assert.equal(isCompatibleParticipantRefMigration(migrated.participantRefs[0], migrated.participantRefs[0]), true);
   assert.equal(isCompatibleParticipantRefMigration({ ...migrated.participantRefs[0], participantId: 'another-participant' }, migrated.participantRefs[0]), false);
+});
+
+test('content migration accepts its own copies but rejects colliding participant data', () => {
+  const sourcePath = 'families/family-alex/checks/check-1';
+  assert.equal(isCompatibleLegacyContentTarget(undefined, 'family-alex', sourcePath), true);
+  assert.equal(isCompatibleLegacyContentTarget({
+    relationshipSourceFamilyId: 'family-alex',
+    relationshipSourcePath: sourcePath,
+  }, 'family-alex', sourcePath), true);
+  assert.equal(isCompatibleLegacyContentTarget({ status: 'pending' }, 'family-alex', sourcePath), false);
+  assert.equal(isCompatibleLegacyContentTarget({
+    relationshipSourceFamilyId: 'another-family',
+    relationshipSourcePath: sourcePath,
+  }, 'family-alex', sourcePath), false);
 });
