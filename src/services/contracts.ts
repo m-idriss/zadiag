@@ -5,6 +5,7 @@ export interface AppRepository {
   snapshot(): AppState;
   subscribe(listener: () => void): () => void;
   selectRole(role: Role): Promise<void>;
+  selectActiveParticipant?(participantId: string): Promise<void>;
   setLocale(locale: Locale): Promise<void>;
   setPreferences(preferences: Partial<AppPreferences>): Promise<void>;
   linkParent(childName: string): Promise<void>;

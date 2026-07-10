@@ -28,6 +28,7 @@ import {
 } from '../domain/models';
 import { routineFromCatalog } from '../domain/routineCatalog';
 import { isFreshCapture } from '../domain/adherence';
+import { activeParticipantAccess } from '../domain/participantAccess';
 import { initialRemoteState, PREFERENCES_KEY } from './appStateDefaults';
 import { coalesceInFlight } from './idempotency';
 
@@ -136,6 +137,14 @@ export class FirebaseRepository implements AppRepository {
   async selectRole(role: Role) {
     this.state.role = role;
     this.persistPreferences();
+    this.emit();
+  }
+
+  async selectActiveParticipant(participantId: string) {
+    const access = activeParticipantAccess(this.state.participantAccess, participantId);
+    if (!access) throw new Error('participant_access_not_found');
+    this.state.activeParticipantId = participantId;
+    this.state.family.childName = access.participant.displayName;
     this.emit();
   }
 
@@ -411,6 +420,18 @@ export class FirebaseRepository implements AppRepository {
       childLinked: role === 'child',
       consented: role === 'parent',
     };
+    const membershipRole = role === 'parent' ? 'owner' : 'participant';
+    const existingAccess = this.state.participantAccess?.find((entry) => entry.participant.id === familyId);
+    if (!existingAccess) {
+      this.state.participantAccess = [
+        ...(this.state.participantAccess ?? []),
+        {
+          participant: { id: familyId, displayName: this.state.family.childName },
+          membership: { role: membershipRole, status: 'active' },
+        },
+      ];
+    }
+    this.state.activeParticipantId ??= familyId;
     if (role === 'parent') {
       this.runInBackground('Unable to refresh the parent recovery code', async () => {
         const ensureRecoveryCode = httpsCallable<{ familyId: string }, { recoveryCode: string }>(
@@ -456,6 +477,8 @@ export class FirebaseRepository implements AppRepository {
       const family = snapshot.data() as FamilyDocument;
       const childLinked = Object.values(family.members ?? {}).some((memberRole) => memberRole === 'child');
       this.state.family.childName = family.childName;
+      const participantAccess = this.state.participantAccess?.find((entry) => entry.participant.id === familyId);
+      if (participantAccess) participantAccess.participant.displayName = family.childName;
       this.state.family.childLinked = childLinked || this.state.family.childLinked;
       this.state.family.linkingCode = family.linkingCode ?? this.state.family.linkingCode;
       this.state.family.parentRecoveryCode = family.parentRecoveryCode ?? this.state.family.parentRecoveryCode;

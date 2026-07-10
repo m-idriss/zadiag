@@ -136,6 +136,26 @@ export interface FamilyState {
   consented: boolean;
 }
 
+export type MembershipRole = 'owner' | 'caregiver' | 'participant' | 'viewer';
+export type MembershipStatus = 'active' | 'suspended';
+
+export interface ParticipantSummary {
+  id: string;
+  displayName: string;
+  selfManaged?: boolean;
+}
+
+export interface MembershipSummary {
+  role: MembershipRole;
+  status: MembershipStatus;
+  label?: 'parent' | 'partner' | 'relative' | 'professional' | 'self' | 'other';
+}
+
+export interface ParticipantAccess {
+  participant: ParticipantSummary;
+  membership: MembershipSummary;
+}
+
 export interface PushSubscriptionHealth {
   permission: NotificationPermission | 'unsupported';
   endpointPresent: boolean;
@@ -171,6 +191,8 @@ export interface AppState {
   pushHealth?: PushSubscriptionHealth;
   preferences?: AppPreferences;
   family: FamilyState;
+  participantAccess?: ParticipantAccess[];
+  activeParticipantId?: string;
   routineAssignments: RoutineAssignment[];
   routinesLoaded?: boolean;
   routinesError?: boolean;

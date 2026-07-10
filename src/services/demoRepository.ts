@@ -9,6 +9,7 @@ import type {
 } from '../domain/models';
 import { createDefaultRoutineAssignment, DEFAULT_ROUTINE_ID, normalizeAppPreferences, primaryRoutineAssignment, type AppPreferences } from '../domain/models';
 import { routineFromCatalog } from '../domain/routineCatalog';
+import { activeParticipantAccess } from '../domain/participantAccess';
 import { isFreshCapture } from '../domain/adherence';
 import { responseWindowExpiresAt } from '../domain/monitoringPlan';
 import type { AppRepository } from './contracts';
@@ -170,6 +171,7 @@ function initialState(): AppState {
       parentRecoveryCode: 'PR-2345-6789-ABCD',
       consented: false,
     },
+    participantAccess: [],
     routineAssignments: [
       defaultAssignment,
       ...(hydrationRoutine ? [{
@@ -230,6 +232,14 @@ export class DemoRepository implements AppRepository {
     this.persist();
   }
 
+  async selectActiveParticipant(participantId: string) {
+    const access = activeParticipantAccess(this.state.participantAccess, participantId);
+    if (!access) throw new Error('participant_access_not_found');
+    this.state.activeParticipantId = participantId;
+    this.state.family.childName = access.participant.displayName;
+    this.persist();
+  }
+
   async setLocale(locale: AppState['locale']) {
     this.state.locale = locale;
     this.persist();
@@ -251,6 +261,11 @@ export class DemoRepository implements AppRepository {
     };
     this.state.routineAssignments = [];
     this.state.events = [];
+    this.state.participantAccess = [{
+      participant: { id: 'demo-participant', displayName: childName },
+      membership: { role: 'owner', status: 'active', label: 'parent' },
+    }];
+    this.state.activeParticipantId = 'demo-participant';
     this.persist();
   }
 
@@ -263,6 +278,11 @@ export class DemoRepository implements AppRepository {
     this.state.family.childLinked = true;
     this.state.family.consented = true;
     this.state.family.parentRecoveryCode = 'PR-EFGH-JKLM-NPQR';
+    this.state.participantAccess ??= [{
+      participant: { id: 'demo-participant', displayName: this.state.family.childName },
+      membership: { role: 'owner', status: 'active', label: 'parent' },
+    }];
+    this.state.activeParticipantId ??= 'demo-participant';
     this.persist();
   }
 
@@ -272,6 +292,11 @@ export class DemoRepository implements AppRepository {
     }
     this.state.family.linked = true;
     this.state.family.childLinked = true;
+    this.state.participantAccess = [{
+      participant: { id: 'demo-participant', displayName: this.state.family.childName },
+      membership: { role: 'participant', status: 'active' },
+    }];
+    this.state.activeParticipantId = 'demo-participant';
     this.persist();
   }
 
@@ -487,6 +512,7 @@ export class DemoRepository implements AppRepository {
     return {
       ...state,
       preferences: normalizeAppPreferences(state.preferences),
+      participantAccess: state.participantAccess ?? [],
       routineAssignments,
       events: state.events.map((event) => ({ ...event, routineId: event.routineId ?? DEFAULT_ROUTINE_ID })),
     };

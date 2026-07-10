@@ -27,6 +27,7 @@ export const initialRemoteState = (): AppState => {
     role: preferences.role,
     preferences: normalizeAppPreferences(preferences),
     family: { linked: false, childLinked: false, childName: '', linkingCode: '', parentRecoveryCode: '', consented: false },
+    participantAccess: [],
     routineAssignments: [],
     routinesLoaded: false,
     routinesError: false,
