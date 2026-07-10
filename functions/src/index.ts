@@ -15,7 +15,7 @@ import { normalizeReminderRepeatMinutes, shouldSendCheckReminder } from './remin
 import { recordAuditEvent } from './audit.js';
 import { expiredPendingCheckCleanupUpdate, staleCleanupCutoffs } from './cleanup.js';
 import { reportOperationalAlert } from './observability.js';
-import { createMembership, hasParticipantPermission, membershipRoles, type MembershipRole } from './relationships.js';
+import { createMembership, hasParticipantPermission, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, membershipRoles, migrateLegacyFamilyRelationships, type MembershipRole } from './relationships.js';
 
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
   ?? (process.env.GCLOUD_PROJECT ? `${process.env.GCLOUD_PROJECT}.firebasestorage.app` : undefined);
@@ -561,6 +561,75 @@ export const migrateFamilyRoutines = onCall({ region, cors, enforceAppCheck: tru
     throw new HttpsError('permission-denied', 'Only a family member can migrate routines.');
   }
   await ensureFamilyRoutineMigration(familyRef);
+});
+
+export const migrateFamilyRelationships = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = requireUid(request.auth);
+  const familyId = String(request.data?.familyId ?? '');
+  if (!familyId) throw new HttpsError('invalid-argument', 'Family ID is required.');
+  const familyRef = db.collection('families').doc(familyId);
+  const profileRef = db.collection('users').doc(uid);
+
+  await db.runTransaction(async (transaction) => {
+    const [family, profile] = await Promise.all([
+      transaction.get(familyRef),
+      transaction.get(profileRef),
+    ]);
+    if (
+      !family.exists
+      || !profile.exists
+      || profile.data()?.familyId !== familyId
+      || family.data()?.members?.[uid] !== 'parent'
+    ) {
+      throw new HttpsError('permission-denied', 'Only a linked parent can migrate family relationships.');
+    }
+    const now = new Date().toISOString();
+    let migration;
+    try { migration = migrateLegacyFamilyRelationships(familyId, family.data() ?? {}, now); }
+    catch { throw new HttpsError('failed-precondition', 'The legacy family cannot be migrated safely.'); }
+    const participantRef = db.collection('participants').doc(migration.participantId);
+    const membershipRefs = migration.memberships.map(({ uid: memberUid }) => participantRef.collection('memberships').doc(memberUid));
+    const participantIndexRefs = migration.participantRefs.map(({ uid: memberUid }) => (
+      db.collection('users').doc(memberUid).collection('participantRefs').doc(migration.participantId)
+    ));
+    const targetSnapshots = await transaction.getAll(participantRef, ...membershipRefs, ...participantIndexRefs);
+    const participantSnapshot = targetSnapshots[0];
+    const membershipSnapshots = targetSnapshots.slice(1, 1 + membershipRefs.length);
+    const participantIndexSnapshots = targetSnapshots.slice(1 + membershipRefs.length);
+    if (!isCompatibleParticipantMigration(participantSnapshot.data(), migration.participant)) {
+      throw new HttpsError('already-exists', 'The target participant contains conflicting data.');
+    }
+    migration.memberships.forEach((membership, index) => {
+      if (!isCompatibleMembershipMigration(membershipSnapshots[index]?.data(), membership)) {
+        throw new HttpsError('already-exists', `The membership for ${membership.uid} contains conflicting data.`);
+      }
+    });
+    migration.participantRefs.forEach((participantIndex, index) => {
+      if (!isCompatibleParticipantRefMigration(participantIndexSnapshots[index]?.data(), participantIndex)) {
+        throw new HttpsError('already-exists', `The participant index for ${participantIndex.uid} contains conflicting data.`);
+      }
+    });
+    if (!participantSnapshot.exists) transaction.create(participantRef, migration.participant);
+    migration.memberships.forEach((membership, index) => {
+      if (!membershipSnapshots[index]?.exists) transaction.create(membershipRefs[index], membership);
+    });
+    migration.participantRefs.forEach((participantIndex, index) => {
+      if (!participantIndexSnapshots[index]?.exists) transaction.create(participantIndexRefs[index], {
+        participantId: participantIndex.participantId,
+        role: participantIndex.role,
+        status: participantIndex.status,
+        updatedAt: participantIndex.updatedAt,
+      });
+    });
+    transaction.set(familyRef, { relationshipMigrationVersion: 2, relationshipMigratedAt: now }, { merge: true });
+  });
+  await recordAuditEvent(db, {
+    action: 'migrate_family_relationships',
+    actorUid: uid,
+    familyId,
+    participantId: familyId,
+  });
+  return { participantId: familyId };
 });
 
 export const recoverParent = onCall({ region, cors, enforceAppCheck: true }, async (request) => {

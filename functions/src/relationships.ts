@@ -171,3 +171,31 @@ export const migrateLegacyFamilyRelationships = (
     })),
   };
 };
+
+export const isCompatibleParticipantMigration = (
+  existing: Record<string, unknown> | undefined,
+  expected: LegacyRelationshipMigration['participant'],
+) => !existing || (
+  existing.sourceFamilyId === expected.sourceFamilyId
+  && existing.displayName === expected.displayName
+  && existing.relationshipModelVersion === 2
+  && (!expected.userId || existing.userId === expected.userId)
+);
+
+export const isCompatibleMembershipMigration = (
+  existing: Partial<MembershipDocument> | undefined,
+  expected: MembershipDocument,
+) => !existing || (
+  existing.uid === expected.uid
+  && existing.role === expected.role
+  && existing.status === 'active'
+);
+
+export const isCompatibleParticipantRefMigration = (
+  existing: Record<string, unknown> | undefined,
+  expected: LegacyRelationshipMigration['participantRefs'][number],
+) => !existing || (
+  existing.participantId === expected.participantId
+  && existing.role === expected.role
+  && existing.status === 'active'
+);
