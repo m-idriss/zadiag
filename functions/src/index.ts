@@ -15,7 +15,7 @@ import { normalizeReminderRepeatMinutes, shouldSendCheckReminder } from './remin
 import { recordAuditEvent } from './audit.js';
 import { expiredPendingCheckCleanupUpdate, staleCleanupCutoffs } from './cleanup.js';
 import { reportOperationalAlert } from './observability.js';
-import { createMembership, hasParticipantPermission, isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, membershipRoles, migrateLegacyFamilyRelationships, type MembershipRole } from './relationships.js';
+import { canLeaveMembership, canRemoveMembership, createMembership, hasParticipantPermission, isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, membershipRoles, migrateLegacyFamilyRelationships, type MembershipRole } from './relationships.js';
 
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
   ?? (process.env.GCLOUD_PROJECT ? `${process.env.GCLOUD_PROJECT}.firebasestorage.app` : undefined);
@@ -519,6 +519,59 @@ export const acceptRelationshipInvitation = onCall({ region, cors, enforceAppChe
     participantId,
   });
   return { participantId };
+});
+
+export const removeParticipantMembership = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = requireUid(request.auth);
+  const participantId = String(request.data?.participantId ?? '');
+  const targetUid = String(request.data?.targetUid ?? uid);
+  if (!participantId || !targetUid) throw new HttpsError('invalid-argument', 'Participant and member IDs are required.');
+  const participantRef = db.collection('participants').doc(participantId);
+  const actorRef = participantRef.collection('memberships').doc(uid);
+  const targetRef = participantRef.collection('memberships').doc(targetUid);
+  const targetIndexRef = db.collection('users').doc(targetUid).collection('participantRefs').doc(participantId);
+  const targetSubscriptionRef = participantRef.collection('pushSubscriptions').doc(targetUid);
+
+  const removedRole = await db.runTransaction(async (transaction) => {
+    const [participant, actor, target, memberships] = await Promise.all([
+      transaction.get(participantRef),
+      transaction.get(actorRef),
+      transaction.get(targetRef),
+      transaction.get(participantRef.collection('memberships')),
+    ]);
+    if (!participant.exists) throw new HttpsError('not-found', 'The participant could not be found.');
+    if (!actor.exists || actor.data()?.status !== 'active') {
+      throw new HttpsError('permission-denied', 'An active relationship is required.');
+    }
+    if (!target.exists) throw new HttpsError('not-found', 'The relationship could not be found.');
+    if (target.data()?.status === 'suspended') return String(target.data()?.role ?? '');
+    const activeOwnerCount = memberships.docs.filter((membership) => (
+      membership.data().role === 'owner' && membership.data().status === 'active'
+    )).length;
+    const allowed = targetUid === uid
+      ? canLeaveMembership(target.data(), activeOwnerCount)
+      : canRemoveMembership({ actor: actor.data(), target: target.data(), activeOwnerCount });
+    if (!allowed) {
+      throw new HttpsError('failed-precondition', target.data()?.role === 'owner' && activeOwnerCount <= 1
+        ? 'The last owner cannot be removed.'
+        : 'This account cannot remove the relationship.');
+    }
+    const now = new Date().toISOString();
+    transaction.set(targetRef, { status: 'suspended', updatedAt: now, suspendedBy: uid }, { merge: true });
+    transaction.set(targetIndexRef, { status: 'suspended', updatedAt: now }, { merge: true });
+    transaction.delete(targetSubscriptionRef);
+    if (participant.data()?.userId === targetUid) {
+      transaction.update(participantRef, { userId: FieldValue.delete(), updatedAt: now });
+    }
+    return String(target.data()?.role ?? '');
+  });
+  await recordAuditEvent(db, {
+    action: 'remove_participant_membership',
+    actorUid: uid,
+    participantId,
+    metadata: { targetUid, removedRole, selfRemoval: targetUid === uid },
+  });
+  return { participantId, targetUid };
 });
 
 export const createFamily = onCall({ region, cors, enforceAppCheck: true }, async (request) => {

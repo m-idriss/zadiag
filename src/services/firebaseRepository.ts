@@ -199,6 +199,22 @@ export class FirebaseRepository implements AppRepository {
     return result.data.participantId;
   }
 
+  async leaveParticipant(participantId: string) {
+    const removeMembership = httpsCallable<{ participantId: string }, void>(
+      this.services.functions,
+      'removeParticipantMembership',
+    );
+    await removeMembership({ participantId });
+    await this.loadParticipantAccess();
+    const next = this.state.participantAccess?.[0];
+    if (next) await this.selectActiveParticipant(next.participant.id);
+    else {
+      this.remoteSubscriptions.splice(0).forEach((unsubscribe) => unsubscribe());
+      this.state = { ...initialRemoteState(), locale: this.state.locale, preferences: this.state.preferences };
+      this.emit();
+    }
+  }
+
   async setLocale(locale: Locale) {
     this.state.locale = locale;
     this.persistPreferences();

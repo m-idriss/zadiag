@@ -50,6 +50,7 @@ export function SettingsScreen({
   createParticipant,
   inviteParticipantMember,
   acceptParticipantInvitation,
+  leaveParticipant,
 }: {
   t: (key: MessageKey) => string;
   locale: Locale;
@@ -80,6 +81,7 @@ export function SettingsScreen({
   createParticipant?: (displayName: string, selfManaged: boolean) => Promise<string>;
   inviteParticipantMember?: (participantId: string, role: Exclude<MembershipRole, 'owner'>) => Promise<{ code: string; expiresAt: string }>;
   acceptParticipantInvitation?: (code: string) => Promise<string>;
+  leaveParticipant?: (participantId: string) => Promise<void>;
 }) {
   const [mailError, setMailError] = useState(false);
   const [contactMailError, setContactMailError] = useState(false);
@@ -348,6 +350,7 @@ export function SettingsScreen({
         onCreate={createParticipant}
         onInvite={inviteParticipantMember}
         onAccept={acceptParticipantInvitation}
+        onLeave={leaveParticipant}
         t={t}
       />
       <section className="settings-section" aria-labelledby="settings-support-heading">

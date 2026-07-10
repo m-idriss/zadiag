@@ -280,6 +280,20 @@ export class DemoRepository implements AppRepository {
     return participantId;
   }
 
+  async leaveParticipant(participantId: string) {
+    const target = activeParticipantAccess(this.state.participantAccess, participantId);
+    if (!target) throw new Error('participant_access_not_found');
+    const ownerCount = (this.state.participantAccess ?? []).filter((entry) => (
+      entry.participant.id === participantId && entry.membership.role === 'owner' && entry.membership.status === 'active'
+    )).length;
+    if (target.membership.role === 'owner' && ownerCount <= 1) throw new Error('last_owner');
+    this.state.participantAccess = (this.state.participantAccess ?? []).filter((entry) => entry.participant.id !== participantId);
+    const next = this.state.participantAccess[0];
+    this.state.activeParticipantId = next?.participant.id;
+    if (next) this.state.family.childName = next.participant.displayName;
+    this.persist();
+  }
+
   async setLocale(locale: AppState['locale']) {
     this.state.locale = locale;
     this.persist();

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   canGrantPermissions,
+  canLeaveMembership,
   canRemoveMembership,
   createMembership,
   defaultPermissionsForRole,
@@ -63,4 +64,7 @@ test('protects the last active owner from removal', () => {
   assert.equal(canRemoveMembership({ actor: owner, target: owner, activeOwnerCount: 2 }), true);
   assert.equal(canRemoveMembership({ actor: owner, target: caregiver, activeOwnerCount: 1 }), true);
   assert.equal(canRemoveMembership({ actor: caregiver, target: owner, activeOwnerCount: 2 }), false);
+  assert.equal(canLeaveMembership(owner, 1), false);
+  assert.equal(canLeaveMembership(owner, 2), true);
+  assert.equal(canLeaveMembership(caregiver, 1), true);
 });

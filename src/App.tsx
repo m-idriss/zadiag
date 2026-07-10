@@ -369,6 +369,7 @@ export function App() {
             createParticipant={repository.createParticipant ? async (displayName, selfManaged) => { const id = await repository.createParticipant?.(displayName, selfManaged); sync(); return id!; } : undefined}
             inviteParticipantMember={repository.inviteParticipantMember ? (participantId, membershipRole) => repository.inviteParticipantMember!(participantId, membershipRole) : undefined}
             acceptParticipantInvitation={repository.acceptParticipantInvitation ? async (code) => { const id = await repository.acceptParticipantInvitation?.(code); sync(); return id!; } : undefined}
+            leaveParticipant={repository.leaveParticipant ? async (participantId) => { await repository.leaveParticipant?.(participantId); sync(); } : undefined}
             locale={state.locale}
             setLocale={async (locale) => { await repository.setLocale(locale); sync(); }}
             updateInfo={appUpdateInfo}

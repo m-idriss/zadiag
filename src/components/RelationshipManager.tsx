@@ -4,13 +4,14 @@ import type { MessageKey } from '../services/i18n';
 
 type InviteRole = Exclude<MembershipRole, 'owner'>;
 
-export function RelationshipManager({ access, activeParticipantId, onSelect, onCreate, onInvite, onAccept, t }: {
+export function RelationshipManager({ access, activeParticipantId, onSelect, onCreate, onInvite, onAccept, onLeave, t }: {
   access: ParticipantAccess[] | undefined;
   activeParticipantId?: string;
   onSelect?: (participantId: string) => Promise<void>;
   onCreate?: (displayName: string, selfManaged: boolean) => Promise<string>;
   onInvite?: (participantId: string, role: InviteRole) => Promise<{ code: string; expiresAt: string }>;
   onAccept?: (code: string) => Promise<string>;
+  onLeave?: (participantId: string) => Promise<void>;
   t: (key: MessageKey) => string;
 }) {
   const [name, setName] = useState('');
@@ -99,9 +100,14 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
             <button type="submit" disabled={busy === 'accept' || !joinCode.trim()}>{busy === 'accept' ? t('relationshipWorking') : t('relationshipJoinAction')}</button>
           </form>
         ) : null}
+        {onLeave && activeParticipantId ? (
+          <button className="relationship-leave-button" type="button" disabled={Boolean(busy)} onClick={() => {
+            if (!window.confirm(t('relationshipLeaveConfirm'))) return;
+            void run('accept', () => onLeave(activeParticipantId));
+          }}>{t('relationshipLeaveAction')}</button>
+        ) : null}
         {error ? <small className="settings-action-error">{t('relationshipActionError')}</small> : null}
       </div>
     </section>
   );
 }
-
