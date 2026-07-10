@@ -260,6 +260,40 @@ describe('ParentDashboard', () => {
     expect(container.textContent).toContain('The check is ready on the participant’s phone.');
   });
 
+  it('shows only the latest active check when a relance left duplicate pending checks for one routine', () => {
+    const assignment = createDefaultRoutineAssignment();
+    const state: AppState = {
+      role: 'parent',
+      locale: 'en',
+      notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      routineAssignments: [assignment],
+      events: [
+        {
+          id: 'older-pending',
+          routineId: assignment.routineId,
+          sessionId: 'one',
+          requestedAt: new Date(Date.now() - 3 * 60_000).toISOString(),
+          expiresAt: new Date(Date.now() + 90 * 60_000).toISOString(),
+          status: 'pending',
+        },
+        {
+          id: 'relanced-pending',
+          routineId: assignment.routineId,
+          sessionId: 'two',
+          requestedAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 90 * 60_000).toISOString(),
+          status: 'pending',
+        },
+      ],
+    };
+
+    act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} requestCheck={vi.fn()} t={(key) => translate('en', key)} />));
+
+    expect(container.textContent).toContain('1 check to complete');
+    expect(container.querySelectorAll('.parent-active-check-card')).toHaveLength(1);
+  });
+
   it('shows expired pending checks as missed in recent history', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-07-07T08:04:00.000Z'));

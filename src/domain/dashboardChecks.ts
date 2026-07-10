@@ -11,8 +11,17 @@ export interface UpcomingRoutineCheck {
   };
 }
 
-export const activePendingEvents = (events: VerificationEvent[], now = Date.now()) =>
-  events.filter((event) => event.status === 'pending' && Date.parse(event.expiresAt) > now);
+export const activePendingEvents = (events: VerificationEvent[], now = Date.now()) => {
+  const byRoutineId = new Map<string, VerificationEvent>();
+  events.forEach((event) => {
+    if (event.status !== 'pending' || Date.parse(event.expiresAt) <= now) return;
+    const current = byRoutineId.get(event.routineId);
+    if (!current || Date.parse(event.requestedAt) > Date.parse(current.requestedAt)) {
+      byRoutineId.set(event.routineId, event);
+    }
+  });
+  return [...byRoutineId.values()].sort((a, b) => Date.parse(a.expiresAt) - Date.parse(b.expiresAt));
+};
 
 export const upcomingRoutineChecks = (
   assignments: RoutineAssignment[],
