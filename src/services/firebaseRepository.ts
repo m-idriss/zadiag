@@ -284,9 +284,9 @@ export class FirebaseRepository implements AppRepository {
     });
   }
 
-  activeSession() {
+  activeSession(routineId?: string) {
     const now = Date.now();
-    return this.state.events.find((event) => event.status === 'pending' && Date.parse(event.expiresAt) > now);
+    return this.state.events.find((event) => event.status === 'pending' && Date.parse(event.expiresAt) > now && (!routineId || event.routineId === routineId));
   }
 
   async submitCapture(sessionId: string, capturedAt: Date, imageDataUrl: string) {
