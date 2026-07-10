@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildMonitoringPlanFromGroups } from './monitoringPlan';
 import { createDefaultRoutineAssignment, createRoutineAssignment, type VerificationEvent } from './models';
 import { routineFromCatalog } from './routineCatalog';
-import { activePendingEvents, upcomingRoutineChecks } from './dashboardChecks';
+import { activePendingEvents, coalesceActivePendingEventsByRoutine, upcomingRoutineChecks } from './dashboardChecks';
 
 const event = (
   id: string,
@@ -38,6 +38,17 @@ describe('dashboard check helpers', () => {
       event('hydration', 'pending', '2026-07-09T10:45:00.000Z', 'daily-hydration', '2026-07-09T10:05:00.000Z'),
       event('relanced-elastics', 'pending', '2026-07-09T11:00:00.000Z', 'orthodontic-elastics', '2026-07-09T10:18:00.000Z'),
     ], now).map((item) => item.id)).toEqual(['hydration', 'relanced-elastics']);
+  });
+
+  it('keeps expired pending checks while removing duplicate active pending checks', () => {
+    const now = Date.parse('2026-07-09T10:00:00.000Z');
+
+    expect(coalesceActivePendingEventsByRoutine([
+      event('older-active', 'pending', '2026-07-09T11:00:00.000Z', 'orthodontic-elastics', '2026-07-09T10:15:00.000Z'),
+      event('latest-active', 'pending', '2026-07-09T11:00:00.000Z', 'orthodontic-elastics', '2026-07-09T10:18:00.000Z'),
+      event('expired-pending', 'pending', '2026-07-09T09:00:00.000Z', 'orthodontic-elastics', '2026-07-09T08:30:00.000Z'),
+      event('detected', 'detected', '2026-07-09T09:00:00.000Z', 'orthodontic-elastics', '2026-07-09T08:00:00.000Z'),
+    ], now).map((item) => item.id)).toEqual(['latest-active', 'expired-pending', 'detected']);
   });
 
   it('sorts upcoming routine checks and caps the result count', () => {

@@ -5,6 +5,7 @@ import { presentRoutine } from '../domain/routinePresentation';
 import { AppIcon, routineIconName } from './Icon';
 import { StatusPill } from './StatusPill';
 import { canRetakeCapture, stalePendingCheckReason, withResolvedEventStatuses } from '../domain/adherence';
+import { coalesceActivePendingEventsByRoutine } from '../domain/dashboardChecks';
 import { EmptyState, ListRow } from './ui';
 import { readUiStorageJson, writeUiStorageString } from '../services/uiStorage';
 
@@ -69,11 +70,14 @@ export function RoutineHistoryPanel({
   const [requestingEventId, setRequestingEventId] = useState<string>();
   const [hiddenRequestEventIds, setHiddenRequestEventIds] = useState<Record<string, string>>({});
   const formatterLocale = locale === 'fr' ? 'fr-FR' : 'en-US';
+  const now = Date.now();
   const dateTimeFormatter = useMemo(() => new Intl.DateTimeFormat(formatterLocale, {
     dateStyle: 'short',
     timeStyle: 'short',
   }), [formatterLocale]);
-  const displayEvents = useMemo(() => withResolvedEventStatuses(events), [events]);
+  const displayEvents = useMemo(() =>
+    withResolvedEventStatuses(coalesceActivePendingEventsByRoutine(events, now), now),
+  [events, now]);
   const formatDateTime = (value: string) => dateTimeFormatter.format(new Date(value));
   const routinePresentationsById = useMemo(() => new Map(assignments.map((assignment) => [
     assignment.routineId,

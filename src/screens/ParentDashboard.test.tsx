@@ -292,6 +292,7 @@ describe('ParentDashboard', () => {
 
     expect(container.textContent).toContain('1 check to complete');
     expect(container.querySelectorAll('.parent-active-check-card')).toHaveLength(1);
+    expect(container.querySelectorAll('.parent-history-row')).toHaveLength(1);
   });
 
   it('shows expired pending checks as missed in recent history', () => {

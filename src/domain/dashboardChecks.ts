@@ -23,6 +23,14 @@ export const activePendingEvents = (events: VerificationEvent[], now = Date.now(
   return [...byRoutineId.values()].sort((a, b) => Date.parse(a.expiresAt) - Date.parse(b.expiresAt));
 };
 
+export const coalesceActivePendingEventsByRoutine = (events: VerificationEvent[], now = Date.now()) => {
+  const activeIds = new Set(activePendingEvents(events, now).map((event) => event.id));
+  return events.filter((event) =>
+    event.status !== 'pending'
+    || Date.parse(event.expiresAt) <= now
+    || activeIds.has(event.id));
+};
+
 export const upcomingRoutineChecks = (
   assignments: RoutineAssignment[],
   now = new Date(),
