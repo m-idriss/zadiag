@@ -23,7 +23,10 @@ export const presentRoutine = (routine: Routine, locale: Locale) => {
     instructionSteps: localized?.instructionSteps ?? source.instructionSteps ?? [],
     icon: source.icon ?? '✦',
     accent,
+    category: source.category ?? 'custom',
     proofType: source.proofType ?? 'Photo',
+    proofExample: localized?.proofExample ?? source.proofExample ?? localized?.analysis?.expectedEvidence ?? source.analysis?.expectedEvidence ?? source.description,
+    recommendedValidationMode: source.recommendedValidationMode ?? 'ai',
     responsibleName: source.responsibleName ?? 'Care team',
     style: { '--routine-accent': accent } as CSSProperties,
   };

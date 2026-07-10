@@ -76,6 +76,10 @@ describe('participant routines navigation', () => {
 
     expect(container.textContent).toContain('Choose a routine');
     expect(container.textContent).toContain('Hydration');
+    expect(container.textContent).toContain('Wellness');
+    expect(container.textContent).toContain('Validation: AI analysis');
+    expect(container.textContent).toContain('Proof example');
+    expect(container.textContent).toContain('visible glass');
     expect(container.querySelector('.add-routine-button')).not.toBeNull();
   });
 
@@ -305,6 +309,8 @@ describe('participant routines navigation', () => {
 
     expect(container.textContent).toContain('Choose a routine');
     expect(container.textContent).toContain('Hydration');
+    expect(container.textContent).toContain('Dental care');
+    expect(container.textContent).toContain('Proof example: Mouth photo');
     expect(Array.from(container.querySelectorAll('.routine-catalog-add')).some((button) => button.textContent === 'Added')).toBe(true);
 
     const hydrationButton = Array.from(container.querySelectorAll('.routine-catalog-item'))
