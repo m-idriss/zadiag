@@ -29,6 +29,7 @@ import {
 import { routineFromCatalog } from '../domain/routineCatalog';
 import { isFreshCapture } from '../domain/adherence';
 import { initialRemoteState, PREFERENCES_KEY } from './appStateDefaults';
+import { coalesceInFlight } from './idempotency';
 
 interface UserProfile {
   familyId: string;
@@ -108,6 +109,7 @@ export class FirebaseRepository implements AppRepository {
   private state = initialRemoteState();
   private listeners = new Set<() => void>();
   private remoteSubscriptions: Unsubscribe[] = [];
+  private inFlightCallables = new Map<string, Promise<unknown>>();
   private user?: User;
 
   snapshot() { return structuredClone(this.state); }
@@ -153,16 +155,21 @@ export class FirebaseRepository implements AppRepository {
   }
 
   async linkParent(childName: string) {
-    const createFamily = httpsCallable<{ childName: string }, { familyId: string; code: string; recoveryCode: string }>(this.services.functions, 'createFamily');
-    const result = await createFamily({ childName });
+    const result = await coalesceInFlight(this.inFlightCallables, `createFamily:${childName.trim()}`, async () => {
+      const createFamily = httpsCallable<{ childName: string }, { familyId: string; code: string; recoveryCode: string }>(this.services.functions, 'createFamily');
+      return createFamily({ childName });
+    });
     this.state.family.linkingCode = result.data.code;
     this.state.family.parentRecoveryCode = result.data.recoveryCode;
     await this.attachFamily(result.data.familyId, 'parent');
   }
 
   async recoverParent(code: string) {
-    const recoverParent = httpsCallable<{ code: string }, { familyId: string; childName: string; recoveryCode: string }>(this.services.functions, 'recoverParent');
-    const result = await recoverParent({ code: code.trim().toUpperCase() });
+    const normalizedCode = code.trim().toUpperCase();
+    const result = await coalesceInFlight(this.inFlightCallables, `recoverParent:${normalizedCode}`, async () => {
+      const recoverParent = httpsCallable<{ code: string }, { familyId: string; childName: string; recoveryCode: string }>(this.services.functions, 'recoverParent');
+      return recoverParent({ code: normalizedCode });
+    });
     this.state.family.parentRecoveryCode = result.data.recoveryCode;
     await this.attachFamily(result.data.familyId, 'parent');
     this.state.family.childLinked = true;
@@ -171,35 +178,52 @@ export class FirebaseRepository implements AppRepository {
   }
 
   async linkChild(code: string) {
-    const joinFamily = httpsCallable<{ code: string }, { familyId: string }>(this.services.functions, 'joinFamily');
-    const result = await joinFamily({ code: code.trim().toUpperCase() });
+    const normalizedCode = code.trim().toUpperCase();
+    const result = await coalesceInFlight(this.inFlightCallables, `joinFamily:${normalizedCode}`, async () => {
+      const joinFamily = httpsCallable<{ code: string }, { familyId: string }>(this.services.functions, 'joinFamily');
+      return joinFamily({ code: normalizedCode });
+    });
     await this.attachFamily(result.data.familyId, 'child');
   }
 
   async regenerateLinkCode() {
     if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
-    const regenerateLinkCode = httpsCallable<{ familyId: string }, { code: string }>(this.services.functions, 'regenerateLinkCode');
-    const result = await regenerateLinkCode({ familyId: this.state.family.id });
+    const familyId = this.state.family.id;
+    const result = await coalesceInFlight(this.inFlightCallables, `regenerateLinkCode:${familyId}`, async () => {
+      const regenerateLinkCode = httpsCallable<{ familyId: string }, { code: string }>(this.services.functions, 'regenerateLinkCode');
+      return regenerateLinkCode({ familyId });
+    });
     this.state.family.linkingCode = result.data.code;
     this.emit();
   }
 
   async assignRoutine(routineId: string) {
     if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
-    const assignRoutine = httpsCallable<{ familyId: string; routineId: string }, void>(this.services.functions, 'assignRoutine');
-    await assignRoutine({ familyId: this.state.family.id, routineId });
+    const familyId = this.state.family.id;
+    await coalesceInFlight(this.inFlightCallables, `assignRoutine:${familyId}:${routineId}`, async () => {
+      const assignRoutine = httpsCallable<{ familyId: string; routineId: string }, void>(this.services.functions, 'assignRoutine');
+      return assignRoutine({ familyId, routineId });
+    });
   }
 
   async deleteRoutine(routineId: string) {
     if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
-    const deleteRoutine = httpsCallable<{ familyId: string; routineId: string }, void>(this.services.functions, 'deleteRoutine');
-    await deleteRoutine({ familyId: this.state.family.id, routineId });
+    const familyId = this.state.family.id;
+    await coalesceInFlight(this.inFlightCallables, `deleteRoutine:${familyId}:${routineId}`, async () => {
+      const deleteRoutine = httpsCallable<{ familyId: string; routineId: string }, void>(this.services.functions, 'deleteRoutine');
+      return deleteRoutine({ familyId, routineId });
+    });
   }
 
   async requestCheckNow(routineId = DEFAULT_ROUTINE_ID) {
     if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
-    const requestCheckNow = httpsCallable<{ familyId: string; routineId: string }, void>(this.services.functions, 'requestCheckNow');
-    try { await requestCheckNow({ familyId: this.state.family.id, routineId }); }
+    const familyId = this.state.family.id;
+    try {
+      await coalesceInFlight(this.inFlightCallables, `requestCheckNow:${familyId}:${routineId}`, async () => {
+        const requestCheckNow = httpsCallable<{ familyId: string; routineId: string }, void>(this.services.functions, 'requestCheckNow');
+        return requestCheckNow({ familyId, routineId });
+      });
+    }
     catch (error) {
       if ((error as { code?: string }).code === 'functions/already-exists') throw new Error('active_check_exists');
       throw error;
@@ -208,8 +232,13 @@ export class FirebaseRepository implements AppRepository {
 
   async updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode) {
     if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
-    const updateRoutine = httpsCallable<{ familyId: string; routineId: string; plan: MonitoringPlan; validationMode?: RoutineValidationMode }, void>(this.services.functions, 'updateRoutineAssignment');
-    try { await updateRoutine({ familyId: this.state.family.id, routineId, plan, validationMode }); }
+    const familyId = this.state.family.id;
+    try {
+      await coalesceInFlight(this.inFlightCallables, `updateRoutine:${familyId}:${routineId}`, async () => {
+        const updateRoutine = httpsCallable<{ familyId: string; routineId: string; plan: MonitoringPlan; validationMode?: RoutineValidationMode }, void>(this.services.functions, 'updateRoutineAssignment');
+        return updateRoutine({ familyId, routineId, plan, validationMode });
+      });
+    }
     catch (error) { throw error; }
   }
 
@@ -239,14 +268,20 @@ export class FirebaseRepository implements AppRepository {
 
   async sendTestPushNotification() {
     if (!this.state.family.id || !['child', 'parent'].includes(String(this.state.role))) throw new Error('permission_denied');
-    const sendTestPushNotification = httpsCallable<{ familyId: string }, void>(this.services.functions, 'sendTestPushNotification');
-    await sendTestPushNotification({ familyId: this.state.family.id });
+    const familyId = this.state.family.id;
+    await coalesceInFlight(this.inFlightCallables, `sendTestPushNotification:${familyId}:${this.user?.uid ?? 'anonymous'}`, async () => {
+      const sendTestPushNotification = httpsCallable<{ familyId: string }, void>(this.services.functions, 'sendTestPushNotification');
+      return sendTestPushNotification({ familyId });
+    });
   }
 
   async savePlan(plan: MonitoringPlan, routineId = DEFAULT_ROUTINE_ID) {
     if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
-    const updatePlan = httpsCallable<{ familyId: string; routineId: string; plan: MonitoringPlan }, void>(this.services.functions, 'updatePlan');
-    await updatePlan({ familyId: this.state.family.id, routineId, plan });
+    const familyId = this.state.family.id;
+    await coalesceInFlight(this.inFlightCallables, `savePlan:${familyId}:${routineId}`, async () => {
+      const updatePlan = httpsCallable<{ familyId: string; routineId: string; plan: MonitoringPlan }, void>(this.services.functions, 'updatePlan');
+      return updatePlan({ familyId, routineId, plan });
+    });
   }
 
   activeSession() {
@@ -258,19 +293,22 @@ export class FirebaseRepository implements AppRepository {
     const familyId = this.state.family.id;
     const event = this.state.events.find((item) => item.sessionId === sessionId);
     if (!familyId || !event || !isFreshCapture(event, capturedAt)) throw new Error('invalid_or_replayed_capture');
-    const analyzeCheck = httpsCallable<{
-      familyId: string;
-      checkId: string;
-      capturedAt: string;
-      imageDataUrl: string;
-      locale: Locale;
-    }, VerificationEvent>(this.services.functions, 'analyzeCheck');
-    const result = await analyzeCheck({
-      familyId,
-      checkId: event.id,
-      capturedAt: capturedAt.toISOString(),
-      imageDataUrl,
-      locale: this.state.locale,
+    const capturedAtIso = capturedAt.toISOString();
+    const result = await coalesceInFlight(this.inFlightCallables, `analyzeCheck:${familyId}:${event.id}:${capturedAtIso}`, async () => {
+      const analyzeCheck = httpsCallable<{
+        familyId: string;
+        checkId: string;
+        capturedAt: string;
+        imageDataUrl: string;
+        locale: Locale;
+      }, VerificationEvent>(this.services.functions, 'analyzeCheck');
+      return analyzeCheck({
+        familyId,
+        checkId: event.id,
+        capturedAt: capturedAtIso,
+        imageDataUrl,
+        locale: this.state.locale,
+      });
     });
     this.state.events = this.state.events.map((item) => item.id === result.data.id ? result.data : item);
     this.emit();
@@ -307,12 +345,15 @@ export class FirebaseRepository implements AppRepository {
 
   async reviewCheck(eventId: string, decision: 'detected' | 'not_detected') {
     if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
-    const reviewCheck = httpsCallable<{
-      familyId: string;
-      checkId: string;
-      decision: 'detected' | 'not_detected';
-    }, VerificationEvent>(this.services.functions, 'reviewCheck');
-    const result = await reviewCheck({ familyId: this.state.family.id, checkId: eventId, decision });
+    const familyId = this.state.family.id;
+    const result = await coalesceInFlight(this.inFlightCallables, `reviewCheck:${familyId}:${eventId}:${decision}`, async () => {
+      const reviewCheck = httpsCallable<{
+        familyId: string;
+        checkId: string;
+        decision: 'detected' | 'not_detected';
+      }, VerificationEvent>(this.services.functions, 'reviewCheck');
+      return reviewCheck({ familyId, checkId: eventId, decision });
+    });
     this.state.events = this.state.events.map((item) => item.id === result.data.id ? result.data : item);
     this.emit();
     return result.data;
@@ -327,6 +368,10 @@ export class FirebaseRepository implements AppRepository {
   }
 
   async reset() {
+    await coalesceInFlight(this.inFlightCallables, `reset:${this.user?.uid ?? 'anonymous'}`, async () => this.resetOnce());
+  }
+
+  private async resetOnce() {
     this.remoteSubscriptions.splice(0).forEach((unsubscribe) => unsubscribe());
     if (this.state.family.linked) {
       const deleteAccountData = httpsCallable<void, void>(this.services.functions, 'deleteAccountData');
