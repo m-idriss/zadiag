@@ -160,6 +160,45 @@ export class FirebaseRepository implements AppRepository {
     }
   }
 
+  async createParticipant(displayName: string, selfManaged = false) {
+    const normalizedName = displayName.trim();
+    const result = await coalesceInFlight(this.inFlightCallables, `createParticipant:${normalizedName}:${selfManaged}`, async () => {
+      const createParticipant = httpsCallable<
+        { displayName: string; selfManaged: boolean },
+        { participantId: string }
+      >(this.services.functions, 'createParticipant');
+      return createParticipant({ displayName: normalizedName, selfManaged });
+    });
+    await this.loadParticipantAccess();
+    const access = activeParticipantAccess(this.state.participantAccess, result.data.participantId);
+    if (access) await this.attachParticipant(result.data.participantId, access.membership.role);
+    return result.data.participantId;
+  }
+
+  async inviteParticipantMember(participantId: string, role: Exclude<MembershipRole, 'owner'>) {
+    const createInvitation = httpsCallable<
+      { participantId: string; role: Exclude<MembershipRole, 'owner'> },
+      { code: string; expiresAt: string }
+    >(this.services.functions, 'createRelationshipInvitation');
+    const result = await createInvitation({ participantId, role });
+    return result.data;
+  }
+
+  async acceptParticipantInvitation(code: string) {
+    const normalizedCode = code.trim().toUpperCase();
+    const result = await coalesceInFlight(this.inFlightCallables, `acceptParticipantInvitation:${normalizedCode}`, async () => {
+      const acceptInvitation = httpsCallable<{ code: string }, { participantId: string }>(
+        this.services.functions,
+        'acceptRelationshipInvitation',
+      );
+      return acceptInvitation({ code: normalizedCode });
+    });
+    await this.loadParticipantAccess();
+    const access = activeParticipantAccess(this.state.participantAccess, result.data.participantId);
+    if (access) await this.attachParticipant(result.data.participantId, access.membership.role);
+    return result.data.participantId;
+  }
+
   async setLocale(locale: Locale) {
     this.state.locale = locale;
     this.persistPreferences();
