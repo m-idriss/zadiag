@@ -9,6 +9,8 @@ export const hashLinkCode = (code: string) => createHash('sha256')
   .digest('hex');
 
 export const createLinkCode = () => `ZD-${randomInt(100000, 1000000)}`;
+export const createRelationshipInvitationCode = () => `ZI-${randomInt(100000, 1000000)}`;
+export const isRelationshipInvitationCode = (code: string) => /^ZI-\d{6}$/.test(normalizeLinkCode(code));
 const recoveryAlphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 export const createRecoveryCode = () => {
   const token = Array.from({ length: 12 }, () => recoveryAlphabet[randomInt(0, recoveryAlphabet.length)]).join('');

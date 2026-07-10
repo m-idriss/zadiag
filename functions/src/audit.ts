@@ -8,7 +8,10 @@ export type AuditAction =
   | 'request_check'
   | 'submit_proof'
   | 'review_proof'
-  | 'reset_account';
+  | 'reset_account'
+  | 'create_participant'
+  | 'create_relationship_invitation'
+  | 'accept_relationship_invitation';
 
 type AuditMetadataValue = string | number | boolean | null | undefined;
 
@@ -16,6 +19,7 @@ export interface AuditEventInput {
   action: AuditAction;
   actorUid: string;
   familyId?: string;
+  participantId?: string;
   role?: 'parent' | 'child';
   metadata?: Record<string, AuditMetadataValue>;
 }
@@ -29,6 +33,7 @@ export const auditEventDocument = (input: AuditEventInput) => {
     action: input.action,
     actorUid: input.actorUid,
     ...(input.familyId ? { familyId: input.familyId } : {}),
+    ...(input.participantId ? { participantId: input.participantId } : {}),
     ...(input.role ? { role: input.role } : {}),
     ...(Object.keys(metadata).length ? { metadata } : {}),
     occurredAt: new Date().toISOString(),
