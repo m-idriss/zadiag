@@ -381,6 +381,9 @@ export function App() {
               requestCheck={async (routineId) => { await repository.requestCheckNow(routineId); sync(); }}
               summaryRange={dashboardSummaryRange}
               onSummaryRangeChange={setDashboardSummaryRange}
+              onSelectParticipant={repository.selectActiveParticipant
+                ? (participantId) => { void repository.selectActiveParticipant?.(participantId).then(sync); }
+                : undefined}
               t={t}
             />
           : <ChildDashboard
