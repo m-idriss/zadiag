@@ -14,6 +14,7 @@ import { buildCheckNotificationPayload, buildReviewNotificationPayload, buildTes
 import { normalizeReminderRepeatMinutes, shouldSendCheckReminder } from './reminders.js';
 import { recordAuditEvent } from './audit.js';
 import { expiredPendingCheckCleanupUpdate, staleCleanupCutoffs } from './cleanup.js';
+import { reportOperationalAlert } from './observability.js';
 
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
   ?? (process.env.GCLOUD_PROJECT ? `${process.env.GCLOUD_PROJECT}.firebasestorage.app` : undefined);
@@ -234,9 +235,23 @@ const sendPushPayload = async (
     const statusCode = (error as { statusCode?: number }).statusCode;
     if (statusCode === 404 || statusCode === 410) {
       await recordDispatch('invalidated', error);
+      reportOperationalAlert({
+        kind: 'push_subscription_invalidated',
+        familyId: subscriptionDocument.ref.parent.parent?.id,
+        actorUid: subscriptionDocument.id,
+        details: { statusCode: statusCode ?? null },
+        error,
+      });
       await subscriptionDocument.ref.delete();
     } else {
       await recordDispatch('failed', error);
+      reportOperationalAlert({
+        kind: 'push_send_failed',
+        familyId: subscriptionDocument.ref.parent.parent?.id,
+        actorUid: subscriptionDocument.id,
+        details: { statusCode: statusCode ?? null },
+        error,
+      });
       console.error('Unable to send Web Push notification', error);
     }
   }
@@ -1241,6 +1256,15 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
       routineAnalysis,
     });
   } catch (error) {
+    reportOperationalAlert({
+      kind: 'analysis_failed',
+      familyId,
+      checkId,
+      routineId,
+      actorUid: uid,
+      details: { model: geminiModel, locale },
+      error,
+    });
     console.error('AI analysis failed, returning fallback result', error);
   }
   const analysisUpdate = {
@@ -1384,6 +1408,14 @@ export const reviewCheck = onCall({ region, cors, enforceAppCheck: true }, async
       delete reviewedCheck.proofImagePath;
       delete reviewedCheck.proofImageExpiresAt;
     } catch (error) {
+      reportOperationalAlert({
+        kind: 'storage_cleanup_failed',
+        familyId,
+        checkId,
+        actorUid: uid,
+        details: { phase: 'review_proof_delete' },
+        error,
+      });
       console.error('Unable to delete reviewed proof image', { familyId, checkId, proofImagePath, error });
     }
   }
@@ -1414,7 +1446,18 @@ export const cleanupExpiredProofImages = onSchedule({
   await Promise.allSettled(expired.docs.map(async (check) => {
     const proofImagePath = check.data().proofImagePath;
     if (typeof proofImagePath === 'string' && proofImagePath) {
-      await bucket.file(proofImagePath).delete({ ignoreNotFound: true });
+      try {
+        await bucket.file(proofImagePath).delete({ ignoreNotFound: true });
+      } catch (error) {
+        reportOperationalAlert({
+          kind: 'storage_cleanup_failed',
+          familyId: check.ref.parent.parent?.id,
+          checkId: check.id,
+          details: { phase: 'expired_proof_delete' },
+          error,
+        });
+        throw error;
+      }
     }
     await check.ref.update({
       proofImagePath: FieldValue.delete(),
@@ -1506,6 +1549,13 @@ export const deleteAccountData = onCall({ region, cors, enforceAppCheck: true },
   links.docs.forEach((link) => batch.delete(link.ref));
   await batch.commit();
   await bucket.deleteFiles({ prefix: `families/${familyId}/` }).catch((error) => {
+    reportOperationalAlert({
+      kind: 'storage_cleanup_failed',
+      familyId,
+      actorUid: uid,
+      details: { phase: 'reset_family_delete_files' },
+      error,
+    });
     console.error('Unable to delete family proof images', error);
   });
   await db.recursiveDelete(familyRef);
