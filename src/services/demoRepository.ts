@@ -304,6 +304,7 @@ export class DemoRepository implements AppRepository {
     if (this.state.role !== 'parent') throw new Error('permission_denied');
     const assignment = this.state.routineAssignments.find((item) => item.routineId === routineId);
     if (!assignment) throw new Error('routine_not_found');
+    if (this.state.routineAssignments.length <= 1) throw new Error('last_routine_required');
     this.state.routineAssignments = this.state.routineAssignments.filter((item) => item.routineId !== routineId);
     this.state.events = this.state.events.filter((event) => event.routineId !== routineId);
     this.persist();

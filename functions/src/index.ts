@@ -868,14 +868,16 @@ export const deleteRoutine = onCall({
   const userRef = db.collection('users').doc(uid);
   const familyRef = db.collection('families').doc(familyId);
   const assignmentRef = familyRef.collection('routineAssignments').doc(routineId);
+  const assignmentsQuery = familyRef.collection('routineAssignments').limit(2);
   const routineChecks = familyRef.collection('checks').where('routineId', '==', routineId).limit(450);
 
   await ensureFamilyRoutineMigration(familyRef);
   await db.runTransaction(async (transaction) => {
-    const [profile, family, assignment, checks] = await Promise.all([
+    const [profile, family, assignment, assignments, checks] = await Promise.all([
       transaction.get(userRef),
       transaction.get(familyRef),
       transaction.get(assignmentRef),
+      transaction.get(assignmentsQuery),
       transaction.get(routineChecks),
     ]);
     if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'parent') {
@@ -885,6 +887,9 @@ export const deleteRoutine = onCall({
       throw new HttpsError('not-found', 'The family could not be found.');
     }
     if (!assignment.exists) throw new HttpsError('not-found', 'The routine could not be found.');
+    if (assignments.size <= 1) {
+      throw new HttpsError('failed-precondition', 'At least one active routine is required.');
+    }
 
     transaction.delete(assignmentRef);
     checks.docs.forEach((check) => transaction.delete(check.ref));

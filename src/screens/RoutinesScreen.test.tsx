@@ -339,7 +339,15 @@ describe('participant routines navigation', () => {
     const state: AppState = {
       role: 'parent', locale: 'en', notificationsEnabled: true,
       family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: false },
-      routineAssignments: [elastics, hydration], events: [],
+      routineAssignments: [elastics, hydration],
+      events: [{
+        id: 'hydration-active',
+        routineId: 'daily-hydration',
+        sessionId: 'hydration-session',
+        requestedAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 20 * 60_000).toISOString(),
+        status: 'pending',
+      }],
     };
     const deleteRoutine = vi.fn().mockResolvedValue(undefined);
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
@@ -357,9 +365,28 @@ describe('participant routines navigation', () => {
       await Promise.resolve();
     });
 
-    expect(confirm).toHaveBeenCalledWith('Delete Hydration? Related checks will be removed.');
+    expect(confirm).toHaveBeenCalledWith('Delete Hydration? This removes 1 history items and 1 active checks for this routine.');
     expect(deleteRoutine).toHaveBeenCalledWith('daily-hydration');
     confirm.mockRestore();
+  });
+
+  it('prevents deleting the last assigned routine with clear messaging', () => {
+    const assignment = createDefaultRoutineAssignment();
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: false },
+      routineAssignments: [assignment], events: [],
+    };
+    const deleteRoutine = vi.fn().mockResolvedValue(undefined);
+    act(() => root.render(<RoutinesScreen state={state} edit onDeleteRoutine={deleteRoutine} t={(key) => translate('en', key)} />));
+
+    const scheduleToggle = container.querySelector('button[aria-label="Show schedule"]');
+    act(() => scheduleToggle?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+
+    const deleteButton = container.querySelector<HTMLButtonElement>('button[aria-label="Delete Orthodontic Elastics"]');
+    expect(deleteButton?.disabled).toBe(true);
+    expect(container.textContent).toContain('Keep at least one routine before deleting another one.');
+    expect(deleteRoutine).not.toHaveBeenCalled();
   });
 
   it('backs off before retrying failed check requests', async () => {

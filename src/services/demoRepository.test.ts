@@ -122,13 +122,22 @@ describe('DemoRepository compatibility', () => {
   test('keeps parent-created demo routines on AI validation', async () => {
     const repository = new DemoRepository();
     await repository.selectRole('parent');
+    await repository.assignRoutine('medication');
     await repository.deleteRoutine(DEFAULT_ROUTINE_ID);
     await repository.deleteRoutine('daily-hydration');
-    await repository.assignRoutine('medication');
 
     const assignment = repository.snapshot().routineAssignments[0];
 
     expect(assignment).toMatchObject({ routineId: 'medication', createdBy: 'parent', validationMode: 'ai' });
+  });
+
+  test('keeps at least one demo routine assigned', async () => {
+    const repository = new DemoRepository();
+    await repository.selectRole('parent');
+    await repository.deleteRoutine('daily-hydration');
+
+    await expect(repository.deleteRoutine(DEFAULT_ROUTINE_ID)).rejects.toThrow('last_routine_required');
+    expect(repository.snapshot().routineAssignments).toHaveLength(1);
   });
 
   test('migrates legacy local state to the default routine idempotently', () => {
