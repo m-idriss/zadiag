@@ -240,6 +240,46 @@ export class DemoRepository implements AppRepository {
     this.persist();
   }
 
+  async createParticipant(displayName: string, selfManaged = false) {
+    const participantId = `demo-${Date.now()}`;
+    this.state.participantAccess = [
+      ...(this.state.participantAccess ?? []),
+      {
+        participant: { id: participantId, displayName: displayName.trim(), selfManaged },
+        membership: { role: 'owner', status: 'active', ...(selfManaged ? { label: 'self' as const } : {}) },
+      },
+    ];
+    this.state.activeParticipantId = participantId;
+    this.state.family.childName = displayName.trim();
+    this.persist();
+    return participantId;
+  }
+
+  async inviteParticipantMember(participantId: string, role: 'caregiver' | 'participant' | 'viewer') {
+    if (!activeParticipantAccess(this.state.participantAccess, participantId) || role === 'viewer' && this.state.role === 'child') {
+      throw new Error('permission_denied');
+    }
+    return { code: 'ZI-123456', expiresAt: new Date(Date.now() + 86_400_000).toISOString() };
+  }
+
+  async acceptParticipantInvitation(code: string) {
+    if (code.trim().toUpperCase() !== 'ZI-123456') throw new Error('invalid_code');
+    const participantId = 'demo-invited';
+    if (!this.state.participantAccess?.some((entry) => entry.participant.id === participantId)) {
+      this.state.participantAccess = [
+        ...(this.state.participantAccess ?? []),
+        {
+          participant: { id: participantId, displayName: 'Invited participant' },
+          membership: { role: 'caregiver', status: 'active' },
+        },
+      ];
+    }
+    this.state.activeParticipantId = participantId;
+    this.state.family.childName = 'Invited participant';
+    this.persist();
+    return participantId;
+  }
+
   async setLocale(locale: AppState['locale']) {
     this.state.locale = locale;
     this.persist();
