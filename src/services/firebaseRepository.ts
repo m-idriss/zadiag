@@ -562,6 +562,22 @@ export class FirebaseRepository implements AppRepository {
       const migrateRoutines = httpsCallable<{ familyId: string }, void>(this.services.functions, 'migrateFamilyRoutines');
       await migrateRoutines({ familyId });
     });
+    if (role === 'parent') {
+      this.runInBackground('Unable to migrate family relationships and content', async () => {
+        const migrateRelationships = httpsCallable<{ familyId: string }, { participantId: string }>(
+          this.services.functions,
+          'migrateFamilyRelationships',
+        );
+        const migrateContent = httpsCallable<{ familyId: string }, { participantId: string }>(
+          this.services.functions,
+          'migrateFamilyContent',
+        );
+        await migrateRelationships({ familyId });
+        await migrateContent({ familyId });
+        await this.loadParticipantAccess();
+        this.emit();
+      });
+    }
     const familyRef = doc(this.services.db, 'families', familyId);
     if ((role === 'child' || role === 'parent') && this.user) {
       this.remoteSubscriptions.push(onSnapshot(doc(familyRef, 'pushSubscriptions', this.user.uid), (snapshot) => {

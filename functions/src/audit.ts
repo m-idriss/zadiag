@@ -12,7 +12,8 @@ export type AuditAction =
   | 'create_participant'
   | 'create_relationship_invitation'
   | 'accept_relationship_invitation'
-  | 'migrate_family_relationships';
+  | 'migrate_family_relationships'
+  | 'migrate_family_content';
 
 type AuditMetadataValue = string | number | boolean | null | undefined;
 
