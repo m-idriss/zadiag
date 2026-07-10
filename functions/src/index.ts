@@ -104,9 +104,14 @@ type ReviewedCheckPayload = Record<string, unknown> & {
   proofImageExpiresAt?: unknown;
 };
 
-const requireFamilyRole = async (uid: string, familyId: string, role: 'parent' | 'child') => {
-  const familyRef = db.collection('families').doc(familyId);
-  const participantRef = db.collection('participants').doc(familyId);
+const requireAggregatePermission = async (
+  uid: string,
+  aggregateId: string,
+  permission: Parameters<typeof hasParticipantPermission>[1],
+  legacyRole?: 'parent' | 'child',
+) => {
+  const familyRef = db.collection('families').doc(aggregateId);
+  const participantRef = db.collection('participants').doc(aggregateId);
   const [profile, family, participant, membership] = await Promise.all([
     db.collection('users').doc(uid).get(),
     familyRef.get(),
@@ -114,34 +119,23 @@ const requireFamilyRole = async (uid: string, familyId: string, role: 'parent' |
     participantRef.collection('memberships').doc(uid).get(),
   ]);
   const profileMatches = profile.exists
-    && profile.data()?.familyId === familyId
-    && profile.data()?.role === role;
-  const familyMatches = family.exists && family.data()?.members?.[uid] === role;
+    && profile.data()?.familyId === aggregateId
+    && (!legacyRole || profile.data()?.role === legacyRole);
+  const familyMatches = family.exists
+    && (!legacyRole
+      ? typeof family.data()?.members?.[uid] === 'string'
+      : family.data()?.members?.[uid] === legacyRole);
   if (profileMatches || familyMatches) return familyRef;
-  const permission = role === 'parent' ? 'reviewProofs' : 'submitChecks';
   if (participant.exists && hasParticipantPermission(membership.data(), permission)) return participantRef;
-  {
-    throw new HttpsError('permission-denied', `Only the linked ${role} can perform this action.`);
-  }
+  throw new HttpsError('permission-denied', 'This account does not have permission for the followed person.');
 };
 
-const requireFamilyMember = async (uid: string, familyId: string) => {
-  const familyRef = db.collection('families').doc(familyId);
-  const participantRef = db.collection('participants').doc(familyId);
-  const [profile, family, participant, membership] = await Promise.all([
-    db.collection('users').doc(uid).get(),
-    familyRef.get(),
-    participantRef.get(),
-    participantRef.collection('memberships').doc(uid).get(),
-  ]);
-  const profileMatches = profile.exists && profile.data()?.familyId === familyId;
-  const familyMatches = family.exists && typeof family.data()?.members?.[uid] === 'string';
-  if (profileMatches || familyMatches) return familyRef;
-  if (participant.exists && hasParticipantPermission(membership.data(), 'view')) return participantRef;
-  {
-    throw new HttpsError('permission-denied', 'Only a linked family member can perform this action.');
-  }
+const requireFamilyRole = async (uid: string, familyId: string, role: 'parent' | 'child') => {
+  const permission = role === 'parent' ? 'reviewProofs' : 'submitChecks';
+  return requireAggregatePermission(uid, familyId, permission, role);
 };
+
+const requireFamilyMember = (uid: string, familyId: string) => requireAggregatePermission(uid, familyId, 'view');
 
 const imageExtensionFor = (mimeType: string) => {
   if (mimeType === 'image/png') return 'png';
@@ -1114,12 +1108,7 @@ export const requestCheckNow = onCall({
   const uid = requireUid(request.auth);
   const familyId = String(request.data?.familyId ?? '');
   const routineId = String(request.data?.routineId ?? DEFAULT_ROUTINE_ID);
-  const familyRef = db.collection('families').doc(familyId);
-  const userRef = db.collection('users').doc(uid);
-  const authorizationProfile = await userRef.get();
-  if (!authorizationProfile.exists || authorizationProfile.data()?.familyId !== familyId || authorizationProfile.data()?.role !== 'parent') {
-    throw new HttpsError('permission-denied', 'Only the parent can request a check.');
-  }
+  const familyRef = await requireAggregatePermission(uid, familyId, 'requestChecks');
   await ensureFamilyRoutineMigration(familyRef);
   const assignmentRef = familyRef.collection('routineAssignments').doc(routineId);
   const checkRef = familyRef.collection('checks').doc();
@@ -1134,9 +1123,7 @@ export const requestCheckNow = onCall({
       transaction.get(assignmentRef),
       transaction.get(pendingChecks),
     ]);
-    if (!family.exists || family.data()?.members?.[uid] !== 'parent') {
-      throw new HttpsError('not-found', 'The family could not be found.');
-    }
+    if (!family.exists) throw new HttpsError('not-found', 'The followed person could not be found.');
     if (!assignment.exists || assignment.data()?.status !== 'active') {
       throw new HttpsError('failed-precondition', 'The routine is not active.');
     }
@@ -1203,23 +1190,16 @@ export const assignRoutine = onCall({
   if (!familyId) throw new HttpsError('invalid-argument', 'Family ID is required.');
   if (!routine) throw new HttpsError('invalid-argument', 'Unknown routine.');
 
-  const userRef = db.collection('users').doc(uid);
-  const familyRef = db.collection('families').doc(familyId);
+  const familyRef = await requireAggregatePermission(uid, familyId, 'manageRoutines', 'parent');
   const assignmentRef = familyRef.collection('routineAssignments').doc(routine.id);
 
   await ensureFamilyRoutineMigration(familyRef);
   await db.runTransaction(async (transaction) => {
-    const [profile, family, assignment] = await Promise.all([
-      transaction.get(userRef),
+    const [family, assignment] = await Promise.all([
       transaction.get(familyRef),
       transaction.get(assignmentRef),
     ]);
-    if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'parent') {
-      throw new HttpsError('permission-denied', 'Only the responsible person can assign a routine.');
-    }
-    if (!family.exists || family.data()?.members?.[uid] !== 'parent') {
-      throw new HttpsError('not-found', 'The family could not be found.');
-    }
+    if (!family.exists) throw new HttpsError('not-found', 'The followed person could not be found.');
     if (assignment.exists) throw new HttpsError('already-exists', 'This routine is already assigned.');
 
     transaction.create(assignmentRef, createRoutineAssignment(routine, defaultPlan, new Date().toISOString(), 'parent'));
@@ -1239,27 +1219,20 @@ export const deleteRoutine = onCall({
   if (!familyId) throw new HttpsError('invalid-argument', 'Family ID is required.');
   if (!routineId) throw new HttpsError('invalid-argument', 'Routine ID is required.');
 
-  const userRef = db.collection('users').doc(uid);
-  const familyRef = db.collection('families').doc(familyId);
+  const familyRef = await requireAggregatePermission(uid, familyId, 'manageRoutines', 'parent');
   const assignmentRef = familyRef.collection('routineAssignments').doc(routineId);
   const assignmentsQuery = familyRef.collection('routineAssignments').limit(2);
   const routineChecks = familyRef.collection('checks').where('routineId', '==', routineId).limit(450);
 
   await ensureFamilyRoutineMigration(familyRef);
   await db.runTransaction(async (transaction) => {
-    const [profile, family, assignment, assignments, checks] = await Promise.all([
-      transaction.get(userRef),
+    const [family, assignment, assignments, checks] = await Promise.all([
       transaction.get(familyRef),
       transaction.get(assignmentRef),
       transaction.get(assignmentsQuery),
       transaction.get(routineChecks),
     ]);
-    if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'parent') {
-      throw new HttpsError('permission-denied', 'Only the responsible person can delete a routine.');
-    }
-    if (!family.exists || family.data()?.members?.[uid] !== 'parent') {
-      throw new HttpsError('not-found', 'The family could not be found.');
-    }
+    if (!family.exists) throw new HttpsError('not-found', 'The followed person could not be found.');
     if (!assignment.exists) throw new HttpsError('not-found', 'The routine could not be found.');
     if (assignments.size <= 1) {
       throw new HttpsError('failed-precondition', 'At least one active routine is required.');
@@ -1296,15 +1269,8 @@ export const updateRoutineAssignment = onCall({
       throw new HttpsError('invalid-argument', 'Invalid monitoring plan structure.');
     }
 
-    const userRef = db.collection('users').doc(uid);
-    const familyRef = db.collection('families').doc(familyId);
+    const familyRef = await requireAggregatePermission(uid, familyId, 'manageRoutines', 'parent');
     const assignmentRef = familyRef.collection('routineAssignments').doc(routineId);
-
-    // Check authorization
-    const authorizationProfile = await userRef.get();
-    if (!authorizationProfile.exists || authorizationProfile.data()?.familyId !== familyId || authorizationProfile.data()?.role !== 'parent') {
-      throw new HttpsError('permission-denied', 'Only the responsible person can update a routine.');
-    }
 
     await ensureFamilyRoutineMigration(familyRef);
     const assignment = await assignmentRef.get();
@@ -1533,13 +1499,9 @@ export const updatePlan = onCall({ region, cors, enforceAppCheck: true }, async 
   const uid = requireUid(request.auth);
   const familyId = String(request.data?.familyId ?? '');
   const routineId = String(request.data?.routineId ?? DEFAULT_ROUTINE_ID);
-  const profile = await db.collection('users').doc(uid).get();
-  if (!profile.exists || profile.data()?.familyId !== familyId || profile.data()?.role !== 'parent') {
-    throw new HttpsError('permission-denied', 'Only the parent can update this plan.');
-  }
   const parsedPlan = monitoringPlanSchema.safeParse(request.data?.plan);
   if (!parsedPlan.success) throw new HttpsError('invalid-argument', 'The monitoring plan is invalid.');
-  const familyRef = db.collection('families').doc(familyId);
+  const familyRef = await requireAggregatePermission(uid, familyId, 'manageRoutines', 'parent');
   await ensureFamilyRoutineMigration(familyRef);
   const assignmentRef = familyRef.collection('routineAssignments').doc(routineId);
   const assignment = await assignmentRef.get();
