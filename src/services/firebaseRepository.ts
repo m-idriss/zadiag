@@ -3,6 +3,7 @@ import {
   collection,
   doc,
   getDoc,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
@@ -20,6 +21,8 @@ import {
   type AppPreferences,
   type Locale,
   type MonitoringPlan,
+  type MembershipRole,
+  type ParticipantAccess,
   type Role,
   type RoutineAssignment,
   type RoutineAssignmentCreator,
@@ -33,11 +36,16 @@ import { initialRemoteState, PREFERENCES_KEY } from './appStateDefaults';
 import { coalesceInFlight } from './idempotency';
 
 interface UserProfile {
-  familyId: string;
-  role: Role;
+  familyId?: string;
+  role?: Role;
   linkingCode?: string;
   parentRecoveryCode?: string;
   notificationsEnabled?: boolean;
+}
+interface ParticipantDocument {
+  displayName?: string;
+  userId?: string;
+  status?: string;
 }
 interface PushSubscriptionDocument {
   endpoint?: string;
@@ -112,6 +120,8 @@ export class FirebaseRepository implements AppRepository {
   private remoteSubscriptions: Unsubscribe[] = [];
   private inFlightCallables = new Map<string, Promise<unknown>>();
   private user?: User;
+  private legacyFamilyId?: string;
+  private legacyRole?: Role;
 
   snapshot() { return structuredClone(this.state); }
 
@@ -143,9 +153,11 @@ export class FirebaseRepository implements AppRepository {
   async selectActiveParticipant(participantId: string) {
     const access = activeParticipantAccess(this.state.participantAccess, participantId);
     if (!access) throw new Error('participant_access_not_found');
-    this.state.activeParticipantId = participantId;
-    this.state.family.childName = access.participant.displayName;
-    this.emit();
+    if (participantId === this.legacyFamilyId && this.legacyRole) {
+      await this.attachFamily(participantId, this.legacyRole);
+    } else {
+      await this.attachParticipant(participantId, access.membership.role);
+    }
   }
 
   async setLocale(locale: Locale) {
@@ -387,6 +399,8 @@ export class FirebaseRepository implements AppRepository {
       await deleteAccountData();
     }
     await signOut(this.services.auth);
+    this.legacyFamilyId = undefined;
+    this.legacyRole = undefined;
     localStorage.removeItem(PREFERENCES_KEY);
     this.state = initialRemoteState();
     this.emit();
@@ -396,8 +410,16 @@ export class FirebaseRepository implements AppRepository {
   private async restoreProfile() {
     if (!this.user) return;
     const profile = await getDoc(doc(this.services.db, 'users', this.user.uid));
-    if (!profile.exists()) { this.emit(); return; }
-    const data = profile.data() as UserProfile;
+    const data = profile.exists() ? profile.data() as UserProfile : undefined;
+    try { await this.loadParticipantAccess(); }
+    catch (error) { console.error('Unable to load participant relationships', error); }
+    if (!data) {
+      const activeId = this.state.activeParticipantId;
+      const access = activeId ? activeParticipantAccess(this.state.participantAccess, activeId) : undefined;
+      if (access) await this.attachParticipant(activeId!, access.membership.role);
+      else this.emit();
+      return;
+    }
     this.state.notificationsEnabled = data.notificationsEnabled === true;
     this.state.pushHealth = {
       ...this.state.pushHealth,
@@ -406,8 +428,101 @@ export class FirebaseRepository implements AppRepository {
     };
     this.state.family.linkingCode = data.linkingCode ?? '';
     this.state.family.parentRecoveryCode = data.parentRecoveryCode ?? '';
-    await this.attachFamily(data.familyId, data.role);
+    if (data.familyId && data.role) {
+      this.legacyFamilyId = data.familyId;
+      this.legacyRole = data.role;
+      await this.attachFamily(data.familyId, data.role);
+    }
+    else {
+      const activeId = this.state.activeParticipantId;
+      const access = activeId ? activeParticipantAccess(this.state.participantAccess, activeId) : undefined;
+      if (access) await this.attachParticipant(activeId!, access.membership.role);
+      else this.emit();
+    }
     this.runInBackground('Unable to sync push subscription locale', () => this.syncPushSubscriptionLocale());
+  }
+
+  private async loadParticipantAccess() {
+    if (!this.user) return;
+    const refs = await getDocs(collection(this.services.db, 'users', this.user.uid, 'participantRefs'));
+    const access = (await Promise.all(refs.docs.map(async (reference): Promise<ParticipantAccess | undefined> => {
+      const referenceData = reference.data();
+      if (referenceData.status !== 'active') return undefined;
+      const participantId = reference.id;
+      const [participant, membership] = await Promise.all([
+        getDoc(doc(this.services.db, 'participants', participantId)),
+        getDoc(doc(this.services.db, 'participants', participantId, 'memberships', this.user!.uid)),
+      ]);
+      if (!participant.exists() || !membership.exists() || membership.data().status !== 'active') return undefined;
+      const participantData = participant.data() as ParticipantDocument;
+      const membershipData = membership.data();
+      const role = membershipData.role as MembershipRole;
+      if (!['owner', 'caregiver', 'participant', 'viewer'].includes(role)) return undefined;
+      return {
+        participant: {
+          id: participantId,
+          displayName: String(participantData.displayName ?? ''),
+          selfManaged: participantData.userId === this.user!.uid && membershipData.label === 'self',
+        },
+        membership: {
+          role,
+          status: 'active',
+          label: membershipData.label,
+        },
+      };
+    }))).filter((entry): entry is ParticipantAccess => Boolean(entry));
+    this.state.participantAccess = access.sort((left, right) => (
+      left.participant.displayName.localeCompare(right.participant.displayName, this.state.locale)
+    ));
+    if (!activeParticipantAccess(this.state.participantAccess, this.state.activeParticipantId ?? '')) {
+      this.state.activeParticipantId = this.state.participantAccess[0]?.participant.id;
+    }
+  }
+
+  private async attachParticipant(participantId: string, membershipRole: MembershipRole) {
+    this.remoteSubscriptions.splice(0).forEach((unsubscribe) => unsubscribe());
+    const access = activeParticipantAccess(this.state.participantAccess, participantId);
+    if (!access) throw new Error('participant_access_not_found');
+    this.state.activeParticipantId = participantId;
+    this.state.role = membershipRole === 'participant' ? 'child' : 'parent';
+    this.state.family = {
+      ...this.state.family,
+      id: participantId,
+      linked: true,
+      childLinked: true,
+      childName: access.participant.displayName,
+      consented: membershipRole !== 'participant',
+      linkingCode: '',
+      parentRecoveryCode: '',
+    };
+    this.state.routineAssignments = [];
+    this.state.events = [];
+    this.state.routinesLoaded = false;
+    this.state.routinesError = false;
+    const participantRef = doc(this.services.db, 'participants', participantId);
+    const assignments = query(collection(participantRef, 'routineAssignments'), orderBy('assignedAt', 'asc'));
+    this.remoteSubscriptions.push(onSnapshot(assignments, (snapshot) => {
+      this.state.routineAssignments = snapshot.docs.map((item) => asRoutineAssignment(item.id, item.data()));
+      this.state.routinesLoaded = true;
+      this.state.routinesError = false;
+      this.emit();
+    }, (error) => {
+      console.error('Unable to load participant routine assignments', error);
+      this.state.routinesLoaded = true;
+      this.state.routinesError = true;
+      this.emit();
+    }));
+    const checks = query(collection(participantRef, 'checks'), orderBy('requestedAt', 'desc'));
+    this.remoteSubscriptions.push(onSnapshot(checks, (snapshot) => {
+      this.state.events = snapshot.docs.map((item) => asEvent(item.id, item.data()));
+      this.emit();
+    }, (error) => {
+      console.error('Unable to load participant checks', error);
+      this.state.routinesError = true;
+      this.emit();
+    }));
+    this.persistPreferences();
+    this.emit();
   }
 
   private async attachFamily(familyId: string, role: Role) {
@@ -431,7 +546,7 @@ export class FirebaseRepository implements AppRepository {
         },
       ];
     }
-    this.state.activeParticipantId ??= familyId;
+    this.state.activeParticipantId = familyId;
     if (role === 'parent') {
       this.runInBackground('Unable to refresh the parent recovery code', async () => {
         const ensureRecoveryCode = httpsCallable<{ familyId: string }, { recoveryCode: string }>(
