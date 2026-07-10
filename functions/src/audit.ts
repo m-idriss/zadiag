@@ -11,7 +11,8 @@ export type AuditAction =
   | 'reset_account'
   | 'create_participant'
   | 'create_relationship_invitation'
-  | 'accept_relationship_invitation';
+  | 'accept_relationship_invitation'
+  | 'migrate_family_relationships';
 
 type AuditMetadataValue = string | number | boolean | null | undefined;
 

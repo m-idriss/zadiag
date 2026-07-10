@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { DEFAULT_ROUTINE_ID, migrateCheckRoutineId } from './routines.js';
-import { migrateLegacyFamilyRelationships } from './relationships.js';
+import { isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, migrateLegacyFamilyRelationships } from './relationships.js';
 
 test('rehearses routine migration against representative legacy checks', () => {
   const legacyChecks = [
@@ -61,4 +61,18 @@ test('relationship migration rejects a family without an owner', () => {
     () => migrateLegacyFamilyRelationships('orphan', { childName: 'Alex', members: { alex: 'child' } }, '2026-07-10T12:00:00.000Z'),
     /missing_owner/,
   );
+});
+
+test('relationship migration accepts reruns but detects conflicting target data', () => {
+  const migrated = migrateLegacyFamilyRelationships('family-alex', {
+    childName: 'Alex',
+    members: { owner: 'parent', alex: 'child' },
+  }, '2026-07-10T12:00:00.000Z');
+
+  assert.equal(isCompatibleParticipantMigration(migrated.participant, migrated.participant), true);
+  assert.equal(isCompatibleParticipantMigration({ ...migrated.participant, sourceFamilyId: 'another-family' }, migrated.participant), false);
+  assert.equal(isCompatibleMembershipMigration(migrated.memberships[0], migrated.memberships[0]), true);
+  assert.equal(isCompatibleMembershipMigration({ ...migrated.memberships[0], role: 'viewer' }, migrated.memberships[0]), false);
+  assert.equal(isCompatibleParticipantRefMigration(migrated.participantRefs[0], migrated.participantRefs[0]), true);
+  assert.equal(isCompatibleParticipantRefMigration({ ...migrated.participantRefs[0], participantId: 'another-participant' }, migrated.participantRefs[0]), false);
 });
