@@ -311,15 +311,15 @@ export class DemoRepository implements AppRepository {
 
   async requestCheckNow(routineId?: string) {
     if (this.state.role !== 'parent') throw new Error('permission_denied');
-    if (this.activeSession()) {
-      this.persist();
-      return;
-    }
     const now = new Date();
     const assignment = routineId
       ? this.state.routineAssignments.find((routine) => routine.routineId === routineId)
       : primaryRoutineAssignment(this.state);
     if (!assignment) throw new Error('routine_not_found');
+    if (this.activeSession(assignment.routineId)) {
+      this.persist();
+      return;
+    }
     this.state.events.unshift({
       id: crypto.randomUUID(),
       routineId: assignment.routineId,
@@ -370,10 +370,10 @@ export class DemoRepository implements AppRepository {
     this.persist();
   }
 
-  activeSession() {
+  activeSession(routineId?: string) {
     const now = new Date();
     return this.state.events.find(
-      (event) => event.status === 'pending' && new Date(event.expiresAt) > now,
+      (event) => event.status === 'pending' && new Date(event.expiresAt) > now && (!routineId || event.routineId === routineId),
     );
   }
 

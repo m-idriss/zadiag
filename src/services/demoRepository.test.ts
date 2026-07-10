@@ -44,6 +44,26 @@ describe('DemoRepository compatibility', () => {
     expect(repository.snapshot().events.filter((event) => event.status === 'pending').length).toBe(before);
   });
 
+  test('tracks active demo checks independently per routine', async () => {
+    const repository = new DemoRepository();
+    await repository.selectRole('parent');
+    await repository.assignRoutine('medication');
+    const before = repository.snapshot().events.filter((event) => event.status === 'pending').length;
+
+    expect(repository.activeSession(DEFAULT_ROUTINE_ID)?.routineId).toBe(DEFAULT_ROUTINE_ID);
+    expect(repository.activeSession('medication')).toBeUndefined();
+
+    await repository.requestCheckNow('medication');
+    const afterMedicationRequest = repository.snapshot().events.filter((event) => event.status === 'pending');
+
+    expect(afterMedicationRequest).toHaveLength(before + 1);
+    expect(repository.activeSession('medication')?.routineId).toBe('medication');
+
+    await repository.requestCheckNow('medication');
+
+    expect(repository.snapshot().events.filter((event) => event.status === 'pending')).toHaveLength(before + 1);
+  });
+
   test('keeps notification setup complete after a reload', async () => {
     const repository = new DemoRepository();
     await repository.savePushSubscription({ endpoint: 'https://push.example/subscription' });

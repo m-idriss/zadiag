@@ -83,8 +83,8 @@ class LazyFirebaseRepository implements AppRepository {
     return (await this.load()).savePlan(plan, routineId);
   }
 
-  activeSession() {
-    return this.delegate?.activeSession();
+  activeSession(routineId?: string) {
+    return this.delegate?.activeSession(routineId);
   }
 
   async submitCapture(sessionId: string, capturedAt: Date, imageDataUrl: string) {
