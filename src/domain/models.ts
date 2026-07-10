@@ -34,6 +34,7 @@ export interface MonitoringPlan {
 export type RoutineStatus = 'active' | 'paused' | 'completed';
 export type RoutineAssignmentCreator = 'parent' | 'child' | 'system';
 export type RoutineValidationMode = 'ai' | 'auto';
+export type RoutineCategory = 'dental' | 'wellness' | 'medication' | 'activity' | 'custom';
 
 export interface RoutineInstructionStep {
   id: string;
@@ -46,6 +47,7 @@ export interface RoutineLocalizedContent {
   name?: string;
   description?: string;
   instructions?: string;
+  proofExample?: string;
   instructionSteps?: RoutineInstructionStep[];
   analysis?: {
     expectedEvidence?: string;
@@ -62,7 +64,10 @@ export interface Routine {
   instructions?: string;
   icon?: string;
   accentColor?: string;
+  category?: RoutineCategory;
   proofType?: string;
+  proofExample?: string;
+  recommendedValidationMode?: RoutineValidationMode;
   responsibleName?: string;
   instructionSteps?: RoutineInstructionStep[];
   analysis?: {
@@ -212,7 +217,10 @@ export const defaultRoutine: Routine = {
   instructions: 'Wear your elastics as prescribed. When a check is ready, take a clear photo in good light.',
   icon: '🦷',
   accentColor: '#0d927d',
+  category: 'dental',
   proofType: 'Photo',
+  proofExample: 'Mouth photo with the elastics visible in good light.',
+  recommendedValidationMode: 'ai',
   responsibleName: 'Care team',
   analysis: {
     expectedEvidence: 'A clear view of the mouth showing whether orthodontic elastics are being worn.',
@@ -230,6 +238,7 @@ export const defaultRoutine: Routine = {
       name: 'Élastiques orthodontiques',
       description: 'Contrôles quotidiens du port des élastiques orthodontiques.',
       instructions: 'Porte tes élastiques selon les consignes de ton praticien et envoie une photo claire pour chaque contrôle.',
+      proofExample: 'Photo de la bouche avec les élastiques visibles, en bonne lumière.',
       analysis: {
         expectedEvidence: 'Une vue claire de la bouche montrant si les élastiques orthodontiques sont portés.',
         detectedCriteria: 'les élastiques orthodontiques sont clairement visibles sur les dents ou l’appareil.',

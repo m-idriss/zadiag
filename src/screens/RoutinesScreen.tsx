@@ -1,6 +1,6 @@
 import { addOutline } from 'ionicons/icons';
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
-import type { AppState, MonitoringPlan, RoutineAssignment, RoutineValidationMode, ScheduleGroup, VerificationEvent } from '../domain/models';
+import type { AppState, MonitoringPlan, RoutineAssignment, RoutineCategory, RoutineValidationMode, ScheduleGroup, VerificationEvent } from '../domain/models';
 import { groupsFromLegacyPlan, nextPlannedWindow, summarizeWeekdaysShort } from '../domain/monitoringPlan';
 import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
@@ -79,6 +79,19 @@ const nextLocalDay = (date: Date) => {
 
 const formatRoutineTime = (date: Date, locale: string) =>
   new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(date);
+
+const routineCategoryKey = (category: RoutineCategory): MessageKey => {
+  switch (category) {
+    case 'dental': return 'routineCategoryDental';
+    case 'wellness': return 'routineCategoryWellness';
+    case 'medication': return 'routineCategoryMedication';
+    case 'activity': return 'routineCategoryActivity';
+    case 'custom': return 'routineCategoryCustom';
+  }
+};
+
+const routineValidationModeKey = (mode: RoutineValidationMode): MessageKey =>
+  mode === 'auto' ? 'validationAuto' : 'validationAi';
 
 const routineWindowLabel = (
   start: Date,
@@ -298,9 +311,14 @@ export function RoutinesScreen({
               return (
                 <article className="routine-catalog-item" style={visual.style} key={template.id}>
                   <span className="settings-row-icon routine-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
-                  <div>
+                  <div className="routine-catalog-item-content">
+                    <div className="routine-catalog-meta" aria-label={`${t(routineCategoryKey(visual.category))} · ${t(routineValidationModeKey(visual.recommendedValidationMode))}`}>
+                      <span>{t(routineCategoryKey(visual.category))}</span>
+                      <span>{t('routineCatalogValidationMode')}: {t(routineValidationModeKey(visual.recommendedValidationMode))}</span>
+                    </div>
                     <h3>{visual.name}</h3>
                     <p>{visual.description}</p>
+                    <p className="routine-catalog-proof"><b>{t('routineCatalogProofExample')}:</b> {visual.proofExample}</p>
                   </div>
                   <button type="button" className="routine-catalog-add" disabled={assigned || assigning} onClick={() => { void assignRoutine(routineId); }}>
                     {assigned ? t('routineAlreadyAdded') : assigning ? t('addingRoutine') : t('add')}
