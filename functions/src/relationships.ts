@@ -102,3 +102,72 @@ export const canRemoveMembership = ({
   && target?.status === 'active'
   && !(target.role === 'owner' && activeOwnerCount <= 1);
 
+export interface LegacyFamilyDocument {
+  childName?: unknown;
+  members?: Record<string, unknown>;
+  createdAt?: unknown;
+}
+
+export interface LegacyRelationshipMigration {
+  participantId: string;
+  participant: {
+    displayName: string;
+    userId?: string;
+    status: 'active';
+    sourceFamilyId: string;
+    relationshipModelVersion: 2;
+    createdAt: string;
+    updatedAt: string;
+  };
+  memberships: MembershipDocument[];
+  participantRefs: Array<{
+    uid: string;
+    participantId: string;
+    role: MembershipRole;
+    status: 'active';
+    updatedAt: string;
+  }>;
+}
+
+export const migrateLegacyFamilyRelationships = (
+  familyId: string,
+  family: LegacyFamilyDocument,
+  now: string,
+): LegacyRelationshipMigration => {
+  if (!familyId) throw new Error('invalid_family_id');
+  const displayName = typeof family.childName === 'string' ? family.childName.trim() : '';
+  if (!displayName) throw new Error('invalid_participant_name');
+  const legacyMembers = Object.entries(family.members ?? {})
+    .filter((entry): entry is [string, 'parent' | 'child'] => entry[1] === 'parent' || entry[1] === 'child')
+    .sort(([left], [right]) => left.localeCompare(right));
+  if (!legacyMembers.some(([, role]) => role === 'parent')) throw new Error('missing_owner');
+  const participantUids = legacyMembers.filter(([, role]) => role === 'child').map(([uid]) => uid);
+  const createdAt = typeof family.createdAt === 'string' && Number.isFinite(Date.parse(family.createdAt))
+    ? family.createdAt
+    : now;
+  const memberships = legacyMembers.map(([uid, legacyRole]) => createMembership({
+    uid,
+    role: legacyRole === 'parent' ? 'owner' : 'participant',
+    now: createdAt,
+  }));
+  return {
+    participantId: familyId,
+    participant: {
+      displayName,
+      ...(participantUids.length === 1 ? { userId: participantUids[0] } : {}),
+      status: 'active',
+      sourceFamilyId: familyId,
+      relationshipModelVersion: 2,
+      createdAt,
+      updatedAt: now,
+    },
+    memberships,
+    participantRefs: memberships.map(({ uid, role }) => ({
+      uid,
+      participantId: familyId,
+      role,
+      status: 'active',
+      updatedAt: now,
+    })),
+  };
+};

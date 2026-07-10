@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { DEFAULT_ROUTINE_ID, migrateCheckRoutineId } from './routines.js';
+import { migrateLegacyFamilyRelationships } from './relationships.js';
 
 test('rehearses routine migration against representative legacy checks', () => {
   const legacyChecks = [
@@ -18,4 +19,46 @@ test('rehearses routine migration against representative legacy checks', () => {
 test('rehearsal preserves checks already assigned to another routine', () => {
   const check = { id: 'medication', status: 'detected', routineId: 'medication' };
   assert.deepEqual(migrateCheckRoutineId(check), check);
+});
+
+test('rehearses a family with two caregivers into additive owner memberships', () => {
+  const migrated = migrateLegacyFamilyRelationships('family-alex', {
+    childName: 'Alex',
+    members: {
+      mother: 'parent',
+      father: 'parent',
+      alex: 'child',
+    },
+    createdAt: '2026-06-01T08:00:00.000Z',
+  }, '2026-07-10T12:00:00.000Z');
+
+  assert.equal(migrated.participantId, 'family-alex');
+  assert.equal(migrated.participant.userId, 'alex');
+  assert.deepEqual(migrated.memberships.map(({ uid, role }) => ({ uid, role })), [
+    { uid: 'alex', role: 'participant' },
+    { uid: 'father', role: 'owner' },
+    { uid: 'mother', role: 'owner' },
+  ]);
+  assert.equal(migrated.participantRefs.length, 3);
+  assert.equal(migrated.memberships.filter(({ role }) => role === 'owner').every(({ permissions }) => permissions.manageCaregivers), true);
+});
+
+test('relationship migration is deterministic and does not guess among several participant accounts', () => {
+  const family = {
+    childName: 'Shared profile',
+    members: { owner: 'parent', participantB: 'child', participantA: 'child', invalid: 'viewer' },
+  };
+  const first = migrateLegacyFamilyRelationships('family-shared', family, '2026-07-10T12:00:00.000Z');
+  const rerun = migrateLegacyFamilyRelationships('family-shared', family, '2026-07-10T12:00:00.000Z');
+
+  assert.deepEqual(rerun, first);
+  assert.equal(first.participant.userId, undefined);
+  assert.deepEqual(first.memberships.map(({ uid }) => uid), ['owner', 'participantA', 'participantB']);
+});
+
+test('relationship migration rejects a family without an owner', () => {
+  assert.throws(
+    () => migrateLegacyFamilyRelationships('orphan', { childName: 'Alex', members: { alex: 'child' } }, '2026-07-10T12:00:00.000Z'),
+    /missing_owner/,
+  );
 });
