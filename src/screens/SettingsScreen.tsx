@@ -8,7 +8,7 @@ import {
   timeOutline,
   trashOutline,
 } from 'ionicons/icons';
-import type { AppPreferences, Locale, PushSubscriptionHealth, Role, VerificationEvent } from '../domain/models';
+import type { AppPreferences, Locale, MembershipRole, ParticipantAccess, PushSubscriptionHealth, Role, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { buildDiagnosticsEmailBody, createCorrelationId } from '../services/appLogs';
 import type { AppUpdateInfo } from '../services/appUpdate';
@@ -16,6 +16,7 @@ import { Disclaimer } from '../components/Disclaimer';
 import { CodeBox } from '../components/CodeBox';
 import { ActionButton, ListRow, SegmentedControl, Switch } from '../components/ui';
 import { SvgIcon } from '../components/SvgIcon';
+import { RelationshipManager } from '../components/RelationshipManager';
 
 const SUPPORT_EMAIL = 'contact@3dime.com';
 
@@ -43,6 +44,12 @@ export function SettingsScreen({
   serviceWorkerStatus,
   lastSyncAt,
   regenerateLinkCode,
+  participantAccess,
+  activeParticipantId,
+  selectParticipant,
+  createParticipant,
+  inviteParticipantMember,
+  acceptParticipantInvitation,
 }: {
   t: (key: MessageKey) => string;
   locale: Locale;
@@ -67,6 +74,12 @@ export function SettingsScreen({
   serviceWorkerStatus: 'unsupported' | 'registered' | 'notRegistered';
   lastSyncAt?: string;
   regenerateLinkCode: () => Promise<void>;
+  participantAccess?: ParticipantAccess[];
+  activeParticipantId?: string;
+  selectParticipant?: (participantId: string) => Promise<void>;
+  createParticipant?: (displayName: string, selfManaged: boolean) => Promise<string>;
+  inviteParticipantMember?: (participantId: string, role: Exclude<MembershipRole, 'owner'>) => Promise<{ code: string; expiresAt: string }>;
+  acceptParticipantInvitation?: (code: string) => Promise<string>;
 }) {
   const [mailError, setMailError] = useState(false);
   const [contactMailError, setContactMailError] = useState(false);
@@ -328,6 +341,15 @@ export function SettingsScreen({
           ) : null}
         </div>
       </section>
+      <RelationshipManager
+        access={participantAccess}
+        activeParticipantId={activeParticipantId}
+        onSelect={selectParticipant}
+        onCreate={createParticipant}
+        onInvite={inviteParticipantMember}
+        onAccept={acceptParticipantInvitation}
+        t={t}
+      />
       <section className="settings-section" aria-labelledby="settings-support-heading">
         <h2 id="settings-support-heading">{t('settingsSupportSection')}</h2>
         <div className="card settings-list">
