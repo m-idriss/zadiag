@@ -12,6 +12,7 @@ import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema
 import { createDefaultRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, routineFromCatalog, type RoutineAssignmentDocument } from './routines.js';
 import { buildCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload } from './notifications.js';
 import { normalizeReminderRepeatMinutes, shouldSendCheckReminder } from './reminders.js';
+import { recordAuditEvent } from './audit.js';
 
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
   ?? (process.env.GCLOUD_PROJECT ? `${process.env.GCLOUD_PROJECT}.firebasestorage.app` : undefined);
@@ -363,6 +364,13 @@ export const createFamily = onCall({ region, cors, enforceAppCheck: true }, asyn
     });
     transaction.create(recoveryRef, createRecoveryRecord(familyRef.id, recoveryExpiresAt));
   });
+  await recordAuditEvent(db, {
+    action: 'create_family',
+    actorUid: uid,
+    familyId: familyRef.id,
+    role: 'parent',
+    metadata: { defaultRoutineId: DEFAULT_ROUTINE_ID },
+  });
   return { familyId: familyRef.id, code, recoveryCode, expiresAt: expiresAt.toISOString() };
 });
 
@@ -440,6 +448,12 @@ export const recoverParent = onCall({ region, cors, enforceAppCheck: true }, asy
     transaction.create(nextRecoveryRef, createRecoveryRecord(familyRef.id, nextExpiresAt));
     if (recoveryRef) transaction.delete(recoveryRef);
     transaction.delete(db.collection('recoveryAttempts').doc(uid));
+  });
+  await recordAuditEvent(db, {
+    action: 'recover_parent',
+    actorUid: uid,
+    familyId: familyRef.id,
+    role: 'parent',
   });
   return { familyId: familyRef.id, childName: String(familyDoc.data()?.childName ?? ''), recoveryCode: nextCode };
 });
@@ -549,6 +563,12 @@ export const joinFamily = onCall({ region, cors, enforceAppCheck: true }, async 
     }
     transaction.update(linkRef, { consumedAt: new Date().toISOString(), consumedBy: uid });
     return targetFamilyId;
+  });
+  await recordAuditEvent(db, {
+    action: 'join_family',
+    actorUid: uid,
+    familyId,
+    role: 'child',
   });
   return { familyId };
 });
@@ -679,6 +699,13 @@ export const regenerateLinkCode = onCall({ region, cors, enforceAppCheck: true }
   });
   await batch.commit();
 
+  await recordAuditEvent(db, {
+    action: 'regenerate_link_code',
+    actorUid: uid,
+    familyId,
+    role: 'parent',
+    metadata: { detachedChildCount: childIds.length },
+  });
   return { code, expiresAt: expiresAt.toISOString() };
 });
 
@@ -760,6 +787,17 @@ export const requestCheckNow = onCall({
   const assignment = await assignmentRef.get();
   const routineNames = getRoutineNotificationNames(assignment.data(), routineId);
   await sendCheckPushNotifications(familyRef, { ...check, ...routineNames }, resend);
+  await recordAuditEvent(db, {
+    action: 'request_check',
+    actorUid: uid,
+    familyId,
+    role: 'parent',
+    metadata: {
+      checkId: check.id,
+      routineId,
+      resend,
+    },
+  });
   return check;
 });
 
@@ -1173,6 +1211,19 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
       transaction.update(checkRef, autoUpdate);
       return { id: check.id, ...checkData, ...autoUpdate };
     });
+    await recordAuditEvent(db, {
+      action: 'submit_proof',
+      actorUid: uid,
+      familyId,
+      role: 'child',
+      metadata: {
+        checkId,
+        routineId,
+        status: 'detected',
+        analysisSource: 'self',
+        hasProofImage: Boolean(proofImagePath),
+      },
+    });
     return response;
   }
   const routineAnalysis = getRoutineAnalysisContext(assignmentData, routineId, locale);
@@ -1223,6 +1274,20 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
       console.error('Unable to send review push notifications', error);
     }
   }
+  await recordAuditEvent(db, {
+    action: 'submit_proof',
+    actorUid: uid,
+    familyId,
+    role: 'child',
+    metadata: {
+      checkId,
+      routineId,
+      status: analysisUpdate.status,
+      analysisSource: analysisUpdate.analysisSource,
+      reviewStatus: analysisUpdate.reviewStatus ?? null,
+      hasProofImage: Boolean(proofImagePath),
+    },
+  });
   return response;
 });
 
@@ -1321,6 +1386,17 @@ export const reviewCheck = onCall({ region, cors, enforceAppCheck: true }, async
       console.error('Unable to delete reviewed proof image', { familyId, checkId, proofImagePath, error });
     }
   }
+  await recordAuditEvent(db, {
+    action: 'review_proof',
+    actorUid: uid,
+    familyId,
+    role: 'parent',
+    metadata: {
+      checkId,
+      decision,
+      reviewStatus: reviewedCheck.reviewStatus as string,
+    },
+  });
   return reviewedCheck;
 });
 
@@ -1360,6 +1436,13 @@ export const deleteAccountData = onCall({ region, cors, enforceAppCheck: true },
       familyRef.collection('pushSubscriptions').doc(uid).delete(),
       userRef.delete(),
     ]);
+    await recordAuditEvent(db, {
+      action: 'reset_account',
+      actorUid: uid,
+      familyId,
+      role,
+      metadata: { scope: 'child' },
+    });
     return;
   }
 
@@ -1374,4 +1457,11 @@ export const deleteAccountData = onCall({ region, cors, enforceAppCheck: true },
     console.error('Unable to delete family proof images', error);
   });
   await db.recursiveDelete(familyRef);
+  await recordAuditEvent(db, {
+    action: 'reset_account',
+    actorUid: uid,
+    familyId,
+    role,
+    metadata: { scope: 'family', memberCount: memberIds.length },
+  });
 });
