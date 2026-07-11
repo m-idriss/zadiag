@@ -136,7 +136,7 @@ This is the intended one-month pilot path: install, link, notify, capture, revie
 
 ## Documentation
 
-[Caregiver and participant architecture](docs/caregiver-participant-architecture.md), [Create a routine](docs/create-routine.md), [Routine marketplace](docs/routine-marketplace.md), [Routine rollout](docs/routine-rollout.md), [Routine examples](routines/README.md), [Firestore rules](firestore.rules), [Firebase indexes](firestore.indexes.json)
+[Deployment workflow](docs/deployment-workflow.md), [Caregiver and participant architecture](docs/caregiver-participant-architecture.md), [Create a routine](docs/create-routine.md), [Routine marketplace](docs/routine-marketplace.md), [Routine rollout](docs/routine-rollout.md), [Routine examples](routines/README.md), [Firestore rules](firestore.rules), [Firebase indexes](firestore.indexes.json)
 
 ## Project Scripts
 
