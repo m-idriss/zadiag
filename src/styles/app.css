@@ -741,8 +741,16 @@ button {
 .relationship-selected-scope-heading { padding-top: 14px; border-top: 1px solid var(--border); }
 .relationship-profile-actions-body { display: grid; gap: 14px; padding: 2px 0 12px; }
 .relationship-profile-actions-body > small { color: var(--muted); font-size: 11px; line-height: 1.35; }
-.relationship-profile-actions > summary::after { content: '›'; transform: rotate(0deg); transition: transform .18s ease; }
-.relationship-profile-actions[open] > summary::after { content: '›'; transform: rotate(90deg); }
+.relationship-profile-list { display: grid; gap: 8px; }
+.relationship-profile-entry { overflow: hidden; border: 1px solid rgba(16,42,67,.07); border-radius: 12px; background: #fbfcfb; }
+.relationship-profile-entry.active { border-color: color-mix(in srgb, var(--teal) 34%, white); background: color-mix(in srgb, var(--mint) 74%, white); box-shadow: inset 3px 0 var(--teal); }
+.relationship-profile-entry > summary { display: grid; grid-template-columns: minmax(0, 1fr) auto 20px; align-items: center; gap: 10px; min-height: 48px; padding: 8px 11px; cursor: pointer; color: var(--navy); list-style: none; }
+.relationship-profile-entry > summary::-webkit-details-marker { display: none; }
+.relationship-profile-entry > summary > span { min-width: 0; display: grid; gap: 2px; }
+.relationship-profile-entry > summary small { color: var(--muted); font-size: 10px; }
+.relationship-profile-entry > summary::after { content: '›'; justify-self: end; color: var(--teal); font-size: 20px; transform: rotate(0deg); transition: transform .18s ease; }
+.relationship-profile-entry[open] > summary::after { transform: rotate(90deg); }
+.relationship-profile-entry .relationship-profile-actions-body { padding: 4px 11px 12px; border-top: 1px solid rgba(16,42,67,.07); background: rgba(255,255,255,.72); }
 .relationship-member-list { display: grid; gap: 7px; }
 .relationship-member-row { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 9px 8px 11px; border-radius: 12px; background: #f5f8f7; }
 .relationship-member-row > span { display: grid; gap: 2px; }

@@ -35,7 +35,7 @@ describe('RelationshipManager', () => {
     />));
     expect(container.querySelector('input[aria-label="Name"]')).toBeNull();
     expandManager();
-    expect(container.querySelector('.relationship-access-list')).not.toBeNull();
+    expect(container.querySelector('.relationship-profile-list')).not.toBeNull();
     const name = container.querySelector('input[aria-label="Name"]') as HTMLInputElement;
     const checkbox = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
     act(() => {

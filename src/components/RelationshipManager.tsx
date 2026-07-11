@@ -87,25 +87,19 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
           <h3>{t('relationshipAccountProfilesTitle')}</h3>
           <small>{t('relationshipAccountProfilesHint')}</small>
         </div>
-        {activeAccess.length ? <div className="relationship-access-list">
-          {activeAccess.map((entry) => (
-            <button
-              type="button"
-              className={entry.participant.id === activeParticipantId ? 'active' : undefined}
-              key={entry.participant.id}
-              disabled={!onSelect}
-              onClick={() => { setError(undefined); void onSelect?.(entry.participant.id); }}
-            >
-              <span><strong>{entry.participant.displayName}</strong><small>{t(`relationshipRole${entry.membership.role[0].toUpperCase()}${entry.membership.role.slice(1)}` as MessageKey)}</small></span>
-              {entry.participant.selfManaged ? <small>{t('relationshipSelfManaged')}</small> : null}
-            </button>
-          ))}
-        </div> : null}
-
-        {selectedParticipantId ? <details className="relationship-tool relationship-profile-actions">
-          <summary>{t('relationshipSelectedProfileActionsTitle').replace('{name}', selectedAccess?.participant.displayName ?? '')}</summary>
-          <div className="relationship-profile-actions-body">
-            <small>{t('relationshipSelectedProfileActionsHint')}</small>
+        {activeAccess.length ? <div className="relationship-profile-list">
+          {activeAccess.map((entry) => {
+            const entrySelected = entry.participant.id === selectedParticipantId;
+            return <details className={`relationship-profile-entry${entrySelected ? ' active' : ''}`} key={entry.participant.id} onToggle={(event) => {
+              if (!event.currentTarget.open || entrySelected) return;
+              setError(undefined);
+              void onSelect?.(entry.participant.id);
+            }}>
+              <summary>
+                <span><strong>{entry.participant.displayName}</strong><small>{t(`relationshipRole${entry.membership.role[0].toUpperCase()}${entry.membership.role.slice(1)}` as MessageKey)}</small></span>
+                {entry.participant.selfManaged ? <small>{t('relationshipSelfManaged')}</small> : null}
+              </summary>
+              {entrySelected ? <div className="relationship-profile-actions-body">
 
         {isOwner && selectedParticipantId ? (
           <section className="relationship-team" aria-labelledby="relationship-team-title">
@@ -225,8 +219,10 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
             }}>{busy === 'delete' ? t('relationshipWorking') : t('relationshipDeleteProfileAction')}</button>
           </div>
         ) : null}
-          </div>
-        </details> : null}
+              </div> : null}
+            </details>;
+          })}
+        </div> : null}
 
         {invitationCode && !selectedParticipantId ? <output className="relationship-invitation-code">{t('relationshipInvitationCode')}: <strong>{invitationCode}</strong><small>{t('relationshipInvitationNextStep')}</small></output> : null}
 
