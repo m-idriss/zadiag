@@ -503,16 +503,18 @@ export class FirebaseRepository implements AppRepository {
     };
     this.state.family.linkingCode = data.linkingCode ?? '';
     this.state.family.parentRecoveryCode = data.parentRecoveryCode ?? '';
-    if (data.familyId && data.role) {
+    const activeId = this.state.activeParticipantId;
+    const access = activeId ? activeParticipantAccess(this.state.participantAccess, activeId) : undefined;
+    if (access) {
+      await this.attachParticipant(activeId!, access.membership.role);
+    }
+    else if (data.familyId && data.role) {
       this.legacyFamilyId = data.familyId;
       this.legacyRole = data.role;
       await this.attachFamily(data.familyId, data.role);
     }
     else {
-      const activeId = this.state.activeParticipantId;
-      const access = activeId ? activeParticipantAccess(this.state.participantAccess, activeId) : undefined;
-      if (access) await this.attachParticipant(activeId!, access.membership.role);
-      else this.emit();
+      this.emit();
     }
     this.runInBackground('Unable to sync push subscription locale', () => this.syncPushSubscriptionLocale());
   }

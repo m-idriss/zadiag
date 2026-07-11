@@ -64,6 +64,23 @@ describe('RelationshipManager', () => {
     expect(container.textContent).toContain('ZI-654321');
   });
 
+  it('targets the visible participant when a stale legacy id is still active', async () => {
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+    const invite = vi.fn().mockResolvedValue({ code: 'ZI-654321', expiresAt: new Date().toISOString() });
+    act(() => root?.render(<RelationshipManager
+      access={[{ participant: { id: 'alex', displayName: 'Alex' }, membership: { role: 'owner', status: 'active' } }]}
+      activeParticipantId="legacy-family"
+      onInvite={invite}
+      t={(key) => translate('en', key)}
+    />));
+    expandManager();
+    const button = Array.from(container.querySelectorAll('button')).find((item) => item.textContent === 'Generate invitation')!;
+    await act(async () => button.click());
+    expect(invite).toHaveBeenCalledWith('alex', 'caregiver');
+  });
+
   it('generates a scoped recovery code', async () => {
     container = document.createElement('div');
     document.body.append(container);

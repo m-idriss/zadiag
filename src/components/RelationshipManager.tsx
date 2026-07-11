@@ -30,6 +30,7 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
   const [open, setOpen] = useState(false);
   const activeAccess = (access ?? []).filter((entry) => entry.membership.status === 'active');
   const selectedAccess = activeAccess.find((entry) => entry.participant.id === activeParticipantId) ?? activeAccess[0];
+  const selectedParticipantId = selectedAccess?.participant.id;
   const selectedRoleKey = selectedAccess
     ? `relationshipRole${selectedAccess.membership.role[0].toUpperCase()}${selectedAccess.membership.role.slice(1)}` as MessageKey
     : undefined;
@@ -97,7 +98,7 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
           </form>
         ) : null}
 
-        {onInvite && activeParticipantId ? (
+        {onInvite && selectedParticipantId ? (
           <div className="relationship-form">
             <h3>{t('relationshipInviteTitle')}</h3>
             <select aria-label={t('relationshipInviteRole')} value={inviteRole} onChange={(event) => setInviteRole(event.target.value as InviteRole)}>
@@ -106,7 +107,7 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
               <option value="viewer">{t('relationshipRoleViewer')}</option>
             </select>
             <button type="button" disabled={busy === 'invite'} onClick={() => { void run('invite', async () => {
-              const invitation = await onInvite(activeParticipantId, inviteRole);
+              const invitation = await onInvite(selectedParticipantId, inviteRole);
               setInvitationCode(invitation.code);
             }); }}>{busy === 'invite' ? t('relationshipWorking') : t('relationshipInviteAction')}</button>
             {invitationCode ? <output className="relationship-invitation-code">{t('relationshipInvitationCode')}: <strong>{invitationCode}</strong></output> : null}
@@ -120,11 +121,11 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
             <button type="submit" disabled={busy === 'accept' || !joinCode.trim()}>{busy === 'accept' ? t('relationshipWorking') : t('relationshipJoinAction')}</button>
           </form>
         ) : null}
-        {onCreateRecovery && activeParticipantId ? (
+        {onCreateRecovery && selectedParticipantId ? (
           <div className="relationship-form">
             <h3>{t('relationshipRecoveryTitle')}</h3>
             <button type="button" disabled={busy === 'recovery'} onClick={() => { void run('recovery', async () => {
-              const recovery = await onCreateRecovery(activeParticipantId);
+              const recovery = await onCreateRecovery(selectedParticipantId);
               setRecoveryCode(recovery.recoveryCode);
             }); }}>{t('relationshipRecoveryCreate')}</button>
             {recoveryCode ? <output className="relationship-invitation-code">{t('relationshipRecoveryCode')}: <strong>{recoveryCode}</strong></output> : null}
@@ -145,10 +146,10 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
             <button type="submit" disabled={busy === 'recovery' || !recoverCode.trim()}>{t('relationshipRecoverAction')}</button>
           </form>
         ) : null}
-        {onLeave && activeParticipantId ? (
+        {onLeave && selectedParticipantId ? (
           <button className="relationship-leave-button" type="button" disabled={Boolean(busy)} onClick={() => {
             if (!window.confirm(t('relationshipLeaveConfirm'))) return;
-            void run('accept', () => onLeave(activeParticipantId));
+            void run('accept', () => onLeave(selectedParticipantId));
           }}>{t('relationshipLeaveAction')}</button>
         ) : null}
         {error ? <small className="settings-action-error">{t('relationshipActionError')}</small> : null}
