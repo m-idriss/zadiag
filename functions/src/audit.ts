@@ -17,7 +17,9 @@ export type AuditAction =
   | 'remove_participant_membership'
   | 'delete_participant_profile'
   | 'create_relationship_recovery'
-  | 'recover_relationship';
+  | 'recover_relationship'
+  | 'assign_routine'
+  | 'delete_routine';
 
 type AuditMetadataValue = string | number | boolean | null | undefined;
 

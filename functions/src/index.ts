@@ -245,6 +245,22 @@ const copyLegacyParticipantSubcollection = async (
   return sourceSnapshot.size;
 };
 
+const deleteQueryDocumentsInBatches = async (
+  query: FirebaseFirestore.Query,
+  batchSize = 400,
+) => {
+  let deleted = 0;
+  while (true) {
+    const snapshot = await query.limit(batchSize).get();
+    if (snapshot.empty) return deleted;
+    const batch = db.batch();
+    snapshot.docs.forEach((document) => batch.delete(document.ref));
+    await batch.commit();
+    deleted += snapshot.size;
+    if (snapshot.size < batchSize) return deleted;
+  }
+};
+
 const recordSensitiveCodeAttempt = async (uid: string) => {
   const attemptRef = db.collection('recoveryAttempts').doc(uid);
   await db.runTransaction(async (transaction) => {
@@ -1380,6 +1396,13 @@ export const assignRoutine = onCall({
     transaction.create(assignmentRef, createRoutineAssignment(routine, defaultPlan, new Date().toISOString(), 'parent'));
   });
 
+  await recordAuditEvent(db, {
+    action: 'assign_routine',
+    actorUid: uid,
+    familyId,
+    metadata: { routineId: routine.id },
+  });
+
   return { success: true };
 });
 
@@ -1395,10 +1418,11 @@ export const deleteRoutine = onCall({
   const familyRef = await requireAggregatePermission(uid, familyId, 'manageRoutines', 'parent');
   const assignmentRef = familyRef.collection('routineAssignments').doc(routineId);
   const assignmentsQuery = familyRef.collection('routineAssignments').limit(2);
-  const routineChecks = familyRef.collection('checks').where('routineId', '==', routineId).limit(450);
+  const routineChecksQuery = familyRef.collection('checks').where('routineId', '==', routineId);
+  const routineChecks = routineChecksQuery.limit(400);
 
   await ensureFamilyRoutineMigration(familyRef);
-  await db.runTransaction(async (transaction) => {
+  const deletedInTransaction = await db.runTransaction(async (transaction) => {
     const [family, assignment, assignments, checks] = await Promise.all([
       transaction.get(familyRef),
       transaction.get(assignmentRef),
@@ -1413,6 +1437,18 @@ export const deleteRoutine = onCall({
 
     transaction.delete(assignmentRef);
     checks.docs.forEach((check) => transaction.delete(check.ref));
+    return checks.size;
+  });
+
+  const deletedAfterTransaction = await deleteQueryDocumentsInBatches(routineChecksQuery);
+  await recordAuditEvent(db, {
+    action: 'delete_routine',
+    actorUid: uid,
+    familyId,
+    metadata: {
+      routineId,
+      deletedCheckCount: deletedInTransaction + deletedAfterTransaction,
+    },
   });
 
   return { success: true };
