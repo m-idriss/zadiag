@@ -333,7 +333,7 @@ const messages = {
     disclaimer: 'Aide à l’observance uniquement. Zadiag ne remplace pas les conseils de votre professionnel de santé.',
     parent: 'Responsable', child: 'Participant', continueAs: 'Continuer en tant que', followedPerson: 'Personne suivie',
     relationshipManagerTitle: 'Personnes suivies', relationshipManagerHint: 'Gérez les personnes associées à ce compte.',
-    relationshipRoleOwner: 'Propriétaire', relationshipRoleCaregiver: 'Responsable', relationshipRoleParticipant: 'Participant', relationshipRoleViewer: 'Observateur',
+    relationshipRoleOwner: 'Responsable principal', relationshipRoleCaregiver: 'Responsable', relationshipRoleParticipant: 'Participant', relationshipRoleViewer: 'Observateur',
     relationshipSelfManaged: 'Auto-suivi', relationshipCreateTitle: 'Ajouter une personne suivie', relationshipNameLabel: 'Nom',
     relationshipSelfManagedLabel: 'Cette personne, c’est moi', relationshipCreateAction: 'Créer', relationshipWorking: 'Traitement…',
     relationshipInviteTitle: 'Inviter une personne', relationshipInviteRole: 'Rôle de l’invitation', relationshipInviteAction: 'Générer l’invitation',
