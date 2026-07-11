@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from 'react';
+import { chevronDownOutline, peopleOutline } from 'ionicons/icons';
 import type { MembershipRole, ParticipantAccess } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
+import { SvgIcon } from './SvgIcon';
 
 type InviteRole = Exclude<MembershipRole, 'owner'>;
 
@@ -25,7 +27,12 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
   const [recoverCode, setRecoverCode] = useState('');
   const [busy, setBusy] = useState<'create' | 'invite' | 'accept' | 'recovery'>();
   const [error, setError] = useState(false);
+  const [open, setOpen] = useState(false);
   const activeAccess = (access ?? []).filter((entry) => entry.membership.status === 'active');
+  const selectedAccess = activeAccess.find((entry) => entry.participant.id === activeParticipantId) ?? activeAccess[0];
+  const selectedRoleKey = selectedAccess
+    ? `relationshipRole${selectedAccess.membership.role[0].toUpperCase()}${selectedAccess.membership.role.slice(1)}` as MessageKey
+    : undefined;
 
   const run = async (kind: NonNullable<typeof busy>, action: () => Promise<void>) => {
     setError(false);
@@ -56,6 +63,15 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
     <section className="settings-section relationship-manager" aria-labelledby="relationship-manager-heading">
       <h2 id="relationship-manager-heading">{t('relationshipManagerTitle')}</h2>
       <div className="card relationship-manager-card">
+        <button type="button" className="relationship-manager-toggle" aria-expanded={open} onClick={() => setOpen((current) => !current)}>
+          <span className="relationship-manager-icon" aria-hidden="true"><SvgIcon icon={peopleOutline} /></span>
+          <span className="relationship-manager-summary">
+            <strong>{selectedAccess?.participant.displayName ?? t('relationshipManagerTitle')}</strong>
+            <small>{selectedRoleKey ? t(selectedRoleKey) : t('relationshipManagerHint')}</small>
+          </span>
+          <span className="relationship-manager-action">{t('relationshipManageAction')}<SvgIcon className={open ? 'expanded' : undefined} icon={chevronDownOutline} /></span>
+        </button>
+        {open ? <div className="relationship-manager-body">
         <p>{t('relationshipManagerHint')}</p>
         <div className="relationship-access-list">
           {activeAccess.map((entry) => (
@@ -136,6 +152,7 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
           }}>{t('relationshipLeaveAction')}</button>
         ) : null}
         {error ? <small className="settings-action-error">{t('relationshipActionError')}</small> : null}
+        </div> : null}
       </div>
     </section>
   );
