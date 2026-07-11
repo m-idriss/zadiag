@@ -7,12 +7,24 @@ export interface ReminderDecisionInput {
 }
 
 const allowedReminderRepeatMinutes = new Set([0, 20, 30]);
+const checkRequestCooldownMs = 10_000;
 
 export const normalizeReminderRepeatMinutes = (value: unknown, fallback = 20) => {
   const minutes = Number(value);
   if (!Number.isFinite(minutes)) return fallback;
   if (allowedReminderRepeatMinutes.has(minutes)) return minutes;
   return fallback;
+};
+
+export const isCheckRequestRateLimited = (
+  lastCheckRequestAt: unknown,
+  now = Date.now(),
+  cooldownMs = checkRequestCooldownMs,
+) => {
+  const lastRequestAtMs = Date.parse(String(lastCheckRequestAt ?? ''));
+  return Number.isFinite(lastRequestAtMs)
+    && lastRequestAtMs <= now
+    && now - lastRequestAtMs < cooldownMs;
 };
 
 export const shouldSendCheckReminder = ({

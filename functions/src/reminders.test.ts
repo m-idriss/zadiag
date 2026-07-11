@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { normalizeReminderRepeatMinutes, shouldSendCheckReminder } from './reminders.js';
+import { isCheckRequestRateLimited, normalizeReminderRepeatMinutes, shouldSendCheckReminder } from './reminders.js';
 
 test('normalizes reminder repeat preferences', () => {
   assert.equal(normalizeReminderRepeatMinutes(0), 0);
@@ -8,6 +8,14 @@ test('normalizes reminder repeat preferences', () => {
   assert.equal(normalizeReminderRepeatMinutes(30), 30);
   assert.equal(normalizeReminderRepeatMinutes(15), 20);
   assert.equal(normalizeReminderRepeatMinutes('bad'), 20);
+});
+
+test('rate limits duplicate manual check requests inside the cooldown', () => {
+  const now = Date.parse('2026-07-11T10:00:10.000Z');
+  assert.equal(isCheckRequestRateLimited('2026-07-11T10:00:00.001Z', now), true);
+  assert.equal(isCheckRequestRateLimited('2026-07-11T10:00:00.000Z', now), false);
+  assert.equal(isCheckRequestRateLimited('invalid', now), false);
+  assert.equal(isCheckRequestRateLimited('2026-07-11T10:00:11.000Z', now), false);
 });
 
 test('does not send automatic reminders when repeat is disabled', () => {

@@ -11,7 +11,7 @@ import { analyzeWithGemini, parseImageDataUrl, type AnalysisResult, type Routine
 import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
 import { createDefaultRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, routineFromCatalog, type RoutineAssignmentDocument } from './routines.js';
 import { buildCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload } from './notifications.js';
-import { normalizeReminderRepeatMinutes, shouldSendCheckReminder } from './reminders.js';
+import { isCheckRequestRateLimited, normalizeReminderRepeatMinutes, shouldSendCheckReminder } from './reminders.js';
 import { recordAuditEvent } from './audit.js';
 import { expiredPendingCheckCleanupUpdate, staleCleanupCutoffs } from './cleanup.js';
 import { reportOperationalAlert } from './observability.js';
@@ -1304,6 +1304,9 @@ export const requestCheckNow = onCall({
     }
 
     const now = new Date();
+    if (isCheckRequestRateLimited(assignment.data()?.lastCheckRequestAt, now.getTime())) {
+      throw new HttpsError('resource-exhausted', 'Please wait before requesting another check.');
+    }
     const parsedPlan = monitoringPlanSchema.safeParse(assignment.data()?.plan);
     const plan = parsedPlan.success ? parsedPlan.data : defaultPlan;
     const activePendingCheck = pending.docs.find((doc) => Date.parse(String(doc.data().expiresAt)) > now.getTime());
