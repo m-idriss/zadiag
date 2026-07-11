@@ -10,7 +10,7 @@ import { assertChildName, createLinkCode, createRecoveryCode, createRelationship
 import { analyzeWithGemini, parseImageDataUrl, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
 import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
 import { createDefaultRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, routineFromCatalog, type RoutineAssignmentDocument } from './routines.js';
-import { buildCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload } from './notifications.js';
+import { buildCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription } from './notifications.js';
 import { isCheckRequestRateLimited, normalizeReminderRepeatMinutes, shouldSendCheckReminder } from './reminders.js';
 import { recordAuditEvent } from './audit.js';
 import { expiredPendingCheckCleanupUpdate, staleCleanupCutoffs } from './cleanup.js';
@@ -1141,18 +1141,10 @@ export const joinFamily = onCall({ region, cors, enforceAppCheck: true }, async 
 export const savePushSubscription = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
   const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
-  const subscription = request.data?.subscription as Partial<PushSubscription> | undefined;
-  const endpoint = String(subscription?.endpoint ?? '');
-  const p256dh = String(subscription?.keys?.p256dh ?? '');
-  const auth = String(subscription?.keys?.auth ?? '');
+  const subscription = normalizePushSubscription(request.data?.subscription);
   const locale = request.data?.locale === 'fr' ? 'fr' : 'en';
-  const rawPreferences = request.data?.preferences as Record<string, unknown> | undefined;
-  const preferences = rawPreferences ? {
-    notificationWindowStart: String(rawPreferences.notificationWindowStart ?? '08:00'),
-    notificationWindowEnd: String(rawPreferences.notificationWindowEnd ?? '21:00'),
-    reminderRepeatMinutes: Number(rawPreferences.reminderRepeatMinutes ?? 20),
-  } : undefined;
-  if (!endpoint.startsWith('https://') || !p256dh || !auth) {
+  const preferences = normalizePushPreferences(request.data?.preferences);
+  if (!subscription) {
     throw new HttpsError('invalid-argument', 'A valid push subscription is required.');
   }
 
@@ -1162,8 +1154,7 @@ export const savePushSubscription = onCall({ region, cors, enforceAppCheck: true
   const subscriptionRef = aggregateRef.collection('pushSubscriptions').doc(uid);
   const batch = db.batch();
   batch.set(subscriptionRef, {
-    endpoint,
-    keys: { p256dh, auth },
+    ...subscription,
     locale,
     role,
     endpointPresent: true,

@@ -1,6 +1,35 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload } from './notifications.js';
+import { buildCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription } from './notifications.js';
+
+test('normalizes bounded Web Push subscriptions', () => {
+  const subscription = normalizePushSubscription({
+    endpoint: 'https://push.example.test/send/device',
+    keys: { p256dh: 'A'.repeat(87), auth: 'b'.repeat(22) },
+    ignored: 'value',
+  });
+  assert.deepEqual(subscription, {
+    endpoint: 'https://push.example.test/send/device',
+    keys: { p256dh: 'A'.repeat(87), auth: 'b'.repeat(22) },
+  });
+  assert.equal(normalizePushSubscription({ endpoint: 'http://push.example.test', keys: { p256dh: 'A'.repeat(87), auth: 'b'.repeat(22) } }), undefined);
+  assert.equal(normalizePushSubscription({ endpoint: `https://push.example.test/${'x'.repeat(4_100)}`, keys: { p256dh: 'A'.repeat(87), auth: 'b'.repeat(22) } }), undefined);
+  assert.equal(normalizePushSubscription({ endpoint: 'https://push.example.test', keys: { p256dh: 'not valid', auth: 'short' } }), undefined);
+});
+
+test('normalizes push preference values before storage', () => {
+  assert.deepEqual(normalizePushPreferences({ notificationWindowStart: '00:00', notificationWindowEnd: '23:59', reminderRepeatMinutes: 30 }), {
+    notificationWindowStart: '00:00',
+    notificationWindowEnd: '23:59',
+    reminderRepeatMinutes: 30,
+  });
+  assert.deepEqual(normalizePushPreferences({ notificationWindowStart: '99:00', notificationWindowEnd: 'bad', reminderRepeatMinutes: 999 }), {
+    notificationWindowStart: '08:00',
+    notificationWindowEnd: '21:00',
+    reminderRepeatMinutes: 20,
+  });
+  assert.equal(normalizePushPreferences(undefined), undefined);
+});
 
 test('builds the current French check notification payload', () => {
   const payload = buildCheckNotificationPayload({

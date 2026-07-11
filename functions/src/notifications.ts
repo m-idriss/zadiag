@@ -1,5 +1,53 @@
 export type NotificationLocale = 'en' | 'fr';
 
+export interface NormalizedPushSubscription {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+}
+
+export interface NormalizedPushPreferences {
+  notificationWindowStart: string;
+  notificationWindowEnd: string;
+  reminderRepeatMinutes: number;
+}
+
+const base64UrlPattern = /^[A-Za-z0-9_-]+={0,2}$/;
+const notificationTimePattern = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+
+export const normalizePushSubscription = (value: unknown): NormalizedPushSubscription | undefined => {
+  if (!value || typeof value !== 'object') return undefined;
+  const candidate = value as { endpoint?: unknown; keys?: { p256dh?: unknown; auth?: unknown } };
+  const endpoint = typeof candidate.endpoint === 'string' ? candidate.endpoint : '';
+  const p256dh = typeof candidate.keys?.p256dh === 'string' ? candidate.keys.p256dh : '';
+  const auth = typeof candidate.keys?.auth === 'string' ? candidate.keys.auth : '';
+  if (endpoint.length > 4_096 || p256dh.length < 40 || p256dh.length > 256 || auth.length < 8 || auth.length > 128) return undefined;
+  if (!base64UrlPattern.test(p256dh) || !base64UrlPattern.test(auth)) return undefined;
+  try {
+    const url = new URL(endpoint);
+    if (url.protocol !== 'https:' || url.username || url.password) return undefined;
+  } catch {
+    return undefined;
+  }
+  return { endpoint, keys: { p256dh, auth } };
+};
+
+export const normalizePushPreferences = (value: unknown): NormalizedPushPreferences | undefined => {
+  if (!value || typeof value !== 'object') return undefined;
+  const candidate = value as Record<string, unknown>;
+  const notificationWindowStart = typeof candidate.notificationWindowStart === 'string'
+    && notificationTimePattern.test(candidate.notificationWindowStart)
+    ? candidate.notificationWindowStart
+    : '08:00';
+  const notificationWindowEnd = typeof candidate.notificationWindowEnd === 'string'
+    && notificationTimePattern.test(candidate.notificationWindowEnd)
+    ? candidate.notificationWindowEnd
+    : '21:00';
+  const reminderRepeatMinutes = [0, 20, 30].includes(Number(candidate.reminderRepeatMinutes))
+    ? Number(candidate.reminderRepeatMinutes)
+    : 20;
+  return { notificationWindowStart, notificationWindowEnd, reminderRepeatMinutes };
+};
+
 export interface CheckNotificationInput {
   sessionId: string;
   routineId: string;
