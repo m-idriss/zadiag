@@ -83,7 +83,7 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
         />
         {open ? <div className="relationship-manager-body">
         <p>{t('relationshipManagerHint')}</p>
-        <div className="relationship-access-list">
+        {activeAccess.length > 1 ? <div className="relationship-access-list">
           {activeAccess.map((entry) => (
             <button
               type="button"
@@ -96,7 +96,7 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
               {entry.participant.selfManaged ? <small>{t('relationshipSelfManaged')}</small> : null}
             </button>
           ))}
-        </div>
+        </div> : null}
 
         {isOwner && selectedParticipantId ? (
           <section className="relationship-team" aria-labelledby="relationship-team-title">
