@@ -50,6 +50,7 @@ interface RoutineNotificationNames {
 
 type PushRecipientRole = 'child' | 'parent';
 type PushNotificationDocument = FirebaseFirestore.QueryDocumentSnapshot | FirebaseFirestore.DocumentSnapshot;
+type PushDispatchResult = 'success' | 'failed' | 'invalidated' | 'skipped';
 
 const getRoutineAnalysisContext = (
   assignment: Partial<RoutineAssignmentDocument> | undefined,
@@ -268,7 +269,7 @@ const sendPushPayload = async (
   subscriptionDocument: PushNotificationDocument,
   payload: unknown,
   ttl = 120,
-): Promise<'success' | 'failed' | 'invalidated' | 'skipped'> => {
+): Promise<PushDispatchResult> => {
   const subscription = subscriptionDocument.data() as PushSubscription & { locale?: string } | undefined;
   if (!subscription) return 'skipped';
   const recordDispatch = async (result: 'success' | 'failed' | 'invalidated', error?: unknown) => {
@@ -315,7 +316,7 @@ const sendCheckPushNotification = async (
   check: { sessionId: string; routineId: string } & RoutineNotificationNames,
   resend: boolean,
 ) => {
-  if (pushRecipientRole(subscriptionDocument) !== 'child') return;
+  if (pushRecipientRole(subscriptionDocument) !== 'child') return 'skipped' as const;
   const subscription = subscriptionDocument.data() as { locale?: string } | undefined;
   const payload = buildCheckNotificationPayload({
     sessionId: check.sessionId,
@@ -326,7 +327,7 @@ const sendCheckPushNotification = async (
     resend,
     locale: subscription?.locale,
   });
-  await sendPushPayload(subscriptionDocument, payload);
+  return sendPushPayload(subscriptionDocument, payload);
 };
 
 const sendReviewPushNotification = async (
@@ -1660,6 +1661,7 @@ export const dispatchCheckReminders = onSchedule({
       const notificationNames = getRoutineNotificationNames(assignment.data(), routineId);
 
       await Promise.allSettled(subscriptions.docs.map(async (subscriptionDoc) => {
+        if (pushRecipientRole(subscriptionDoc) !== 'child') return;
         const reminderRef = checkDoc.ref.collection('reminders').doc(subscriptionDoc.id);
         const reserved = await db.runTransaction(async (transaction): Promise<boolean> => {
           const [freshCheck, reminder] = await Promise.all([
@@ -1688,11 +1690,21 @@ export const dispatchCheckReminders = onSchedule({
           return true;
         });
         if (!reserved) return;
-        await sendCheckPushNotification(subscriptionDoc, {
+        const dispatchResult = await sendCheckPushNotification(subscriptionDoc, {
           sessionId: String(checkData.sessionId ?? checkDoc.id),
           routineId,
           ...notificationNames,
         }, true);
+        if (dispatchResult !== 'success') {
+          await reminderRef.delete().catch((error) => {
+            console.error('Unable to release failed reminder reservation', {
+              checkId: checkDoc.id,
+              subscriptionId: subscriptionDoc.id,
+              dispatchResult,
+              error,
+            });
+          });
+        }
       }));
     }));
   }));
