@@ -442,9 +442,10 @@ button {
 .page-context-top > .relationship-manager { min-width: 0; }
 .page-context-top > .participant-switcher { position: static; }
 .page-context-top > .participant-switcher .participant-switcher-menu { top: calc(100% + 8px); right: 0; left: 0; width: 100%; box-sizing: border-box; }
-.settings-context-top .relationship-manager-card { overflow: visible; }
-.settings-context-top .relationship-manager-toggle { border-radius: var(--radius-card); }
-.settings-context-top .relationship-manager-body { position: absolute; top: calc(100% + 8px); right: 0; left: 0; z-index: 2; width: 100%; box-sizing: border-box; padding: 0 14px 14px; border: 1px solid rgba(16,42,67,.08); border-radius: 18px; background: rgba(255,255,255,.98); box-shadow: 0 18px 45px rgba(16,42,67,.18); }
+.settings-context-top > .relationship-manager,
+.settings-context-top .relationship-manager-card { display: contents; }
+.settings-context-top .relationship-manager-toggle { grid-column: 2; overflow: hidden; border: 1px solid rgba(255,255,255,.9); border-radius: var(--radius-card); box-shadow: var(--shadow-sm); }
+.settings-context-top .relationship-manager-body { grid-column: 1 / -1; width: 100%; box-sizing: border-box; padding: 0 14px 14px; border: 1px solid rgba(16,42,67,.08); border-radius: var(--radius-card); background: var(--surface); box-shadow: var(--shadow-sm); }
 .avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--mint); color: var(--teal); display: grid; place-items: center; font-weight: 900; font-size: 20px; }
 .summary-card { display: flex; align-items: center; gap: 18px; }
 .summary-card p { margin: 5px 0; }
