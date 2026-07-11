@@ -434,6 +434,14 @@ button {
 .screen-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; }
 .screen-header small { color: var(--muted); }
 .screen-header p { max-width: 34ch; margin: 0; color: var(--muted); font-size: 11px; line-height: 1.35; }
+.page-context-top { position: relative; z-index: 12; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 12px; }
+.page-context-heading { min-width: 0; align-self: center; }
+.page-context-heading h1 { margin-top: 0; }
+.page-context-top > .participant-switcher,
+.page-context-top > .participant-switcher-static,
+.page-context-top > .relationship-manager { min-width: 0; }
+.page-context-top > .participant-switcher[open],
+.settings-context-top:has(.relationship-manager-body) > .relationship-manager { grid-column: 1 / -1; }
 .avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--mint); color: var(--teal); display: grid; place-items: center; font-weight: 900; font-size: 20px; }
 .summary-card { display: flex; align-items: center; gap: 18px; }
 .summary-card p { margin: 5px 0; }

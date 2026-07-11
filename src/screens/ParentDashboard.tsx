@@ -182,21 +182,21 @@ export function ParentDashboard({
   const handleMouseUp = (event: MouseEvent<HTMLElement>, eventId: string) => completeSwipe(eventId, event.clientX, event.clientY);
   const activeParticipantAccess = state.participantAccess?.find((entry) => entry.participant.id === state.activeParticipantId)
     ?? state.participantAccess?.find((entry) => entry.membership.status === 'active');
-  const activeParticipantRoleKey = activeParticipantAccess
-    ? `relationshipRole${activeParticipantAccess.membership.role[0].toUpperCase()}${activeParticipantAccess.membership.role.slice(1)}` as MessageKey
-    : undefined;
-
   return (
     <div className="content-screen child-home parent-overview-screen">
+      <div className="page-context-top parent-context-top">
+        <header className="screen-header page-context-heading">
+          <div><h1>{t('activity')}</h1><p>{t('responsibleTodaySubtitle').replace('{name}', activeParticipantAccess?.participant.displayName ?? state.family.childName)}</p></div>
+        </header>
       <ParticipantSelector
         access={state.participantAccess}
         activeParticipantId={state.activeParticipantId}
         label={t('followedPerson')}
         title={activeParticipantAccess?.participant.displayName ?? state.family.childName}
-        subtitle={activeParticipantRoleKey ? t(activeParticipantRoleKey) : t('followedPerson')}
         actionLabel={t('relationshipSwitchAction')}
         onSelect={onSelectParticipant}
       />
+      </div>
 
       {(responsibleEmptyState || activePendingEvents.length || (!state.family.childLinked && state.family.linkingCode) || (!state.routineAssignments.length && onCreateRoutine)) ? (
         <section className="settings-section parent-setup-section" aria-labelledby="parent-setup-title">

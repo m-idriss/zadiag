@@ -255,6 +255,10 @@ export function SettingsScreen({
       : t('settingsDiagnosticsMissing');
   return (
     <div className="content-screen settings-screen">
+      <div className="page-context-top settings-context-top">
+        <header className="screen-header page-context-heading">
+          <div><h1>{t('settings')}</h1><p>{t('settingsHint')}</p></div>
+        </header>
       <RelationshipManager
         access={participantAccess}
         activeParticipantId={activeParticipantId}
@@ -270,6 +274,7 @@ export function SettingsScreen({
         hideHeading
         t={t}
       />
+      </div>
       <section className="settings-section" aria-labelledby="settings-device-heading">
         <h2 id="settings-device-heading">{t('settingsDeviceSection')}</h2>
         <div className="card settings-list">
