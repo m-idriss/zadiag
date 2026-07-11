@@ -51,21 +51,21 @@ device and does not diagnose, prescribe, or replace professional care.
 [Product brief](docs/product-brief.md) ·
 [Security](SECURITY.md)
 
-<details>
-<summary><strong>Build and run locally</strong></summary>
-
-### Quick start
-
-Requirements: Node.js 22+ and pnpm 11.7+.
+## Quick start
 
 ```sh
-corepack enable
 corepack pnpm install
 corepack pnpm dev
 ```
 
-No Firebase setup is required to explore the product: Zadiag automatically uses
-its local demo mode when public Firebase variables are absent.
+Open the local URL and start exploring. No Firebase configuration is required:
+Zadiag automatically runs in private demo mode.
+
+<details>
+<summary><strong>Developer details</strong></summary>
+
+Requirements: Node.js 22+, pnpm 11.7+, and Java 21 for the complete validation
+suite.
 
 ### Verify before delivery
 
