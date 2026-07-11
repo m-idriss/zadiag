@@ -80,7 +80,8 @@ describe('participant routines navigation', () => {
     expect(container.textContent).toContain('Validation: AI analysis');
     expect(container.textContent).toContain('Proof example');
     expect(container.textContent).toContain('visible glass');
-    expect(container.querySelector('.routines-add-button')).not.toBeNull();
+    expect(container.querySelector('.routines-add-button')?.getAttribute('aria-label')).toBe('Add a routine');
+    expect(container.querySelector('.routines-add-button')?.textContent).not.toContain('Add a routine');
   });
 
   it('shows the assigned routine frequency, completion and next task', async () => {

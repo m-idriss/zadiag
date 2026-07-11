@@ -1,10 +1,10 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
-import { chevronDownOutline, peopleOutline } from 'ionicons/icons';
+import { addCircleOutline } from 'ionicons/icons';
 import type { AppState, MonitoringPlan, RoutineAssignment, RoutineCategory, RoutineValidationMode, ScheduleGroup, VerificationEvent } from '../domain/models';
 import { groupsFromLegacyPlan, nextPlannedWindow, summarizeWeekdaysShort } from '../domain/monitoringPlan';
 import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
-import { SvgIcon } from '../components/SvgIcon';
+import { ProfileContextCard } from '../components/ProfileContextCard';
 import { presentRoutine } from '../domain/routinePresentation';
 import { assignableRoutineTemplates, marketplaceFromTemplates, presentRoutineTemplate } from '../domain/routineMarketplace';
 import { withResolvedEventStatuses } from '../domain/adherence';
@@ -302,14 +302,15 @@ export function RoutinesScreen({
     <div className="content-screen routines-screen">
       {canAssignRoutine ? <div className="routine-add-switcher">
         <div className="card relationship-manager-card routines-add-card">
-          <button type="button" className="relationship-manager-toggle routines-add-button" aria-expanded={catalogOpen} onClick={() => setCatalogOpen((open) => !open)}>
-            <span className="relationship-manager-icon" aria-hidden="true"><SvgIcon icon={peopleOutline} /></span>
-            <span className="relationship-manager-summary">
-              <strong>{activeParticipantAccess?.participant.displayName ?? state.family.childName}</strong>
-              <small>{activeParticipantRoleKey ? t(activeParticipantRoleKey) : t('responsibleTodaySubtitle').replace('{name}', state.family.childName)}</small>
-            </span>
-            <span className="relationship-manager-action">{t('addRoutine')}<SvgIcon className={catalogOpen ? 'expanded' : undefined} icon={chevronDownOutline} /></span>
-          </button>
+          <ProfileContextCard
+            className="routines-add-button"
+            title={activeParticipantAccess?.participant.displayName ?? state.family.childName}
+            subtitle={activeParticipantRoleKey ? t(activeParticipantRoleKey) : t('responsibleTodaySubtitle').replace('{name}', state.family.childName)}
+            actionIcon={addCircleOutline}
+            actionLabel={t('addRoutine')}
+            expanded={catalogOpen}
+            onClick={() => setCatalogOpen((open) => !open)}
+          />
         </div>
       {catalogOpen && (
         <section className="card routine-catalog-card routine-catalog-popover" aria-labelledby="routine-catalog-title">

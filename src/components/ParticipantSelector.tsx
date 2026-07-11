@@ -1,6 +1,7 @@
 import { useRef } from 'react';
-import { checkmarkOutline, chevronDownOutline, peopleOutline } from 'ionicons/icons';
+import { checkmarkOutline, personCircleOutline } from 'ionicons/icons';
 import type { ParticipantAccess } from '../domain/models';
+import { ProfileContextCard } from './ProfileContextCard';
 import { SvgIcon } from './SvgIcon';
 
 export function ParticipantSelector({ access, activeParticipantId, label, title, subtitle, actionLabel, onSelect }: {
@@ -22,19 +23,19 @@ export function ParticipantSelector({ access, activeParticipantId, label, title,
   const displayTitle = title ?? `${label} ${selected.participant.displayName}`;
   if (activeAccess.length < 2 || !onSelect) {
     return <div className="card relationship-manager-card participant-switcher-static">
-      <div className="relationship-manager-toggle">
-        <span className="relationship-manager-icon" aria-hidden="true"><SvgIcon icon={peopleOutline} /></span>
-        <span className="relationship-manager-summary"><strong>{displayTitle}</strong>{subtitle ? <small>{subtitle}</small> : null}</span>
-      </div>
+      <ProfileContextCard as="div" title={displayTitle} subtitle={subtitle} />
     </div>;
   }
   return (
     <details className="participant-switcher" ref={detailsRef}>
-      <summary className="card relationship-manager-toggle" aria-label={`${label} : ${selected.participant.displayName}`}>
-        <span className="relationship-manager-icon" aria-hidden="true"><SvgIcon icon={peopleOutline} /></span>
-        <span className="relationship-manager-summary"><strong>{displayTitle}</strong>{subtitle ? <small>{subtitle}</small> : null}</span>
-        {actionLabel ? <span className="relationship-manager-action">{actionLabel}<SvgIcon icon={chevronDownOutline} /></span> : null}
-      </summary>
+      <ProfileContextCard
+        as="summary"
+        className="card"
+        title={displayTitle}
+        subtitle={subtitle}
+        actionIcon={personCircleOutline}
+        actionLabel={`${actionLabel ?? label} : ${selected.participant.displayName}`}
+      />
       <div className="participant-switcher-menu" role="group" aria-label={label}>
         <span className="participant-switcher-label">{label}</span>
         {activeAccess.map((entry) => {

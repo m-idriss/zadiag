@@ -21,9 +21,10 @@ describe('ParticipantSelector', () => {
       { participant: { id: 'alex', displayName: 'Alex' }, membership: { role: 'owner', status: 'active' } },
       { participant: { id: 'sam', displayName: 'Sam' }, membership: { role: 'caregiver', status: 'active' } },
       { participant: { id: 'hidden', displayName: 'Hidden' }, membership: { role: 'caregiver', status: 'suspended' } },
-    ]} activeParticipantId="alex" label="Followed person" title="Following Alex" onSelect={onSelect} />));
+    ]} activeParticipantId="alex" label="Followed person" title="Following Alex" actionLabel="Switch" onSelect={onSelect} />));
     const summary = container.querySelector('summary') as HTMLElement;
-    expect(summary.getAttribute('aria-label')).toBe('Followed person : Alex');
+    expect(summary.getAttribute('aria-label')).toBe('Switch : Alex');
+    expect(summary.textContent).not.toContain('Switch');
     const buttons = Array.from(container.querySelectorAll('.participant-switcher-menu button')) as HTMLButtonElement[];
     expect(buttons.map((button) => button.querySelectorAll('span')[1]?.textContent)).toEqual(['Alex', 'Sam']);
     const sam = buttons[1];

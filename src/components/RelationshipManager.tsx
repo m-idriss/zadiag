@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react';
-import { chevronDownOutline, peopleOutline } from 'ionicons/icons';
+import { settingsOutline } from 'ionicons/icons';
 import type { MembershipRole, ParticipantAccess, ParticipantMember } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
-import { SvgIcon } from './SvgIcon';
+import { ProfileContextCard } from './ProfileContextCard';
 
 type InviteRole = Exclude<MembershipRole, 'owner'>;
 
@@ -76,14 +76,15 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
     <section className="settings-section relationship-manager" aria-labelledby={hideHeading ? undefined : 'relationship-manager-heading'} aria-label={hideHeading ? t('relationshipManagerTitle') : undefined}>
       {!hideHeading ? <h2 id="relationship-manager-heading">{t('relationshipManagerTitle')}</h2> : null}
       <div className="card relationship-manager-card">
-        <button type="button" className="relationship-manager-toggle" aria-expanded={open} onClick={() => { setError(undefined); setOpen((current) => !current); }}>
-          <span className="relationship-manager-icon" aria-hidden="true"><SvgIcon icon={peopleOutline} /></span>
-          <span className="relationship-manager-summary">
-            <strong>{selectedAccess?.participant.displayName ?? t('relationshipManagerTitle')}</strong>
-            <small>{selectedRoleKey ? t(selectedRoleKey) : t('relationshipManagerHint')}</small>
-          </span>
-          <span className="relationship-manager-action">{t('relationshipManageAction')}<SvgIcon className={open ? 'expanded' : undefined} icon={chevronDownOutline} /></span>
-        </button>
+        <ProfileContextCard
+          className="relationship-manager-toggle"
+          title={selectedAccess?.participant.displayName ?? t('relationshipManagerTitle')}
+          subtitle={selectedRoleKey ? t(selectedRoleKey) : t('relationshipManagerHint')}
+          actionIcon={settingsOutline}
+          actionLabel={t('relationshipManageAction')}
+          expanded={open}
+          onClick={() => { setError(undefined); setOpen((current) => !current); }}
+        />
         {open ? <div className="relationship-manager-body">
         <p>{t('relationshipManagerHint')}</p>
         <div className="relationship-access-list">
