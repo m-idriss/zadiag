@@ -38,6 +38,13 @@ class FakeFirebaseRepository implements AppRepository {
   }
 
   async selectRole(role: Role) { this.state = { ...this.state, role }; }
+  async selectActiveParticipant(participantId: string) { this.state.activeParticipantId = participantId; }
+  async createParticipant() { return 'participant-1'; }
+  async inviteParticipantMember() { return { code: 'ZI-123456', expiresAt: '2026-07-12T00:00:00.000Z' }; }
+  async acceptParticipantInvitation() { return 'participant-1'; }
+  async leaveParticipant() {}
+  async createRelationshipRecovery() { return { recoveryCode: 'PR-2345-6789-ABCD', expiresAt: '2026-10-01T00:00:00.000Z' }; }
+  async recoverRelationship() { return { participantId: 'participant-1' }; }
   async setLocale(locale: Locale) { this.state = { ...this.state, locale }; }
   async linkParent() {}
   async recoverParent() {}
@@ -85,5 +92,7 @@ describe('repository factory', () => {
     expect(firebaseRepositoryLoaded).toBe(true);
     expect(repository.snapshot()).toMatchObject({ role: 'parent', family: { linked: true, childName: 'Maya' } });
     expect(listener).toHaveBeenCalled();
+    await expect(repository.inviteParticipantMember?.('participant-1', 'caregiver')).resolves.toMatchObject({ code: 'ZI-123456' });
+    await expect(repository.createRelationshipRecovery?.('participant-1')).resolves.toMatchObject({ recoveryCode: 'PR-2345-6789-ABCD' });
   });
 });

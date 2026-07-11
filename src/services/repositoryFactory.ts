@@ -1,6 +1,6 @@
 import type { AppRepository } from './contracts';
 import { DemoRepository } from './demoRepository';
-import { type AppPreferences, type Locale, type MonitoringPlan, type Role, type RoutineValidationMode } from '../domain/models';
+import { type AppPreferences, type Locale, type MembershipRole, type MonitoringPlan, type Role, type RoutineValidationMode } from '../domain/models';
 import { firebaseEnabled } from './firebaseConfig';
 import { isLocalDemoEnvironment } from './browserEnvironment';
 import { initialRemoteState } from './appStateDefaults';
@@ -29,6 +29,48 @@ class LazyFirebaseRepository implements AppRepository {
 
   async selectRole(role: Role) {
     return (await this.load()).selectRole(role);
+  }
+
+  async selectActiveParticipant(participantId: string) {
+    const repository = await this.load();
+    if (!repository.selectActiveParticipant) throw new Error('participant_selection_unavailable');
+    return repository.selectActiveParticipant(participantId);
+  }
+
+  async createParticipant(displayName: string, selfManaged?: boolean) {
+    const repository = await this.load();
+    if (!repository.createParticipant) throw new Error('participant_creation_unavailable');
+    return repository.createParticipant(displayName, selfManaged);
+  }
+
+  async inviteParticipantMember(participantId: string, role: Exclude<MembershipRole, 'owner'>) {
+    const repository = await this.load();
+    if (!repository.inviteParticipantMember) throw new Error('participant_invitation_unavailable');
+    return repository.inviteParticipantMember(participantId, role);
+  }
+
+  async acceptParticipantInvitation(code: string) {
+    const repository = await this.load();
+    if (!repository.acceptParticipantInvitation) throw new Error('participant_invitation_unavailable');
+    return repository.acceptParticipantInvitation(code);
+  }
+
+  async leaveParticipant(participantId: string) {
+    const repository = await this.load();
+    if (!repository.leaveParticipant) throw new Error('participant_leave_unavailable');
+    return repository.leaveParticipant(participantId);
+  }
+
+  async createRelationshipRecovery(participantId: string) {
+    const repository = await this.load();
+    if (!repository.createRelationshipRecovery) throw new Error('relationship_recovery_unavailable');
+    return repository.createRelationshipRecovery(participantId);
+  }
+
+  async recoverRelationship(code: string) {
+    const repository = await this.load();
+    if (!repository.recoverRelationship) throw new Error('relationship_recovery_unavailable');
+    return repository.recoverRelationship(code);
   }
 
   async setLocale(locale: Locale) {
