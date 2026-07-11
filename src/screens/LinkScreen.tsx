@@ -5,6 +5,7 @@ import { Disclaimer } from '../components/Disclaimer';
 import { CodeBox } from '../components/CodeBox';
 import { SetupProgress } from '../components/SetupProgress';
 import { ActionButton } from '../components/ui';
+import { AppIcon } from '../components/Icon';
 import { linkErrorMessageKey } from './linkErrors';
 
 export function LinkScreen({
@@ -32,6 +33,8 @@ export function LinkScreen({
   const [consent, setConsent] = useState(false);
   const [errorKey, setErrorKey] = useState<MessageKey>();
   const [busy, setBusy] = useState(false);
+  const expectsCode = !parent || mode === 'recover';
+  const canSubmit = Boolean(value.trim()) && (!parent || mode !== 'create' || consent) && !busy;
 
   const submit = async () => {
     setErrorKey(undefined);
@@ -46,18 +49,34 @@ export function LinkScreen({
     }
   };
 
+  const updateValue = (nextValue: string) => setValue(expectsCode ? nextValue.toUpperCase() : nextValue);
+
   return (
     <main className="page link-page">
-      <button type="button" className="back-button" onClick={back}>‹</button>
+      <button type="button" className="back-button" onClick={back} aria-label={t('back')}><AppIcon name="chevron-back" /></button>
       {!parent ? <SetupProgress current={2} t={t} /> : null}
-      <div className="section-icon">{parent ? '⌂' : '⌁'}</div>
+      <div className="section-icon" aria-hidden="true"><AppIcon name={parent ? 'home' : 'link'} /></div>
       {!parent ? <p className="setup-eyebrow">{t('setupStepTwo')}</p> : null}
       <h1>{parent ? t('createLink') : t('joinFamily')}</h1>
       <p>{parent ? (mode === 'recover' ? t('parentRecoverHint') : t('parentLinkHint')) : t('childLinkHint')}</p>
       <section className="card link-card">
         <label className="native-input-field">
           <span>{parent ? (mode === 'recover' ? t('parentRecoveryCode') : t('childNickname')) : t('linkingCode')}</span>
-          <input value={value} onChange={(event) => setValue(event.currentTarget.value)} />
+          <input
+            value={value}
+            maxLength={expectsCode ? (parent ? 17 : 9) : 40}
+            autoComplete={expectsCode ? 'one-time-code' : 'nickname'}
+            autoCapitalize={expectsCode ? 'characters' : 'words'}
+            enterKeyHint="done"
+            spellCheck={!expectsCode}
+            aria-invalid={Boolean(errorKey)}
+            onChange={(event) => updateValue(event.currentTarget.value)}
+            onKeyDown={(event) => {
+              if (event.key !== 'Enter' || !canSubmit) return;
+              event.preventDefault();
+              void submit();
+            }}
+          />
         </label>
         {parent && (
           <>
@@ -76,12 +95,13 @@ export function LinkScreen({
         )}
         {errorKey && <p className="form-error" role="alert">{t(errorKey)}</p>}
       </section>
-      {!parent ? <aside className="setup-help"><span aria-hidden="true">ⓘ</span><p>{t('setupLinkHelp')}</p></aside> : null}
+      {!parent ? <aside className="setup-help"><span aria-hidden="true"><AppIcon name="info" /></span><p>{t('setupLinkHelp')}</p></aside> : null}
       <Disclaimer t={t} />
       {parent ? <button className="regenerate-code" type="button" onClick={() => { setMode(mode === 'create' ? 'recover' : 'create'); setValue(''); setConsent(false); }}>
         {mode === 'create' ? t('recoverExistingFamily') : t('createNewFamily')}
       </button> : null}
-      <ActionButton disabled={busy || !value.trim() || (parent && mode === 'create' && !consent)} onClick={submit}>
+      <ActionButton disabled={!canSubmit} aria-busy={busy} onClick={submit}>
+        {busy ? <span className="button-spinner" aria-hidden="true" /> : null}
         {parent ? (mode === 'recover' ? t('recoverContinue') : t('createContinue')) : t('linkContinue')}
       </ActionButton>
       <small className="link-version">v{import.meta.env.VITE_APP_VERSION}</small>

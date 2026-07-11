@@ -111,15 +111,16 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
               <div className="relationship-member-list">
                 {removableMembers.map((member) => {
                   const roleKey = `relationshipRole${member.role[0].toUpperCase()}${member.role.slice(1)}` as MessageKey;
+                  const removing = busy === 'remove' && removingUid === member.uid;
                   return (
                     <div className="relationship-member-row" key={member.uid}>
                       <span><strong>{t(roleKey)}</strong><small>{t('relationshipMemberAccess')}</small></span>
-                      {onRemoveMember ? <button type="button" disabled={Boolean(busy)} onClick={() => {
+                      {onRemoveMember ? <button type="button" aria-busy={removing} disabled={Boolean(busy)} onClick={() => {
                         if (!window.confirm(t('relationshipRemoveMemberConfirm'))) return;
                         setRemovingUid(member.uid);
                         void run('remove', () => onRemoveMember(selectedParticipantId, member.uid).then(() => undefined))
                           .finally(() => setRemovingUid(undefined));
-                      }}>{busy === 'remove' && removingUid === member.uid ? t('relationshipWorking') : t('relationshipRemoveMemberAction')}</button> : null}
+                      }}>{removing ? <span className="button-spinner" aria-hidden="true" /> : null}{removing ? t('relationshipWorking') : t('relationshipRemoveMemberAction')}</button> : null}
                     </div>
                   );
                 })}
@@ -138,10 +139,10 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
               <option value="participant">{t('relationshipInviteParticipantOption')}</option>
               <option value="viewer">{t('relationshipRoleViewer')}</option>
             </select>
-            <button type="button" disabled={busy === 'invite'} onClick={() => { void run('invite', async () => {
+            <button type="button" aria-busy={busy === 'invite'} disabled={busy === 'invite'} onClick={() => { void run('invite', async () => {
               const invitation = await onInvite(selectedParticipantId, inviteRole);
               setInvitationCode(invitation.code);
-            }); }}>{busy === 'invite' ? t('relationshipWorking') : t('relationshipInviteAction')}</button>
+            }); }}>{busy === 'invite' ? <span className="button-spinner" aria-hidden="true" /> : null}{busy === 'invite' ? t('relationshipWorking') : t('relationshipInviteAction')}</button>
             {invitationCode ? <output className="relationship-invitation-code">{t('relationshipInvitationCode')}: <strong>{invitationCode}</strong><small>{t('relationshipInvitationNextStep')}</small></output> : null}
           </div>
           </details>
@@ -151,8 +152,8 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
           <details className="relationship-tool">
             <summary>{t('relationshipJoinTitle')}</summary>
           <form className="relationship-form" onSubmit={accept}>
-            <input aria-label={t('relationshipJoinCode')} value={joinCode} onChange={(event) => setJoinCode(event.target.value.toUpperCase())} placeholder="ZI-123456" />
-            <button type="submit" disabled={busy === 'accept' || !joinCode.trim()}>{busy === 'accept' ? t('relationshipWorking') : t('relationshipJoinAction')}</button>
+            <input aria-label={t('relationshipJoinCode')} value={joinCode} maxLength={9} autoComplete="one-time-code" autoCapitalize="characters" enterKeyHint="done" spellCheck={false} onChange={(event) => setJoinCode(event.target.value.toUpperCase())} placeholder="ZI-123456" />
+            <button type="submit" aria-busy={busy === 'accept'} disabled={busy === 'accept' || !joinCode.trim()}>{busy === 'accept' ? <span className="button-spinner" aria-hidden="true" /> : null}{busy === 'accept' ? t('relationshipWorking') : t('relationshipJoinAction')}</button>
           </form>
           </details>
         ) : null}
@@ -162,10 +163,10 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
         {onCreateRecovery && selectedParticipantId ? (
           <div className="relationship-form">
             <h3>{t('relationshipRecoveryTitle')}</h3>
-            <button type="button" disabled={busy === 'recovery'} onClick={() => { void run('recovery', async () => {
+            <button type="button" aria-busy={busy === 'recovery'} disabled={busy === 'recovery'} onClick={() => { void run('recovery', async () => {
               const recovery = await onCreateRecovery(selectedParticipantId);
               setRecoveryCode(recovery.recoveryCode);
-            }); }}>{t('relationshipRecoveryCreate')}</button>
+            }); }}>{busy === 'recovery' ? <span className="button-spinner" aria-hidden="true" /> : null}{t('relationshipRecoveryCreate')}</button>
             {recoveryCode ? <output className="relationship-invitation-code">{t('relationshipRecoveryCode')}: <strong>{recoveryCode}</strong></output> : null}
           </div>
         ) : null}
@@ -180,8 +181,8 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
             });
           }}>
             <h3>{t('relationshipRecoverTitle')}</h3>
-            <input aria-label={t('relationshipRecoveryCode')} value={recoverCode} onChange={(event) => setRecoverCode(event.target.value.toUpperCase())} placeholder="PR-2345-6789-ABCD" />
-            <button type="submit" disabled={busy === 'recovery' || !recoverCode.trim()}>{t('relationshipRecoverAction')}</button>
+            <input aria-label={t('relationshipRecoveryCode')} value={recoverCode} maxLength={17} autoComplete="one-time-code" autoCapitalize="characters" enterKeyHint="done" spellCheck={false} onChange={(event) => setRecoverCode(event.target.value.toUpperCase())} placeholder="PR-2345-6789-ABCD" />
+            <button type="submit" aria-busy={busy === 'recovery'} disabled={busy === 'recovery' || !recoverCode.trim()}>{busy === 'recovery' ? <span className="button-spinner" aria-hidden="true" /> : null}{t('relationshipRecoverAction')}</button>
           </form>
         ) : null}
           </details>
@@ -189,7 +190,7 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
         {onLeave && selectedParticipantId && canLeaveSelectedAccess ? (
           <div className="relationship-leave-zone">
           <h3>{t('relationshipPersonalAccessTitle')}</h3>
-          <button className="relationship-leave-button" type="button" disabled={Boolean(busy)} onClick={() => {
+          <button className="relationship-leave-button" type="button" aria-busy={busy === 'accept'} disabled={Boolean(busy)} onClick={() => {
             if (!window.confirm(t('relationshipLeaveConfirm'))) return;
             void run('accept', async () => {
               await onLeave(selectedParticipantId);
@@ -201,7 +202,7 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
                 ? 'relationshipLeaveLastOwnerError'
                 : 'relationshipActionError';
             });
-          }}>{t('relationshipLeaveAction')}</button>
+          }}>{busy === 'accept' ? <span className="button-spinner" aria-hidden="true" /> : null}{t('relationshipLeaveAction')}</button>
           {isOwner ? <small>{t('relationshipLeaveOwnerHint')}</small> : null}
           </div>
         ) : null}
@@ -209,14 +210,14 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
           <div className="relationship-delete-zone">
             <h3>{t('relationshipDeleteProfileTitle')}</h3>
             <p>{t('relationshipDeleteProfileHint')}</p>
-            <button type="button" disabled={Boolean(busy)} onClick={() => {
+            <button type="button" aria-busy={busy === 'delete'} disabled={Boolean(busy)} onClick={() => {
               const confirmation = t('relationshipDeleteProfileConfirm').replace('{name}', selectedAccess?.participant.displayName ?? '');
               if (!window.confirm(confirmation)) return;
               void run('delete', async () => {
                 await onDeleteParticipant(selectedParticipantId);
                 setOpen(false);
               });
-            }}>{busy === 'delete' ? t('relationshipWorking') : t('relationshipDeleteProfileAction')}</button>
+            }}>{busy === 'delete' ? <span className="button-spinner" aria-hidden="true" /> : null}{busy === 'delete' ? t('relationshipWorking') : t('relationshipDeleteProfileAction')}</button>
           </div>
         ) : null}
               </div> : null}
@@ -231,9 +232,9 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
             <summary>{t('relationshipCreateTitle')}</summary>
           <form className="relationship-form" onSubmit={create}>
             <p>{t('relationshipCreateHint')}</p>
-            <input aria-label={t('relationshipNameLabel')} value={name} maxLength={40} onChange={(event) => setName(event.target.value)} placeholder={t('relationshipNameLabel')} />
+            <input aria-label={t('relationshipNameLabel')} value={name} maxLength={40} autoComplete="name" autoCapitalize="words" enterKeyHint="done" onChange={(event) => setName(event.target.value)} placeholder={t('relationshipNameLabel')} />
             <label className="relationship-checkbox"><input type="checkbox" checked={selfManaged} onChange={(event) => setSelfManaged(event.target.checked)} />{t('relationshipSelfManagedLabel')}</label>
-            <button type="submit" disabled={busy === 'create' || !name.trim()}>{busy === 'create' ? t('relationshipWorking') : t('relationshipCreateAction')}</button>
+            <button type="submit" aria-busy={busy === 'create'} disabled={busy === 'create' || !name.trim()}>{busy === 'create' ? <span className="button-spinner" aria-hidden="true" /> : null}{busy === 'create' ? t('relationshipWorking') : t('relationshipCreateAction')}</button>
           </form>
           </details>
         ) : null}

@@ -15,6 +15,8 @@ import {
   validateScheduleGroupsDraft,
 } from '../domain/monitoringPlan';
 import { SvgIcon } from '../components/SvgIcon';
+import { AppIcon } from '../components/Icon';
+import { useModalFocus } from '../hooks/useModalFocus';
 
 const dayOptions = [
   { label: 'mondayShort', longLabel: 'monday', day: 1 },
@@ -91,6 +93,7 @@ export function RoutineEditScreen({
   const [draftExpiryMinutes, setDraftExpiryMinutes] = useState(() => normalizedExpiryMinutes(plan.expiryMinutes));
   const [error, setError] = useState<string>();
   const [timePicker, setTimePicker] = useState<TimePickerState>();
+  const timePickerDialogRef = useModalFocus<HTMLElement>(Boolean(timePicker), () => setTimePicker(undefined));
   const flattened = flattenScheduleGroups(groups);
   const totalWindowCount = flattened.windows.length;
   const initialGroupsSignature = useMemo(() => scheduleGroupsSignature(groupsFromLegacyPlan(plan)), [plan]);
@@ -215,7 +218,7 @@ export function RoutineEditScreen({
     <div className={embedded ? 'routine-edit-screen routine-edit-embedded' : 'content-screen routine-edit-screen'} data-routine-id={routineId}>
       {!embedded && (
         <header className="screen-header routine-edit-header">
-          <button type="button" className="edit-back-button" onClick={onCancel} aria-label={t('cancel')}>‹</button>
+          <button type="button" className="edit-back-button" onClick={onCancel} aria-label={t('back')}><AppIcon name="chevron-back" /></button>
           <div>
             <small>{t('monitoringPlan')}</small>
             <h1>{t('editMonitoringPlan')}</h1>
@@ -225,7 +228,7 @@ export function RoutineEditScreen({
 
       {canEditValidationMode && <section className="card plan-editor-section routine-validation-card">
         <div className="card-title routine-edit-card-title">
-          <h2><span aria-hidden="true">✓</span>{t('routineValidation')}</h2>
+          <h2><span aria-hidden="true"><AppIcon name="check" /></span>{t('routineValidation')}</h2>
         </div>
         <p>{t('routineValidationHint')}</p>
         <div className="routine-validation-toggle" role="group" aria-label={t('routineValidation')}>
@@ -252,7 +255,7 @@ export function RoutineEditScreen({
 
       <section className="card plan-editor-section response-window-card">
         <div className="card-title routine-edit-card-title">
-          <h2><span aria-hidden="true">⏱</span>{t('responseWindowTitle')}</h2>
+          <h2><span aria-hidden="true"><AppIcon name="time" /></span>{t('responseWindowTitle')}</h2>
         </div>
         <p>{t('responseWindowHint')}</p>
         <div className="response-window-options" role="group" aria-label={t('responseWindowTitle')}>
@@ -273,9 +276,9 @@ export function RoutineEditScreen({
       {groups.map((group, groupIndex) => (
         <section className="card plan-editor-section schedule-group-card" key={group.id}>
           <div className="card-title routine-edit-card-title">
-            <h2><span aria-hidden="true">◷</span>{defaultGroupLabel(groupIndex, group, t)}</h2>
+            <h2><span aria-hidden="true"><AppIcon name="time" /></span>{defaultGroupLabel(groupIndex, group, t)}</h2>
             <button type="button" className="schedule-group-remove" disabled={groups.length === 1} onClick={() => removeGroup(group.id)} aria-label={t('removeScheduleGroup')}>
-              <span aria-hidden="true">×</span>
+              <AppIcon name="close" />
             </button>
           </div>
 
@@ -312,7 +315,7 @@ export function RoutineEditScreen({
                   </button>
                 </div>
                 <button type="button" className="plan-remove-button" onClick={() => removeWindow(group.id, window.id)} aria-label={t('removeWindow')} disabled={group.windows.length === 1}>
-                  <span aria-hidden="true">×</span>
+                  <AppIcon name="close" />
                 </button>
               </article>
             ))}
@@ -333,14 +336,15 @@ export function RoutineEditScreen({
         <button type="button" className="regenerate-code routine-edit-cancel" onClick={handleCancel} disabled={busy || !hasChanges}>
           {t('cancel')}
         </button>
-        <button type="button" className="request-check routine-edit-save" onClick={handleSave} disabled={busy || !hasChanges}>
+        <button type="button" className="request-check routine-edit-save" aria-busy={busy} onClick={handleSave} disabled={busy || !hasChanges}>
+          {busy ? <span className="button-spinner" aria-hidden="true" /> : null}
           {busy ? t('saving') : t('save')}
         </button>
       </div>
 
       {timePicker ? (
         <div className="time-picker-backdrop" role="presentation" onClick={() => setTimePicker(undefined)}>
-          <section className="time-picker-sheet" role="dialog" aria-modal="true" aria-label={t('chooseTime')} onClick={(event) => event.stopPropagation()}>
+          <section ref={timePickerDialogRef} className="time-picker-sheet" role="dialog" aria-modal="true" aria-label={t('chooseTime')} tabIndex={-1} onClick={(event) => event.stopPropagation()}>
             <div className="time-picker-header">
               <div>
                 <small>{timePicker.field === 'start' ? t('start') : t('end')}</small>
@@ -353,7 +357,7 @@ export function RoutineEditScreen({
                 <span>{t('hours')}</span>
                 <div className="time-picker-grid hours">
                   {timeHours.map((hour) => (
-                    <button type="button" className={timePicker.hour === hour ? 'active' : ''} onClick={() => setTimePicker((current) => current ? { ...current, hour } : current)} key={hour}>
+                    <button type="button" className={timePicker.hour === hour ? 'active' : ''} aria-pressed={timePicker.hour === hour} data-autofocus={timePicker.hour === hour ? '' : undefined} onClick={() => setTimePicker((current) => current ? { ...current, hour } : current)} key={hour}>
                       {hour}
                     </button>
                   ))}
@@ -363,7 +367,7 @@ export function RoutineEditScreen({
                 <span>{t('minutes')}</span>
                 <div className="time-picker-grid minutes">
                   {timeMinutes.map((minute) => (
-                    <button type="button" className={timePicker.minute === minute ? 'active' : ''} onClick={() => setTimePicker((current) => current ? { ...current, minute } : current)} key={minute}>
+                    <button type="button" className={timePicker.minute === minute ? 'active' : ''} aria-pressed={timePicker.minute === minute} onClick={() => setTimePicker((current) => current ? { ...current, minute } : current)} key={minute}>
                       {minute}
                     </button>
                   ))}

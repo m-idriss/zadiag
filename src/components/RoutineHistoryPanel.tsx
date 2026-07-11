@@ -213,10 +213,11 @@ export function RoutineHistoryPanel({
                           type="button"
                           className="history-reminder-button"
                           aria-label={t('requestCheckAgain')}
+                          aria-busy={requestingEventId === event.id}
                           disabled={requestingEventId === event.id}
                           onClick={() => { void requestCheck(event); }}
                         >
-                          <AppIcon name="send" />
+                          {requestingEventId === event.id ? <span className="button-spinner" aria-hidden="true" /> : <AppIcon name="send" />}
                         </button>
                       ) : null}
                       {canRetake ? <button type="button" className="history-retake-button" onClick={() => onRetake?.(event)}>{t('retakeShort')}</button> : null}

@@ -248,10 +248,10 @@ export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureP
 
       {preview && capturedAt && (
         <div className="camera-actions">
-          <ActionButton fill="outline" tone="light" disabled={busy} onClick={openCamera}>
+          <ActionButton fill="outline" tone="light" disabled={busy} aria-busy={opening} onClick={openCamera}>
             <SvgIcon icon={refresh} />{t('retake')}
           </ActionButton>
-          <ActionButton disabled={busy} onClick={() => void submitPreview()}>
+          <ActionButton disabled={busy} aria-busy={busy} onClick={() => void submitPreview()}>
             {busy ? <span className="button-spinner" aria-hidden="true" /> : <SvgIcon icon={checkmark} />}
             {busy ? t('analyzing') : t('usePhoto')}
           </ActionButton>
