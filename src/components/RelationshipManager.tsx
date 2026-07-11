@@ -46,7 +46,12 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
     event.preventDefault();
     if (!onCreate || !name.trim()) return;
     void run('create', async () => {
-      await onCreate(name.trim(), selfManaged);
+      const participantId = await onCreate(name.trim(), selfManaged);
+      if (!selfManaged && onInvite) {
+        const invitation = await onInvite(participantId, 'participant');
+        setInvitationCode(invitation.code);
+        setInviteRole('participant');
+      }
       setName('');
       setSelfManaged(false);
     });
@@ -112,9 +117,9 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
               const invitation = await onInvite(selectedParticipantId, inviteRole);
               setInvitationCode(invitation.code);
             }); }}>{busy === 'invite' ? t('relationshipWorking') : t('relationshipInviteAction')}</button>
-            {invitationCode ? <output className="relationship-invitation-code">{t('relationshipInvitationCode')}: <strong>{invitationCode}</strong></output> : null}
           </div>
         ) : null}
+        {invitationCode ? <output className="relationship-invitation-code">{t('relationshipInvitationCode')}: <strong>{invitationCode}</strong><small>{t('relationshipInvitationNextStep')}</small></output> : null}
 
         {onAccept ? (
           <form className="relationship-form" onSubmit={accept}>

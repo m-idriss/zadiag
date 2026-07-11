@@ -25,10 +25,12 @@ describe('RelationshipManager', () => {
     document.body.append(container);
     root = createRoot(container);
     const create = vi.fn().mockResolvedValue('jordan');
+    const invite = vi.fn().mockResolvedValue({ code: 'ZI-123456', expiresAt: new Date().toISOString() });
     act(() => root?.render(<RelationshipManager
       access={[{ participant: { id: 'alex', displayName: 'Alex' }, membership: { role: 'owner', status: 'active' } }]}
       activeParticipantId="alex"
       onCreate={create}
+      onInvite={invite}
       t={(key) => translate('en', key)}
     />));
     expect(container.querySelector('input[aria-label="Name"]')).toBeNull();
@@ -44,6 +46,31 @@ describe('RelationshipManager', () => {
     await act(async () => form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
     expect(container.textContent).toContain('Alex');
     expect(create).toHaveBeenCalledWith('Jordan', true);
+    expect(invite).not.toHaveBeenCalled();
+  });
+
+  it('creates an access code immediately for a new participant profile', async () => {
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+    const create = vi.fn().mockResolvedValue('yoan');
+    const invite = vi.fn().mockResolvedValue({ code: 'ZI-123456', expiresAt: new Date().toISOString() });
+    act(() => root?.render(<RelationshipManager
+      access={[]}
+      onCreate={create}
+      onInvite={invite}
+      t={(key) => translate('en', key)}
+    />));
+    expandManager();
+    const name = container.querySelector('input[aria-label="Name"]') as HTMLInputElement;
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(name, 'Yoan');
+      name.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => name.closest('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    expect(create).toHaveBeenCalledWith('Yoan', false);
+    expect(invite).toHaveBeenCalledWith('yoan', 'participant');
+    expect(container.textContent).toContain('ZI-123456');
   });
 
   it('generates a scoped caregiver invitation', async () => {
