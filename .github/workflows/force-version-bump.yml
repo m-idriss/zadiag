@@ -12,7 +12,7 @@ on:
           - minor
           - major
           - custom
-        default: minor
+        default: patch
       custom_version:
         description: Custom version (required if version_type is custom)
         required: false
