@@ -6,7 +6,7 @@ import { SvgIcon } from './SvgIcon';
 
 type InviteRole = Exclude<MembershipRole, 'owner'>;
 
-export function RelationshipManager({ access, activeParticipantId, onSelect, onCreate, onInvite, onAccept, onLeave, onRemoveMember, onCreateRecovery, onRecover, t }: {
+export function RelationshipManager({ access, activeParticipantId, onSelect, onCreate, onInvite, onAccept, onLeave, onRemoveMember, onDeleteParticipant, onCreateRecovery, onRecover, t }: {
   access: ParticipantAccess[] | undefined;
   activeParticipantId?: string;
   onSelect?: (participantId: string) => Promise<void>;
@@ -15,6 +15,7 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
   onAccept?: (code: string) => Promise<string>;
   onLeave?: (participantId: string) => Promise<void>;
   onRemoveMember?: (participantId: string, targetUid: string) => Promise<ParticipantMember[]>;
+  onDeleteParticipant?: (participantId: string) => Promise<void>;
   onCreateRecovery?: (participantId: string) => Promise<{ recoveryCode: string; expiresAt: string }>;
   onRecover?: (code: string) => Promise<{ participantId: string; recoveryCode?: string; expiresAt?: string }>;
   t: (key: MessageKey) => string;
@@ -26,7 +27,7 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
   const [invitationCode, setInvitationCode] = useState<string>();
   const [recoveryCode, setRecoveryCode] = useState<string>();
   const [recoverCode, setRecoverCode] = useState('');
-  const [busy, setBusy] = useState<'create' | 'invite' | 'accept' | 'recovery' | 'remove'>();
+  const [busy, setBusy] = useState<'create' | 'invite' | 'accept' | 'recovery' | 'remove' | 'delete'>();
   const [removingUid, setRemovingUid] = useState<string>();
   const [error, setError] = useState<MessageKey>();
   const [open, setOpen] = useState(false);
@@ -35,6 +36,7 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
   const selectedParticipantId = selectedAccess?.participant.id;
   const isOwner = selectedAccess?.membership.role === 'owner';
   const removableMembers = selectedAccess?.members?.filter((member) => !member.isCurrentUser && member.status === 'active') ?? [];
+  const canLeaveSelectedAccess = !isOwner || (selectedAccess?.members?.filter((member) => member.role === 'owner' && member.status === 'active').length ?? 0) > 1;
   const selectedRoleKey = selectedAccess
     ? `relationshipRole${selectedAccess.membership.role[0].toUpperCase()}${selectedAccess.membership.role.slice(1)}` as MessageKey
     : undefined;
@@ -73,7 +75,7 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
     <section className="settings-section relationship-manager" aria-labelledby="relationship-manager-heading">
       <h2 id="relationship-manager-heading">{t('relationshipManagerTitle')}</h2>
       <div className="card relationship-manager-card">
-        <button type="button" className="relationship-manager-toggle" aria-expanded={open} onClick={() => setOpen((current) => !current)}>
+        <button type="button" className="relationship-manager-toggle" aria-expanded={open} onClick={() => { setError(undefined); setOpen((current) => !current); }}>
           <span className="relationship-manager-icon" aria-hidden="true"><SvgIcon icon={peopleOutline} /></span>
           <span className="relationship-manager-summary">
             <strong>{selectedAccess?.participant.displayName ?? t('relationshipManagerTitle')}</strong>
@@ -90,7 +92,7 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
               className={entry.participant.id === activeParticipantId ? 'active' : undefined}
               key={entry.participant.id}
               disabled={!onSelect}
-              onClick={() => { void onSelect?.(entry.participant.id); }}
+              onClick={() => { setError(undefined); void onSelect?.(entry.participant.id); }}
             >
               <span><strong>{entry.participant.displayName}</strong><small>{t(`relationshipRole${entry.membership.role[0].toUpperCase()}${entry.membership.role.slice(1)}` as MessageKey)}</small></span>
               {entry.participant.selfManaged ? <small>{t('relationshipSelfManaged')}</small> : null}
@@ -196,7 +198,7 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
         ) : null}
           </details>
         ) : null}
-        {onLeave && selectedParticipantId ? (
+        {onLeave && selectedParticipantId && canLeaveSelectedAccess ? (
           <div className="relationship-leave-zone">
           <h3>{t('relationshipPersonalAccessTitle')}</h3>
           <button className="relationship-leave-button" type="button" disabled={Boolean(busy)} onClick={() => {
@@ -213,6 +215,20 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
             });
           }}>{t('relationshipLeaveAction')}</button>
           {isOwner ? <small>{t('relationshipLeaveOwnerHint')}</small> : null}
+          </div>
+        ) : null}
+        {isOwner && selectedParticipantId && onDeleteParticipant ? (
+          <div className="relationship-delete-zone">
+            <h3>{t('relationshipDeleteProfileTitle')}</h3>
+            <p>{t('relationshipDeleteProfileHint')}</p>
+            <button type="button" disabled={Boolean(busy)} onClick={() => {
+              const confirmation = t('relationshipDeleteProfileConfirm').replace('{name}', selectedAccess?.participant.displayName ?? '');
+              if (!window.confirm(confirmation)) return;
+              void run('delete', async () => {
+                await onDeleteParticipant(selectedParticipantId);
+                setOpen(false);
+              });
+            }}>{busy === 'delete' ? t('relationshipWorking') : t('relationshipDeleteProfileAction')}</button>
           </div>
         ) : null}
         {error ? <small className="settings-action-error" role="alert">{t(error)}</small> : null}

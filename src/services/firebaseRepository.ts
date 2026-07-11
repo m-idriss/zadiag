@@ -236,6 +236,27 @@ export class FirebaseRepository implements AppRepository {
     return this.state.participantAccess?.find((entry) => entry.participant.id === participantId)?.members ?? [];
   }
 
+  async deleteParticipant(participantId: string) {
+    const deleteProfile = httpsCallable<{ participantId: string }, void>(
+      this.services.functions,
+      'deleteParticipantProfile',
+    );
+    try {
+      await deleteProfile({ participantId });
+    } catch (error) {
+      console.error('Unable to delete participant profile', { participantId, error });
+      throw error;
+    }
+    await this.loadParticipantAccess();
+    const next = this.state.participantAccess?.find((entry) => entry.membership.status === 'active');
+    if (next) await this.selectActiveParticipant(next.participant.id);
+    else {
+      this.remoteSubscriptions.splice(0).forEach((unsubscribe) => unsubscribe());
+      this.state = { ...initialRemoteState(), locale: this.state.locale, preferences: this.state.preferences };
+      this.emit();
+    }
+  }
+
   async createRelationshipRecovery(participantId: string) {
     const createRecovery = httpsCallable<
       { participantId: string },

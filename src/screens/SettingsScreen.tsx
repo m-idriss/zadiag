@@ -52,6 +52,7 @@ export function SettingsScreen({
   acceptParticipantInvitation,
   leaveParticipant,
   removeParticipantMember,
+  deleteParticipant,
   createRelationshipRecovery,
   recoverRelationship,
 }: {
@@ -86,6 +87,7 @@ export function SettingsScreen({
   acceptParticipantInvitation?: (code: string) => Promise<string>;
   leaveParticipant?: (participantId: string) => Promise<void>;
   removeParticipantMember?: (participantId: string, targetUid: string) => Promise<ParticipantMember[]>;
+  deleteParticipant?: (participantId: string) => Promise<void>;
   createRelationshipRecovery?: (participantId: string) => Promise<{ recoveryCode: string; expiresAt: string }>;
   recoverRelationship?: (code: string) => Promise<{ participantId: string; recoveryCode?: string; expiresAt?: string }>;
 }) {
@@ -358,6 +360,7 @@ export function SettingsScreen({
         onAccept={acceptParticipantInvitation}
         onLeave={leaveParticipant}
         onRemoveMember={removeParticipantMember}
+        onDeleteParticipant={deleteParticipant}
         onCreateRecovery={createRelationshipRecovery}
         onRecover={recoverRelationship}
         t={t}

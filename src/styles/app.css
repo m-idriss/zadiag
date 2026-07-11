@@ -760,6 +760,10 @@ button {
 .relationship-leave-button:disabled { border-color: var(--border); color: var(--muted); background: #f6f8f8; }
 .relationship-leave-zone { display: grid; gap: 6px; padding-top: 14px; border-top: 1px solid var(--border); }
 .relationship-leave-zone small { color: var(--muted); font-size: 11px; line-height: 1.35; }
+.relationship-delete-zone { display: grid; gap: 7px; padding-top: 14px; border-top: 1px solid var(--border); }
+.relationship-delete-zone h3 { margin: 0; color: var(--danger); font-size: 15px; }
+.relationship-delete-zone p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.35; }
+.relationship-delete-zone button { min-height: 42px; border: 0; border-radius: 12px; background: var(--danger); color: white; font-weight: 850; }
 .today-task { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .today-task.actionable { border-color: rgba(29, 138, 122, .3); box-shadow: 0 14px 32px rgba(29, 138, 122, .1); }
 .today-task-copy { display: flex; align-items: center; gap: 11px; min-width: 0; }
