@@ -92,6 +92,7 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
         {onCreate ? (
           <form className="relationship-form" onSubmit={create}>
             <h3>{t('relationshipCreateTitle')}</h3>
+            <p>{t('relationshipCreateHint')}</p>
             <input aria-label={t('relationshipNameLabel')} value={name} maxLength={40} onChange={(event) => setName(event.target.value)} placeholder={t('relationshipNameLabel')} />
             <label className="relationship-checkbox"><input type="checkbox" checked={selfManaged} onChange={(event) => setSelfManaged(event.target.checked)} />{t('relationshipSelfManagedLabel')}</label>
             <button type="submit" disabled={busy === 'create' || !name.trim()}>{busy === 'create' ? t('relationshipWorking') : t('relationshipCreateAction')}</button>
@@ -101,9 +102,10 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
         {onInvite && selectedParticipantId ? (
           <div className="relationship-form">
             <h3>{t('relationshipInviteTitle')}</h3>
+            <p>{t('relationshipInviteHint')}</p>
             <select aria-label={t('relationshipInviteRole')} value={inviteRole} onChange={(event) => setInviteRole(event.target.value as InviteRole)}>
               <option value="caregiver">{t('relationshipRoleCaregiver')}</option>
-              <option value="participant">{t('relationshipRoleParticipant')}</option>
+              <option value="participant">{t('relationshipInviteParticipantOption')}</option>
               <option value="viewer">{t('relationshipRoleViewer')}</option>
             </select>
             <button type="button" disabled={busy === 'invite'} onClick={() => { void run('invite', async () => {

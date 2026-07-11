@@ -58,7 +58,7 @@ describe('RelationshipManager', () => {
       t={(key) => translate('en', key)}
     />));
     expandManager();
-    const button = Array.from(container.querySelectorAll('button')).find((item) => item.textContent === 'Generate invitation')!;
+    const button = Array.from(container.querySelectorAll('button')).find((item) => item.textContent === 'Generate access code')!;
     await act(async () => button.click());
     expect(invite).toHaveBeenCalledWith('alex', 'caregiver');
     expect(container.textContent).toContain('ZI-654321');
@@ -76,7 +76,7 @@ describe('RelationshipManager', () => {
       t={(key) => translate('en', key)}
     />));
     expandManager();
-    const button = Array.from(container.querySelectorAll('button')).find((item) => item.textContent === 'Generate invitation')!;
+    const button = Array.from(container.querySelectorAll('button')).find((item) => item.textContent === 'Generate access code')!;
     await act(async () => button.click());
     expect(invite).toHaveBeenCalledWith('alex', 'caregiver');
   });
