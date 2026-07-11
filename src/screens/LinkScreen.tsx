@@ -5,6 +5,7 @@ import { Disclaimer } from '../components/Disclaimer';
 import { CodeBox } from '../components/CodeBox';
 import { SetupProgress } from '../components/SetupProgress';
 import { ActionButton } from '../components/ui';
+import { linkErrorMessageKey } from './linkErrors';
 
 export function LinkScreen({
   role,
@@ -29,17 +30,17 @@ export function LinkScreen({
   const [mode, setMode] = useState<'create' | 'recover'>('create');
   const [value, setValue] = useState(parent ? childName : code);
   const [consent, setConsent] = useState(false);
-  const [error, setError] = useState(false);
+  const [errorKey, setErrorKey] = useState<MessageKey>();
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
-    setError(false);
+    setErrorKey(undefined);
     setBusy(true);
     try {
       if (parent && mode === 'recover') await onParentRecover(value.trim());
       else await (parent ? onParentLink(value.trim()) : onChildLink(value.trim()));
-    } catch {
-      setError(true);
+    } catch (error) {
+      setErrorKey(linkErrorMessageKey(error, !parent && /^ZI-/i.test(value.trim())));
     } finally {
       setBusy(false);
     }
@@ -73,7 +74,7 @@ export function LinkScreen({
             )}
           </>
         )}
-        {error && <p className="form-error" role="alert">{t('invalidCode')}</p>}
+        {errorKey && <p className="form-error" role="alert">{t(errorKey)}</p>}
       </section>
       {!parent ? <aside className="setup-help"><span aria-hidden="true">ⓘ</span><p>{t('setupLinkHelp')}</p></aside> : null}
       <Disclaimer t={t} />
