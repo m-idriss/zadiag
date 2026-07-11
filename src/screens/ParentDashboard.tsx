@@ -11,6 +11,7 @@ import { withResolvedEventStatuses } from '../domain/adherence';
 import { EmptyState } from '../components/ui';
 import { activePendingEvents as activePendingChecks, upcomingRoutineChecks } from '../domain/dashboardChecks';
 import { ParticipantSelector } from '../components/ParticipantSelector';
+import { useModalFocus } from '../hooks/useModalFocus';
 
 export function ParentDashboard({
   state,
@@ -45,6 +46,7 @@ export function ParentDashboard({
   const [requestingActiveReminder, setRequestingActiveReminder] = useState(false);
   const [activeReminderStatus, setActiveReminderStatus] = useState<'sent' | 'error'>();
   const [enlargedProofUrl, setEnlargedProofUrl] = useState<string>();
+  const proofDialogRef = useModalFocus<HTMLDivElement>(Boolean(enlargedProofUrl), () => setEnlargedProofUrl(undefined));
   const swipeStartRef = useRef<{ eventId: string; x: number; y: number } | undefined>(undefined);
   const summaryRange = controlledSummaryRange ?? localSummaryRange;
   const setSummaryRange = onSummaryRangeChange ?? setLocalSummaryRange;
@@ -228,9 +230,11 @@ export function ParentDashboard({
                                 type="button"
                                 className="primary-action-button today-proof-button parent-remind-button"
                                 aria-label={t('requestCheckAgain')}
+                                aria-busy={requestingActiveReminder}
                                 disabled={requestingActiveReminder}
                                 onClick={() => { void resendActiveReminders(event.routineId); }}
                               >
+                                {requestingActiveReminder ? <span className="button-spinner" aria-hidden="true" /> : null}
                                 {requestingActiveReminder ? t('requestingCheck') : t('requestCheckShort')}
                               </button>
                             ) : null}
@@ -260,10 +264,11 @@ export function ParentDashboard({
                       type="button"
                       className="responsible-reminder-button"
                       aria-label={t('requestCheckAgain')}
+                      aria-busy={requestingActiveReminder}
                       disabled={requestingActiveReminder}
                       onClick={() => { void resendActiveReminders(); }}
                     >
-                      <AppIcon name="send" />
+                      {requestingActiveReminder ? <span className="button-spinner" aria-hidden="true" /> : <AppIcon name="send" />}
                       {requestingActiveReminder ? t('requestingCheck') : t('requestCheckAgain')}
                     </button>
                     {activeReminderStatus === 'sent' ? <span className="request-feedback success">{t('requestCheckSent')}</span> : null}
@@ -281,7 +286,8 @@ export function ParentDashboard({
                 t={t}
                 action={(
                   <>
-                    <button type="button" className="regenerate-code" disabled={regenerating} onClick={() => { void regenerate(); }}>
+                    <button type="button" className="regenerate-code" aria-busy={regenerating} disabled={regenerating} onClick={() => { void regenerate(); }}>
+                      {regenerating ? <span className="button-spinner" aria-hidden="true" /> : null}
                       {regenerating ? t('regeneratingCode') : t('regenerateCode')}
                     </button>
                     {codeError ? <span className="form-error">{t('regenerateCodeError')}</span> : null}
@@ -402,8 +408,8 @@ export function ParentDashboard({
       ) : null}
 
       {enlargedProofUrl ? (
-        <div className="proof-lightbox" role="dialog" aria-modal="true" aria-label={t('responsibleReviewImageAlt')} onClick={() => setEnlargedProofUrl(undefined)}>
-          <button type="button" className="proof-lightbox-close" aria-label={t('close')} onClick={() => setEnlargedProofUrl(undefined)}>×</button>
+        <div ref={proofDialogRef} className="proof-lightbox" role="dialog" aria-modal="true" aria-label={t('responsibleReviewImageAlt')} tabIndex={-1} onClick={() => setEnlargedProofUrl(undefined)}>
+          <button type="button" className="proof-lightbox-close" data-autofocus aria-label={t('close')} onClick={() => setEnlargedProofUrl(undefined)}><AppIcon name="close" /></button>
           <img src={enlargedProofUrl} alt={t('responsibleReviewImageAlt')} onClick={(event) => event.stopPropagation()} />
         </div>
       ) : null}

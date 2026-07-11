@@ -27,6 +27,7 @@ describe('ParticipantSelector', () => {
     expect(summary.textContent).not.toContain('Switch');
     const buttons = Array.from(container.querySelectorAll('.participant-switcher-menu button')) as HTMLButtonElement[];
     expect(buttons.map((button) => button.querySelectorAll('span')[1]?.textContent)).toEqual(['Alex', 'Sam']);
+    expect(buttons.map((button) => button.getAttribute('aria-pressed'))).toEqual(['true', 'false']);
     const sam = buttons[1];
     act(() => sam.click());
     expect(onSelect).toHaveBeenCalledWith('sam');

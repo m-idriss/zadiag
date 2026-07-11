@@ -10,6 +10,7 @@ import { dayPeriodLabelKey } from '../domain/taskTimeLabel';
 import { RoutineEditScreen } from './RoutineEditScreen';
 import { SvgIcon } from '../components/SvgIcon';
 import { ActionButton } from '../components/ui';
+import { useModalFocus } from '../hooks/useModalFocus';
 
 type DetailTab = 'details' | 'tracking' | 'plan';
 type DetailInitialTab = DetailTab | 'overview';
@@ -164,6 +165,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   const [proofUrls, setProofUrls] = useState<Record<string, string>>({});
   const [proofErrors, setProofErrors] = useState<Record<string, boolean>>({});
   const [enlargedProofUrl, setEnlargedProofUrl] = useState<string>();
+  const proofDialogRef = useModalFocus<HTMLDivElement>(Boolean(enlargedProofUrl), () => setEnlargedProofUrl(undefined));
   const todayHeatmapRef = useRef<HTMLSpanElement | null>(null);
   const now = Date.now();
   const rawEvents = state.events.filter((event) => event.routineId === assignment.routineId);
@@ -304,8 +306,8 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
       {tab === 'tracking' && trackingPanel}
 
       {enlargedProofUrl ? (
-        <div className="proof-lightbox" role="dialog" aria-modal="true" aria-label={t('responsibleReviewImageAlt')} onClick={() => setEnlargedProofUrl(undefined)}>
-          <button type="button" className="proof-lightbox-close" aria-label={t('close')} onClick={() => setEnlargedProofUrl(undefined)}>×</button>
+        <div ref={proofDialogRef} className="proof-lightbox" role="dialog" aria-modal="true" aria-label={t('responsibleReviewImageAlt')} tabIndex={-1} onClick={() => setEnlargedProofUrl(undefined)}>
+          <button type="button" className="proof-lightbox-close" data-autofocus aria-label={t('close')} onClick={() => setEnlargedProofUrl(undefined)}><AppIcon name="close" /></button>
           <img src={enlargedProofUrl} alt={t('responsibleReviewImageAlt')} onClick={(event) => event.stopPropagation()} />
         </div>
       ) : null}

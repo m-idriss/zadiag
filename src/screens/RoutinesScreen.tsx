@@ -289,7 +289,8 @@ export function RoutinesScreen({
     <div className="content-screen routines-state" role="alert">
       <p>{t('routinesLoadError')}</p>
       {onRetryRoutines ? (
-        <button type="button" className="primary-action-button routines-retry-button" disabled={retryingRoutines} onClick={() => { void retryRoutines(); }}>
+        <button type="button" className="primary-action-button routines-retry-button" aria-busy={retryingRoutines} disabled={retryingRoutines} onClick={() => { void retryRoutines(); }}>
+          {retryingRoutines ? <span className="button-spinner" aria-hidden="true" /> : null}
           {retryingRoutines ? t('retrying') : t('retryNow')}
         </button>
       ) : null}
@@ -320,7 +321,7 @@ export function RoutinesScreen({
               <small>{t('routineCatalogEyebrow')}</small>
               <h2 id="routine-catalog-title">{t('chooseRoutine')}</h2>
             </div>
-            <button type="button" className="routine-catalog-close" onClick={() => setCatalogOpen(false)} aria-label={t('close')}>×</button>
+            <button type="button" className="routine-catalog-close" onClick={() => setCatalogOpen(false)} aria-label={t('close')}><AppIcon name="close" /></button>
           </div>
           <div className="routine-catalog-list">
             {marketplace.templates.map((template) => {
@@ -412,13 +413,14 @@ export function RoutinesScreen({
                       {planScheduleGroups.map((group) => (
                         <div className="chips routine-schedule-chips" key={group.id}>
                           {group.label && <span className="routine-schedule-period-chip">{group.label}</span>}
-                          {group.windows.map((chip) => <span key={chip.id}><i aria-hidden="true">◷</i>{chip.label}</span>)}
+                          {group.windows.map((chip) => <span key={chip.id}><i aria-hidden="true"><AppIcon name="time" /></i>{chip.label}</span>)}
                         </div>
                       ))}
                     </div>
                     <div className="routine-card-actions">
                       {canManageRoutines && requestCheck && (
-                        <button className="request-check routine-list-request" disabled={requesting || retryBlocked} onClick={() => { void requestNow(assignment.routineId); }}>
+                        <button type="button" className="request-check routine-list-request" aria-busy={requesting} disabled={requesting || retryBlocked} onClick={() => { void requestNow(assignment.routineId); }}>
+                          {requesting ? <span className="button-spinner" aria-hidden="true" /> : null}
                           {requesting ? t('requestingCheck') : next ? t('requestCheckAgain') : t('requestCheckNow')}
                         </button>
                       )}
@@ -438,7 +440,7 @@ export function RoutinesScreen({
                           disabled={deletingRoutineId === assignment.routineId || deletingLastRoutine}
                           onClick={() => { void deleteRoutine(assignment, visual.name); }}
                         >
-                          <span aria-hidden="true">×</span>
+                          <AppIcon name="close" />
                         </button>
                       )}
                     </div>

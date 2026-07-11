@@ -95,6 +95,7 @@ export function AdherenceSummaryCard({
             type="button"
             key={item.id}
             className={range === item.id ? 'active' : ''}
+            aria-pressed={range === item.id}
             onClick={() => onRangeChange(item.id)}
           >
             {t(item.labelKey)}

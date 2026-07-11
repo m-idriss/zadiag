@@ -44,7 +44,7 @@ export function ParticipantSelector({ access, activeParticipantId, label, title,
             <button
               type="button"
               className={active ? 'active' : undefined}
-              aria-current={active ? 'true' : undefined}
+              aria-pressed={active}
               key={entry.participant.id}
               onClick={() => {
                 detailsRef.current?.removeAttribute('open');

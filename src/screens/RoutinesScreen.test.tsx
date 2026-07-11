@@ -142,6 +142,8 @@ describe('participant routines navigation', () => {
     expect(proofThumb?.querySelector('img')?.getAttribute('src')).toBe('data:image/png;base64,PROOF');
     act(() => proofThumb?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(container.querySelector('.proof-lightbox img')?.getAttribute('src')).toBe('data:image/png;base64,PROOF');
+    act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
+    expect(container.querySelector('.proof-lightbox')).toBeNull();
 
     expect(container.textContent).toContain('Overall progress');
     expect(container.textContent).toContain('Activity');
