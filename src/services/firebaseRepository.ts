@@ -215,6 +215,26 @@ export class FirebaseRepository implements AppRepository {
     }
   }
 
+  async createRelationshipRecovery(participantId: string) {
+    const createRecovery = httpsCallable<
+      { participantId: string },
+      { recoveryCode: string; expiresAt: string }
+    >(this.services.functions, 'createRelationshipRecovery');
+    return (await createRecovery({ participantId })).data;
+  }
+
+  async recoverRelationship(code: string) {
+    const recover = httpsCallable<
+      { code: string },
+      { participantId: string; recoveryCode?: string; expiresAt?: string }
+    >(this.services.functions, 'recoverRelationship');
+    const result = await recover({ code: code.trim().toUpperCase() });
+    await this.loadParticipantAccess();
+    const access = activeParticipantAccess(this.state.participantAccess, result.data.participantId);
+    if (access) await this.attachParticipant(result.data.participantId, access.membership.role);
+    return result.data;
+  }
+
   async setLocale(locale: Locale) {
     this.state.locale = locale;
     this.persistPreferences();

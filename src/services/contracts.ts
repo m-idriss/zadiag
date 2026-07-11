@@ -10,6 +10,8 @@ export interface AppRepository {
   inviteParticipantMember?(participantId: string, role: Exclude<MembershipRole, 'owner'>): Promise<{ code: string; expiresAt: string }>;
   acceptParticipantInvitation?(code: string): Promise<string>;
   leaveParticipant?(participantId: string): Promise<void>;
+  createRelationshipRecovery?(participantId: string): Promise<{ recoveryCode: string; expiresAt: string }>;
+  recoverRelationship?(code: string): Promise<{ participantId: string; recoveryCode?: string; expiresAt?: string }>;
   setLocale(locale: Locale): Promise<void>;
   setPreferences(preferences: Partial<AppPreferences>): Promise<void>;
   linkParent(childName: string): Promise<void>;

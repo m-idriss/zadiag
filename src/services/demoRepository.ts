@@ -294,6 +294,17 @@ export class DemoRepository implements AppRepository {
     this.persist();
   }
 
+  async createRelationshipRecovery(participantId: string) {
+    if (!activeParticipantAccess(this.state.participantAccess, participantId)) throw new Error('participant_access_not_found');
+    return { recoveryCode: 'PR-2345-6789-ABCD', expiresAt: new Date(Date.now() + 86_400_000).toISOString() };
+  }
+
+  async recoverRelationship(code: string) {
+    if (code.trim().toUpperCase() !== 'PR-2345-6789-ABCD') throw new Error('invalid_code');
+    const participantId = await this.acceptParticipantInvitation('ZI-123456');
+    return { participantId, recoveryCode: 'PR-EFGH-JKLM-NPQR', expiresAt: new Date(Date.now() + 86_400_000).toISOString() };
+  }
+
   async setLocale(locale: AppState['locale']) {
     this.state.locale = locale;
     this.persist();

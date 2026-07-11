@@ -4,7 +4,7 @@ import type { MessageKey } from '../services/i18n';
 
 type InviteRole = Exclude<MembershipRole, 'owner'>;
 
-export function RelationshipManager({ access, activeParticipantId, onSelect, onCreate, onInvite, onAccept, onLeave, t }: {
+export function RelationshipManager({ access, activeParticipantId, onSelect, onCreate, onInvite, onAccept, onLeave, onCreateRecovery, onRecover, t }: {
   access: ParticipantAccess[] | undefined;
   activeParticipantId?: string;
   onSelect?: (participantId: string) => Promise<void>;
@@ -12,6 +12,8 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
   onInvite?: (participantId: string, role: InviteRole) => Promise<{ code: string; expiresAt: string }>;
   onAccept?: (code: string) => Promise<string>;
   onLeave?: (participantId: string) => Promise<void>;
+  onCreateRecovery?: (participantId: string) => Promise<{ recoveryCode: string; expiresAt: string }>;
+  onRecover?: (code: string) => Promise<{ participantId: string; recoveryCode?: string; expiresAt?: string }>;
   t: (key: MessageKey) => string;
 }) {
   const [name, setName] = useState('');
@@ -19,7 +21,9 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
   const [inviteRole, setInviteRole] = useState<InviteRole>('caregiver');
   const [joinCode, setJoinCode] = useState('');
   const [invitationCode, setInvitationCode] = useState<string>();
-  const [busy, setBusy] = useState<'create' | 'invite' | 'accept'>();
+  const [recoveryCode, setRecoveryCode] = useState<string>();
+  const [recoverCode, setRecoverCode] = useState('');
+  const [busy, setBusy] = useState<'create' | 'invite' | 'accept' | 'recovery'>();
   const [error, setError] = useState(false);
   const activeAccess = (access ?? []).filter((entry) => entry.membership.status === 'active');
 
@@ -98,6 +102,31 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
             <h3>{t('relationshipJoinTitle')}</h3>
             <input aria-label={t('relationshipJoinCode')} value={joinCode} onChange={(event) => setJoinCode(event.target.value.toUpperCase())} placeholder="ZI-123456" />
             <button type="submit" disabled={busy === 'accept' || !joinCode.trim()}>{busy === 'accept' ? t('relationshipWorking') : t('relationshipJoinAction')}</button>
+          </form>
+        ) : null}
+        {onCreateRecovery && activeParticipantId ? (
+          <div className="relationship-form">
+            <h3>{t('relationshipRecoveryTitle')}</h3>
+            <button type="button" disabled={busy === 'recovery'} onClick={() => { void run('recovery', async () => {
+              const recovery = await onCreateRecovery(activeParticipantId);
+              setRecoveryCode(recovery.recoveryCode);
+            }); }}>{t('relationshipRecoveryCreate')}</button>
+            {recoveryCode ? <output className="relationship-invitation-code">{t('relationshipRecoveryCode')}: <strong>{recoveryCode}</strong></output> : null}
+          </div>
+        ) : null}
+        {onRecover ? (
+          <form className="relationship-form" onSubmit={(event) => {
+            event.preventDefault();
+            if (!recoverCode.trim()) return;
+            void run('recovery', async () => {
+              const recovered = await onRecover(recoverCode);
+              setRecoverCode('');
+              if (recovered.recoveryCode) setRecoveryCode(recovered.recoveryCode);
+            });
+          }}>
+            <h3>{t('relationshipRecoverTitle')}</h3>
+            <input aria-label={t('relationshipRecoveryCode')} value={recoverCode} onChange={(event) => setRecoverCode(event.target.value.toUpperCase())} placeholder="PR-2345-6789-ABCD" />
+            <button type="submit" disabled={busy === 'recovery' || !recoverCode.trim()}>{t('relationshipRecoverAction')}</button>
           </form>
         ) : null}
         {onLeave && activeParticipantId ? (

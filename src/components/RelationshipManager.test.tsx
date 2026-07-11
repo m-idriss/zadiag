@@ -53,4 +53,21 @@ describe('RelationshipManager', () => {
     expect(invite).toHaveBeenCalledWith('alex', 'caregiver');
     expect(container.textContent).toContain('ZI-654321');
   });
+
+  it('generates a scoped recovery code', async () => {
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+    const createRecovery = vi.fn().mockResolvedValue({ recoveryCode: 'PR-2345-6789-ABCD', expiresAt: new Date().toISOString() });
+    act(() => root?.render(<RelationshipManager
+      access={[{ participant: { id: 'alex', displayName: 'Alex' }, membership: { role: 'owner', status: 'active' } }]}
+      activeParticipantId="alex"
+      onCreateRecovery={createRecovery}
+      t={(key) => translate('en', key)}
+    />));
+    const button = Array.from(container.querySelectorAll('button')).find((item) => item.textContent === 'Generate recovery code')!;
+    await act(async () => button.click());
+    expect(createRecovery).toHaveBeenCalledWith('alex');
+    expect(container.textContent).toContain('PR-2345-6789-ABCD');
+  });
 });
