@@ -26,20 +26,21 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
   const [recoveryCode, setRecoveryCode] = useState<string>();
   const [recoverCode, setRecoverCode] = useState('');
   const [busy, setBusy] = useState<'create' | 'invite' | 'accept' | 'recovery'>();
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<MessageKey>();
   const [open, setOpen] = useState(false);
   const activeAccess = (access ?? []).filter((entry) => entry.membership.status === 'active');
   const selectedAccess = activeAccess.find((entry) => entry.participant.id === activeParticipantId) ?? activeAccess[0];
   const selectedParticipantId = selectedAccess?.participant.id;
+  const isOwner = selectedAccess?.membership.role === 'owner';
   const selectedRoleKey = selectedAccess
     ? `relationshipRole${selectedAccess.membership.role[0].toUpperCase()}${selectedAccess.membership.role.slice(1)}` as MessageKey
     : undefined;
 
-  const run = async (kind: NonNullable<typeof busy>, action: () => Promise<void>) => {
-    setError(false);
+  const run = async (kind: NonNullable<typeof busy>, action: () => Promise<void>, errorKey?: (error: unknown) => MessageKey) => {
+    setError(undefined);
     setBusy(kind);
     try { await action(); }
-    catch (caught) { console.error(caught); setError(true); }
+    catch (caught) { console.error(caught); setError(errorKey?.(caught) ?? 'relationshipActionError'); }
     finally { setBusy(undefined); }
   };
   const create = (event: FormEvent) => {
@@ -154,12 +155,24 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
           </form>
         ) : null}
         {onLeave && selectedParticipantId ? (
+          <div className="relationship-leave-zone">
           <button className="relationship-leave-button" type="button" disabled={Boolean(busy)} onClick={() => {
             if (!window.confirm(t('relationshipLeaveConfirm'))) return;
-            void run('accept', () => onLeave(selectedParticipantId));
+            void run('accept', async () => {
+              await onLeave(selectedParticipantId);
+              setOpen(false);
+            }, (caught) => {
+              const candidate = caught as { code?: unknown; message?: unknown };
+              const detail = `${String(candidate?.code ?? '')} ${String(candidate?.message ?? '')}`.toLowerCase();
+              return detail.includes('failed-precondition') || detail.includes('last owner') || detail.includes('last_owner')
+                ? 'relationshipLeaveLastOwnerError'
+                : 'relationshipActionError';
+            });
           }}>{t('relationshipLeaveAction')}</button>
+          {isOwner ? <small>{t('relationshipLeaveOwnerHint')}</small> : null}
+          </div>
         ) : null}
-        {error ? <small className="settings-action-error">{t('relationshipActionError')}</small> : null}
+        {error ? <small className="settings-action-error" role="alert">{t(error)}</small> : null}
         </div> : null}
       </div>
     </section>

@@ -22,10 +22,12 @@ describe('ParticipantSelector', () => {
       { participant: { id: 'sam', displayName: 'Sam' }, membership: { role: 'caregiver', status: 'active' } },
       { participant: { id: 'hidden', displayName: 'Hidden' }, membership: { role: 'caregiver', status: 'suspended' } },
     ]} activeParticipantId="alex" label="Followed person" onSelect={onSelect} />));
-    const select = container.querySelector('select') as HTMLSelectElement;
-    expect(Array.from(select.options).map((option) => option.text)).toEqual(['Alex', 'Sam']);
-    select.value = 'sam';
-    act(() => select.dispatchEvent(new Event('change', { bubbles: true })));
+    const summary = container.querySelector('summary') as HTMLElement;
+    expect(summary.getAttribute('aria-label')).toBe('Followed person : Alex');
+    const buttons = Array.from(container.querySelectorAll('.participant-switcher-menu button')) as HTMLButtonElement[];
+    expect(buttons.map((button) => button.querySelectorAll('span')[1]?.textContent)).toEqual(['Alex', 'Sam']);
+    const sam = buttons[1];
+    act(() => sam.click());
     expect(onSelect).toHaveBeenCalledWith('sam');
   });
 
@@ -39,4 +41,3 @@ describe('ParticipantSelector', () => {
     expect(container.innerHTML).toBe('');
   });
 });
-
