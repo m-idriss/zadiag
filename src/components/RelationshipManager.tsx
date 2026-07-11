@@ -87,7 +87,7 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
           <h3>{t('relationshipAccountProfilesTitle')}</h3>
           <small>{t('relationshipAccountProfilesHint')}</small>
         </div>
-        {activeAccess.length > 1 ? <div className="relationship-access-list">
+        {activeAccess.length ? <div className="relationship-access-list">
           {activeAccess.map((entry) => (
             <button
               type="button"
@@ -102,22 +102,10 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
           ))}
         </div> : null}
 
-        {onCreate ? (
-          <details className="relationship-tool relationship-create-tool">
-            <summary>{t('relationshipCreateTitle')}</summary>
-          <form className="relationship-form" onSubmit={create}>
-            <p>{t('relationshipCreateHint')}</p>
-            <input aria-label={t('relationshipNameLabel')} value={name} maxLength={40} onChange={(event) => setName(event.target.value)} placeholder={t('relationshipNameLabel')} />
-            <label className="relationship-checkbox"><input type="checkbox" checked={selfManaged} onChange={(event) => setSelfManaged(event.target.checked)} />{t('relationshipSelfManagedLabel')}</label>
-            <button type="submit" disabled={busy === 'create' || !name.trim()}>{busy === 'create' ? t('relationshipWorking') : t('relationshipCreateAction')}</button>
-          </form>
-          </details>
-        ) : null}
-
-        {selectedParticipantId ? <div className="relationship-subsection-heading relationship-scope-heading relationship-selected-scope-heading">
-          <h3>{t('relationshipSelectedProfileActionsTitle').replace('{name}', selectedAccess?.participant.displayName ?? '')}</h3>
-          <small>{t('relationshipSelectedProfileActionsHint')}</small>
-        </div> : null}
+        {selectedParticipantId ? <details className="relationship-tool relationship-profile-actions">
+          <summary>{t('relationshipSelectedProfileActionsTitle').replace('{name}', selectedAccess?.participant.displayName ?? '')}</summary>
+          <div className="relationship-profile-actions-body">
+            <small>{t('relationshipSelectedProfileActionsHint')}</small>
 
         {isOwner && selectedParticipantId ? (
           <section className="relationship-team" aria-labelledby="relationship-team-title">
@@ -145,8 +133,6 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
             ) : <p className="relationship-team-empty">{t('relationshipTeamEmpty')}</p>}
           </section>
         ) : null}
-
-        {invitationCode && !selectedParticipantId ? <output className="relationship-invitation-code">{t('relationshipInvitationCode')}: <strong>{invitationCode}</strong><small>{t('relationshipInvitationNextStep')}</small></output> : null}
 
         {onInvite && selectedParticipantId && isOwner ? (
           <details className="relationship-tool">
@@ -238,6 +224,22 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
               });
             }}>{busy === 'delete' ? t('relationshipWorking') : t('relationshipDeleteProfileAction')}</button>
           </div>
+        ) : null}
+          </div>
+        </details> : null}
+
+        {invitationCode && !selectedParticipantId ? <output className="relationship-invitation-code">{t('relationshipInvitationCode')}: <strong>{invitationCode}</strong><small>{t('relationshipInvitationNextStep')}</small></output> : null}
+
+        {onCreate ? (
+          <details className="relationship-tool relationship-create-tool">
+            <summary>{t('relationshipCreateTitle')}</summary>
+          <form className="relationship-form" onSubmit={create}>
+            <p>{t('relationshipCreateHint')}</p>
+            <input aria-label={t('relationshipNameLabel')} value={name} maxLength={40} onChange={(event) => setName(event.target.value)} placeholder={t('relationshipNameLabel')} />
+            <label className="relationship-checkbox"><input type="checkbox" checked={selfManaged} onChange={(event) => setSelfManaged(event.target.checked)} />{t('relationshipSelfManagedLabel')}</label>
+            <button type="submit" disabled={busy === 'create' || !name.trim()}>{busy === 'create' ? t('relationshipWorking') : t('relationshipCreateAction')}</button>
+          </form>
+          </details>
         ) : null}
         {error ? <small className="settings-action-error" role="alert">{t(error)}</small> : null}
         </div> : null}
