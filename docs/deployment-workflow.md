@@ -12,10 +12,8 @@ Keep related changes on one feature branch and avoid pushing every small visual 
 
 ```sh
 corepack pnpm dev
-corepack pnpm test
-corepack pnpm test:rules
-corepack pnpm build
-npm --prefix functions test
+corepack pnpm check
+corepack pnpm check:full # before delivery; includes Firestore rules
 ```
 
 Browser responsive mode is the default way to check intermediate mobile layouts. A real iPhone preview is created only when browser behavior, PWA installation, camera, or push notifications need remote verification.
@@ -55,4 +53,3 @@ Use the manual **Force app version bump** GitHub workflow only when a version-on
 | Optional shared preview | 1 |
 | Merge into `main` | 1 |
 | Manual version-only release | 1 |
-

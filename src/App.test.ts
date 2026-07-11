@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_ROUTINE_ID, type VerificationEvent } from './domain/models';
-import { appBadgeCountForState, isParticipantInvitationCode, resetNoticeMessageKey } from './App';
+import { appBadgeCountForState, documentLanguageForLocale, isParticipantInvitationCode, resetNoticeMessageKey } from './App';
 
 const activePendingEvent = (expiresAt: string): VerificationEvent => ({
   id: 'check-1',
@@ -54,5 +54,12 @@ describe('isParticipantInvitationCode', () => {
     expect(isParticipantInvitationCode(' zi-123456 ')).toBe(true);
     expect(isParticipantInvitationCode('ZD-123456')).toBe(false);
     expect(isParticipantInvitationCode('ZI-12345')).toBe(false);
+  });
+});
+
+describe('documentLanguageForLocale', () => {
+  it('keeps the document language aligned with the selected interface locale', () => {
+    expect(documentLanguageForLocale('en')).toBe('en');
+    expect(documentLanguageForLocale('fr')).toBe('fr');
   });
 });

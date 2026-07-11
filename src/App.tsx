@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType } from 'react';
-import { normalizeAppPreferences, type Role, type VerificationEvent } from './domain/models';
+import { normalizeAppPreferences, type Locale, type Role, type VerificationEvent } from './domain/models';
 import { routeForState, type AppRoute } from './domain/appRouting';
 import { createRepository } from './services/repositoryFactory';
 import { translate, type MessageKey } from './services/i18n';
@@ -57,6 +57,8 @@ export const resetNoticeMessageKey = (role: Role | undefined): MessageKey =>
 
 export const isParticipantInvitationCode = (code: string) => /^ZI-\d{6}$/.test(code.trim().toUpperCase());
 
+export const documentLanguageForLocale = (locale: Locale) => locale === 'fr' ? 'fr' : 'en';
+
 export function App() {
   const repository = useMemo(createRepository, []);
   const [state, setState] = useState(repository.snapshot());
@@ -93,6 +95,10 @@ export function App() {
     updateActionBusy,
     updateSnackbarId,
   } = useAppUpdateController(ready);
+
+  useEffect(() => {
+    document.documentElement.lang = documentLanguageForLocale(state.locale);
+  }, [state.locale]);
 
   useEffect(() => {
     writeUiStorageString(DASHBOARD_SUMMARY_RANGE_KEY, dashboardSummaryRange);

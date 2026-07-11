@@ -35,7 +35,7 @@ export default defineConfig({
         id: '/zadiag',
         name: 'Zadiag',
         short_name: 'Zadiag',
-        description: 'Intelligent treatment follow-up for families.',
+        description: 'Shared family routine follow-up.',
         theme_color: '#15324b',
         background_color: '#fffbf4',
         display: 'standalone',

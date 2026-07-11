@@ -24,12 +24,25 @@ interface DiagnosticsInput {
 
 const STORAGE_KEY = 'zadiag:debug-logs:v1';
 const MAX_LOGS = 200;
+const LOG_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 const DEFAULT_RECENT_LOG_LIMIT = 80;
 const LOG_METHODS: readonly LogLevel[] = ['log', 'info', 'warn', 'error', 'debug'] as const;
 
 let initialized = false;
 let logBuffer: AppLogEntry[] = [];
 const originalConsole: Partial<Record<LogLevel, (...args: unknown[]) => void>> = {};
+
+const sensitiveFieldPattern = /((?:actor|authorization|check|family|linking|participant|recovery|routine|session|target|user)?(?:code|id|token|uid)["']?\s*[:=]\s*["']?)([^\s,"'}]+)/gi;
+const emailPattern = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
+
+export const redactDiagnosticText = (value: string): string => value
+  .replace(emailPattern, '[redacted-email]')
+  .replace(sensitiveFieldPattern, '$1[redacted]');
+
+const isWithinRetentionWindow = (timestamp: string, now = Date.now()) => {
+  const parsed = Date.parse(timestamp);
+  return Number.isFinite(parsed) && parsed >= now - LOG_RETENTION_MS;
+};
 
 const stringifyPart = (part: unknown): string => {
   if (part instanceof Error) return `${part.name}: ${part.message}\n${part.stack ?? ''}`.trim();
@@ -54,9 +67,9 @@ const appendLog = (level: LogLevel, args: unknown[]) => {
   const entry: AppLogEntry = {
     timestamp: new Date().toISOString(),
     level,
-    message: args.map(stringifyPart).join(' '),
+    message: redactDiagnosticText(args.map(stringifyPart).join(' ')),
   };
-  logBuffer = [...logBuffer, entry].slice(-MAX_LOGS);
+  logBuffer = [...logBuffer.filter((item) => isWithinRetentionWindow(item.timestamp)), entry].slice(-MAX_LOGS);
   saveBuffer();
 };
 
@@ -80,10 +93,13 @@ const restoreBuffer = () => {
         && typeof candidate.level === 'string'
         && typeof candidate.message === 'string';
     })
+    .filter((item) => {
+      return isWithinRetentionWindow(item.timestamp);
+    })
     .map((item) => ({
       timestamp: item.timestamp,
       level: (LOG_METHODS.find((method) => method === item.level) ?? 'log'),
-      message: item.message,
+      message: redactDiagnosticText(item.message),
     }))
     .slice(-MAX_LOGS);
 };
@@ -99,8 +115,10 @@ const collectDeviceInfo = () => ({
   screen: `${window.screen.width}x${window.screen.height} @${window.devicePixelRatio}x`,
   viewport: `${window.innerWidth}x${window.innerHeight}`,
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  standalone: window.matchMedia('(display-mode: standalone)').matches,
-  url: window.location.href,
+  standalone: typeof window.matchMedia === 'function'
+    ? window.matchMedia('(display-mode: standalone)').matches
+    : false,
+  url: `${window.location.origin}${window.location.pathname}`,
   origin: window.location.origin,
 });
 
@@ -121,14 +139,10 @@ const summarizeRecentEvents = (events: VerificationEvent[]) => {
     .slice(0, 15);
   const active = recentEvents.find((event) => event.status === 'pending' && Date.parse(event.expiresAt) > Date.now());
   return {
-    activeCheckId: active?.id ?? 'none',
-    activeSessionId: active?.sessionId ?? 'none',
-    checkIds: recentEvents.map((event) => event.id),
-    sessionIds: recentEvents.map((event) => event.sessionId),
+    hasActiveCheck: Boolean(active),
     lines: recentEvents.length > 0
-      ? recentEvents.map((event) => [
-        `checkId=${event.id}`,
-        `sessionId=${event.sessionId}`,
+      ? recentEvents.map((event, index) => [
+        `event=${index + 1}`,
         `status=${event.status}`,
         `requestedAt=${event.requestedAt}`,
         `expiresAt=${event.expiresAt}`,
@@ -178,12 +192,9 @@ export const buildDiagnosticsEmailBody = (input: DiagnosticsInput): string => {
   const correlationLines = [
     `CorrelationId: ${input.correlationId}`,
     `TimestampUtc: ${now}`,
-    `FamilyId: ${input.familyId ?? 'missing'}`,
+    `FamilyContextPresent: ${String(Boolean(input.familyId))}`,
     `Uid: ${firebaseContext.uid}`,
-    `ActiveCheckId: ${eventSummary.activeCheckId}`,
-    `ActiveSessionId: ${eventSummary.activeSessionId}`,
-    `RecentCheckIds: ${eventSummary.checkIds.join(', ') || 'none'}`,
-    `RecentSessionIds: ${eventSummary.sessionIds.join(', ') || 'none'}`,
+    `ActiveCheckPresent: ${String(eventSummary.hasActiveCheck)}`,
   ];
 
   const appLines = [
@@ -206,7 +217,7 @@ export const buildDiagnosticsEmailBody = (input: DiagnosticsInput): string => {
   const firebaseLines = Object.entries(firebaseContext).map(([key, value]) => `${key}: ${String(value)}`);
   const deviceLines = Object.entries(deviceInfo).map(([key, value]) => `${key}: ${String(value)}`);
   const logLines = logs.length > 0
-    ? logs.map((entry) => `[${entry.timestamp}] ${entry.level.toUpperCase()} ${entry.message}`)
+    ? logs.map((entry) => `[${entry.timestamp}] ${entry.level.toUpperCase()} ${redactDiagnosticText(entry.message)}`)
     : ['No logs recorded yet.'];
 
   return [
