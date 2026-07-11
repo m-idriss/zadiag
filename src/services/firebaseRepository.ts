@@ -204,9 +204,14 @@ export class FirebaseRepository implements AppRepository {
       this.services.functions,
       'removeParticipantMembership',
     );
-    await removeMembership({ participantId });
+    try {
+      await removeMembership({ participantId });
+    } catch (error) {
+      console.error('Unable to leave participant relationship', { participantId, error });
+      throw error;
+    }
     await this.loadParticipantAccess();
-    const next = this.state.participantAccess?.[0];
+    const next = this.state.participantAccess?.find((entry) => entry.membership.status === 'active');
     if (next) await this.selectActiveParticipant(next.participant.id);
     else {
       this.remoteSubscriptions.splice(0).forEach((unsubscribe) => unsubscribe());
