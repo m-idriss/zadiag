@@ -268,9 +268,9 @@ const sendPushPayload = async (
   subscriptionDocument: PushNotificationDocument,
   payload: unknown,
   ttl = 120,
-) => {
+): Promise<'success' | 'failed' | 'invalidated' | 'skipped'> => {
   const subscription = subscriptionDocument.data() as PushSubscription & { locale?: string } | undefined;
-  if (!subscription) return;
+  if (!subscription) return 'skipped';
   const recordDispatch = async (result: 'success' | 'failed' | 'invalidated', error?: unknown) => {
     await subscriptionDocument.ref.set({
       lastDispatchResult: result,
@@ -281,6 +281,7 @@ const sendPushPayload = async (
   try {
     await webpush.sendNotification(subscription, JSON.stringify(payload), { TTL: ttl });
     await recordDispatch('success');
+    return 'success';
   } catch (error) {
     const statusCode = (error as { statusCode?: number }).statusCode;
     if (statusCode === 404 || statusCode === 410) {
@@ -293,6 +294,7 @@ const sendPushPayload = async (
         error,
       });
       await subscriptionDocument.ref.delete();
+      return 'invalidated';
     } else {
       await recordDispatch('failed', error);
       reportOperationalAlert({
@@ -303,6 +305,7 @@ const sendPushPayload = async (
         error,
       });
       console.error('Unable to send Web Push notification', error);
+      return 'failed';
     }
   }
 };
@@ -1182,10 +1185,13 @@ export const sendTestPushNotification = onCall({
     throw new HttpsError('failed-precondition', 'No push subscription is available for this device.');
   }
   webpush.setVapidDetails('https://www.zadiag.com', vapidPublicKey.value(), vapidPrivateKey.value());
-  await sendPushPayload(subscriptionDocument, buildTestNotificationPayload({
+  const dispatchResult = await sendPushPayload(subscriptionDocument, buildTestNotificationPayload({
     locale: subscription.locale,
     role,
   }));
+  if (dispatchResult !== 'success') {
+    throw new HttpsError('unavailable', 'The test notification could not be delivered.');
+  }
 });
 
 export const updateNotificationPreferences = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
