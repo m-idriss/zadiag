@@ -1,4 +1,4 @@
-import type { AnalysisResult, AppPreferences, AppState, Locale, MembershipRole, MonitoringPlan, Role, RoutineValidationMode, VerificationEvent } from '../domain/models';
+import type { AnalysisResult, AppPreferences, AppState, Locale, MembershipRole, MonitoringPlan, ParticipantMember, Role, RoutineValidationMode, VerificationEvent } from '../domain/models';
 
 export interface AppRepository {
   initialize(): Promise<void>;
@@ -10,6 +10,7 @@ export interface AppRepository {
   inviteParticipantMember?(participantId: string, role: Exclude<MembershipRole, 'owner'>): Promise<{ code: string; expiresAt: string }>;
   acceptParticipantInvitation?(code: string): Promise<string>;
   leaveParticipant?(participantId: string): Promise<void>;
+  removeParticipantMember?(participantId: string, targetUid: string): Promise<ParticipantMember[]>;
   createRelationshipRecovery?(participantId: string): Promise<{ recoveryCode: string; expiresAt: string }>;
   recoverRelationship?(code: string): Promise<{ participantId: string; recoveryCode?: string; expiresAt?: string }>;
   setLocale(locale: Locale): Promise<void>;

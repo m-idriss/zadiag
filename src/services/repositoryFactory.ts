@@ -61,6 +61,12 @@ class LazyFirebaseRepository implements AppRepository {
     return repository.leaveParticipant(participantId);
   }
 
+  async removeParticipantMember(participantId: string, targetUid: string) {
+    const repository = await this.load();
+    if (!repository.removeParticipantMember) throw new Error('participant_member_removal_unavailable');
+    return repository.removeParticipantMember(participantId, targetUid);
+  }
+
   async createRelationshipRecovery(participantId: string) {
     const repository = await this.load();
     if (!repository.createRelationshipRecovery) throw new Error('relationship_recovery_unavailable');

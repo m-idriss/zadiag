@@ -139,10 +139,35 @@ describe('RelationshipManager', () => {
       t={(key) => translate('en', key)}
     />));
     expandManager();
-    const button = Array.from(container.querySelectorAll('button')).find((item) => item.textContent === 'Leave this followed person') as HTMLButtonElement;
+    const button = Array.from(container.querySelectorAll('button')).find((item) => item.textContent === 'Remove my access to this profile') as HTMLButtonElement;
     await act(async () => button.click());
     expect(leave).toHaveBeenCalledWith('alex');
     expect((container.querySelector('.relationship-manager-toggle') as HTMLButtonElement).getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('lets an owner remove an assistant without leaving the profile', async () => {
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+    const removeMember = vi.fn().mockResolvedValue([]);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    act(() => root?.render(<RelationshipManager
+      access={[{
+        participant: { id: 'alex', displayName: 'Alex' },
+        membership: { role: 'owner', status: 'active' },
+        members: [
+          { uid: 'owner', role: 'owner', status: 'active', isCurrentUser: true },
+          { uid: 'assistant', role: 'caregiver', status: 'active' },
+        ],
+      }]}
+      activeParticipantId="alex"
+      onRemoveMember={removeMember}
+      t={(key) => translate('en', key)}
+    />));
+    expandManager();
+    const button = Array.from(container.querySelectorAll('button')).find((item) => item.textContent === 'Remove') as HTMLButtonElement;
+    await act(async () => button.click());
+    expect(removeMember).toHaveBeenCalledWith('alex', 'assistant');
   });
 
   it('explains the owner rule and reports the last-owner refusal', async () => {
@@ -158,7 +183,7 @@ describe('RelationshipManager', () => {
       t={(key) => translate('en', key)}
     />));
     expandManager();
-    const button = Array.from(container.querySelectorAll('button')).find((item) => item.textContent === 'Leave this followed person') as HTMLButtonElement;
+    const button = Array.from(container.querySelectorAll('button')).find((item) => item.textContent === 'Remove my access to this profile') as HTMLButtonElement;
     expect(button.disabled).toBe(false);
     expect(container.textContent).toContain('A primary owner can leave only when another primary owner still has access');
     await act(async () => button.click());

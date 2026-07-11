@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { checkmarkOutline, chevronDownOutline } from 'ionicons/icons';
+import { checkmarkOutline } from 'ionicons/icons';
 import type { ParticipantAccess } from '../domain/models';
 import { SvgIcon } from './SvgIcon';
 
@@ -22,7 +22,6 @@ export function ParticipantSelector({ access, activeParticipantId, label, onSele
         <span className="avatar participant-switcher-avatar" aria-hidden="true">
           {selected.participant.displayName.trim().charAt(0).toUpperCase() || '?'}
         </span>
-        <span className="participant-switcher-chevron" aria-hidden="true"><SvgIcon icon={chevronDownOutline} /></span>
       </summary>
       <div className="participant-switcher-menu" role="group" aria-label={label}>
         <span className="participant-switcher-label">{label}</span>

@@ -294,6 +294,16 @@ export class DemoRepository implements AppRepository {
     this.persist();
   }
 
+  async removeParticipantMember(participantId: string, targetUid: string) {
+    const target = activeParticipantAccess(this.state.participantAccess, participantId);
+    if (!target || target.membership.role !== 'owner') throw new Error('permission_denied');
+    const member = target.members?.find((item) => item.uid === targetUid && !item.isCurrentUser);
+    if (!member) throw new Error('membership_not_found');
+    target.members = target.members?.filter((item) => item.uid !== targetUid);
+    this.persist();
+    return structuredClone(target.members ?? []);
+  }
+
   async createRelationshipRecovery(participantId: string) {
     if (!activeParticipantAccess(this.state.participantAccess, participantId)) throw new Error('participant_access_not_found');
     return { recoveryCode: 'PR-2345-6789-ABCD', expiresAt: new Date(Date.now() + 86_400_000).toISOString() };

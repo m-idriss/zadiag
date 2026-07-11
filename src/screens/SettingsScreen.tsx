@@ -8,7 +8,7 @@ import {
   timeOutline,
   trashOutline,
 } from 'ionicons/icons';
-import type { AppPreferences, Locale, MembershipRole, ParticipantAccess, PushSubscriptionHealth, Role, VerificationEvent } from '../domain/models';
+import type { AppPreferences, Locale, MembershipRole, ParticipantAccess, ParticipantMember, PushSubscriptionHealth, Role, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { buildDiagnosticsEmailBody, createCorrelationId } from '../services/appLogs';
 import type { AppUpdateInfo } from '../services/appUpdate';
@@ -51,6 +51,7 @@ export function SettingsScreen({
   inviteParticipantMember,
   acceptParticipantInvitation,
   leaveParticipant,
+  removeParticipantMember,
   createRelationshipRecovery,
   recoverRelationship,
 }: {
@@ -84,6 +85,7 @@ export function SettingsScreen({
   inviteParticipantMember?: (participantId: string, role: Exclude<MembershipRole, 'owner'>) => Promise<{ code: string; expiresAt: string }>;
   acceptParticipantInvitation?: (code: string) => Promise<string>;
   leaveParticipant?: (participantId: string) => Promise<void>;
+  removeParticipantMember?: (participantId: string, targetUid: string) => Promise<ParticipantMember[]>;
   createRelationshipRecovery?: (participantId: string) => Promise<{ recoveryCode: string; expiresAt: string }>;
   recoverRelationship?: (code: string) => Promise<{ participantId: string; recoveryCode?: string; expiresAt?: string }>;
 }) {
@@ -355,6 +357,7 @@ export function SettingsScreen({
         onInvite={inviteParticipantMember}
         onAccept={acceptParticipantInvitation}
         onLeave={leaveParticipant}
+        onRemoveMember={removeParticipantMember}
         onCreateRecovery={createRelationshipRecovery}
         onRecover={recoverRelationship}
         t={t}
