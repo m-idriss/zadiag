@@ -448,6 +448,11 @@ button {
 .routines-top .profile-context-action { background: #e8eef2; color: #15324b; }
 .page-context-top .profile-context-action.expanded,
 .routines-top .profile-context-action.expanded { background: #dbe5eb; }
+.parent-context-top .participant-switcher-label { color: #657681; }
+.parent-context-top .participant-switcher-option-avatar { background: #eef2f5; color: #15324b; }
+.parent-context-top .participant-switcher-menu button.active { background: #e8eef2; color: #15324b; }
+.parent-context-top .participant-switcher-menu button.active .participant-switcher-option-avatar { background: white; color: #15324b; }
+.parent-context-top .participant-switcher-menu button.active .svg-icon { color: #15324b; }
 .settings-context-top > .relationship-manager,
 .settings-context-top .relationship-manager-card { display: contents; }
 .settings-context-top .relationship-manager-toggle { grid-column: 2; overflow: hidden; border: 1px solid rgba(255,255,255,.9); border-radius: var(--radius-card); box-shadow: var(--shadow-sm); }
