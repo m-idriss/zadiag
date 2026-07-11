@@ -80,7 +80,7 @@ export function App() {
   const useLocalDemo = isLocalDemoEnvironment();
   const t = (key: MessageKey) => translate(state.locale, key);
   const preferences = normalizeAppPreferences(state.preferences);
-  const appRootClassName = 'app-root app-compact';
+  const appRootClassName = 'app-root';
   const {
     appUpdateInfo,
     applySnackbarUpdate,

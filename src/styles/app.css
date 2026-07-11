@@ -1548,7 +1548,7 @@ button:disabled { cursor: not-allowed; }
   font-weight: 850;
 }
 .settings-reset-button .svg-icon { font-size: 20px; }
-.app-compact {
+.app-root {
   --block-padding: 12px;
   --block-padding-lg: 14px;
   --block-padding-sm: 10px;
@@ -1558,286 +1558,286 @@ button:disabled { cursor: not-allowed; }
   --radius-card: 18px;
   --card-radius: var(--radius-card);
 }
-.app-compact .content-screen { gap: 14px; }
-.app-compact .settings-list { padding: 0; }
-.app-compact .privacy-card ul { gap: 8px; margin-top: 0; }
-.app-compact .page,
-.app-compact .content-screen {
+.app-root .content-screen { gap: 14px; }
+.app-root .settings-list { padding: 0; }
+.app-root .privacy-card ul { gap: 8px; margin-top: 0; }
+.app-root .page,
+.app-root .content-screen {
   padding: calc(18px + env(safe-area-inset-top)) 18px calc(96px + env(safe-area-inset-bottom));
 }
-.app-compact .page h1,
-.app-compact .screen-header h1 {
+.app-root .page h1,
+.app-root .screen-header h1 {
   margin-bottom: 5px;
   font-size: clamp(24px, 7vw, 32px);
   font-weight: 650;
   letter-spacing: -.025em;
 }
-.app-compact .page h2,
-.app-compact .content-screen h2 {
+.app-root .page h2,
+.app-root .content-screen h2 {
   font-size: 17px;
   font-weight: 650;
   letter-spacing: -.014em;
 }
-.app-compact .page p,
-.app-compact .content-screen p { font-size: 12px; line-height: 1.38; }
-.app-compact .screen-header p { font-size: 10px; line-height: 1.32; }
-.app-compact .action-button {
+.app-root .page p,
+.app-root .content-screen p { font-size: 12px; line-height: 1.38; }
+.app-root .screen-header p { font-size: 10px; line-height: 1.32; }
+.app-root .action-button {
   min-height: var(--height-action-compact);
   border-radius: 12px;
   font-weight: 620;
 }
-.app-compact .routine-tab-panel { gap: 14px; }
-.app-compact .content-section,
-.app-compact .dashboard-summary-section,
-.app-compact .routine-history-panel,
-.app-compact .routines-list-section,
-.app-compact .settings-section { gap: 6px; }
-.app-compact .section-heading,
-.app-compact .dashboard-summary-section > h2,
-.app-compact .settings-section > h2 { margin-inline: 4px; }
-.app-compact .settings-section > h2,
-.app-compact .section-heading h2,
-.app-compact .dashboard-summary-section > h2,
-.app-compact .section-heading small,
-.app-compact .filter-group > span,
-.app-compact .routine-catalog-heading small,
-.app-compact .routine-plan-stats small {
+.app-root .routine-tab-panel { gap: 14px; }
+.app-root .content-section,
+.app-root .dashboard-summary-section,
+.app-root .routine-history-panel,
+.app-root .routines-list-section,
+.app-root .settings-section { gap: 6px; }
+.app-root .section-heading,
+.app-root .dashboard-summary-section > h2,
+.app-root .settings-section > h2 { margin-inline: 4px; }
+.app-root .settings-section > h2,
+.app-root .section-heading h2,
+.app-root .dashboard-summary-section > h2,
+.app-root .section-heading small,
+.app-root .filter-group > span,
+.app-root .routine-catalog-heading small,
+.app-root .routine-plan-stats small {
   font-size: 9px;
   font-weight: 650;
   letter-spacing: .055em;
 }
-.app-compact .settings-row,
-.app-compact .history-row,
-.app-compact .parent-history-row,
-.app-compact .routine-catalog-item {
+.app-root .settings-row,
+.app-root .history-row,
+.app-root .parent-history-row,
+.app-root .routine-catalog-item {
   min-height: 54px;
   gap: 8px;
   padding: var(--row-padding-y) var(--row-padding-x);
 }
-.app-compact .settings-row-icon,
-.app-compact .history-icon,
-.app-compact .parent-empty-history-card > .app-icon,
-.app-compact .parent-empty-history-card > .settings-row-icon,
-.app-compact .today-task-icon,
-.app-compact .routine-icon {
+.app-root .settings-row-icon,
+.app-root .history-icon,
+.app-root .parent-empty-history-card > .app-icon,
+.app-root .parent-empty-history-card > .settings-row-icon,
+.app-root .today-task-icon,
+.app-root .routine-icon {
   width: 36px;
   height: 36px;
   border-radius: 11px;
   font-size: 19px;
 }
-.app-compact .settings-row-copy strong,
-.app-compact .parent-review-copy strong,
-.app-compact .parent-history-row strong,
-.app-compact .routine-card-heading h2,
-.app-compact .routine-catalog-item h3,
-.app-compact .today-task-copy h3,
-.app-compact .upcoming-check-card h3 {
+.app-root .settings-row-copy strong,
+.app-root .parent-review-copy strong,
+.app-root .parent-history-row strong,
+.app-root .routine-card-heading h2,
+.app-root .routine-catalog-item h3,
+.app-root .today-task-copy h3,
+.app-root .upcoming-check-card h3 {
   font-size: 13px;
   font-weight: 650;
 }
-.app-compact .settings-row-copy small,
-.app-compact .parent-review-copy small,
-.app-compact .parent-review-copy p,
-.app-compact .parent-history-row small,
-.app-compact .routine-card-heading p,
-.app-compact .routine-catalog-item p,
-.app-compact .today-task-copy p,
-.app-compact .upcoming-check-card p,
-.app-compact .routine-next-inline,
-.app-compact .privacy-card li {
+.app-root .settings-row-copy small,
+.app-root .parent-review-copy small,
+.app-root .parent-review-copy p,
+.app-root .parent-history-row small,
+.app-root .routine-card-heading p,
+.app-root .routine-catalog-item p,
+.app-root .today-task-copy p,
+.app-root .upcoming-check-card p,
+.app-root .routine-next-inline,
+.app-root .privacy-card li {
   font-size: 11px;
   font-weight: 500;
 }
-.app-compact .routine-catalog-item-content { gap: 3px; }
-.app-compact .routine-catalog-meta { gap: 4px; }
-.app-compact .routine-catalog-meta span {
+.app-root .routine-catalog-item-content { gap: 3px; }
+.app-root .routine-catalog-meta { gap: 4px; }
+.app-root .routine-catalog-meta span {
   min-height: 21px;
   padding: 3px 6px;
   border-radius: 7px;
   font-size: 9px;
   font-weight: 700;
 }
-.app-compact .settings-locale-toggle button,
-.app-compact .summary-range-toggle button,
-.app-compact .filter-chips button,
-.app-compact .routine-tabs button {
+.app-root .settings-locale-toggle button,
+.app-root .summary-range-toggle button,
+.app-root .filter-chips button,
+.app-root .routine-tabs button {
   min-height: 40px;
   padding: 5px 8px;
   font-size: 11px;
   font-weight: 700;
 }
-.app-compact .settings-choice-toggle button { min-width: 38px; }
-.app-compact .settings-switch {
+.app-root .settings-choice-toggle button { min-width: 38px; }
+.app-root .settings-switch {
   width: 56px;
   height: 44px;
   padding: 5px;
 }
-.app-compact .settings-switch span { width: 32px; height: 32px; }
-.app-compact .settings-switch.active span { transform: translateX(14px); }
-.app-compact .settings-inline-action,
-.app-compact .primary-action-button,
-.app-compact .request-check,
-.app-compact .parent-review-button,
-.app-compact .history-retake-button,
-.app-compact .routine-list-detail-button,
-.app-compact .routine-list-edit-button,
-.app-compact .routine-list-delete-button,
-.app-compact .routine-catalog-add,
-.app-compact .routine-edit-plan-button {
+.app-root .settings-switch span { width: 32px; height: 32px; }
+.app-root .settings-switch.active span { transform: translateX(14px); }
+.app-root .settings-inline-action,
+.app-root .primary-action-button,
+.app-root .request-check,
+.app-root .parent-review-button,
+.app-root .history-retake-button,
+.app-root .routine-list-detail-button,
+.app-root .routine-list-edit-button,
+.app-root .routine-list-delete-button,
+.app-root .routine-catalog-add,
+.app-root .routine-edit-plan-button {
   min-height: var(--height-action-compact);
   padding: 8px 11px;
   border-radius: 10px;
   font-size: 11px;
   font-weight: 620;
 }
-.app-compact .status-pill,
-.app-compact .routine-status {
+.app-root .status-pill,
+.app-root .routine-status {
   padding: 5px 8px;
   font-size: 9px;
   font-weight: 620;
 }
-.app-compact .parent-review-card,
-.app-compact .today-pending-panel .today-routine-card,
-.app-compact .parent-active-check-card,
-.app-compact .upcoming-check-card,
-.app-compact .today-task.completed,
-.app-compact .parent-empty-history-card,
-.app-compact .responsible-state-card {
+.app-root .parent-review-card,
+.app-root .today-pending-panel .today-routine-card,
+.app-root .parent-active-check-card,
+.app-root .upcoming-check-card,
+.app-root .today-task.completed,
+.app-root .parent-empty-history-card,
+.app-root .responsible-state-card {
   padding: var(--row-padding-y) var(--row-padding-x);
   border-radius: 18px;
 }
-.app-compact .adherence-summary-card {
+.app-root .adherence-summary-card {
   gap: 12px;
   padding: var(--row-padding-y) var(--row-padding-x);
 }
-.app-compact .progress-ring {
+.app-root .progress-ring {
   width: 74px;
   height: 74px;
   flex-basis: 74px;
 }
-.app-compact .progress-ring::after {
+.app-root .progress-ring::after {
   width: 56px;
   height: 56px;
 }
-.app-compact .summary-range-toggle {
+.app-root .summary-range-toggle {
   min-height: 34px;
   margin-top: 0;
 }
-.app-compact .history-filter-card {
+.app-root .history-filter-card {
   gap: 8px;
   padding: var(--row-padding-y) var(--row-padding-x);
 }
-.app-compact .filter-group { gap: 5px; }
-.app-compact .filter-chips { gap: 5px; }
-.app-compact .parent-history-list { gap: 7px; }
-.app-compact .history-results-heading { min-height: 22px; }
-.app-compact .parent-review-main {
+.app-root .filter-group { gap: 5px; }
+.app-root .filter-chips { gap: 5px; }
+.app-root .parent-history-list { gap: 7px; }
+.app-root .history-results-heading { min-height: 22px; }
+.app-root .parent-review-main {
   grid-template-columns: 54px minmax(0, 1fr) auto;
   gap: 10px;
   min-height: 54px;
 }
-.app-compact .parent-review-image {
+.app-root .parent-review-image {
   width: 54px;
   height: 54px;
   border-radius: 10px;
 }
-.app-compact .parent-review-actions {
+.app-root .parent-review-actions {
   grid-template-columns: repeat(2, 44px);
   gap: 6px;
 }
-.app-compact .participant-review-actions {
+.app-root .participant-review-actions {
   grid-template-columns: minmax(82px, auto);
 }
-.app-compact .parent-review-button {
+.app-root .parent-review-button {
   width: 44px;
   min-height: 44px;
   padding: 0;
   border-radius: 10px;
   font-size: 19px;
 }
-.app-compact .parent-review-button .app-icon { font-size: 20px; }
-.app-compact .participant-retake-button {
+.app-root .parent-review-button .app-icon { font-size: 20px; }
+.app-root .participant-retake-button {
   min-height: 44px;
   padding: 7px 10px;
 }
-.app-compact .today-routine-primary { gap: 9px; }
-.app-compact .today-task-stack {
+.app-root .today-routine-primary { gap: 9px; }
+.app-root .today-task-stack {
   gap: 5px;
   padding: calc(var(--row-padding-y) - 1px) calc(var(--row-padding-x) - 1px);
   border-radius: 13px;
 }
-.app-compact .today-task-stack-row span:first-child,
-.app-compact .today-task-copy small {
+.app-root .today-task-stack-row span:first-child,
+.app-root .today-task-copy small {
   font-size: 10px;
   font-weight: 600;
 }
-.app-compact .routine-card-link {
+.app-root .routine-card-link {
   gap: 9px;
   padding: var(--block-padding);
 }
-.app-compact .routine-list-card-title {
+.app-root .routine-list-card-title {
   grid-template-columns: minmax(0, 1fr) auto 32px;
   gap: 6px;
 }
-.app-compact .routine-schedule-toggle {
+.app-root .routine-schedule-toggle {
   width: 32px;
   height: 32px;
   border-radius: 10px;
 }
-.app-compact .routine-schedule-chips span i { display: none; }
-.app-compact .routine-detail-hero {
+.app-root .routine-schedule-chips span i { display: none; }
+.app-root .routine-detail-hero {
   grid-template-columns: 48px minmax(0, 1fr);
   gap: 10px;
   padding: 9px 10px;
   border-radius: 18px;
 }
-.app-compact .routine-hero-icon {
+.app-root .routine-hero-icon {
   width: 48px;
   height: 48px;
   border-radius: 14px;
   font-size: 25px;
 }
-.app-compact .routine-detail-hero h1 { font-size: 17px; font-weight: 650; }
-.app-compact .next-check-card,
-.app-compact .routine-advice,
-.app-compact .routine-heatmap,
-.app-compact .streak-grid > div {
+.app-root .routine-detail-hero h1 { font-size: 17px; font-weight: 650; }
+.app-root .next-check-card,
+.app-root .routine-advice,
+.app-root .routine-heatmap,
+.app-root .streak-grid > div {
   padding: var(--block-padding);
   border-radius: 16px;
 }
-.app-compact .routine-history-row {
+.app-root .routine-history-row {
   min-height: 58px;
   grid-template-columns: 44px minmax(0, 1fr) auto 8px;
 }
-.app-compact .submission-thumb {
+.app-root .submission-thumb {
   width: 44px;
   height: 44px;
   border-radius: 10px;
   font-size: 21px;
 }
-.app-compact .progress-ring {
+.app-root .progress-ring {
   width: 74px;
   height: 74px;
   flex-basis: 74px;
 }
-.app-compact .progress-ring::after { width: 56px; height: 56px; }
-.app-compact .progress-ring span { font-size: 16px; font-weight: 650; }
-.app-compact .bottom-nav {
+.app-root .progress-ring::after { width: 56px; height: 56px; }
+.app-root .progress-ring span { font-size: 16px; font-weight: 650; }
+.app-root .bottom-nav {
   right: 10px;
   bottom: calc(8px + env(safe-area-inset-bottom));
   left: 10px;
   padding: 6px;
   border-radius: 20px;
 }
-.app-compact .bottom-nav button {
+.app-root .bottom-nav button {
   min-height: 44px;
   padding: 6px 6px 4px;
   border-radius: 14px;
   font-size: 10px;
   font-weight: 700;
 }
-.app-compact .bottom-nav button > span,
-.app-compact .bottom-nav button .app-icon { font-size: 20px; }
+.app-root .bottom-nav button > span,
+.app-root .bottom-nav button .app-icon { font-size: 20px; }
 
 @media (max-width: 430px) {
   .welcome-page { gap: 15px; }
