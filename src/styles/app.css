@@ -433,7 +433,7 @@ button {
 .app-snackbar-close { width: 34px; height: 34px; display: grid; place-items: center; background: rgba(255,255,255,.12); color: #fff; font-size: 16px; line-height: 1; }
 .screen-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; }
 .screen-header small { color: var(--muted); }
-.screen-header p { margin: 0; }
+.screen-header p { max-width: 34ch; margin: 0; color: var(--muted); font-size: 11px; line-height: 1.35; }
 .avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--mint); color: var(--teal); display: grid; place-items: center; font-weight: 900; font-size: 20px; }
 .summary-card { display: flex; align-items: center; gap: 18px; }
 .summary-card p { margin: 5px 0; }
@@ -837,7 +837,7 @@ button {
 /* Routine-centric participant experience */
 .participant-header { align-items: flex-start; }
 .participant-header h1 { font-size: clamp(28px, 8vw, 36px); }
-.participant-header p { max-width: 32ch; font-size: 14px; }
+.participant-header p { max-width: 34ch; font-size: 11px; line-height: 1.35; }
 .more-button, .add-routine-button, .detail-back { border: 0; background: transparent; color: var(--navy); font-weight: 900; }
 .more-button { padding: 7px; letter-spacing: 2px; }
 .add-routine-button { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: var(--navy); color: white; font-size: 25px; }
@@ -1496,6 +1496,7 @@ button {
 }
 .app-compact .page p,
 .app-compact .content-screen p { font-size: 12px; line-height: 1.38; }
+.app-compact .screen-header p { font-size: 10px; line-height: 1.32; }
 .app-compact .action-button {
   min-height: 42px;
   border-radius: 12px;
