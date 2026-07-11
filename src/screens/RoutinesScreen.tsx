@@ -1,8 +1,10 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { chevronDownOutline, peopleOutline } from 'ionicons/icons';
 import type { AppState, MonitoringPlan, RoutineAssignment, RoutineCategory, RoutineValidationMode, ScheduleGroup, VerificationEvent } from '../domain/models';
 import { groupsFromLegacyPlan, nextPlannedWindow, summarizeWeekdaysShort } from '../domain/monitoringPlan';
 import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
+import { SvgIcon } from '../components/SvgIcon';
 import { presentRoutine } from '../domain/routinePresentation';
 import { assignableRoutineTemplates, marketplaceFromTemplates, presentRoutineTemplate } from '../domain/routineMarketplace';
 import { withResolvedEventStatuses } from '../domain/adherence';
@@ -146,6 +148,11 @@ export function RoutinesScreen({
   const selected = state.routineAssignments.find((assignment) => assignment.id === selectedId);
   const canManageRoutines = state.role === 'parent' && Boolean(edit);
   const canAssignRoutine = state.role === 'parent' && Boolean(onAssignRoutine);
+  const activeParticipantAccess = state.participantAccess?.find((entry) => entry.participant.id === state.activeParticipantId)
+    ?? state.participantAccess?.find((entry) => entry.membership.status === 'active');
+  const activeParticipantRoleKey = activeParticipantAccess
+    ? `relationshipRole${activeParticipantAccess.membership.role[0].toUpperCase()}${activeParticipantAccess.membership.role.slice(1)}` as MessageKey
+    : undefined;
   const now = Date.now();
   const nowDate = new Date(now);
   const marketplace = useMemo(() => marketplaceFromTemplates(), []);
@@ -293,11 +300,17 @@ export function RoutinesScreen({
 
   return (
     <div className="content-screen routines-screen">
-      {canAssignRoutine ? <details className="participant-switcher routine-add-switcher" open={catalogOpen}>
-        <summary className="participant-switcher-card routines-add-button" aria-label={t('addRoutine')} onClick={(event) => { event.preventDefault(); setCatalogOpen((open) => !open); }}>
-          <strong>{t('responsibleTodaySubtitle').replace('{name}', state.family.childName)}</strong>
-          <small>{t('addRoutine')}</small>
-        </summary>
+      {canAssignRoutine ? <div className="routine-add-switcher">
+        <div className="card relationship-manager-card routines-add-card">
+          <button type="button" className="relationship-manager-toggle routines-add-button" aria-expanded={catalogOpen} onClick={() => setCatalogOpen((open) => !open)}>
+            <span className="relationship-manager-icon" aria-hidden="true"><SvgIcon icon={peopleOutline} /></span>
+            <span className="relationship-manager-summary">
+              <strong>{activeParticipantAccess?.participant.displayName ?? state.family.childName}</strong>
+              <small>{activeParticipantRoleKey ? t(activeParticipantRoleKey) : t('responsibleTodaySubtitle').replace('{name}', state.family.childName)}</small>
+            </span>
+            <span className="relationship-manager-action">{t('addRoutine')}<SvgIcon className={catalogOpen ? 'expanded' : undefined} icon={chevronDownOutline} /></span>
+          </button>
+        </div>
       {catalogOpen && (
         <section className="card routine-catalog-card routine-catalog-popover" aria-labelledby="routine-catalog-title">
           <div className="routine-catalog-heading">
@@ -336,7 +349,7 @@ export function RoutinesScreen({
           {assignError && <p role="alert" className="request-feedback error">{t('routineAddError')}</p>}
         </section>
       )}
-      </details> : null}
+      </div> : null}
       <section className="settings-section routines-list-section" aria-labelledby="routines-list-title">
         <h2 id="routines-list-title">{t('routines')}</h2>
         <div className="routine-list">
