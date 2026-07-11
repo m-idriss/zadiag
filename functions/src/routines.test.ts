@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createDefaultRoutineAssignment, DEFAULT_ROUTINE_ID, migrateCheckRoutineId } from './routines.js';
+import { createDefaultRoutineAssignment, DEFAULT_ROUTINE_ID, isRoutineValidationMode, migrateCheckRoutineId } from './routines.js';
 
 const plan = {
   checksPerDay: 1,
@@ -22,4 +22,11 @@ test('migrates legacy checks idempotently', () => {
   const migrated = migrateCheckRoutineId(legacy);
   assert.equal(migrated.routineId, DEFAULT_ROUTINE_ID);
   assert.deepEqual(migrateCheckRoutineId(migrated), migrated);
+});
+
+test('accepts only supported routine validation modes', () => {
+  assert.equal(isRoutineValidationMode('auto'), true);
+  assert.equal(isRoutineValidationMode('ai'), true);
+  assert.equal(isRoutineValidationMode('manual'), false);
+  assert.equal(isRoutineValidationMode(undefined), false);
 });

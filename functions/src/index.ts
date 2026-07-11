@@ -9,7 +9,7 @@ import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, createRecoveryCode, createRelationshipInvitationCode, hashLinkCode, isFirestoreDocumentId, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, isRelationshipInvitationCode, normalizeLinkCode, sensitiveCodeAttemptState } from './helpers.js';
 import { analyzeWithGemini, parseImageDataUrl, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
 import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
-import { createDefaultRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, routineFromCatalog, type RoutineAssignmentDocument } from './routines.js';
+import { createDefaultRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, isRoutineValidationMode, routineFromCatalog, type RoutineAssignmentDocument } from './routines.js';
 import { buildCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription } from './notifications.js';
 import { isCheckRequestRateLimited, normalizeReminderRepeatMinutes, shouldSendCheckReminder } from './reminders.js';
 import { recordAuditEvent } from './audit.js';
@@ -1428,7 +1428,11 @@ export const updateRoutineAssignment = onCall({
     const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
     const routineId = requireDocumentId(request.data?.routineId ?? DEFAULT_ROUTINE_ID, 'Routine ID');
     const plan = request.data?.plan;
-    const validationMode = request.data?.validationMode === 'auto' ? 'auto' : request.data?.validationMode === 'ai' ? 'ai' : undefined;
+    const rawValidationMode = request.data?.validationMode;
+    if (rawValidationMode !== undefined && !isRoutineValidationMode(rawValidationMode)) {
+      throw new HttpsError('invalid-argument', 'The validation mode is invalid.');
+    }
+    const validationMode = isRoutineValidationMode(rawValidationMode) ? rawValidationMode : undefined;
 
     if (!plan || typeof plan !== 'object') {
       throw new HttpsError('invalid-argument', 'Plan is required and must be an object.');
