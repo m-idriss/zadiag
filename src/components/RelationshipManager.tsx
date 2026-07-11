@@ -83,6 +83,10 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
         />
         {open ? <div className="relationship-manager-body">
         <p>{t('relationshipManagerHint')}</p>
+        <div className="relationship-subsection-heading relationship-scope-heading">
+          <h3>{t('relationshipAccountProfilesTitle')}</h3>
+          <small>{t('relationshipAccountProfilesHint')}</small>
+        </div>
         {activeAccess.length > 1 ? <div className="relationship-access-list">
           {activeAccess.map((entry) => (
             <button
@@ -109,6 +113,11 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
           </form>
           </details>
         ) : null}
+
+        {selectedParticipantId ? <div className="relationship-subsection-heading relationship-scope-heading relationship-selected-scope-heading">
+          <h3>{t('relationshipSelectedProfileActionsTitle').replace('{name}', selectedAccess?.participant.displayName ?? '')}</h3>
+          <small>{t('relationshipSelectedProfileActionsHint')}</small>
+        </div> : null}
 
         {isOwner && selectedParticipantId ? (
           <section className="relationship-team" aria-labelledby="relationship-team-title">

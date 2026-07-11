@@ -737,6 +737,8 @@ button {
 .relationship-subsection-heading { display: grid; gap: 3px; }
 .relationship-subsection-heading h3, .relationship-leave-zone h3 { margin: 0; color: var(--navy); font-size: 15px; }
 .relationship-subsection-heading small, .relationship-team-empty { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.35; }
+.relationship-scope-heading { padding-top: 2px; }
+.relationship-selected-scope-heading { padding-top: 14px; border-top: 1px solid var(--border); }
 .relationship-member-list { display: grid; gap: 7px; }
 .relationship-member-row { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 9px 8px 11px; border-radius: 12px; background: #f5f8f7; }
 .relationship-member-row > span { display: grid; gap: 2px; }
