@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { assertChildName, createLinkCode, createRecoveryCode, createRelationshipInvitationCode, hashLinkCode, isFirestoreDocumentId, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, isRelationshipInvitationCode, normalizeLinkCode } from './helpers.js';
+import { assertChildName, createLinkCode, createRecoveryCode, createRelationshipInvitationCode, hashLinkCode, isFirestoreDocumentId, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, isRelationshipInvitationCode, normalizeLinkCode, sensitiveCodeAttemptState } from './helpers.js';
 
 test('normalizes and hashes codes consistently', () => {
   assert.equal(normalizeLinkCode(' zd-123456 '), 'ZD-123456');
@@ -29,6 +29,21 @@ test('accepts only safe Firestore document identifiers', () => {
   assert.equal(isFirestoreDocumentId('.'), false);
   assert.equal(isFirestoreDocumentId('..'), false);
   assert.equal(isFirestoreDocumentId('é'.repeat(751)), false);
+});
+
+test('limits sensitive code attempts inside a rolling window', () => {
+  const now = Date.parse('2026-07-11T10:15:00.000Z');
+  assert.deepEqual(sensitiveCodeAttemptState({ windowStartedAt: '2026-07-11T10:05:00.000Z', attempts: 4 }, now), {
+    blocked: false,
+    attempts: 5,
+    windowStartedAt: '2026-07-11T10:05:00.000Z',
+  });
+  assert.equal(sensitiveCodeAttemptState({ windowStartedAt: '2026-07-11T10:05:00.000Z', attempts: 5 }, now).blocked, true);
+  assert.deepEqual(sensitiveCodeAttemptState({ windowStartedAt: '2026-07-11T10:00:00.000Z', attempts: 99 }, now), {
+    blocked: false,
+    attempts: 1,
+    windowStartedAt: '2026-07-11T10:15:00.000Z',
+  });
 });
 
 test('accepts only fresh pending check submissions', () => {

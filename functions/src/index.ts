@@ -6,7 +6,7 @@ import { defineSecret } from 'firebase-functions/params';
 import { GoogleAuth } from 'google-auth-library';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import webpush, { type PushSubscription } from 'web-push';
-import { assertChildName, createLinkCode, createRecoveryCode, createRelationshipInvitationCode, hashLinkCode, isFirestoreDocumentId, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, isRelationshipInvitationCode, normalizeLinkCode } from './helpers.js';
+import { assertChildName, createLinkCode, createRecoveryCode, createRelationshipInvitationCode, hashLinkCode, isFirestoreDocumentId, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, isRelationshipInvitationCode, normalizeLinkCode, sensitiveCodeAttemptState } from './helpers.js';
 import { analyzeWithGemini, parseImageDataUrl, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
 import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
 import { createDefaultRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, routineFromCatalog, type RoutineAssignmentDocument } from './routines.js';
@@ -244,18 +244,16 @@ const copyLegacyParticipantSubcollection = async (
   return sourceSnapshot.size;
 };
 
-const recordRecoveryAttempt = async (uid: string) => {
+const recordSensitiveCodeAttempt = async (uid: string) => {
   const attemptRef = db.collection('recoveryAttempts').doc(uid);
   await db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(attemptRef);
     const data = snapshot.data();
-    const windowStartedAt = Date.parse(String(data?.windowStartedAt ?? ''));
-    const inWindow = Number.isFinite(windowStartedAt) && Date.now() - windowStartedAt < 15 * 60 * 1000;
-    const attempts = inWindow ? Number(data?.attempts ?? 0) : 0;
-    if (attempts >= 5) throw new HttpsError('resource-exhausted', 'Too many recovery attempts. Try again later.');
+    const attempt = sensitiveCodeAttemptState(data);
+    if (attempt.blocked) throw new HttpsError('resource-exhausted', 'Too many code attempts. Try again later.');
     transaction.set(attemptRef, {
-      attempts: attempts + 1,
-      windowStartedAt: inWindow ? data?.windowStartedAt : new Date().toISOString(),
+      attempts: attempt.attempts,
+      windowStartedAt: attempt.windowStartedAt,
       updatedAt: FieldValue.serverTimestamp(),
     });
   });
@@ -471,6 +469,7 @@ export const acceptRelationshipInvitation = onCall({ region, cors, enforceAppChe
   const uid = requireUid(request.auth);
   const code = normalizeLinkCode(String(request.data?.code ?? ''));
   if (!isRelationshipInvitationCode(code)) throw new HttpsError('invalid-argument', 'The invitation code is invalid.');
+  await recordSensitiveCodeAttempt(uid);
   const invitationRef = db.collection('relationshipInvitations').doc(hashLinkCode(code));
 
   const participantId = await db.runTransaction(async (transaction) => {
@@ -530,6 +529,7 @@ export const acceptRelationshipInvitation = onCall({ region, cors, enforceAppChe
     });
     transaction.set(userRef, { relationshipModelVersion: 2, updatedAt: now }, { merge: true });
     transaction.update(invitationRef, { consumedAt: now, consumedBy: uid });
+    transaction.delete(db.collection('recoveryAttempts').doc(uid));
     return targetParticipantId;
   });
   await recordAuditEvent(db, {
@@ -680,7 +680,7 @@ export const recoverRelationship = onCall({ region, cors, enforceAppCheck: true 
   const uid = requireUid(request.auth);
   const code = normalizeLinkCode(String(request.data?.code ?? ''));
   if (!isRecoveryCode(code)) throw new HttpsError('invalid-argument', 'The recovery code is invalid.');
-  await recordRecoveryAttempt(uid);
+  await recordSensitiveCodeAttempt(uid);
   const recoveryRef = db.collection('relationshipRecoveryCodes').doc(hashLinkCode(code));
   const nextCode = createRecoveryCode();
   const nextCodeHash = hashLinkCode(nextCode);
@@ -962,7 +962,7 @@ export const recoverParent = onCall({ region, cors, enforceAppCheck: true }, asy
   const uid = requireUid(request.auth);
   const code = normalizeLinkCode(String(request.data?.code ?? ''));
   if (!isRecoveryCode(code) && !isLegacyRecoveryCode(code)) throw new HttpsError('invalid-argument', 'The recovery code is invalid.');
-  await recordRecoveryAttempt(uid);
+  await recordSensitiveCodeAttempt(uid);
   const userRef = db.collection('users').doc(uid);
   const recoveryRef = isRecoveryCode(code)
     ? db.collection('parentRecoveryCodes').doc(hashLinkCode(code))

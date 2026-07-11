@@ -1,6 +1,7 @@
 import { createHash, randomInt } from 'node:crypto';
 
 const retakeWindowMs = 15 * 60_000;
+const sensitiveCodeAttemptWindowMs = 15 * 60_000;
 
 export const normalizeLinkCode = (code: string) => code.trim().toUpperCase();
 
@@ -8,6 +9,24 @@ export const isFirestoreDocumentId = (value: unknown): value is string => {
   if (typeof value !== 'string' || value.length === 0 || value !== value.trim()) return false;
   if (value === '.' || value === '..' || value.includes('/')) return false;
   return Buffer.byteLength(value, 'utf8') <= 1_500;
+};
+
+export const sensitiveCodeAttemptState = (
+  value: { windowStartedAt?: unknown; attempts?: unknown } | undefined,
+  now = Date.now(),
+) => {
+  const windowStartedAtMs = Date.parse(String(value?.windowStartedAt ?? ''));
+  const inWindow = Number.isFinite(windowStartedAtMs)
+    && now >= windowStartedAtMs
+    && now - windowStartedAtMs < sensitiveCodeAttemptWindowMs;
+  const attempts = inWindow && Number.isFinite(Number(value?.attempts))
+    ? Math.max(0, Math.floor(Number(value?.attempts)))
+    : 0;
+  return {
+    blocked: attempts >= 5,
+    attempts: attempts + 1,
+    windowStartedAt: inWindow ? String(value?.windowStartedAt) : new Date(now).toISOString(),
+  };
 };
 
 export const hashLinkCode = (code: string) => createHash('sha256')
