@@ -1,12 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { chevronDownOutline, peopleOutline } from 'ionicons/icons';
-import type { MembershipRole, ParticipantAccess } from '../domain/models';
+import type { MembershipRole, ParticipantAccess, ParticipantMember } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { SvgIcon } from './SvgIcon';
 
 type InviteRole = Exclude<MembershipRole, 'owner'>;
 
-export function RelationshipManager({ access, activeParticipantId, onSelect, onCreate, onInvite, onAccept, onLeave, onCreateRecovery, onRecover, t }: {
+export function RelationshipManager({ access, activeParticipantId, onSelect, onCreate, onInvite, onAccept, onLeave, onRemoveMember, onCreateRecovery, onRecover, t }: {
   access: ParticipantAccess[] | undefined;
   activeParticipantId?: string;
   onSelect?: (participantId: string) => Promise<void>;
@@ -14,6 +14,7 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
   onInvite?: (participantId: string, role: InviteRole) => Promise<{ code: string; expiresAt: string }>;
   onAccept?: (code: string) => Promise<string>;
   onLeave?: (participantId: string) => Promise<void>;
+  onRemoveMember?: (participantId: string, targetUid: string) => Promise<ParticipantMember[]>;
   onCreateRecovery?: (participantId: string) => Promise<{ recoveryCode: string; expiresAt: string }>;
   onRecover?: (code: string) => Promise<{ participantId: string; recoveryCode?: string; expiresAt?: string }>;
   t: (key: MessageKey) => string;
@@ -25,13 +26,15 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
   const [invitationCode, setInvitationCode] = useState<string>();
   const [recoveryCode, setRecoveryCode] = useState<string>();
   const [recoverCode, setRecoverCode] = useState('');
-  const [busy, setBusy] = useState<'create' | 'invite' | 'accept' | 'recovery'>();
+  const [busy, setBusy] = useState<'create' | 'invite' | 'accept' | 'recovery' | 'remove'>();
+  const [removingUid, setRemovingUid] = useState<string>();
   const [error, setError] = useState<MessageKey>();
   const [open, setOpen] = useState(false);
   const activeAccess = (access ?? []).filter((entry) => entry.membership.status === 'active');
   const selectedAccess = activeAccess.find((entry) => entry.participant.id === activeParticipantId) ?? activeAccess[0];
   const selectedParticipantId = selectedAccess?.participant.id;
   const isOwner = selectedAccess?.membership.role === 'owner';
+  const removableMembers = selectedAccess?.members?.filter((member) => !member.isCurrentUser && member.status === 'active') ?? [];
   const selectedRoleKey = selectedAccess
     ? `relationshipRole${selectedAccess.membership.role[0].toUpperCase()}${selectedAccess.membership.role.slice(1)}` as MessageKey
     : undefined;
@@ -95,19 +98,50 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
           ))}
         </div>
 
+        {isOwner && selectedParticipantId ? (
+          <section className="relationship-team" aria-labelledby="relationship-team-title">
+            <div className="relationship-subsection-heading">
+              <h3 id="relationship-team-title">{t('relationshipTeamTitle')}</h3>
+              <small>{t('relationshipTeamHint')}</small>
+            </div>
+            {removableMembers.length ? (
+              <div className="relationship-member-list">
+                {removableMembers.map((member) => {
+                  const roleKey = `relationshipRole${member.role[0].toUpperCase()}${member.role.slice(1)}` as MessageKey;
+                  return (
+                    <div className="relationship-member-row" key={member.uid}>
+                      <span><strong>{t(roleKey)}</strong><small>{t('relationshipMemberAccess')}</small></span>
+                      {onRemoveMember ? <button type="button" disabled={Boolean(busy)} onClick={() => {
+                        if (!window.confirm(t('relationshipRemoveMemberConfirm'))) return;
+                        setRemovingUid(member.uid);
+                        void run('remove', () => onRemoveMember(selectedParticipantId, member.uid).then(() => undefined))
+                          .finally(() => setRemovingUid(undefined));
+                      }}>{busy === 'remove' && removingUid === member.uid ? t('relationshipWorking') : t('relationshipRemoveMemberAction')}</button> : null}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : <p className="relationship-team-empty">{t('relationshipTeamEmpty')}</p>}
+          </section>
+        ) : null}
+
         {onCreate ? (
+          <details className="relationship-tool">
+            <summary>{t('relationshipCreateTitle')}</summary>
           <form className="relationship-form" onSubmit={create}>
-            <h3>{t('relationshipCreateTitle')}</h3>
             <p>{t('relationshipCreateHint')}</p>
             <input aria-label={t('relationshipNameLabel')} value={name} maxLength={40} onChange={(event) => setName(event.target.value)} placeholder={t('relationshipNameLabel')} />
             <label className="relationship-checkbox"><input type="checkbox" checked={selfManaged} onChange={(event) => setSelfManaged(event.target.checked)} />{t('relationshipSelfManagedLabel')}</label>
             <button type="submit" disabled={busy === 'create' || !name.trim()}>{busy === 'create' ? t('relationshipWorking') : t('relationshipCreateAction')}</button>
           </form>
+          </details>
         ) : null}
+        {invitationCode && !selectedParticipantId ? <output className="relationship-invitation-code">{t('relationshipInvitationCode')}: <strong>{invitationCode}</strong><small>{t('relationshipInvitationNextStep')}</small></output> : null}
 
-        {onInvite && selectedParticipantId ? (
+        {onInvite && selectedParticipantId && isOwner ? (
+          <details className="relationship-tool">
+            <summary>{t('relationshipInviteTitle')}</summary>
           <div className="relationship-form">
-            <h3>{t('relationshipInviteTitle')}</h3>
             <p>{t('relationshipInviteHint')}</p>
             <select aria-label={t('relationshipInviteRole')} value={inviteRole} onChange={(event) => setInviteRole(event.target.value as InviteRole)}>
               <option value="caregiver">{t('relationshipRoleCaregiver')}</option>
@@ -118,17 +152,23 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
               const invitation = await onInvite(selectedParticipantId, inviteRole);
               setInvitationCode(invitation.code);
             }); }}>{busy === 'invite' ? t('relationshipWorking') : t('relationshipInviteAction')}</button>
+            {invitationCode ? <output className="relationship-invitation-code">{t('relationshipInvitationCode')}: <strong>{invitationCode}</strong><small>{t('relationshipInvitationNextStep')}</small></output> : null}
           </div>
+          </details>
         ) : null}
-        {invitationCode ? <output className="relationship-invitation-code">{t('relationshipInvitationCode')}: <strong>{invitationCode}</strong><small>{t('relationshipInvitationNextStep')}</small></output> : null}
 
         {onAccept ? (
+          <details className="relationship-tool">
+            <summary>{t('relationshipJoinTitle')}</summary>
           <form className="relationship-form" onSubmit={accept}>
-            <h3>{t('relationshipJoinTitle')}</h3>
             <input aria-label={t('relationshipJoinCode')} value={joinCode} onChange={(event) => setJoinCode(event.target.value.toUpperCase())} placeholder="ZI-123456" />
             <button type="submit" disabled={busy === 'accept' || !joinCode.trim()}>{busy === 'accept' ? t('relationshipWorking') : t('relationshipJoinAction')}</button>
           </form>
+          </details>
         ) : null}
+        {(onCreateRecovery && selectedParticipantId) || onRecover ? (
+          <details className="relationship-tool relationship-recovery-tool">
+            <summary>{t('relationshipRecoveryOptionsTitle')}</summary>
         {onCreateRecovery && selectedParticipantId ? (
           <div className="relationship-form">
             <h3>{t('relationshipRecoveryTitle')}</h3>
@@ -154,8 +194,11 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
             <button type="submit" disabled={busy === 'recovery' || !recoverCode.trim()}>{t('relationshipRecoverAction')}</button>
           </form>
         ) : null}
+          </details>
+        ) : null}
         {onLeave && selectedParticipantId ? (
           <div className="relationship-leave-zone">
+          <h3>{t('relationshipPersonalAccessTitle')}</h3>
           <button className="relationship-leave-button" type="button" disabled={Boolean(busy)} onClick={() => {
             if (!window.confirm(t('relationshipLeaveConfirm'))) return;
             void run('accept', async () => {

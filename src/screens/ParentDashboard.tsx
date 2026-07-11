@@ -185,7 +185,7 @@ export function ParentDashboard({
   return (
     <div className="content-screen child-home parent-overview-screen">
       <header className="screen-header participant-header">
-        <div><h1>{t('activity')}</h1><p>{t('participantTodaySubtitle').replace('{name}', state.family.childName)}</p></div>
+        <div><h1>{t('activity')}</h1><p>{t('responsibleTodaySubtitle').replace('{name}', state.family.childName)}</p></div>
         {activeParticipantCount > 1 && onSelectParticipant ? (
           <ParticipantSelector access={state.participantAccess} activeParticipantId={state.activeParticipantId} label={t('followedPerson')} onSelect={onSelectParticipant} />
         ) : <div className="avatar" aria-hidden="true">{state.family.childName.trim().charAt(0).toUpperCase() || '?'}</div>}

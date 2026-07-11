@@ -23,6 +23,7 @@ import {
   type MonitoringPlan,
   type MembershipRole,
   type ParticipantAccess,
+  type ParticipantMember,
   type Role,
   type RoutineAssignment,
   type RoutineAssignmentCreator,
@@ -218,6 +219,21 @@ export class FirebaseRepository implements AppRepository {
       this.state = { ...initialRemoteState(), locale: this.state.locale, preferences: this.state.preferences };
       this.emit();
     }
+  }
+
+  async removeParticipantMember(participantId: string, targetUid: string) {
+    const removeMembership = httpsCallable<{ participantId: string; targetUid: string }, void>(
+      this.services.functions,
+      'removeParticipantMembership',
+    );
+    try {
+      await removeMembership({ participantId, targetUid });
+    } catch (error) {
+      console.error('Unable to remove participant member', { participantId, targetUid, error });
+      throw error;
+    }
+    await this.loadParticipantAccess();
+    return this.state.participantAccess?.find((entry) => entry.participant.id === participantId)?.members ?? [];
   }
 
   async createRelationshipRecovery(participantId: string) {
@@ -537,9 +553,10 @@ export class FirebaseRepository implements AppRepository {
       const referenceData = reference.data();
       if (referenceData.status !== 'active') return undefined;
       const participantId = reference.id;
-      const [participant, membership] = await Promise.all([
+      const [participant, membership, memberships] = await Promise.all([
         getDoc(doc(this.services.db, 'participants', participantId)),
         getDoc(doc(this.services.db, 'participants', participantId, 'memberships', this.user!.uid)),
+        getDocs(collection(this.services.db, 'participants', participantId, 'memberships')),
       ]);
       if (!participant.exists() || !membership.exists() || membership.data().status !== 'active') return undefined;
       const participantData = participant.data() as ParticipantDocument;
@@ -557,6 +574,16 @@ export class FirebaseRepository implements AppRepository {
           status: 'active',
           label: membershipData.label,
         },
+        members: memberships.docs
+          .filter((item) => item.data().status === 'active')
+          .map((item): ParticipantMember => ({
+            uid: item.id,
+            role: item.data().role as MembershipRole,
+            status: 'active',
+            label: item.data().label,
+            isCurrentUser: item.id === this.user!.uid,
+          }))
+          .sort((left, right) => Number(right.isCurrentUser) - Number(left.isCurrentUser) || left.role.localeCompare(right.role)),
       };
     }))).filter((entry): entry is ParticipantAccess => Boolean(entry));
     this.state.participantAccess = access.sort((left, right) => (

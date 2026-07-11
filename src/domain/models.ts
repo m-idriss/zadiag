@@ -151,9 +151,15 @@ export interface MembershipSummary {
   label?: 'parent' | 'partner' | 'relative' | 'professional' | 'self' | 'other';
 }
 
+export interface ParticipantMember extends MembershipSummary {
+  uid: string;
+  isCurrentUser?: boolean;
+}
+
 export interface ParticipantAccess {
   participant: ParticipantSummary;
   membership: MembershipSummary;
+  members?: ParticipantMember[];
 }
 
 export interface PushSubscriptionHealth {

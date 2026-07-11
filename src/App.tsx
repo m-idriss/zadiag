@@ -380,6 +380,7 @@ export function App() {
             inviteParticipantMember={repository.inviteParticipantMember ? (participantId, membershipRole) => repository.inviteParticipantMember!(participantId, membershipRole) : undefined}
             acceptParticipantInvitation={repository.acceptParticipantInvitation ? async (code) => { const id = await repository.acceptParticipantInvitation?.(code); sync(); return id!; } : undefined}
             leaveParticipant={repository.leaveParticipant ? async (participantId) => { await repository.leaveParticipant?.(participantId); sync(); } : undefined}
+            removeParticipantMember={repository.removeParticipantMember ? async (participantId, targetUid) => { const members = await repository.removeParticipantMember?.(participantId, targetUid); sync(); return members ?? []; } : undefined}
             createRelationshipRecovery={repository.createRelationshipRecovery ? (participantId) => repository.createRelationshipRecovery!(participantId) : undefined}
             recoverRelationship={repository.recoverRelationship ? async (code) => { const recovered = await repository.recoverRelationship!(code); sync(); return recovered; } : undefined}
             locale={state.locale}
