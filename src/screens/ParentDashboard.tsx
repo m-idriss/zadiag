@@ -186,7 +186,7 @@ export function ParentDashboard({
     <div className="content-screen child-home parent-overview-screen">
       <div className="page-context-top parent-context-top">
         <header className="screen-header page-context-heading">
-          <div><h1>{t('activity')}</h1><p>{t('responsibleTodaySubtitle').replace('{name}', activeParticipantAccess?.participant.displayName ?? state.family.childName)}</p></div>
+          <div><h1>{t('activity')}</h1></div>
         </header>
       <ParticipantSelector
         access={state.participantAccess}

@@ -300,7 +300,7 @@ export function RoutinesScreen({
     <div className="content-screen routines-screen">
       <div className="routines-top">
         <header className="screen-header routines-top-heading">
-          <div><h1>{t('myRoutines')}</h1><p>{t('routinesHint')}</p></div>
+          <div><h1>{t('myRoutines')}</h1></div>
         </header>
       {canAssignRoutine ? <div className="routine-add-switcher">
         <div className="card relationship-manager-card routines-add-card">

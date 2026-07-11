@@ -257,7 +257,7 @@ export function SettingsScreen({
     <div className="content-screen settings-screen">
       <div className="page-context-top settings-context-top">
         <header className="screen-header page-context-heading">
-          <div><h1>{t('settings')}</h1><p>{t('settingsHint')}</p></div>
+          <div><h1>{t('settings')}</h1></div>
         </header>
       <RelationshipManager
         access={participantAccess}
