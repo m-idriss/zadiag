@@ -13,6 +13,13 @@ describe('RelationshipManager', () => {
     container?.remove();
   });
 
+  const expandManager = () => {
+    const toggle = container?.querySelector('.relationship-manager-toggle') as HTMLButtonElement;
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    act(() => toggle.click());
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+  };
+
   it('lists relationships and creates a self-managed participant', async () => {
     container = document.createElement('div');
     document.body.append(container);
@@ -24,6 +31,8 @@ describe('RelationshipManager', () => {
       onCreate={create}
       t={(key) => translate('en', key)}
     />));
+    expect(container.querySelector('input[aria-label="Name"]')).toBeNull();
+    expandManager();
     const name = container.querySelector('input[aria-label="Name"]') as HTMLInputElement;
     const checkbox = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
     act(() => {
@@ -48,6 +57,7 @@ describe('RelationshipManager', () => {
       onInvite={invite}
       t={(key) => translate('en', key)}
     />));
+    expandManager();
     const button = Array.from(container.querySelectorAll('button')).find((item) => item.textContent === 'Generate invitation')!;
     await act(async () => button.click());
     expect(invite).toHaveBeenCalledWith('alex', 'caregiver');
@@ -65,6 +75,7 @@ describe('RelationshipManager', () => {
       onCreateRecovery={createRecovery}
       t={(key) => translate('en', key)}
     />));
+    expandManager();
     const button = Array.from(container.querySelectorAll('button')).find((item) => item.textContent === 'Generate recovery code')!;
     await act(async () => button.click());
     expect(createRecovery).toHaveBeenCalledWith('alex');

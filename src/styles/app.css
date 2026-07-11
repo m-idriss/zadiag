@@ -707,11 +707,21 @@ button {
 .today-task-list { display: grid; gap: 11px; }
 .participant-selector { display: grid; gap: 6px; margin: 0 0 16px; color: var(--muted); font-size: 12px; font-weight: 800; }
 .participant-selector select { width: 100%; min-height: 44px; padding: 0 40px 0 14px; border: 1px solid var(--border); border-radius: 14px; background: white; color: var(--navy); font: inherit; font-size: 15px; }
-.relationship-manager-card { display: grid; gap: 16px; padding: 16px; }
-.relationship-manager-card > p { margin: 0; color: var(--muted); font-size: 13px; }
+.relationship-manager-card { display: grid; padding: 0; overflow: hidden; }
+.relationship-manager-toggle { width: 100%; min-height: 68px; display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 11px; padding: 12px 14px; border: 0; background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(241,248,246,.94)); color: var(--navy); text-align: left; }
+.relationship-manager-icon { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 13px; background: linear-gradient(145deg, var(--teal), #49b8a4); color: white; box-shadow: 0 8px 18px rgba(29,138,122,.17); }
+.relationship-manager-icon .svg-icon { font-size: 21px; }
+.relationship-manager-summary { min-width: 0; display: grid; gap: 3px; }
+.relationship-manager-summary strong { overflow: hidden; font-size: 14px; font-weight: 720; text-overflow: ellipsis; white-space: nowrap; }
+.relationship-manager-summary small { color: var(--teal); font-size: 10px; font-weight: 750; letter-spacing: .025em; }
+.relationship-manager-action { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 11px; font-weight: 700; }
+.relationship-manager-action .svg-icon { font-size: 15px; transition: transform .18s ease; }
+.relationship-manager-action .svg-icon.expanded { transform: rotate(180deg); }
+.relationship-manager-body { display: grid; gap: 14px; padding: 0 14px 14px; border-top: 1px solid rgba(16,42,67,.06); }
+.relationship-manager-body > p { margin: 12px 0 0; color: var(--muted); font-size: 12px; }
 .relationship-access-list { display: grid; gap: 8px; }
-.relationship-access-list > button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 14px; background: white; color: var(--navy); text-align: left; }
-.relationship-access-list > button.active { border-color: var(--teal); background: var(--mint); }
+.relationship-access-list > button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 10px 11px; border: 1px solid rgba(16,42,67,.07); border-radius: 12px; background: #fbfcfb; color: var(--navy); text-align: left; }
+.relationship-access-list > button.active { border-color: color-mix(in srgb, var(--teal) 34%, white); background: color-mix(in srgb, var(--mint) 74%, white); box-shadow: inset 3px 0 var(--teal); }
 .relationship-access-list span { display: grid; gap: 2px; }
 .relationship-access-list small { color: var(--muted); }
 .relationship-form { display: grid; gap: 10px; padding-top: 14px; border-top: 1px solid var(--border); }
