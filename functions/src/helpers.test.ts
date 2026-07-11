@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { assertChildName, createLinkCode, createRecoveryCode, createRelationshipInvitationCode, hashLinkCode, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, isRelationshipInvitationCode, normalizeLinkCode } from './helpers.js';
+import { assertChildName, createLinkCode, createRecoveryCode, createRelationshipInvitationCode, hashLinkCode, isFirestoreDocumentId, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, isRelationshipInvitationCode, normalizeLinkCode } from './helpers.js';
 
 test('normalizes and hashes codes consistently', () => {
   assert.equal(normalizeLinkCode(' zd-123456 '), 'ZD-123456');
@@ -19,6 +19,16 @@ test('creates a non-ambiguous code shape', () => {
 test('validates child names', () => {
   assert.equal(assertChildName(' Maya '), 'Maya');
   assert.throws(() => assertChildName(''));
+});
+
+test('accepts only safe Firestore document identifiers', () => {
+  assert.equal(isFirestoreDocumentId('participant_123-abc'), true);
+  assert.equal(isFirestoreDocumentId(''), false);
+  assert.equal(isFirestoreDocumentId(' participant '), false);
+  assert.equal(isFirestoreDocumentId('participants/other'), false);
+  assert.equal(isFirestoreDocumentId('.'), false);
+  assert.equal(isFirestoreDocumentId('..'), false);
+  assert.equal(isFirestoreDocumentId('é'.repeat(751)), false);
 });
 
 test('accepts only fresh pending check submissions', () => {

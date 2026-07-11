@@ -4,6 +4,12 @@ const retakeWindowMs = 15 * 60_000;
 
 export const normalizeLinkCode = (code: string) => code.trim().toUpperCase();
 
+export const isFirestoreDocumentId = (value: unknown): value is string => {
+  if (typeof value !== 'string' || value.length === 0 || value !== value.trim()) return false;
+  if (value === '.' || value === '..' || value.includes('/')) return false;
+  return Buffer.byteLength(value, 'utf8') <= 1_500;
+};
+
 export const hashLinkCode = (code: string) => createHash('sha256')
   .update(normalizeLinkCode(code))
   .digest('hex');

@@ -6,7 +6,7 @@ import { defineSecret } from 'firebase-functions/params';
 import { GoogleAuth } from 'google-auth-library';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import webpush, { type PushSubscription } from 'web-push';
-import { assertChildName, createLinkCode, createRecoveryCode, createRelationshipInvitationCode, hashLinkCode, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, isRelationshipInvitationCode, normalizeLinkCode } from './helpers.js';
+import { assertChildName, createLinkCode, createRecoveryCode, createRelationshipInvitationCode, hashLinkCode, isFirestoreDocumentId, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, isRelationshipInvitationCode, normalizeLinkCode } from './helpers.js';
 import { analyzeWithGemini, parseImageDataUrl, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
 import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
 import { createDefaultRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, routineFromCatalog, type RoutineAssignmentDocument } from './routines.js';
@@ -76,6 +76,11 @@ const getRoutineAnalysisContext = (
 const requireUid = (auth: { uid: string } | undefined) => {
   if (!auth) throw new HttpsError('unauthenticated', 'Authentication is required.');
   return auth.uid;
+};
+
+const requireDocumentId = (value: unknown, label: string) => {
+  if (!isFirestoreDocumentId(value)) throw new HttpsError('invalid-argument', `${label} is invalid.`);
+  return value;
 };
 
 const defaultPlan = {
@@ -431,9 +436,8 @@ export const createParticipant = onCall({ region, cors, enforceAppCheck: true },
 
 export const createRelationshipInvitation = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
-  const participantId = String(request.data?.participantId ?? '');
+  const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
   const intendedRole = String(request.data?.role ?? '') as MembershipRole;
-  if (!participantId) throw new HttpsError('invalid-argument', 'Participant ID is required.');
   if (!membershipRoles.includes(intendedRole) || intendedRole === 'owner') {
     throw new HttpsError('invalid-argument', 'The invitation role is invalid.');
   }
@@ -538,9 +542,8 @@ export const acceptRelationshipInvitation = onCall({ region, cors, enforceAppChe
 
 export const removeParticipantMembership = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
-  const participantId = String(request.data?.participantId ?? '');
-  const targetUid = String(request.data?.targetUid ?? uid);
-  if (!participantId || !targetUid) throw new HttpsError('invalid-argument', 'Participant and member IDs are required.');
+  const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
+  const targetUid = requireDocumentId(request.data?.targetUid ?? uid, 'Member ID');
   const participantRef = db.collection('participants').doc(participantId);
   const actorRef = participantRef.collection('memberships').doc(uid);
   const targetRef = participantRef.collection('memberships').doc(targetUid);
@@ -591,8 +594,7 @@ export const removeParticipantMembership = onCall({ region, cors, enforceAppChec
 
 export const deleteParticipantProfile = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
-  const participantId = String(request.data?.participantId ?? '');
-  if (!participantId) throw new HttpsError('invalid-argument', 'Participant ID is required.');
+  const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
   const participantRef = db.collection('participants').doc(participantId);
   const [participant, actor, memberships, invitations, recoveryCodes] = await Promise.all([
     participantRef.get(),
@@ -641,8 +643,7 @@ export const deleteParticipantProfile = onCall({ region, cors, enforceAppCheck: 
 
 export const createRelationshipRecovery = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
-  const participantId = String(request.data?.participantId ?? '');
-  if (!participantId) throw new HttpsError('invalid-argument', 'Participant ID is required.');
+  const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
   const membershipRef = db.collection('participants').doc(participantId).collection('memberships').doc(uid);
   const code = createRecoveryCode();
   const codeHash = hashLinkCode(code);
@@ -820,7 +821,7 @@ export const createFamily = onCall({ region, cors, enforceAppCheck: true }, asyn
 
 export const migrateFamilyRoutines = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
-  const familyId = String(request.data?.familyId ?? '');
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const familyRef = db.collection('families').doc(familyId);
   const [family, profile] = await Promise.all([
     familyRef.get(),
@@ -839,8 +840,7 @@ export const migrateFamilyRoutines = onCall({ region, cors, enforceAppCheck: tru
 
 export const migrateFamilyRelationships = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
-  const familyId = String(request.data?.familyId ?? '');
-  if (!familyId) throw new HttpsError('invalid-argument', 'Family ID is required.');
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const familyRef = db.collection('families').doc(familyId);
   const profileRef = db.collection('users').doc(uid);
 
@@ -908,8 +908,7 @@ export const migrateFamilyRelationships = onCall({ region, cors, enforceAppCheck
 
 export const migrateFamilyContent = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
-  const familyId = String(request.data?.familyId ?? '');
-  if (!familyId) throw new HttpsError('invalid-argument', 'Family ID is required.');
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const familyRef = db.collection('families').doc(familyId);
   const participantRef = db.collection('participants').doc(familyId);
   const [family, participant, profile] = await Promise.all([
@@ -1026,7 +1025,7 @@ export const recoverParent = onCall({ region, cors, enforceAppCheck: true }, asy
 
 export const ensureParentRecoveryCode = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
-  const familyId = String(request.data?.familyId ?? '');
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const familyRef = db.collection('families').doc(familyId);
   const profileRef = db.collection('users').doc(uid);
   const [family, profile] = await Promise.all([familyRef.get(), profileRef.get()]);
@@ -1141,7 +1140,7 @@ export const joinFamily = onCall({ region, cors, enforceAppCheck: true }, async 
 
 export const savePushSubscription = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
-  const familyId = String(request.data?.familyId ?? '');
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const subscription = request.data?.subscription as Partial<PushSubscription> | undefined;
   const endpoint = String(subscription?.endpoint ?? '');
   const p256dh = String(subscription?.keys?.p256dh ?? '');
@@ -1183,7 +1182,7 @@ export const sendTestPushNotification = onCall({
   secrets: [vapidPrivateKey, vapidPublicKey],
 }, async (request) => {
   const uid = requireUid(request.auth);
-  const familyId = String(request.data?.familyId ?? '');
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const aggregateRef = await requireAggregatePermission(uid, familyId, 'view');
   const role = await pushRoleForAggregate(uid, aggregateRef);
   const subscriptionDocument = await aggregateRef.collection('pushSubscriptions').doc(uid).get();
@@ -1200,7 +1199,7 @@ export const sendTestPushNotification = onCall({
 
 export const updateNotificationPreferences = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
-  const familyId = String(request.data?.familyId ?? '');
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const reminderRepeatMinutes = normalizeReminderRepeatMinutes(request.data?.reminderRepeatMinutes);
   const aggregateRef = await requireAggregatePermission(uid, familyId, 'manageRoutines', 'parent');
   await aggregateRef.update({
@@ -1211,7 +1210,7 @@ export const updateNotificationPreferences = onCall({ region, cors, enforceAppCh
 
 export const regenerateLinkCode = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
-  const familyId = String(request.data?.familyId ?? '');
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const userRef = db.collection('users').doc(uid);
   const familyRef = db.collection('families').doc(familyId);
   const [profile, family, links] = await Promise.all([
@@ -1282,8 +1281,8 @@ export const requestCheckNow = onCall({
   };
   type RequestCheckResult = { check: RequestedCheck; resend: boolean };
   const uid = requireUid(request.auth);
-  const familyId = String(request.data?.familyId ?? '');
-  const routineId = String(request.data?.routineId ?? DEFAULT_ROUTINE_ID);
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
+  const routineId = requireDocumentId(request.data?.routineId ?? DEFAULT_ROUTINE_ID, 'Routine ID');
   const familyRef = await requireAggregatePermission(uid, familyId, 'requestChecks');
   await ensureFamilyRoutineMigration(familyRef);
   const assignmentRef = familyRef.collection('routineAssignments').doc(routineId);
@@ -1360,10 +1359,9 @@ export const assignRoutine = onCall({
   enforceAppCheck: true,
 }, async (request) => {
   const uid = requireUid(request.auth);
-  const familyId = String(request.data?.familyId ?? '');
-  const routineId = String(request.data?.routineId ?? '');
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
+  const routineId = requireDocumentId(request.data?.routineId, 'Routine ID');
   const routine = routineFromCatalog(routineId);
-  if (!familyId) throw new HttpsError('invalid-argument', 'Family ID is required.');
   if (!routine) throw new HttpsError('invalid-argument', 'Unknown routine.');
 
   const familyRef = await requireAggregatePermission(uid, familyId, 'manageRoutines', 'parent');
@@ -1390,10 +1388,8 @@ export const deleteRoutine = onCall({
   enforceAppCheck: true,
 }, async (request) => {
   const uid = requireUid(request.auth);
-  const familyId = String(request.data?.familyId ?? '');
-  const routineId = String(request.data?.routineId ?? '');
-  if (!familyId) throw new HttpsError('invalid-argument', 'Family ID is required.');
-  if (!routineId) throw new HttpsError('invalid-argument', 'Routine ID is required.');
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
+  const routineId = requireDocumentId(request.data?.routineId, 'Routine ID');
 
   const familyRef = await requireAggregatePermission(uid, familyId, 'manageRoutines', 'parent');
   const assignmentRef = familyRef.collection('routineAssignments').doc(routineId);
@@ -1428,12 +1424,11 @@ export const updateRoutineAssignment = onCall({
 }, async (request) => {
   try {
     const uid = requireUid(request.auth);
-    const familyId = String(request.data?.familyId ?? '');
-    const routineId = String(request.data?.routineId ?? DEFAULT_ROUTINE_ID);
+    const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
+    const routineId = requireDocumentId(request.data?.routineId ?? DEFAULT_ROUTINE_ID, 'Routine ID');
     const plan = request.data?.plan;
     const validationMode = request.data?.validationMode === 'auto' ? 'auto' : request.data?.validationMode === 'ai' ? 'ai' : undefined;
 
-    if (!familyId) throw new HttpsError('invalid-argument', 'Family ID is required.');
     if (!plan || typeof plan !== 'object') {
       throw new HttpsError('invalid-argument', 'Plan is required and must be an object.');
     }
@@ -1705,8 +1700,8 @@ export const dispatchCheckReminders = onSchedule({
 
 export const updatePlan = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
-  const familyId = String(request.data?.familyId ?? '');
-  const routineId = String(request.data?.routineId ?? DEFAULT_ROUTINE_ID);
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
+  const routineId = requireDocumentId(request.data?.routineId ?? DEFAULT_ROUTINE_ID, 'Routine ID');
   const parsedPlan = monitoringPlanSchema.safeParse(request.data?.plan);
   if (!parsedPlan.success) throw new HttpsError('invalid-argument', 'The monitoring plan is invalid.');
   const familyRef = await requireAggregatePermission(uid, familyId, 'manageRoutines', 'parent');
@@ -1719,8 +1714,8 @@ export const updatePlan = onCall({ region, cors, enforceAppCheck: true }, async 
 
 export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
-  const familyId = String(request.data?.familyId ?? '');
-  const checkId = String(request.data?.checkId ?? '');
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
+  const checkId = requireDocumentId(request.data?.checkId, 'Check ID');
   const capturedAt = String(request.data?.capturedAt ?? '');
   const imageDataUrl = String(request.data?.imageDataUrl ?? '');
   const locale = request.data?.locale === 'fr' ? 'fr' : 'en';
@@ -1868,8 +1863,8 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
 
 export const getProofImageUrl = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
-  const familyId = String(request.data?.familyId ?? '');
-  const checkId = String(request.data?.checkId ?? '');
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
+  const checkId = requireDocumentId(request.data?.checkId, 'Check ID');
   const aggregateRef = await requireFamilyMember(uid, familyId);
   const checkRef = aggregateRef.collection('checks').doc(checkId);
   const check = await checkRef.get();
@@ -1924,8 +1919,8 @@ export const getProofImageUrl = onCall({ region, cors, enforceAppCheck: true }, 
 
 export const reviewCheck = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
-  const familyId = String(request.data?.familyId ?? '');
-  const checkId = String(request.data?.checkId ?? '');
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
+  const checkId = requireDocumentId(request.data?.checkId, 'Check ID');
   const decision = String(request.data?.decision ?? '');
   if (!['detected', 'not_detected'].includes(decision)) {
     throw new HttpsError('invalid-argument', 'A valid review decision is required.');
