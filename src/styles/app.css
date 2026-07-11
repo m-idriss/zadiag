@@ -977,8 +977,8 @@ button {
 .routine-catalog-add:disabled { background: #e8eeee; color: #7d8a92; }
 @media (max-width: 430px) {
   .routine-catalog-card { height: min(72dvh, 620px); min-height: min(440px, 66dvh); }
-  .routine-catalog-item { grid-template-columns: 36px minmax(0, 1fr); align-items: start; }
-  .routine-catalog-add { grid-column: 2; justify-self: end; }
+  .routine-catalog-item { grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+  .routine-catalog-add { grid-column: 3; justify-self: end; align-self: center; padding-inline: 11px; }
 }
 .routines-empty-card { display: grid; gap: 6px; padding: var(--block-padding-lg); text-align: center; }
 .routines-empty-card h2 { font-size: 18px; }

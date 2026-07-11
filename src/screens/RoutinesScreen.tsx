@@ -138,7 +138,8 @@ export function RoutinesScreen({
   const [retryTick, setRetryTick] = useState(Date.now());
   const [retryingRoutines, setRetryingRoutines] = useState(false);
   const [catalogOpen, setCatalogOpen] = useState(() =>
-    readStoredBoolean(ROUTINES_CATALOG_OPEN_KEY) ?? Boolean(state.role === 'parent' && onAssignRoutine && !state.routineAssignments.length));
+    Boolean(state.role === 'parent' && onAssignRoutine && !state.routineAssignments.length)
+    || (readStoredBoolean(ROUTINES_CATALOG_OPEN_KEY) ?? false));
   const [assigningRoutineId, setAssigningRoutineId] = useState<string>();
   const [assignError, setAssignError] = useState(false);
   const [deletingRoutineId, setDeletingRoutineId] = useState<string>();

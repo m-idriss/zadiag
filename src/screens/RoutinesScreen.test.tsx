@@ -67,6 +67,7 @@ describe('participant routines navigation', () => {
   });
 
   it('opens the routine catalog when the responsible view is empty', () => {
+    localStorage.setItem('zadiag.routines.catalogOpen', 'false');
     const state: AppState = {
       role: 'parent', locale: 'en', notificationsEnabled: true,
       family: { linked: true, childLinked: false, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
