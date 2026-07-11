@@ -170,24 +170,29 @@ describe('RelationshipManager', () => {
     expect(removeMember).toHaveBeenCalledWith('alex', 'assistant');
   });
 
-  it('explains the owner rule and reports the last-owner refusal', async () => {
+  it('replaces the impossible last-owner exit with profile deletion', async () => {
     container = document.createElement('div');
     document.body.append(container);
     root = createRoot(container);
-    const leave = vi.fn().mockRejectedValue({ code: 'functions/failed-precondition', message: 'The last owner cannot be removed.' });
+    const leave = vi.fn();
+    const deleteParticipant = vi.fn().mockResolvedValue(undefined);
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     act(() => root?.render(<RelationshipManager
-      access={[{ participant: { id: 'alex', displayName: 'Alex' }, membership: { role: 'owner', status: 'active' } }]}
+      access={[{
+        participant: { id: 'alex', displayName: 'Alex' },
+        membership: { role: 'owner', status: 'active' },
+        members: [{ uid: 'owner', role: 'owner', status: 'active', isCurrentUser: true }],
+      }]}
       activeParticipantId="alex"
       onLeave={leave}
+      onDeleteParticipant={deleteParticipant}
       t={(key) => translate('en', key)}
     />));
     expandManager();
-    const button = Array.from(container.querySelectorAll('button')).find((item) => item.textContent === 'Remove my access to this profile') as HTMLButtonElement;
-    expect(button.disabled).toBe(false);
-    expect(container.textContent).toContain('A primary owner can leave only when another primary owner still has access');
+    expect(container.textContent).not.toContain('Remove my access to this profile');
+    const button = Array.from(container.querySelectorAll('button')).find((item) => item.textContent === 'Delete this profile permanently') as HTMLButtonElement;
     await act(async () => button.click());
-    expect(leave).toHaveBeenCalledWith('alex');
-    expect(container.querySelector('[role="alert"]')?.textContent).toBe('Add another primary owner before leaving this profile.');
+    expect(leave).not.toHaveBeenCalled();
+    expect(deleteParticipant).toHaveBeenCalledWith('alex');
   });
 });

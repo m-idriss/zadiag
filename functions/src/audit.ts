@@ -15,6 +15,7 @@ export type AuditAction =
   | 'migrate_family_relationships'
   | 'migrate_family_content'
   | 'remove_participant_membership'
+  | 'delete_participant_profile'
   | 'create_relationship_recovery'
   | 'recover_relationship';
 

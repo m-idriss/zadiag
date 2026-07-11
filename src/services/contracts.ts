@@ -11,6 +11,7 @@ export interface AppRepository {
   acceptParticipantInvitation?(code: string): Promise<string>;
   leaveParticipant?(participantId: string): Promise<void>;
   removeParticipantMember?(participantId: string, targetUid: string): Promise<ParticipantMember[]>;
+  deleteParticipant?(participantId: string): Promise<void>;
   createRelationshipRecovery?(participantId: string): Promise<{ recoveryCode: string; expiresAt: string }>;
   recoverRelationship?(code: string): Promise<{ participantId: string; recoveryCode?: string; expiresAt?: string }>;
   setLocale(locale: Locale): Promise<void>;

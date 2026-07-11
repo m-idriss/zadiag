@@ -36,6 +36,7 @@ const cors = [
   'https://www.zadiag.com',
   /^https:\/\/zadiag-.*\.vercel\.app$/,
   'http://localhost:5173',
+  /^http:\/\/localhost:\d+$/,
 ];
 
 interface RoutineNotificationNames {
@@ -586,6 +587,56 @@ export const removeParticipantMembership = onCall({ region, cors, enforceAppChec
     metadata: { targetUid, removedRole, selfRemoval: targetUid === uid },
   });
   return { participantId, targetUid };
+});
+
+export const deleteParticipantProfile = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = requireUid(request.auth);
+  const participantId = String(request.data?.participantId ?? '');
+  if (!participantId) throw new HttpsError('invalid-argument', 'Participant ID is required.');
+  const participantRef = db.collection('participants').doc(participantId);
+  const [participant, actor, memberships, invitations, recoveryCodes] = await Promise.all([
+    participantRef.get(),
+    participantRef.collection('memberships').doc(uid).get(),
+    participantRef.collection('memberships').get(),
+    db.collection('relationshipInvitations').where('participantId', '==', participantId).get(),
+    db.collection('relationshipRecoveryCodes').where('participantId', '==', participantId).get(),
+  ]);
+  if (!participant.exists) throw new HttpsError('not-found', 'The followed profile could not be found.');
+  if (actor.data()?.status !== 'active' || actor.data()?.role !== 'owner') {
+    throw new HttpsError('permission-denied', 'Only a primary owner can delete this followed profile.');
+  }
+
+  const batch = db.batch();
+  memberships.docs.forEach((membership) => {
+    batch.delete(db.collection('users').doc(membership.id).collection('participantRefs').doc(participantId));
+  });
+  invitations.docs.forEach((invitation) => batch.delete(invitation.ref));
+  recoveryCodes.docs.forEach((recoveryCode) => batch.delete(recoveryCode.ref));
+  const sourceFamilyId = participant.data()?.sourceFamilyId;
+  if (typeof sourceFamilyId === 'string' && sourceFamilyId) {
+    memberships.docs.forEach((membership) => {
+      batch.set(db.collection('users').doc(membership.id), {
+        familyId: FieldValue.delete(),
+        role: FieldValue.delete(),
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+    });
+  }
+  await batch.commit();
+  await db.recursiveDelete(participantRef);
+  await bucket.deleteFiles({ prefix: `participants/${participantId}/` }).catch((error) => {
+    console.warn('Unable to delete participant storage files', { participantId, error });
+  });
+  if (typeof sourceFamilyId === 'string' && sourceFamilyId) {
+    await db.recursiveDelete(db.collection('families').doc(sourceFamilyId));
+  }
+  await recordAuditEvent(db, {
+    action: 'delete_participant_profile',
+    actorUid: uid,
+    participantId,
+    metadata: { memberCount: memberships.size },
+  });
+  return { participantId };
 });
 
 export const createRelationshipRecovery = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
