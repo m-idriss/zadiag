@@ -99,6 +99,19 @@ export function App() {
   }, [dashboardSummaryRange]);
 
   useEffect(() => {
+    if (!ready || !firebaseEnabled || !state.family.id || !state.role) return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    let cancelled = false;
+    runWhenStartupIsIdle(() => {
+      void import('./services/webPush').then(async ({ WebPushGateway }) => {
+        const subscription = await new WebPushGateway().subscribe();
+        if (!cancelled) await repository.savePushSubscription(subscription.toJSON());
+      }).catch((error) => console.error('Unable to restore push subscription', error));
+    });
+    return () => { cancelled = true; };
+  }, [ready, repository, state.family.id, state.role]);
+
+  useEffect(() => {
     let alive = true;
     const syncFromRepository = () => {
       setState(repository.snapshot());
