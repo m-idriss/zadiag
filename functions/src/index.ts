@@ -15,7 +15,7 @@ import { normalizeReminderRepeatMinutes, shouldSendCheckReminder } from './remin
 import { recordAuditEvent } from './audit.js';
 import { expiredPendingCheckCleanupUpdate, staleCleanupCutoffs } from './cleanup.js';
 import { reportOperationalAlert } from './observability.js';
-import { canLeaveMembership, canRemoveMembership, createMembership, hasParticipantPermission, isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, membershipRoles, migrateLegacyFamilyRelationships, type MembershipRole } from './relationships.js';
+import { canLeaveMembership, canRemoveMembership, createMembership, hasParticipantPermission, isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, membershipRoles, migrateLegacyFamilyRelationships, scheduledAggregatePaths, type MembershipRole } from './relationships.js';
 
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
   ?? (process.env.GCLOUD_PROJECT ? `${process.env.GCLOUD_PROJECT}.firebasestorage.app` : undefined);
@@ -1294,6 +1294,33 @@ export const updateRoutineAssignment = onCall({
   }
 });
 
+const loadScheduledAggregates = async () => {
+  const [families, participants] = await Promise.all([
+    db.collection('families').where('members', '!=', {}).get(),
+    db.collection('participants').where('status', '==', 'active').get(),
+  ]);
+  const paths = scheduledAggregatePaths(
+    families.docs.map(({ id }) => id),
+    participants.docs.map((document) => ({ id: document.id, ...document.data() })),
+  );
+  const documents = new Map([
+    ...families.docs.map((document) => [document.ref.path, document] as const),
+    ...participants.docs.map((document) => [document.ref.path, document] as const),
+  ]);
+  return paths.map((path) => documents.get(path)).filter((document): document is FirebaseFirestore.QueryDocumentSnapshot => Boolean(document));
+};
+
+const aggregateHasActiveParticipant = async (aggregate: FirebaseFirestore.QueryDocumentSnapshot) => {
+  if (aggregate.ref.parent.id === 'families') {
+    return Object.values((aggregate.data().members ?? {}) as Record<string, string>).includes('child');
+  }
+  const memberships = await aggregate.ref.collection('memberships').get();
+  return memberships.docs.some((membership) => (
+    membership.data().status === 'active'
+    && (membership.data().role === 'participant' || membership.data().label === 'self')
+  ));
+};
+
 export const dispatchPlannedChecks = onSchedule({
   region,
   schedule: 'every 30 minutes',
@@ -1301,17 +1328,15 @@ export const dispatchPlannedChecks = onSchedule({
   secrets: [vapidPrivateKey, vapidPublicKey],
 }, async () => {
   // Query only families that likely have active routines (have children and recent activity)
-  const families = await db.collection('families')
-    .where('members', '!=', {})
-    .get();
-  if (families.empty) return;
+  const aggregates = await loadScheduledAggregates();
+  if (!aggregates.length) return;
 
   const now = new Date();
-  await Promise.allSettled(families.docs.map(async (familyDoc) => {
+  await Promise.allSettled(aggregates.map(async (familyDoc) => {
     const familyData = familyDoc.data() as {
       members?: Record<string, string>;
     };
-    const hasChild = Object.values(familyData.members ?? {}).includes('child');
+    const hasChild = await aggregateHasActiveParticipant(familyDoc);
     if (!hasChild) return;
     await ensureFamilyRoutineMigration(familyDoc.ref);
     const assignments = await familyDoc.ref.collection('routineAssignments').where('status', '==', 'active').get();
@@ -1359,15 +1384,24 @@ export const dispatchPlannedChecks = onSchedule({
           .where('routineId', '==', routineId)
           .where('status', '==', 'pending')
           .limit(5);
-        const [freshFamily, freshAssignment, activePending, freshRecentChecks] = await Promise.all([
+        const [freshFamily, freshAssignment, activePending, freshRecentChecks, freshMemberships] = await Promise.all([
           transaction.get(familyDoc.ref),
           transaction.get(freshAssignmentRef),
           transaction.get(activePendingQuery),
           transaction.get(recentChecksQuery),
+          familyDoc.ref.parent.id === 'participants'
+            ? transaction.get(familyDoc.ref.collection('memberships'))
+            : Promise.resolve(undefined),
         ]);
         const freshAssignmentData = freshAssignment.data() as RoutineAssignmentDocument | undefined;
         if (!freshFamily.exists || !freshAssignment.exists || freshAssignmentData?.status !== 'active') return false;
-        if (!Object.values(freshFamily.data()?.members ?? {}).includes('child')) return false;
+        const hasActiveParticipant = familyDoc.ref.parent.id === 'families'
+          ? Object.values(freshFamily.data()?.members ?? {}).includes('child')
+          : freshMemberships?.docs.some((membership) => (
+            membership.data().status === 'active'
+            && (membership.data().role === 'participant' || membership.data().label === 'self')
+          ));
+        if (!hasActiveParticipant) return false;
         const freshPlan = monitoringPlanSchema.safeParse(freshAssignmentData.plan);
         if (!freshPlan.success) return false;
         const stillHasActivePending = activePending.docs.some((pending) => Date.parse(String(pending.data().expiresAt ?? '')) > now.getTime());
@@ -1400,20 +1434,18 @@ export const dispatchCheckReminders = onSchedule({
   timeZone: 'UTC',
   secrets: [vapidPrivateKey, vapidPublicKey],
 }, async () => {
-  const families = await db.collection('families')
-    .where('members', '!=', {})
-    .get();
-  if (families.empty) return;
+  const aggregates = await loadScheduledAggregates();
+  if (!aggregates.length) return;
 
   const now = new Date();
   webpush.setVapidDetails('https://www.zadiag.com', vapidPublicKey.value(), vapidPrivateKey.value());
 
-  await Promise.allSettled(families.docs.map(async (familyDoc) => {
+  await Promise.allSettled(aggregates.map(async (familyDoc) => {
     const familyData = familyDoc.data() as {
       members?: Record<string, string>;
       notificationPreferences?: { reminderRepeatMinutes?: unknown };
     };
-    if (!Object.values(familyData.members ?? {}).includes('child')) return;
+    if (!await aggregateHasActiveParticipant(familyDoc)) return;
 
     const repeatMinutes = normalizeReminderRepeatMinutes(familyData.notificationPreferences?.reminderRepeatMinutes);
     if (repeatMinutes <= 0) return;
