@@ -55,6 +55,8 @@ export const appBadgeCountForState = (
 export const resetNoticeMessageKey = (role: Role | undefined): MessageKey =>
   role === 'parent' ? 'resetNoticeParent' : 'resetNoticeChild';
 
+export const isParticipantInvitationCode = (code: string) => /^ZI-\d{6}$/.test(code.trim().toUpperCase());
+
 export function App() {
   const repository = useMemo(createRepository, []);
   const [state, setState] = useState(repository.snapshot());
@@ -298,7 +300,15 @@ export function App() {
         back={() => setRoute('welcome')}
         onParentLink={async (name) => { await repository.linkParent(name); sync(); setTab('home'); setRoute('app'); }}
         onParentRecover={async (code) => { await repository.recoverParent(code); sync(); setRoute('app'); }}
-        onChildLink={async (code) => { await repository.linkChild(code); sync(); setRoute(useLocalDemo ? 'app' : 'notifications'); }}
+        onChildLink={async (code) => {
+          if (isParticipantInvitationCode(code) && repository.acceptParticipantInvitation) {
+            await repository.acceptParticipantInvitation(code);
+          } else {
+            await repository.linkChild(code);
+          }
+          sync();
+          setRoute(useLocalDemo ? 'app' : 'notifications');
+        }}
         t={t}
       />
     );

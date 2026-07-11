@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_ROUTINE_ID, type VerificationEvent } from './domain/models';
-import { appBadgeCountForState, resetNoticeMessageKey } from './App';
+import { appBadgeCountForState, isParticipantInvitationCode, resetNoticeMessageKey } from './App';
 
 const activePendingEvent = (expiresAt: string): VerificationEvent => ({
   id: 'check-1',
@@ -46,5 +46,13 @@ describe('resetNoticeMessageKey', () => {
     expect(resetNoticeMessageKey('parent')).toBe('resetNoticeParent');
     expect(resetNoticeMessageKey('child')).toBe('resetNoticeChild');
     expect(resetNoticeMessageKey(undefined)).toBe('resetNoticeChild');
+  });
+});
+
+describe('isParticipantInvitationCode', () => {
+  it('routes ZI invitations separately from legacy ZD family codes', () => {
+    expect(isParticipantInvitationCode(' zi-123456 ')).toBe(true);
+    expect(isParticipantInvitationCode('ZD-123456')).toBe(false);
+    expect(isParticipantInvitationCode('ZI-12345')).toBe(false);
   });
 });
