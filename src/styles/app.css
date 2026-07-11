@@ -17,8 +17,8 @@
   --shadow-md: 0 2px 5px rgba(16, 42, 67, .035), 0 18px 44px rgba(16, 42, 67, .09);
   --radius-card: 22px;
   --radius-control: 14px;
-  --height-action: 50px;
-  --height-action-compact: 44px;
+  --height-action: 44px;
+  --height-action-compact: 40px;
   --font-body: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-display: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --icon-font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Apple Symbols", "Segoe UI Symbol", "Noto Sans Symbols 2", "Noto Sans Symbols", 'Nunito', system-ui, sans-serif;
@@ -1582,7 +1582,7 @@ button:disabled { cursor: not-allowed; }
 .app-compact .content-screen p { font-size: 12px; line-height: 1.38; }
 .app-compact .screen-header p { font-size: 10px; line-height: 1.32; }
 .app-compact .action-button {
-  min-height: 44px;
+  min-height: var(--height-action-compact);
   border-radius: 12px;
   font-weight: 620;
 }
@@ -1684,7 +1684,7 @@ button:disabled { cursor: not-allowed; }
 .app-compact .routine-list-delete-button,
 .app-compact .routine-catalog-add,
 .app-compact .routine-edit-plan-button {
-  min-height: 44px;
+  min-height: var(--height-action-compact);
   padding: 8px 11px;
   border-radius: 10px;
   font-size: 11px;
