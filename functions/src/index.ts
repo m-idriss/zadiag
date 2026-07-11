@@ -1896,8 +1896,61 @@ export const cleanupStaleOperationalData = onSchedule({
 export const deleteAccountData = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
   const userRef = db.collection('users').doc(uid);
-  const profile = await userRef.get();
+  const [profile, participantRefs] = await Promise.all([
+    userRef.get(),
+    userRef.collection('participantRefs').get(),
+  ]);
   if (!profile.exists) return;
+  if (!participantRefs.empty) {
+    const relationships = await Promise.all(participantRefs.docs.map(async (participantIndex) => {
+      const participantRef = db.collection('participants').doc(participantIndex.id);
+      const [participant, membership, memberships] = await Promise.all([
+        participantRef.get(),
+        participantRef.collection('memberships').doc(uid).get(),
+        participantRef.collection('memberships').get(),
+      ]);
+      const activeOwnerCount = memberships.docs.filter((item) => (
+        item.data().role === 'owner' && item.data().status === 'active'
+      )).length;
+      return { participantIndex, participantRef, participant, membership, activeOwnerCount };
+    }));
+    const blocked = relationships.find(({ membership, activeOwnerCount }) => (
+      membership.data()?.status === 'active'
+      && membership.data()?.role === 'owner'
+      && activeOwnerCount <= 1
+    ));
+    if (blocked) {
+      throw new HttpsError('failed-precondition', 'Transfer ownership or explicitly delete the followed person before deleting this account.');
+    }
+    const now = new Date().toISOString();
+    const batch = db.batch();
+    relationships.forEach(({ participantIndex, participantRef, participant, membership }) => {
+      batch.delete(participantIndex.ref);
+      batch.delete(participantRef.collection('pushSubscriptions').doc(uid));
+      if (membership.exists) {
+        batch.set(membership.ref, { status: 'suspended', updatedAt: now, suspendedBy: uid }, { merge: true });
+      }
+      if (participant.data()?.userId === uid) {
+        batch.update(participantRef, { userId: FieldValue.delete(), updatedAt: now });
+      }
+      const sourceFamilyId = participant.data()?.sourceFamilyId;
+      if (typeof sourceFamilyId === 'string' && sourceFamilyId) {
+        batch.set(db.collection('families').doc(sourceFamilyId), {
+          [`members.${uid}`]: FieldValue.delete(),
+          updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+        batch.delete(db.collection('families').doc(sourceFamilyId).collection('pushSubscriptions').doc(uid));
+      }
+    });
+    batch.delete(userRef);
+    await batch.commit();
+    await recordAuditEvent(db, {
+      action: 'reset_account',
+      actorUid: uid,
+      metadata: { scope: 'relationships', relationshipCount: relationships.length },
+    });
+    return;
+  }
   const { familyId, role } = profile.data() as { familyId: string; role: 'parent' | 'child' };
   const familyRef = db.collection('families').doc(familyId);
 
