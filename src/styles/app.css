@@ -765,7 +765,8 @@ button {
 .relationship-delete-zone h3 { margin: 0; color: var(--coral); font-size: 15px; }
 .relationship-delete-zone p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.35; }
 .relationship-delete-zone button { min-height: 48px; border: 0; border-radius: 14px; background: var(--coral); color: white; box-shadow: 0 10px 24px rgba(233,101,85,.2); font-weight: 900; }
-.routines-add-button { width: 100%; margin-top: 4px; }
+.routines-add-button { width: 100%; }
+.routine-add-switcher .routine-catalog-popover { position: absolute; top: calc(100% + 8px); left: 0; z-index: 2; width: 100%; margin: 0; box-shadow: 0 22px 52px rgba(16,42,67,.18); }
 .today-task { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .today-task.actionable { border-color: rgba(29, 138, 122, .3); box-shadow: 0 14px 32px rgba(29, 138, 122, .1); }
 .today-task-copy { display: flex; align-items: center; gap: 11px; min-width: 0; }

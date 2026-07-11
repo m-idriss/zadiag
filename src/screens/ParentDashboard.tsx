@@ -183,9 +183,6 @@ export function ParentDashboard({
 
   return (
     <div className="content-screen child-home parent-overview-screen">
-      <header className="screen-header participant-header">
-        <h1>{t('activity')}</h1>
-      </header>
       <ParticipantSelector
         access={state.participantAccess}
         activeParticipantId={state.activeParticipantId}

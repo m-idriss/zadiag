@@ -1,5 +1,4 @@
-import { addOutline } from 'ionicons/icons';
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import type { AppState, MonitoringPlan, RoutineAssignment, RoutineCategory, RoutineValidationMode, ScheduleGroup, VerificationEvent } from '../domain/models';
 import { groupsFromLegacyPlan, nextPlannedWindow, summarizeWeekdaysShort } from '../domain/monitoringPlan';
 import type { MessageKey } from '../services/i18n';
@@ -8,8 +7,6 @@ import { presentRoutine } from '../domain/routinePresentation';
 import { assignableRoutineTemplates, marketplaceFromTemplates, presentRoutineTemplate } from '../domain/routineMarketplace';
 import { withResolvedEventStatuses } from '../domain/adherence';
 import { readUiStorageJson, readUiStorageString, removeUiStorageItem, writeUiStorageString } from '../services/uiStorage';
-import { SvgIcon } from '../components/SvgIcon';
-import { ParticipantSelector } from '../components/ParticipantSelector';
 
 const RoutineDetailScreen = lazy(() => import('./RoutineDetailScreen').then((module) => ({ default: module.RoutineDetailScreen })));
 
@@ -118,7 +115,6 @@ export function RoutinesScreen({
   onRetryRoutines,
   onSaveMonitoringPlan,
   savingRoutineId,
-  onSelectParticipant,
   t,
 }: {
   state: AppState;
@@ -131,7 +127,6 @@ export function RoutinesScreen({
   onRetryRoutines?: () => Promise<void>;
   onSaveMonitoringPlan?: (routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode) => Promise<void>;
   savingRoutineId?: string;
-  onSelectParticipant?: (participantId: string) => void;
   t: (key: MessageKey) => string;
 }) {
   const [selectedId, setSelectedId] = useState<string | undefined>(() => readUiStorageString(ROUTINES_SELECTED_ASSIGNMENT_KEY));
@@ -148,14 +143,9 @@ export function RoutinesScreen({
   const [deleteErrorRoutineId, setDeleteErrorRoutineId] = useState<string>();
   const [detailInitialTab, setDetailInitialTab] = useState<'overview' | 'plan'>();
   const [expandedScheduleIds, setExpandedScheduleIds] = useState<Set<string>>(() => readStoredStringSet(ROUTINES_EXPANDED_SCHEDULES_KEY));
-  const catalogRef = useRef<HTMLElement>(null);
   const selected = state.routineAssignments.find((assignment) => assignment.id === selectedId);
   const canManageRoutines = state.role === 'parent' && Boolean(edit);
   const canAssignRoutine = state.role === 'parent' && Boolean(onAssignRoutine);
-  const openCatalog = () => {
-    setCatalogOpen(true);
-    window.requestAnimationFrame(() => catalogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-  };
   const now = Date.now();
   const nowDate = new Date(now);
   const marketplace = useMemo(() => marketplaceFromTemplates(), []);
@@ -303,19 +293,13 @@ export function RoutinesScreen({
 
   return (
     <div className="content-screen routines-screen">
-      <header className="screen-header participant-header">
-        <h1>{t('routines')}</h1>
-      </header>
-      {state.role === 'parent' ? <ParticipantSelector
-        access={state.participantAccess}
-        activeParticipantId={state.activeParticipantId}
-        label={t('followedPerson')}
-        title={t('responsibleTodaySubtitle').replace('{name}', state.family.childName)}
-        actionLabel={t('relationshipSwitchAction')}
-        onSelect={onSelectParticipant}
-      /> : null}
-      {canAssignRoutine && catalogOpen && (
-        <section className="card routine-catalog-card" ref={catalogRef} aria-labelledby="routine-catalog-title">
+      {canAssignRoutine ? <details className="participant-switcher routine-add-switcher" open={catalogOpen}>
+        <summary className="participant-switcher-card routines-add-button" aria-label={t('addRoutine')} onClick={(event) => { event.preventDefault(); setCatalogOpen((open) => !open); }}>
+          <strong>{t('responsibleTodaySubtitle').replace('{name}', state.family.childName)}</strong>
+          <small>{t('addRoutine')}</small>
+        </summary>
+      {catalogOpen && (
+        <section className="card routine-catalog-card routine-catalog-popover" aria-labelledby="routine-catalog-title">
           <div className="routine-catalog-heading">
             <div>
               <small>{t('routineCatalogEyebrow')}</small>
@@ -352,6 +336,7 @@ export function RoutinesScreen({
           {assignError && <p role="alert" className="request-feedback error">{t('routineAddError')}</p>}
         </section>
       )}
+      </details> : null}
       <section className="settings-section routines-list-section" aria-labelledby="routines-list-title">
         <h2 id="routines-list-title">{t('routines')}</h2>
         <div className="routine-list">
@@ -469,11 +454,6 @@ export function RoutinesScreen({
             </section>
           )}
         </div>
-        {canAssignRoutine ? (
-          <button type="button" className="plan-add-button routines-add-button" aria-expanded={catalogOpen} onClick={() => catalogOpen ? setCatalogOpen(false) : openCatalog()}>
-            <SvgIcon icon={addOutline} />{t('addRoutine')}
-          </button>
-        ) : null}
       </section>
     </div>
   );
