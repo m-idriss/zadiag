@@ -6,7 +6,7 @@ import { SvgIcon } from './SvgIcon';
 
 type InviteRole = Exclude<MembershipRole, 'owner'>;
 
-export function RelationshipManager({ access, activeParticipantId, onSelect, onCreate, onInvite, onAccept, onLeave, onRemoveMember, onDeleteParticipant, onCreateRecovery, onRecover, t }: {
+export function RelationshipManager({ access, activeParticipantId, onSelect, onCreate, onInvite, onAccept, onLeave, onRemoveMember, onDeleteParticipant, onCreateRecovery, onRecover, hideHeading = false, t }: {
   access: ParticipantAccess[] | undefined;
   activeParticipantId?: string;
   onSelect?: (participantId: string) => Promise<void>;
@@ -18,6 +18,7 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
   onDeleteParticipant?: (participantId: string) => Promise<void>;
   onCreateRecovery?: (participantId: string) => Promise<{ recoveryCode: string; expiresAt: string }>;
   onRecover?: (code: string) => Promise<{ participantId: string; recoveryCode?: string; expiresAt?: string }>;
+  hideHeading?: boolean;
   t: (key: MessageKey) => string;
 }) {
   const [name, setName] = useState('');
@@ -72,8 +73,8 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
   };
 
   return (
-    <section className="settings-section relationship-manager" aria-labelledby="relationship-manager-heading">
-      <h2 id="relationship-manager-heading">{t('relationshipManagerTitle')}</h2>
+    <section className="settings-section relationship-manager" aria-labelledby={hideHeading ? undefined : 'relationship-manager-heading'} aria-label={hideHeading ? t('relationshipManagerTitle') : undefined}>
+      {!hideHeading ? <h2 id="relationship-manager-heading">{t('relationshipManagerTitle')}</h2> : null}
       <div className="card relationship-manager-card">
         <button type="button" className="relationship-manager-toggle" aria-expanded={open} onClick={() => { setError(undefined); setOpen((current) => !current); }}>
           <span className="relationship-manager-icon" aria-hidden="true"><SvgIcon icon={peopleOutline} /></span>

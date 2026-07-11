@@ -290,7 +290,21 @@ export function SettingsScreen({
 
   return (
     <div className="content-screen settings-screen">
-      <header className="screen-header"><div><h1>{t('settings')}</h1><p>{t('settingsHint')}</p></div></header>
+      <RelationshipManager
+        access={participantAccess}
+        activeParticipantId={activeParticipantId}
+        onSelect={selectParticipant}
+        onCreate={createParticipant}
+        onInvite={inviteParticipantMember}
+        onAccept={acceptParticipantInvitation}
+        onLeave={leaveParticipant}
+        onRemoveMember={removeParticipantMember}
+        onDeleteParticipant={deleteParticipant}
+        onCreateRecovery={createRelationshipRecovery}
+        onRecover={recoverRelationship}
+        hideHeading
+        t={t}
+      />
       <section className="settings-section" aria-labelledby="settings-device-heading">
         <h2 id="settings-device-heading">{t('settingsDeviceSection')}</h2>
         <div className="card settings-list">
@@ -351,20 +365,6 @@ export function SettingsScreen({
           ) : null}
         </div>
       </section>
-      <RelationshipManager
-        access={participantAccess}
-        activeParticipantId={activeParticipantId}
-        onSelect={selectParticipant}
-        onCreate={createParticipant}
-        onInvite={inviteParticipantMember}
-        onAccept={acceptParticipantInvitation}
-        onLeave={leaveParticipant}
-        onRemoveMember={removeParticipantMember}
-        onDeleteParticipant={deleteParticipant}
-        onCreateRecovery={createRelationshipRecovery}
-        onRecover={recoverRelationship}
-        t={t}
-      />
       <section className="settings-section" aria-labelledby="settings-support-heading">
         <h2 id="settings-support-heading">{t('settingsSupportSection')}</h2>
         <div className="card settings-list">
