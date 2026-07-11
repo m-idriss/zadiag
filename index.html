@@ -10,6 +10,35 @@
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <link rel="icon" href="/icons/icon.svg" />
     <title>Zadiag</title>
+    <script>
+      (() => {
+        const repairRequested = new URLSearchParams(window.location.search).has('repair');
+        const showRecovery = (repairing = false) => {
+          const root = document.getElementById('root');
+          if (!root || (!repairing && root.childElementCount > 0)) return;
+          root.innerHTML = `<main style="min-height:100vh;display:grid;place-content:center;gap:16px;padding:24px;box-sizing:border-box;background:#f5f8f7;color:#15324b;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif"><img src="/icons/icon-192.png" alt="" width="72" height="72" style="margin:auto;border-radius:18px"><h1 style="margin:0;font-size:28px">${repairing ? 'Réparation en cours…' : 'Zadiag ne parvient pas à démarrer'}</h1><p style="max-width:34ch;margin:0 auto;color:#657681;font-size:14px;line-height:1.45">${repairing ? 'Le cache de l’application est réinitialisé.' : 'Une ancienne version est peut-être restée bloquée sur cet appareil.'}</p>${repairing ? '' : '<a href="/?repair=1" style="display:inline-flex;min-height:48px;align-items:center;justify-content:center;padding:0 18px;border-radius:14px;background:#15324b;color:white;font-weight:700;text-decoration:none">Réparer et rouvrir Zadiag</a>'}</main>`;
+        };
+
+        if (repairRequested) {
+          window.addEventListener('DOMContentLoaded', () => showRecovery(true));
+          const clearServiceWorkers = 'serviceWorker' in navigator
+            ? navigator.serviceWorker.getRegistrations().then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+            : Promise.resolve();
+          const clearCaches = 'caches' in window
+            ? caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+            : Promise.resolve();
+          Promise.allSettled([clearServiceWorkers, clearCaches]).then(() => {
+            window.location.replace(`/?recovered=${Date.now()}`);
+          });
+          return;
+        }
+
+        window.addEventListener('load', () => window.setTimeout(() => showRecovery(false), 7000));
+        window.addEventListener('error', (event) => {
+          if (event.target instanceof HTMLScriptElement) window.setTimeout(() => showRecovery(false), 0);
+        }, true);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
