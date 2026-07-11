@@ -32,9 +32,12 @@ import {
 } from '../domain/models';
 import { routineFromCatalog } from '../domain/routineCatalog';
 import { isFreshCapture } from '../domain/adherence';
-import { activeParticipantAccess } from '../domain/participantAccess';
+import { activeParticipantAccess, preferredParticipantId } from '../domain/participantAccess';
 import { initialRemoteState, PREFERENCES_KEY } from './appStateDefaults';
 import { coalesceInFlight } from './idempotency';
+import { readUiStorageString, removeUiStorageItem, writeUiStorageString } from './uiStorage';
+
+const ACTIVE_PARTICIPANT_KEY_PREFIX = 'zadiag.activeParticipant.';
 
 interface UserProfile {
   familyId?: string;
@@ -521,6 +524,7 @@ export class FirebaseRepository implements AppRepository {
         console.warn('Account data could not be deleted before sign-out', error);
       }
     }
+    if (this.user) removeUiStorageItem(`${ACTIVE_PARTICIPANT_KEY_PREFIX}${this.user.uid}`);
     await signOut(this.services.auth);
     this.legacyFamilyId = undefined;
     this.legacyRole = undefined;
@@ -610,9 +614,14 @@ export class FirebaseRepository implements AppRepository {
     this.state.participantAccess = access.sort((left, right) => (
       left.participant.displayName.localeCompare(right.participant.displayName, this.state.locale)
     ));
-    if (!activeParticipantAccess(this.state.participantAccess, this.state.activeParticipantId ?? '')) {
-      this.state.activeParticipantId = this.state.participantAccess[0]?.participant.id;
-    }
+    const storageKey = `${ACTIVE_PARTICIPANT_KEY_PREFIX}${this.user.uid}`;
+    this.state.activeParticipantId = preferredParticipantId(
+      this.state.participantAccess,
+      this.state.activeParticipantId,
+      readUiStorageString(storageKey),
+    );
+    if (this.state.activeParticipantId) writeUiStorageString(storageKey, this.state.activeParticipantId);
+    else removeUiStorageItem(storageKey);
   }
 
   private async attachParticipant(participantId: string, membershipRole: MembershipRole) {
@@ -620,6 +629,7 @@ export class FirebaseRepository implements AppRepository {
     const access = activeParticipantAccess(this.state.participantAccess, participantId);
     if (!access) throw new Error('participant_access_not_found');
     this.state.activeParticipantId = participantId;
+    if (this.user) writeUiStorageString(`${ACTIVE_PARTICIPANT_KEY_PREFIX}${this.user.uid}`, participantId);
     this.state.role = membershipRole === 'participant' ? 'child' : 'parent';
     this.state.family = {
       ...this.state.family,

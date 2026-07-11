@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ParticipantAccess } from './models';
-import { activeParticipantAccess } from './participantAccess';
+import { activeParticipantAccess, preferredParticipantId } from './participantAccess';
 
 const access: ParticipantAccess[] = [
   {
@@ -24,3 +24,16 @@ describe('activeParticipantAccess', () => {
   });
 });
 
+describe('preferredParticipantId', () => {
+  it('restores the remembered profile when no current selection exists', () => {
+    const multiple = [...access, {
+      participant: { id: 'zoe', displayName: 'Zoé' },
+      membership: { role: 'owner' as const, status: 'active' as const },
+    }];
+    expect(preferredParticipantId(multiple, undefined, 'zoe')).toBe('zoe');
+  });
+
+  it('falls back safely when the remembered profile is unavailable', () => {
+    expect(preferredParticipantId(access, undefined, 'removed')).toBe('alex');
+  });
+});
