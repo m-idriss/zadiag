@@ -151,9 +151,6 @@ export function RoutinesScreen({
   const canAssignRoutine = state.role === 'parent' && Boolean(onAssignRoutine);
   const activeParticipantAccess = state.participantAccess?.find((entry) => entry.participant.id === state.activeParticipantId)
     ?? state.participantAccess?.find((entry) => entry.membership.status === 'active');
-  const activeParticipantRoleKey = activeParticipantAccess
-    ? `relationshipRole${activeParticipantAccess.membership.role[0].toUpperCase()}${activeParticipantAccess.membership.role.slice(1)}` as MessageKey
-    : undefined;
   const now = Date.now();
   const nowDate = new Date(now);
   const marketplace = useMemo(() => marketplaceFromTemplates(), []);
@@ -301,12 +298,15 @@ export function RoutinesScreen({
 
   return (
     <div className="content-screen routines-screen">
+      <div className="routines-top">
+        <header className="screen-header routines-top-heading">
+          <div><h1>{t('myRoutines')}</h1><p>{t('routinesHint')}</p></div>
+        </header>
       {canAssignRoutine ? <div className="routine-add-switcher">
         <div className="card relationship-manager-card routines-add-card">
           <ProfileContextCard
             className="routines-add-button"
             title={activeParticipantAccess?.participant.displayName ?? state.family.childName}
-            subtitle={activeParticipantRoleKey ? t(activeParticipantRoleKey) : t('responsibleTodaySubtitle').replace('{name}', state.family.childName)}
             actionIcon={addCircleOutline}
             actionLabel={t('addRoutine')}
             expanded={catalogOpen}
@@ -352,6 +352,7 @@ export function RoutinesScreen({
         </section>
       )}
       </div> : null}
+      </div>
       <section className="settings-section routines-list-section" aria-labelledby="routines-list-title">
         <h2 id="routines-list-title">{t('routines')}</h2>
         <div className="routine-list">
