@@ -588,6 +588,132 @@ export const removeParticipantMembership = onCall({ region, cors, enforceAppChec
   return { participantId, targetUid };
 });
 
+export const createRelationshipRecovery = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = requireUid(request.auth);
+  const participantId = String(request.data?.participantId ?? '');
+  if (!participantId) throw new HttpsError('invalid-argument', 'Participant ID is required.');
+  const membershipRef = db.collection('participants').doc(participantId).collection('memberships').doc(uid);
+  const code = createRecoveryCode();
+  const codeHash = hashLinkCode(code);
+  const recoveryRef = db.collection('relationshipRecoveryCodes').doc(codeHash);
+  const expiresAt = new Date(Date.now() + recoveryLifetimeMs);
+
+  await db.runTransaction(async (transaction) => {
+    const membership = await transaction.get(membershipRef);
+    if (!membership.exists || membership.data()?.status !== 'active') {
+      throw new HttpsError('permission-denied', 'An active relationship is required.');
+    }
+    const previousHash = String(membership.data()?.recoveryCodeHash ?? '');
+    transaction.create(recoveryRef, {
+      participantId,
+      membershipUid: uid,
+      expiresAt: expiresAt.toISOString(),
+      createdAt: new Date().toISOString(),
+      consumedAt: null,
+    });
+    transaction.set(membershipRef, { recoveryCodeHash: codeHash, updatedAt: new Date().toISOString() }, { merge: true });
+    if (previousHash && previousHash !== codeHash) {
+      transaction.delete(db.collection('relationshipRecoveryCodes').doc(previousHash));
+    }
+  });
+  await recordAuditEvent(db, {
+    action: 'create_relationship_recovery',
+    actorUid: uid,
+    participantId,
+  });
+  return { recoveryCode: code, expiresAt: expiresAt.toISOString() };
+});
+
+export const recoverRelationship = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = requireUid(request.auth);
+  const code = normalizeLinkCode(String(request.data?.code ?? ''));
+  if (!isRecoveryCode(code)) throw new HttpsError('invalid-argument', 'The recovery code is invalid.');
+  await recordRecoveryAttempt(uid);
+  const recoveryRef = db.collection('relationshipRecoveryCodes').doc(hashLinkCode(code));
+  const nextCode = createRecoveryCode();
+  const nextCodeHash = hashLinkCode(nextCode);
+  const nextExpiresAt = new Date(Date.now() + recoveryLifetimeMs);
+  const nextRecoveryRef = db.collection('relationshipRecoveryCodes').doc(nextCodeHash);
+
+  const recoveryResult = await db.runTransaction(async (transaction) => {
+    const recovery = await transaction.get(recoveryRef);
+    if (!recovery.exists) throw new HttpsError('not-found', 'The recovery code is invalid.');
+    const recoveryData = recovery.data() ?? {};
+    const targetParticipantId = String(recoveryData.participantId ?? '');
+    const previousUid = String(recoveryData.membershipUid ?? '');
+    if (recoveryData.consumedAt) {
+      if (recoveryData.consumedBy === uid) return { participantId: targetParticipantId, replayed: true };
+      throw new HttpsError('failed-precondition', 'The recovery code has already been used.');
+    }
+    if (!targetParticipantId || !previousUid || Date.parse(String(recoveryData.expiresAt ?? '')) <= Date.now()) {
+      throw new HttpsError('failed-precondition', 'The recovery code has expired or is invalid.');
+    }
+    const participantRef = db.collection('participants').doc(targetParticipantId);
+    const previousMembershipRef = participantRef.collection('memberships').doc(previousUid);
+    const nextMembershipRef = participantRef.collection('memberships').doc(uid);
+    const nextIndexRef = db.collection('users').doc(uid).collection('participantRefs').doc(targetParticipantId);
+    const previousIndexRef = db.collection('users').doc(previousUid).collection('participantRefs').doc(targetParticipantId);
+    const [participant, previousMembership, nextMembership] = await Promise.all([
+      transaction.get(participantRef),
+      transaction.get(previousMembershipRef),
+      transaction.get(nextMembershipRef),
+    ]);
+    if (!participant.exists || !previousMembership.exists || previousMembership.data()?.status !== 'active') {
+      throw new HttpsError('failed-precondition', 'The relationship can no longer be recovered.');
+    }
+    if (previousUid !== uid && nextMembership.exists && nextMembership.data()?.status === 'active') {
+      throw new HttpsError('already-exists', 'This account already has an active relationship.');
+    }
+    const now = new Date().toISOString();
+    const previousData = previousMembership.data()!;
+    transaction.set(nextMembershipRef, {
+      ...previousData,
+      uid,
+      status: 'active',
+      recoveryCodeHash: nextCodeHash,
+      recoveredFrom: previousUid,
+      updatedAt: now,
+    });
+    transaction.set(nextIndexRef, {
+      participantId: targetParticipantId,
+      role: previousData.role,
+      status: 'active',
+      updatedAt: now,
+    });
+    transaction.set(db.collection('users').doc(uid), { relationshipModelVersion: 2, updatedAt: now }, { merge: true });
+    if (previousUid !== uid) {
+      transaction.set(previousMembershipRef, {
+        status: 'suspended',
+        recoveryCodeHash: FieldValue.delete(),
+        transferredTo: uid,
+        updatedAt: now,
+      }, { merge: true });
+      transaction.set(previousIndexRef, { status: 'suspended', updatedAt: now }, { merge: true });
+      transaction.delete(participantRef.collection('pushSubscriptions').doc(previousUid));
+      if (participant.data()?.userId === previousUid) transaction.update(participantRef, { userId: uid, updatedAt: now });
+    }
+    transaction.create(nextRecoveryRef, {
+      participantId: targetParticipantId,
+      membershipUid: uid,
+      expiresAt: nextExpiresAt.toISOString(),
+      createdAt: now,
+      consumedAt: null,
+    });
+    transaction.update(recoveryRef, { consumedAt: now, consumedBy: uid, rotatedTo: nextCodeHash });
+    transaction.delete(db.collection('recoveryAttempts').doc(uid));
+    return { participantId: targetParticipantId, replayed: false };
+  });
+  const { participantId } = recoveryResult;
+  await recordAuditEvent(db, {
+    action: 'recover_relationship',
+    actorUid: uid,
+    participantId,
+  });
+  return recoveryResult.replayed
+    ? { participantId }
+    : { participantId, recoveryCode: nextCode, expiresAt: nextExpiresAt.toISOString() };
+});
+
 export const createFamily = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
   let childName: string;
