@@ -8,6 +8,7 @@ import {
   defaultPermissionsForRole,
   hasParticipantPermission,
   membershipPermissions,
+  scheduledAggregatePaths,
 } from './relationships.js';
 
 test('defines explicit defaults for each membership role', () => {
@@ -23,6 +24,18 @@ test('defines explicit defaults for each membership role', () => {
   assert.equal(participant.submitChecks, true);
   assert.equal(participant.reviewProofs, false);
   assert.deepEqual(Object.entries(viewer).filter(([, enabled]) => enabled).map(([permission]) => permission), ['view']);
+});
+
+test('schedules migrated participants without processing their legacy family twice', () => {
+  assert.deepEqual(scheduledAggregatePaths(['legacy', 'unmigrated'], [
+    { id: 'legacy', status: 'active', sourceFamilyId: 'legacy', contentMigrationVersion: 1 },
+    { id: 'new', status: 'active' },
+    { id: 'archived', status: 'archived' },
+  ]), [
+    'families/unmigrated',
+    'participants/legacy',
+    'participants/new',
+  ]);
 });
 
 test('models self-management as a regular owner membership', () => {

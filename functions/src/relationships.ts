@@ -213,3 +213,18 @@ export const isCompatibleLegacyContentTarget = (
   existing.relationshipSourceFamilyId === familyId
   && existing.relationshipSourcePath === sourcePath
 );
+
+export const scheduledAggregatePaths = (
+  familyIds: string[],
+  participants: Array<{ id: string; status?: unknown; sourceFamilyId?: unknown; contentMigrationVersion?: unknown }>,
+) => {
+  const activeParticipants = participants.filter((participant) => participant.status === 'active');
+  const migratedFamilyIds = new Set(activeParticipants
+    .filter((participant) => Number(participant.contentMigrationVersion ?? 0) >= 1)
+    .map((participant) => String(participant.sourceFamilyId ?? ''))
+    .filter(Boolean));
+  return [
+    ...familyIds.filter((familyId) => !migratedFamilyIds.has(familyId)).map((id) => `families/${id}`),
+    ...activeParticipants.map(({ id }) => `participants/${id}`),
+  ];
+};
