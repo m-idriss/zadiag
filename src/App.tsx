@@ -366,13 +366,10 @@ export function App() {
             childInstalled={state.family.childLinked}
             familyId={state.family.id}
             events={state.events}
-            childLinkingCode={state.family.linkingCode}
-            parentRecoveryCode={state.family.parentRecoveryCode}
             pendingChecks={state.events.filter((event) => event.status === 'pending' && Date.parse(event.expiresAt) > Date.now()).length}
             totalChecks={state.events.length}
             serviceWorkerStatus={serviceWorkerStatus}
             lastSyncAt={lastSyncAt}
-            regenerateLinkCode={async () => { await repository.regenerateLinkCode(); sync(); }}
             participantAccess={state.participantAccess}
             activeParticipantId={state.activeParticipantId}
             selectParticipant={repository.selectActiveParticipant ? async (participantId) => { await repository.selectActiveParticipant?.(participantId); sync(); } : undefined}

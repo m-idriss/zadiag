@@ -13,8 +13,7 @@ import type { MessageKey } from '../services/i18n';
 import { buildDiagnosticsEmailBody, createCorrelationId } from '../services/appLogs';
 import type { AppUpdateInfo } from '../services/appUpdate';
 import { Disclaimer } from '../components/Disclaimer';
-import { CodeBox } from '../components/CodeBox';
-import { ActionButton, ListRow, SegmentedControl, Switch } from '../components/ui';
+import { ActionButton, ListRow, SegmentedControl } from '../components/ui';
 import { SvgIcon } from '../components/SvgIcon';
 import { RelationshipManager } from '../components/RelationshipManager';
 
@@ -37,13 +36,10 @@ export function SettingsScreen({
   childInstalled,
   familyId,
   events,
-  childLinkingCode,
-  parentRecoveryCode,
   pendingChecks,
   totalChecks,
   serviceWorkerStatus,
   lastSyncAt,
-  regenerateLinkCode,
   participantAccess,
   activeParticipantId,
   selectParticipant,
@@ -72,13 +68,10 @@ export function SettingsScreen({
   childInstalled: boolean;
   familyId?: string;
   events: VerificationEvent[];
-  childLinkingCode?: string;
-  parentRecoveryCode?: string;
   pendingChecks: number;
   totalChecks: number;
   serviceWorkerStatus: 'unsupported' | 'registered' | 'notRegistered';
   lastSyncAt?: string;
-  regenerateLinkCode: () => Promise<void>;
   participantAccess?: ParticipantAccess[];
   activeParticipantId?: string;
   selectParticipant?: (participantId: string) => Promise<void>;
@@ -95,9 +88,6 @@ export function SettingsScreen({
   const [contactMailError, setContactMailError] = useState(false);
   const [updatingApp, setUpdatingApp] = useState(false);
   const [updateError, setUpdateError] = useState(false);
-  const [regenerating, setRegenerating] = useState(false);
-  const [codeError, setCodeError] = useState(false);
-  const [sensitiveOpen, setSensitiveOpen] = useState(false);
   const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
   const [enablingNotifications, setEnablingNotifications] = useState(false);
   const [testingPush, setTestingPush] = useState(false);
@@ -134,19 +124,6 @@ export function SettingsScreen({
       lastDispatchAt: localPushDispatchAt ?? pushHealth?.lastDispatchAt,
     }
     : pushHealth;
-
-  const regenerate = async () => {
-    if (!window.confirm(t('regenerateCodeConfirm'))) return;
-    setCodeError(false);
-    setRegenerating(true);
-    try {
-      await regenerateLinkCode();
-    } catch {
-      setCodeError(true);
-    } finally {
-      setRegenerating(false);
-    }
-  };
 
   const confirmReset = () => {
     if (window.confirm(t('resetConfirm'))) reset();
@@ -227,9 +204,6 @@ export function SettingsScreen({
       setEnablingNotifications(false);
     }
   };
-  const notificationDetailKey = notificationsEnabled
-    ? 'settingsNotificationsDetailEnabled'
-    : 'settingsNotificationsDetailDisabled';
   const languageDetailKey = locale === 'fr'
     ? 'settingsLanguageDetailFr'
     : 'settingsLanguageDetailEn';
@@ -279,15 +253,6 @@ export function SettingsScreen({
     : effectivePushHealth?.endpointPresent
       ? t('yes')
       : t('settingsDiagnosticsMissing');
-  const linkCodeAction = (
-    <>
-      <button type="button" className="regenerate-code" disabled={regenerating} onClick={() => { void regenerate(); }}>
-        {regenerating ? t('regeneratingCode') : t('regenerateCode')}
-      </button>
-      {codeError ? <span className="form-error">{t('regenerateCodeError')}</span> : null}
-    </>
-  );
-
   return (
     <div className="content-screen settings-screen">
       <RelationshipManager
@@ -363,6 +328,36 @@ export function SettingsScreen({
               )}
             />
           ) : null}
+          {role === 'parent' ? (
+            <ListRow
+              icon={<SvgIcon icon={informationCircleOutline} />}
+              title={t('settingsChildInstallTitle')}
+              detail={childInstalled ? t('settingsChildInstallDetailLinked') : t('settingsChildInstallDetailPending')}
+            />
+          ) : null}
+          <ListRow
+            icon={<SvgIcon icon={notificationsOutline} />}
+            title={t('settingsTestNotificationTitle')}
+            detail={notificationsEnabled ? t('settingsTestNotificationDetail') : t('settingsTestNotificationDisabledDetail')}
+            trailing={(
+              <button
+                type="button"
+                className="settings-inline-action settings-inline-action-contained"
+                disabled={testingPush || enablingNotifications}
+                onClick={() => { void (notificationsEnabled ? testPush() : activateNotifications()); }}
+              >
+                {testingPush || enablingNotifications
+                  ? t('settingsTestNotificationSending')
+                  : notificationsEnabled
+                    ? t('settingsTestNotificationAction')
+                    : t('settingsEnableNotificationsAction')}
+              </button>
+            )}
+          >
+            {testPushStatus === 'success' ? <small>{t('settingsTestNotificationSuccess')}</small> : null}
+            {testPushStatus === 'error' ? <small className="settings-action-error">{t('settingsTestNotificationError')}</small> : null}
+            {testPushStatus === 'enableError' ? <small className="settings-action-error">{t('settingsEnableNotificationsError')}</small> : null}
+          </ListRow>
         </div>
       </section>
       <section className="settings-section" aria-labelledby="settings-support-heading">
@@ -434,131 +429,21 @@ export function SettingsScreen({
             {mailError ? <small className="settings-action-error">{t('settingsDebugMailError')}</small> : null}
           </ListRow>
           <ListRow
-            icon={<SvgIcon icon={notificationsOutline} />}
-            title={t('settingsTestNotificationTitle')}
-            detail={notificationsEnabled ? t('settingsTestNotificationDetail') : t('settingsTestNotificationDisabledDetail')}
-            trailing={(
-              <button
-                type="button"
-                className="settings-inline-action settings-inline-action-contained"
-                disabled={testingPush || enablingNotifications}
-                onClick={() => { void (notificationsEnabled ? testPush() : activateNotifications()); }}
-              >
-                {testingPush || enablingNotifications
-                  ? t('settingsTestNotificationSending')
-                  : notificationsEnabled
-                    ? t('settingsTestNotificationAction')
-                    : t('settingsEnableNotificationsAction')}
-              </button>
-            )}
+            icon={<SvgIcon icon={mailOutline} />}
+            title={t('settingsContactButton')}
+            detail={t('settingsContactDetail')}
+            trailing={<button type="button" className="settings-inline-action settings-inline-action-contained" onClick={contactSupport}>{t('settingsContactButton')}</button>}
           >
-            {testPushStatus === 'success' ? <small>{t('settingsTestNotificationSuccess')}</small> : null}
-            {testPushStatus === 'error' ? <small className="settings-action-error">{t('settingsTestNotificationError')}</small> : null}
-            {testPushStatus === 'enableError' ? <small className="settings-action-error">{t('settingsEnableNotificationsError')}</small> : null}
+            {contactMailError ? <small className="settings-action-error">{t('settingsContactError')}</small> : null}
           </ListRow>
         </div>
       </section>
-      <Disclaimer t={t} />
-      {contactMailError ? <small className="settings-action-error">{t('settingsContactError')}</small> : null}
-      <ActionButton className="settings-contact-button" tone="navy" onClick={contactSupport}>
-        <SvgIcon icon={mailOutline} />
-        {t('settingsContactButton')}
-      </ActionButton>
-      <section className="settings-section" aria-labelledby="settings-install-heading">
-        <h2 id="settings-install-heading">{t('settingsInstallSection')}</h2>
-        {role === 'parent' ? (
-          <section className="card privacy-card settings-device-card">
-            <ul>
-              <li className={childInstalled ? undefined : 'settings-device-missing'}>{t('settingsChildInstallTitle')}</li>
-            </ul>
-          </section>
-        ) : (
-          <section className="card privacy-card settings-device-card">
-            <ul>
-              <li>{t('settingsInstallDetail')}</li>
-              <li className={notificationsEnabled ? undefined : 'settings-device-missing'}>{t(notificationDetailKey)}</li>
-            </ul>
-          </section>
-        )}
-      </section>
       <section className="settings-section settings-account-section" aria-labelledby="settings-account-heading">
         <h2 id="settings-account-heading">{t('settingsAccountSection')}</h2>
+      <Disclaimer t={t} />
       <section className="card privacy-card">
         <ul><li>{t('noFaceRecognition')}</li><li>{t('noModelTraining')}</li><li>{t('noPhotoUpload')}</li><li>{t('immediateDeletion')}</li></ul>
       </section>
-      {role === 'parent' ? (
-        <section className="settings-sensitive-area" aria-labelledby="settings-sensitive-heading">
-          <h3 id="settings-sensitive-heading">{t('settingsSensitiveSection')}</h3>
-          <button
-            type="button"
-            className="card settings-sensitive-toggle"
-            aria-expanded={sensitiveOpen}
-            aria-controls="settings-link-code-panel"
-            onClick={() => setSensitiveOpen((open) => !open)}
-          >
-            <div>
-              <strong>{t('childLinkCode')}</strong>
-              <small>{childLinkingCode ? t('settingsSensitiveCodeHint') : t('childLinkCodeEmpty')}</small>
-            </div>
-            <SvgIcon className={sensitiveOpen ? 'expanded' : undefined} icon={chevronDownOutline} />
-          </button>
-          {sensitiveOpen ? (
-            <div id="settings-link-code-panel">
-              {childLinkingCode ? (
-                <CodeBox
-                  label={t('childLinkCode')}
-                  hint={t('childLinkCodeHint')}
-                  value={childLinkingCode}
-                  maskValue
-                  t={t}
-                  action={linkCodeAction}
-                />
-              ) : (
-                <section className="card code-box">
-                  <div className="code-box-header">
-                    <div>
-                      <small className="code-box-label">{t('childLinkCode')}</small>
-                      <div className="code-box-value-row">
-                        <strong>{t('childLinkCodeEmpty')}</strong>
-                      </div>
-                    </div>
-                  </div>
-                  <span>{t('childLinkCodeEmptyHint')}</span>
-                  <div className="code-box-actions">{linkCodeAction}</div>
-                </section>
-              )}
-            </div>
-          ) : null}
-        </section>
-      ) : parentRecoveryCode ? (
-        <section className="settings-sensitive-area" aria-labelledby="settings-sensitive-heading">
-          <h3 id="settings-sensitive-heading">{t('settingsSensitiveSection')}</h3>
-          <button
-            type="button"
-            className="card settings-sensitive-toggle"
-            aria-expanded={sensitiveOpen}
-            aria-controls="settings-recovery-code-panel"
-            onClick={() => setSensitiveOpen((open) => !open)}
-          >
-            <div>
-              <strong>{t('parentRecoveryCode')}</strong>
-              <small>{t('settingsSensitiveCodeHint')}</small>
-            </div>
-            <SvgIcon className={sensitiveOpen ? 'expanded' : undefined} icon={chevronDownOutline} />
-          </button>
-          {sensitiveOpen ? (
-            <div id="settings-recovery-code-panel">
-              <CodeBox
-                label={t('parentRecoveryCode')}
-                hint={t('childRecoveryHelp')}
-                value={parentRecoveryCode}
-                maskValue
-                t={t}
-              />
-            </div>
-          ) : null}
-        </section>
-      ) : null}
       <ActionButton className="settings-reset-button" tone="danger" onClick={confirmReset}>
         <SvgIcon icon={trashOutline} />
         {t('resetDemo')}

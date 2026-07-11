@@ -42,13 +42,10 @@ const renderSettings = ({
         childInstalled
         familyId="family-1"
         events={[] as VerificationEvent[]}
-        childLinkingCode="ZD-123456"
-        parentRecoveryCode="PR-1234"
         pendingChecks={0}
         totalChecks={0}
         serviceWorkerStatus="registered"
         lastSyncAt="2026-07-07T19:45:00.000Z"
-        regenerateLinkCode={async () => undefined}
       />,
     );
   });
@@ -60,6 +57,10 @@ describe('SettingsScreen recovery diagnostics', () => {
     const { container, root } = renderSettings();
 
     expect(container.textContent).toContain('Recovery diagnostics');
+    expect(container.textContent).not.toContain('Sensitive area');
+    expect(container.textContent).not.toContain('Install & notifications');
+    expect(container.querySelectorAll('.relationship-manager')).toHaveLength(1);
+    expect(container.querySelectorAll('.settings-contact-button')).toHaveLength(0);
     const diagnosticsToggle = Array.from(container.querySelectorAll('button')).find(
       (button) => button.getAttribute('aria-label') === 'Recovery diagnostics',
     );
