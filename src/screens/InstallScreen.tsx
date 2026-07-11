@@ -3,6 +3,7 @@ import type { Locale } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { SetupProgress } from '../components/SetupProgress';
 import { SvgIcon } from '../components/SvgIcon';
+import { AppIcon } from '../components/Icon';
 
 export function InstallScreen({
   locale,
@@ -20,7 +21,7 @@ export function InstallScreen({
         <button type="button" className={locale === 'fr' ? 'active' : ''} aria-pressed={locale === 'fr'} onClick={() => setLocale('fr')}>FR</button>
       </div>
       <SetupProgress current={1} t={t} />
-      <div className="setup-hero-icon" aria-hidden="true">⇧</div>
+      <div className="setup-hero-icon" aria-hidden="true"><AppIcon name="download" /></div>
       <p className="setup-eyebrow">{t('setupStepOne')}</p>
       <h1>{t('setupInstallTitle')}</h1>
       <p className="setup-intro">{t('setupInstallIntro')}</p>
@@ -30,14 +31,14 @@ export function InstallScreen({
           <strong>{t('setupInstallSummaryTitle')}</strong>
           <p>{t('setupInstallSummaryBody')}</p>
         </div>
-        <span aria-hidden="true">⌁</span>
+        <span aria-hidden="true"><AppIcon name="download" /></span>
       </section>
 
       <section className="card instruction-card">
         <div className="instruction-row">
           <span className="instruction-number">1</span>
           <div><strong>{t('setupInstallShareTitle')}</strong><p>{t('setupInstallShareBody')}</p></div>
-          <span className="instruction-symbol" aria-hidden="true">↥</span>
+          <span className="instruction-symbol" aria-hidden="true"><AppIcon name="share" /></span>
         </div>
         <div className="instruction-row">
           <span className="instruction-number">2</span>
@@ -51,7 +52,7 @@ export function InstallScreen({
         </div>
       </section>
 
-      <aside className="setup-help"><span aria-hidden="true">ⓘ</span><p>{t('setupInstallRequired')}</p></aside>
+      <aside className="setup-help"><span aria-hidden="true"><AppIcon name="info" /></span><p>{t('setupInstallRequired')}</p></aside>
     </main>
   );
 }

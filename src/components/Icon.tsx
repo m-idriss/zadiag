@@ -1,17 +1,23 @@
 import {
   cameraOutline,
+  chevronBackOutline,
+  chevronForwardOutline,
   chevronDownOutline,
   checkmarkCircleOutline,
   closeCircleOutline,
+  downloadOutline,
   addCircleOutline,
   calendarOutline,
   homeOutline,
+  informationCircleOutline,
   linkOutline,
   listOutline,
   medicalOutline,
   notificationsOutline,
+  refreshOutline,
   sendOutline,
   settingsOutline,
+  shareOutline,
   sparklesOutline,
   statsChartOutline,
   timeOutline,
@@ -22,18 +28,24 @@ import { SvgIcon } from './SvgIcon';
 
 export type AppIconName =
   | 'camera'
+  | 'chevron-back'
+  | 'chevron-forward'
   | 'chevron-down'
   | 'check'
   | 'close'
+  | 'download'
   | 'add'
   | 'calendar'
   | 'home'
+  | 'info'
   | 'link'
   | 'medical'
   | 'notifications'
+  | 'refresh'
   | 'routines'
   | 'send'
   | 'settings'
+  | 'share'
   | 'sparkles'
   | 'stats'
   | 'time'
@@ -45,18 +57,24 @@ const toothIcon = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/sv
 
 const icons: Record<AppIconName, string> = {
   camera: cameraOutline,
+  'chevron-back': chevronBackOutline,
+  'chevron-forward': chevronForwardOutline,
   'chevron-down': chevronDownOutline,
   check: checkmarkCircleOutline,
   close: closeCircleOutline,
+  download: downloadOutline,
   add: addCircleOutline,
   calendar: calendarOutline,
   home: homeOutline,
+  info: informationCircleOutline,
   link: linkOutline,
   medical: medicalOutline,
   notifications: notificationsOutline,
+  refresh: refreshOutline,
   routines: listOutline,
   send: sendOutline,
   settings: settingsOutline,
+  share: shareOutline,
   sparkles: sparklesOutline,
   stats: statsChartOutline,
   time: timeOutline,

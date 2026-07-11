@@ -5,6 +5,7 @@ import { SetupProgress } from '../components/SetupProgress';
 import { PushSetupError } from '../services/webPush';
 import { SvgIcon } from '../components/SvgIcon';
 import { ActionButton } from '../components/ui';
+import { AppIcon } from '../components/Icon';
 
 export const notificationSetupErrorMessageKey = (error: unknown): MessageKey => {
   const code = error instanceof PushSetupError
@@ -62,14 +63,15 @@ export function NotificationSetupScreen({
       <p className="setup-intro">{t('setupNotifyIntro')}</p>
 
       <section className="card notification-benefits">
-        <div><span aria-hidden="true">✓</span><p>{t('setupNotifyBenefitOne')}</p></div>
-        <div><span aria-hidden="true">✓</span><p>{t('setupNotifyBenefitTwo')}</p></div>
-        <div><span aria-hidden="true">✓</span><p>{t('setupNotifyBenefitThree')}</p></div>
+        <div><span aria-hidden="true"><AppIcon name="check" /></span><p>{t('setupNotifyBenefitOne')}</p></div>
+        <div><span aria-hidden="true"><AppIcon name="check" /></span><p>{t('setupNotifyBenefitTwo')}</p></div>
+        <div><span aria-hidden="true"><AppIcon name="check" /></span><p>{t('setupNotifyBenefitThree')}</p></div>
       </section>
 
-      <aside className="setup-help"><span aria-hidden="true">ⓘ</span><p>{t('setupNotifyHelp')}</p></aside>
+      <aside className="setup-help"><span aria-hidden="true"><AppIcon name="info" /></span><p>{t('setupNotifyHelp')}</p></aside>
       {errorKey ? <p className="setup-error" role="alert">{t(errorKey)}</p> : null}
-      <ActionButton disabled={status === 'busy'} onClick={() => { void enable(); }}>
+      <ActionButton disabled={status === 'busy'} aria-busy={status === 'busy'} onClick={() => { void enable(); }}>
+        {status === 'busy' ? <span className="button-spinner" aria-hidden="true" /> : null}
         {status === 'busy' ? t('enablingReminders') : t('setupNotifyAction')}
       </ActionButton>
       <small className="required-note">{t('setupRequiredNote')}</small>

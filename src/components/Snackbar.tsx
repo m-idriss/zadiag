@@ -1,3 +1,5 @@
+import { AppIcon } from './Icon';
+
 export function Snackbar({
   message,
   actionLabel,
@@ -17,12 +19,13 @@ export function Snackbar({
     <div className="app-snackbar" role="status" aria-live="polite">
       <p>{message}</p>
       {actionLabel && onAction ? (
-        <button type="button" className="app-snackbar-action" disabled={busy} onClick={onAction}>
+        <button type="button" className="app-snackbar-action" aria-busy={busy} disabled={busy} onClick={onAction}>
+          {busy ? <span className="button-spinner" aria-hidden="true" /> : null}
           {actionLabel}
         </button>
       ) : null}
       {closeLabel && onClose ? (
-        <button type="button" className="app-snackbar-close" aria-label={closeLabel} onClick={onClose}>x</button>
+        <button type="button" className="app-snackbar-close" aria-label={closeLabel} onClick={onClose}><AppIcon name="close" /></button>
       ) : null}
     </div>
   );

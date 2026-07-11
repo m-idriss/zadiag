@@ -3,6 +3,7 @@ import type { MessageKey } from '../services/i18n';
 import { Disclaimer } from '../components/Disclaimer';
 import { StatusPill } from '../components/StatusPill';
 import { ActionButton } from '../components/ui';
+import { AppIcon } from '../components/Icon';
 
 export function ResultScreen({
   event,
@@ -25,7 +26,7 @@ export function ResultScreen({
       : t('analysisSourceFallback');
   return (
     <main className="page result-page">
-      <div className={`result-icon ${success ? 'success' : ''}`}>{success ? '✓' : '↻'}</div>
+      <div className={`result-icon ${success ? 'success' : ''}`} aria-hidden="true"><AppIcon name={success ? 'check' : 'refresh'} /></div>
       <h1>{success ? t('allSet') : t('uncertain')}</h1>
       <p className="hero-copy">{success ? t('visibleMessage') : t('unclearResult')}</p>
       <StatusPill status={event.status} t={t} />

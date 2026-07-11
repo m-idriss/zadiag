@@ -1,5 +1,6 @@
 import type { MessageKey } from '../services/i18n';
 import { CameraCapture } from '../components/CameraCapture';
+import { AppIcon } from '../components/Icon';
 
 export function CameraScreen({
   busy,
@@ -16,7 +17,7 @@ export function CameraScreen({
 }) {
   return (
     <main className="camera-page">
-      <header><button className="back-button light" onClick={back}>‹</button><h1>{t('guidedPhoto')}</h1></header>
+      <header><button type="button" className="back-button light" onClick={back} aria-label={t('back')}><AppIcon name="chevron-back" /></button><h1>{t('guidedPhoto')}</h1></header>
       <CameraCapture busy={busy} submitError={submitError} onSubmit={submit} t={t} />
     </main>
   );

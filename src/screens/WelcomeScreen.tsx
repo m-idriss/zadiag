@@ -35,12 +35,12 @@ export function WelcomeScreen({
           <button type="button" className="role-button" onClick={() => chooseRole('parent')}>
             <span className="role-symbol"><AppIcon name="home" /></span>
             <span className="role-copy"><strong>{t('parent')}</strong><small>{t('parentRoleHint')}</small></span>
-            <b aria-hidden="true">›</b>
+            <b aria-hidden="true"><AppIcon name="chevron-forward" /></b>
           </button>
           <button type="button" className="role-button" onClick={() => chooseRole('child')}>
             <span className="role-symbol"><AppIcon name="today" /></span>
             <span className="role-copy"><strong>{t('child')}</strong><small>{t('childRoleHint')}</small></span>
-            <b aria-hidden="true">›</b>
+            <b aria-hidden="true"><AppIcon name="chevron-forward" /></b>
           </button>
         </div>
         <p className="role-device-note">{t('roleDeviceNote')}</p>
