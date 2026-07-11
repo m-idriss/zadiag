@@ -12,6 +12,10 @@
 <a href="public/icons/icon-512.png"><img src="https://img.shields.io/badge/PWA-Ready-6B46C1?style=for-the-badge" alt="PWA ready" /></a>
 <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="MIT License" /></a>
 
+[![CI](https://github.com/m-idriss/zadiag/actions/workflows/ci.yml/badge.svg)](https://github.com/m-idriss/zadiag/actions/workflows/ci.yml)
+
+<p><a href="https://www.zadiag.com"><strong>Open the deployed app →</strong></a></p>
+
 <p><strong>Zadiag helps a responsible adult and a participant coordinate simple treatment routines.</strong> A responsible device creates the family space and routines; the participant device receives check requests, sends proof, and keeps the flow lightweight during a pilot.</p>
 
 </div>
@@ -31,11 +35,38 @@
 
 Zadiag is a support tool for routine follow-up. It is not a medical device and does not provide a diagnosis.
 
+## Why Zadiag
+
+Routine follow-up often breaks down between a plan being prescribed and the
+moment it must be completed at home. Zadiag gives both sides a deliberately
+small workflow: schedule, notify, confirm, review. It is designed for families
+that need reassurance and shared visibility without turning daily care into a
+complex administrative process.
+
+The current product wedge is an iPhone-first, installable pilot that requires no
+App Store release. Its privacy-oriented architecture, local demo mode, bilingual
+interface, and explicit caregiver/participant roles make it suitable for fast,
+measurable field learning before broader product or regulatory investment.
+
+## Product Status
+
+| Dimension | Current state |
+|-----------|---------------|
+| Stage | Working pilot software; not a certified medical device |
+| Users | Responsible adult and linked participant |
+| Platforms | Installable web app, optimized for iPhone |
+| Languages | French and English |
+| Backend | Firebase production path plus local demo mode |
+| Quality gates | App, Functions, Firestore rules, build, and bundle checks in CI |
+
+The [product brief](docs/product-brief.md) captures the pilot hypothesis,
+success metrics, differentiation, risks, and evidence needed for the next stage.
+
 ## Architecture
 
 | Layer | Technology |
 |-------|------------|
-| Web app | React 19, TypeScript, Ionic components, Vite |
+| Web app | React 19, TypeScript, Ionicons, Vite |
 | PWA | Vite PWA, Workbox precaching, Web Push, app badge support |
 | Backend | Firebase Auth, Firestore, Cloud Functions, Storage, App Check |
 | Hosting | Vercel for the web app, Firebase for backend services |
@@ -56,11 +87,12 @@ corepack pnpm dev
 Common checks:
 
 ```sh
-corepack pnpm test
-corepack pnpm test:rules
-corepack pnpm build
-npm --prefix functions test
+corepack pnpm check
 ```
+
+`check` runs the app tests, typecheck, production build, bundle budget, and
+Functions tests. Before merging or deploying, use `corepack pnpm check:full` to
+include Firestore rules tests (Java 21 required).
 
 The dev server is served by Vite. If Firebase variables are missing, the app falls back to the local demo repository so the UI remains usable.
 
@@ -136,13 +168,16 @@ This is the intended one-month pilot path: install, link, notify, capture, revie
 
 ## Documentation
 
-[Deployment workflow](docs/deployment-workflow.md), [Caregiver and participant architecture](docs/caregiver-participant-architecture.md), [Create a routine](docs/create-routine.md), [Routine marketplace](docs/routine-marketplace.md), [Routine rollout](docs/routine-rollout.md), [Routine examples](routines/README.md), [Firestore rules](firestore.rules), [Firebase indexes](firestore.indexes.json)
+[Product brief](docs/product-brief.md), [Deployment workflow](docs/deployment-workflow.md), [Caregiver and participant architecture](docs/caregiver-participant-architecture.md), [Create a routine](docs/create-routine.md), [Routine marketplace](docs/routine-marketplace.md), [Routine rollout](docs/routine-rollout.md), [Routine examples](routines/README.md), [Security policy](SECURITY.md), [Firestore rules](firestore.rules), [Firebase indexes](firestore.indexes.json)
 
 ## Project Scripts
 
 | Command | Purpose |
 |---------|---------|
 | `corepack pnpm dev` | Start the Vite development server. |
+| `corepack pnpm check` | Run the everyday app, build, bundle, and Functions checks. |
+| `corepack pnpm check:full` | Run `check` plus Firestore rules tests before delivery. |
+| `corepack pnpm check:security` | Check production dependencies against current vulnerability advisories. |
 | `corepack pnpm test` | Run web app tests. |
 | `corepack pnpm test:rules` | Run Firestore rules tests through the emulator. |
 | `corepack pnpm build` | Typecheck and build the PWA. |

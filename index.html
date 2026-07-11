@@ -3,13 +3,29 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Zadiag helps families coordinate recurring care routines through a simple, shared follow-up workflow." />
+    <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#15324b" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Zadiag" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <link rel="icon" href="/icons/icon.svg" />
-    <title>Zadiag</title>
+    <link rel="canonical" href="https://www.zadiag.com/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Zadiag" />
+    <meta property="og:title" content="Zadiag — Shared family routine follow-up" />
+    <meta property="og:description" content="A simple, privacy-oriented workflow for families to schedule, confirm, and review recurring care routines." />
+    <meta property="og:url" content="https://www.zadiag.com/" />
+    <meta property="og:image" content="https://www.zadiag.com/icons/icon-512.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="Zadiag app icon" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Zadiag — Shared family routine follow-up" />
+    <meta name="twitter:description" content="A simple, privacy-oriented workflow for recurring family care routines." />
+    <meta name="twitter:image" content="https://www.zadiag.com/icons/icon-512.png" />
+    <title>Zadiag — Shared family routine follow-up</title>
     <script>
       (() => {
         const repairRequested = new URLSearchParams(window.location.search).has('repair');
@@ -41,6 +57,12 @@
     </script>
   </head>
   <body>
+    <noscript>
+      <main style="max-width:36rem;margin:4rem auto;padding:1.5rem;font-family:system-ui,sans-serif;color:#15324b">
+        <h1>Zadiag</h1>
+        <p>Zadiag helps families coordinate recurring care routines. JavaScript is required to use the application.</p>
+      </main>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
