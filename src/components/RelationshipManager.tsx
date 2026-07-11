@@ -98,6 +98,18 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
           ))}
         </div> : null}
 
+        {onCreate ? (
+          <details className="relationship-tool relationship-create-tool">
+            <summary>{t('relationshipCreateTitle')}</summary>
+          <form className="relationship-form" onSubmit={create}>
+            <p>{t('relationshipCreateHint')}</p>
+            <input aria-label={t('relationshipNameLabel')} value={name} maxLength={40} onChange={(event) => setName(event.target.value)} placeholder={t('relationshipNameLabel')} />
+            <label className="relationship-checkbox"><input type="checkbox" checked={selfManaged} onChange={(event) => setSelfManaged(event.target.checked)} />{t('relationshipSelfManagedLabel')}</label>
+            <button type="submit" disabled={busy === 'create' || !name.trim()}>{busy === 'create' ? t('relationshipWorking') : t('relationshipCreateAction')}</button>
+          </form>
+          </details>
+        ) : null}
+
         {isOwner && selectedParticipantId ? (
           <section className="relationship-team" aria-labelledby="relationship-team-title">
             <div className="relationship-subsection-heading">
@@ -125,17 +137,6 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
           </section>
         ) : null}
 
-        {onCreate ? (
-          <details className="relationship-tool">
-            <summary>{t('relationshipCreateTitle')}</summary>
-          <form className="relationship-form" onSubmit={create}>
-            <p>{t('relationshipCreateHint')}</p>
-            <input aria-label={t('relationshipNameLabel')} value={name} maxLength={40} onChange={(event) => setName(event.target.value)} placeholder={t('relationshipNameLabel')} />
-            <label className="relationship-checkbox"><input type="checkbox" checked={selfManaged} onChange={(event) => setSelfManaged(event.target.checked)} />{t('relationshipSelfManagedLabel')}</label>
-            <button type="submit" disabled={busy === 'create' || !name.trim()}>{busy === 'create' ? t('relationshipWorking') : t('relationshipCreateAction')}</button>
-          </form>
-          </details>
-        ) : null}
         {invitationCode && !selectedParticipantId ? <output className="relationship-invitation-code">{t('relationshipInvitationCode')}: <strong>{invitationCode}</strong><small>{t('relationshipInvitationNextStep')}</small></output> : null}
 
         {onInvite && selectedParticipantId && isOwner ? (
