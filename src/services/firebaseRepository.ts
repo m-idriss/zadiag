@@ -471,7 +471,13 @@ export class FirebaseRepository implements AppRepository {
     this.remoteSubscriptions.splice(0).forEach((unsubscribe) => unsubscribe());
     if (this.state.family.linked) {
       const deleteAccountData = httpsCallable<void, void>(this.services.functions, 'deleteAccountData');
-      await deleteAccountData();
+      try {
+        await deleteAccountData();
+      } catch (error) {
+        // Account cleanup can be refused when this user is the last owner of a
+        // followed person. That safety invariant must not prevent signing out.
+        console.warn('Account data could not be deleted before sign-out', error);
+      }
     }
     await signOut(this.services.auth);
     this.legacyFamilyId = undefined;
