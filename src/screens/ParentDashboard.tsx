@@ -251,6 +251,9 @@ export function ParentDashboard({
                 title={responsibleEmptyState.title}
                 detail={responsibleEmptyState.hint}
               >
+                {!state.routineAssignments.length && onCreateRoutine ? (
+                  <button type="button" className="request-check responsible-state-primary-action" onClick={onCreateRoutine}>{t('chooseRoutine')}</button>
+                ) : null}
                 {requestCheck && activePendingEvents.length ? (
                   <div className="responsible-state-actions">
                     <button
@@ -287,21 +290,6 @@ export function ParentDashboard({
               />
             ) : null}
 
-            {!state.routineAssignments.length && onCreateRoutine ? (
-              <section className="card parent-create-routine-card">
-                <div className="parent-create-routine-icon today-task-icon" aria-hidden="true">
-                  <AppIcon name="add" />
-                </div>
-                <div className="parent-create-routine-copy">
-                  <div>
-                    <small>{t('routineSetupEyebrow')}</small>
-                    <h2>{t('createFirstRoutine')}</h2>
-                  </div>
-                  <p>{t('createFirstRoutineHint')}</p>
-                </div>
-                <button type="button" className="request-check" onClick={onCreateRoutine}>{t('chooseRoutine')}</button>
-              </section>
-            ) : null}
           </div>
         </section>
       ) : null}
