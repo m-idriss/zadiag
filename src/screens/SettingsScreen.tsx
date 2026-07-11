@@ -51,6 +51,8 @@ export function SettingsScreen({
   inviteParticipantMember,
   acceptParticipantInvitation,
   leaveParticipant,
+  createRelationshipRecovery,
+  recoverRelationship,
 }: {
   t: (key: MessageKey) => string;
   locale: Locale;
@@ -82,6 +84,8 @@ export function SettingsScreen({
   inviteParticipantMember?: (participantId: string, role: Exclude<MembershipRole, 'owner'>) => Promise<{ code: string; expiresAt: string }>;
   acceptParticipantInvitation?: (code: string) => Promise<string>;
   leaveParticipant?: (participantId: string) => Promise<void>;
+  createRelationshipRecovery?: (participantId: string) => Promise<{ recoveryCode: string; expiresAt: string }>;
+  recoverRelationship?: (code: string) => Promise<{ participantId: string; recoveryCode?: string; expiresAt?: string }>;
 }) {
   const [mailError, setMailError] = useState(false);
   const [contactMailError, setContactMailError] = useState(false);
@@ -351,6 +355,8 @@ export function SettingsScreen({
         onInvite={inviteParticipantMember}
         onAccept={acceptParticipantInvitation}
         onLeave={leaveParticipant}
+        onCreateRecovery={createRelationshipRecovery}
+        onRecover={recoverRelationship}
         t={t}
       />
       <section className="settings-section" aria-labelledby="settings-support-heading">
