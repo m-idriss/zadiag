@@ -1853,12 +1853,18 @@ export const cleanupStaleOperationalData = onSchedule({
     expiredLinks,
     consumedLinks,
     expiredRecoveryCodes,
+    expiredRelationshipInvitations,
+    consumedRelationshipInvitations,
+    expiredRelationshipRecoveryCodes,
     staleRecoveryAttempts,
     expiredPendingChecks,
   ] = await Promise.all([
     db.collection('linkCodes').where('expiresAt', '<', cutoffs.expiredBefore).limit(200).get(),
     db.collection('linkCodes').where('consumedAt', '<', cutoffs.consumedBefore).limit(200).get(),
     db.collection('parentRecoveryCodes').where('expiresAt', '<', cutoffs.expiredBefore).limit(200).get(),
+    db.collection('relationshipInvitations').where('expiresAt', '<', cutoffs.expiredBefore).limit(200).get(),
+    db.collection('relationshipInvitations').where('consumedAt', '<', cutoffs.consumedBefore).limit(200).get(),
+    db.collection('relationshipRecoveryCodes').where('expiresAt', '<', cutoffs.expiredBefore).limit(200).get(),
     db.collection('recoveryAttempts').where('windowStartedAt', '<', cutoffs.recoveryAttemptBefore).limit(200).get(),
     db.collectionGroup('checks')
       .where('status', '==', 'pending')
@@ -1867,30 +1873,33 @@ export const cleanupStaleOperationalData = onSchedule({
       .get(),
   ]);
 
-  const batch = db.batch();
   const touchedPaths = new Set<string>();
+  const operations: Array<(batch: FirebaseFirestore.WriteBatch) => void> = [];
   const deleteOnce = (document: FirebaseFirestore.QueryDocumentSnapshot) => {
     if (touchedPaths.has(document.ref.path)) return;
     touchedPaths.add(document.ref.path);
-    batch.delete(document.ref);
+    operations.push((batch) => batch.delete(document.ref));
   };
   expiredLinks.docs.forEach(deleteOnce);
   consumedLinks.docs.forEach(deleteOnce);
   expiredRecoveryCodes.docs.forEach(deleteOnce);
+  expiredRelationshipInvitations.docs.forEach(deleteOnce);
+  consumedRelationshipInvitations.docs.forEach(deleteOnce);
+  expiredRelationshipRecoveryCodes.docs.forEach(deleteOnce);
   staleRecoveryAttempts.docs.forEach(deleteOnce);
   const missedUpdate = expiredPendingCheckCleanupUpdate(now);
   expiredPendingChecks.docs.forEach((document) => {
     if (touchedPaths.has(document.ref.path)) return;
     touchedPaths.add(document.ref.path);
-    batch.update(document.ref, missedUpdate);
+    operations.push((batch) => batch.update(document.ref, missedUpdate));
   });
-  const operationCount = expiredLinks.size
-    + consumedLinks.size
-    + expiredRecoveryCodes.size
-    + staleRecoveryAttempts.size
-    + expiredPendingChecks.size;
-  if (operationCount === 0) return;
-  await batch.commit();
+  if (!operations.length) return;
+  const batchSize = 400;
+  for (let offset = 0; offset < operations.length; offset += batchSize) {
+    const batch = db.batch();
+    operations.slice(offset, offset + batchSize).forEach((operation) => operation(batch));
+    await batch.commit();
+  }
 });
 
 export const deleteAccountData = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
