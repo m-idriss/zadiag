@@ -4,10 +4,11 @@
 
 # Zadiag
 
-### Care routines, shared with confidence.
+### Routine verification, powered by AI.
 
 Zadiag helps families coordinate recurring care routines without turning daily
-follow-up into daily friction.
+follow-up into daily friction. AI turns submitted proof into a clear result,
+while uncertain cases stay under human review.
 
 [**Open Zadiag →**](https://www.zadiag.com)
 
@@ -22,7 +23,7 @@ follow-up into daily friction.
 
 | Plan | Remind | Confirm | Review |
 |:---:|:---:|:---:|:---:|
-| Create the routine | Notify at the right moment | Send lightweight proof | Keep shared visibility |
+| Create the routine | Notify at the right moment | Analyze proof with AI | Review when confidence is low |
 
 The responsible adult gets reassurance. The participant gets a clear next
 action. Everyone keeps the same history.
@@ -33,6 +34,8 @@ action. Everyone keeps the same history.
   Store download.
 - **Calm by design** — focused role-based screens instead of a complex health
   dashboard.
+- **AI-assisted verification** — submitted proof becomes a structured result
+  with a confidence level; uncertainty is routed to the responsible adult.
 - **Private by default** — scoped access, short-lived linking, cleanup paths,
   and local-only demo data.
 - **Ready to learn** — bilingual flows and a production backend path built for
@@ -41,8 +44,8 @@ action. Everyone keeps the same history.
 ## Pilot-ready foundation
 
 Zadiag already covers the complete product loop: family linking, routine
-scheduling, push reminders, guided confirmation, responsible review, and shared
-history.
+scheduling, push reminders, AI-assisted proof analysis, responsible review, and
+shared history.
 
 The product is currently working pilot software. It is not a certified medical
 device and does not diagnose, prescribe, or replace professional care.
