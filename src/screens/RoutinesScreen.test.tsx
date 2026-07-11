@@ -80,7 +80,7 @@ describe('participant routines navigation', () => {
     expect(container.textContent).toContain('Validation: AI analysis');
     expect(container.textContent).toContain('Proof example');
     expect(container.textContent).toContain('visible glass');
-    expect(container.querySelector('.add-routine-button')).not.toBeNull();
+    expect(container.querySelector('.routines-add-button')).not.toBeNull();
   });
 
   it('shows the assigned routine frequency, completion and next task', async () => {
@@ -150,7 +150,7 @@ describe('participant routines navigation', () => {
 
     const back = container.querySelector('.detail-back');
     act(() => back?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
-    expect(container.textContent).toContain('My routines');
+    expect(container.textContent).toContain('Routines');
   });
 
   it('keeps participant routine management read-only even when edit callbacks are provided', async () => {
@@ -244,13 +244,13 @@ describe('participant routines navigation', () => {
 
     const back = container.querySelector('.detail-back');
     act(() => back?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
-    expect(container.textContent).toContain('My routines');
+    expect(container.textContent).toContain('Routines');
     const restoredScheduleToggle = container.querySelector('button[aria-label="Hide schedule"]');
     expect(restoredScheduleToggle?.getAttribute('aria-expanded')).toBe('true');
 
     act(() => root.render(<div />));
     act(() => root.render(<RoutinesScreen state={state} t={(key) => translate('en', key)} />));
-    expect(container.textContent).toContain('My routines');
+    expect(container.textContent).toContain('Routines');
     expect(container.querySelector('.routine-tabs')).toBeNull();
   });
 
@@ -304,7 +304,7 @@ describe('participant routines navigation', () => {
     const assignRoutine = vi.fn().mockResolvedValue(undefined);
     act(() => root.render(<RoutinesScreen state={state} onAssignRoutine={assignRoutine} t={(key) => translate('en', key)} />));
 
-    const addButton = container.querySelector('.add-routine-button');
+    const addButton = container.querySelector('.routines-add-button');
     act(() => addButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
 
     expect(container.textContent).toContain('Choose a routine');

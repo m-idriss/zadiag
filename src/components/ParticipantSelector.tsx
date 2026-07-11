@@ -3,25 +3,30 @@ import { checkmarkOutline } from 'ionicons/icons';
 import type { ParticipantAccess } from '../domain/models';
 import { SvgIcon } from './SvgIcon';
 
-export function ParticipantSelector({ access, activeParticipantId, label, onSelect }: {
+export function ParticipantSelector({ access, activeParticipantId, label, title, actionLabel, onSelect }: {
   access: ParticipantAccess[] | undefined;
   activeParticipantId?: string;
   label: string;
+  title?: string;
+  actionLabel?: string;
   onSelect?: (participantId: string) => void;
 }) {
+  const detailsRef = useRef<HTMLDetailsElement>(null);
   const activeAccess = (access ?? []).filter((entry) => entry.membership.status === 'active');
-  if (activeAccess.length < 2 || !onSelect) return null;
+  if (!activeAccess.length) return null;
   const selectedId = activeAccess.some((entry) => entry.participant.id === activeParticipantId)
     ? activeParticipantId
     : activeAccess[0].participant.id;
   const selected = activeAccess.find((entry) => entry.participant.id === selectedId)!;
-  const detailsRef = useRef<HTMLDetailsElement>(null);
+  const displayTitle = title ?? `${label} ${selected.participant.displayName}`;
+  if (activeAccess.length < 2 || !onSelect) {
+    return <div className="participant-switcher-card participant-switcher-static"><strong>{displayTitle}</strong></div>;
+  }
   return (
     <details className="participant-switcher" ref={detailsRef}>
-      <summary aria-label={`${label} : ${selected.participant.displayName}`}>
-        <span className="avatar participant-switcher-avatar" aria-hidden="true">
-          {selected.participant.displayName.trim().charAt(0).toUpperCase() || '?'}
-        </span>
+      <summary className="participant-switcher-card" aria-label={`${label} : ${selected.participant.displayName}`}>
+        <strong>{displayTitle}</strong>
+        {actionLabel ? <small>{actionLabel}</small> : null}
       </summary>
       <div className="participant-switcher-menu" role="group" aria-label={label}>
         <span className="participant-switcher-label">{label}</span>

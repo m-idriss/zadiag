@@ -21,7 +21,7 @@ describe('ParticipantSelector', () => {
       { participant: { id: 'alex', displayName: 'Alex' }, membership: { role: 'owner', status: 'active' } },
       { participant: { id: 'sam', displayName: 'Sam' }, membership: { role: 'caregiver', status: 'active' } },
       { participant: { id: 'hidden', displayName: 'Hidden' }, membership: { role: 'caregiver', status: 'suspended' } },
-    ]} activeParticipantId="alex" label="Followed person" onSelect={onSelect} />));
+    ]} activeParticipantId="alex" label="Followed person" title="Following Alex" onSelect={onSelect} />));
     const summary = container.querySelector('summary') as HTMLElement;
     expect(summary.getAttribute('aria-label')).toBe('Followed person : Alex');
     const buttons = Array.from(container.querySelectorAll('.participant-switcher-menu button')) as HTMLButtonElement[];
@@ -31,13 +31,13 @@ describe('ParticipantSelector', () => {
     expect(onSelect).toHaveBeenCalledWith('sam');
   });
 
-  it('stays hidden for a single participant', () => {
+  it('shows the followed person for a single participant', () => {
     container = document.createElement('div');
     document.body.append(container);
     root = createRoot(container);
     act(() => root?.render(<ParticipantSelector access={[
       { participant: { id: 'alex', displayName: 'Alex' }, membership: { role: 'owner', status: 'active' } },
     ]} activeParticipantId="alex" label="Followed person" onSelect={vi.fn()} />));
-    expect(container.innerHTML).toBe('');
+    expect(container.textContent).toBe('Followed person Alex');
   });
 });
