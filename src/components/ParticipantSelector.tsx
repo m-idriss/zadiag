@@ -1,13 +1,14 @@
 import { useRef } from 'react';
-import { checkmarkOutline } from 'ionicons/icons';
+import { checkmarkOutline, chevronDownOutline, peopleOutline } from 'ionicons/icons';
 import type { ParticipantAccess } from '../domain/models';
 import { SvgIcon } from './SvgIcon';
 
-export function ParticipantSelector({ access, activeParticipantId, label, title, actionLabel, onSelect }: {
+export function ParticipantSelector({ access, activeParticipantId, label, title, subtitle, actionLabel, onSelect }: {
   access: ParticipantAccess[] | undefined;
   activeParticipantId?: string;
   label: string;
   title?: string;
+  subtitle?: string;
   actionLabel?: string;
   onSelect?: (participantId: string) => void;
 }) {
@@ -20,13 +21,19 @@ export function ParticipantSelector({ access, activeParticipantId, label, title,
   const selected = activeAccess.find((entry) => entry.participant.id === selectedId)!;
   const displayTitle = title ?? `${label} ${selected.participant.displayName}`;
   if (activeAccess.length < 2 || !onSelect) {
-    return <div className="participant-switcher-card participant-switcher-static"><strong>{displayTitle}</strong></div>;
+    return <div className="card relationship-manager-card participant-switcher-static">
+      <div className="relationship-manager-toggle">
+        <span className="relationship-manager-icon" aria-hidden="true"><SvgIcon icon={peopleOutline} /></span>
+        <span className="relationship-manager-summary"><strong>{displayTitle}</strong>{subtitle ? <small>{subtitle}</small> : null}</span>
+      </div>
+    </div>;
   }
   return (
     <details className="participant-switcher" ref={detailsRef}>
-      <summary className="participant-switcher-card" aria-label={`${label} : ${selected.participant.displayName}`}>
-        <strong>{displayTitle}</strong>
-        {actionLabel ? <small>{actionLabel}</small> : null}
+      <summary className="card relationship-manager-toggle" aria-label={`${label} : ${selected.participant.displayName}`}>
+        <span className="relationship-manager-icon" aria-hidden="true"><SvgIcon icon={peopleOutline} /></span>
+        <span className="relationship-manager-summary"><strong>{displayTitle}</strong>{subtitle ? <small>{subtitle}</small> : null}</span>
+        {actionLabel ? <span className="relationship-manager-action">{actionLabel}<SvgIcon icon={chevronDownOutline} /></span> : null}
       </summary>
       <div className="participant-switcher-menu" role="group" aria-label={label}>
         <span className="participant-switcher-label">{label}</span>

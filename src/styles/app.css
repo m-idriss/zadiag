@@ -718,6 +718,8 @@ button {
 .participant-switcher-menu button.active { background: var(--mint); color: var(--teal); }
 .participant-switcher-option-avatar { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; background: #eef5f3; color: var(--teal); font-size: 13px; font-weight: 900; }
 .participant-switcher-menu button.active .participant-switcher-option-avatar { background: white; }
+.participant-switcher[open] > summary .relationship-manager-action .svg-icon { transform: rotate(180deg); }
+.participant-switcher-static .relationship-manager-toggle { cursor: default; }
 .relationship-manager-card { display: grid; padding: 0; overflow: hidden; }
 .relationship-manager-toggle { width: 100%; min-height: 68px; display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 11px; padding: 12px 14px; border: 0; background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(241,248,246,.94)); color: var(--navy); text-align: left; }
 .relationship-manager-icon { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 13px; background: linear-gradient(145deg, var(--teal), #49b8a4); color: white; box-shadow: 0 8px 18px rgba(29,138,122,.17); }

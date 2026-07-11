@@ -180,6 +180,11 @@ export function ParentDashboard({
   };
   const handleMouseDown = (event: MouseEvent<HTMLElement>, eventId: string) => beginSwipe(eventId, event.clientX, event.clientY, event.target);
   const handleMouseUp = (event: MouseEvent<HTMLElement>, eventId: string) => completeSwipe(eventId, event.clientX, event.clientY);
+  const activeParticipantAccess = state.participantAccess?.find((entry) => entry.participant.id === state.activeParticipantId)
+    ?? state.participantAccess?.find((entry) => entry.membership.status === 'active');
+  const activeParticipantRoleKey = activeParticipantAccess
+    ? `relationshipRole${activeParticipantAccess.membership.role[0].toUpperCase()}${activeParticipantAccess.membership.role.slice(1)}` as MessageKey
+    : undefined;
 
   return (
     <div className="content-screen child-home parent-overview-screen">
@@ -187,7 +192,8 @@ export function ParentDashboard({
         access={state.participantAccess}
         activeParticipantId={state.activeParticipantId}
         label={t('followedPerson')}
-        title={t('responsibleTodaySubtitle').replace('{name}', state.family.childName)}
+        title={activeParticipantAccess?.participant.displayName ?? state.family.childName}
+        subtitle={activeParticipantRoleKey ? t(activeParticipantRoleKey) : t('followedPerson')}
         actionLabel={t('relationshipSwitchAction')}
         onSelect={onSelectParticipant}
       />
