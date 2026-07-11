@@ -400,6 +400,26 @@ export function SettingsScreen({
             </dl>
           </ListRow>
           <ListRow
+            icon={<SvgIcon icon={informationCircleOutline} />}
+            title={t('settingsUpdateTitle')}
+            detail={updateDetail}
+            trailing={(
+              <div className="settings-row-control">
+                {updateInfo.badgeLabel ? <span className={`settings-update-badge ${updateSeverity}`}>{updateInfo.badgeLabel}</span> : null}
+                <button
+                  type="button"
+                  className={`settings-inline-action settings-inline-action-contained settings-update-action ${updateSeverity}`}
+                  disabled={updatingApp}
+                  onClick={() => { void forceUpdate(); }}
+                >
+                  {updatingApp ? t('settingsUpdateChecking') : updateInfo.available ? t('settingsUpdateAction') : t('settingsUpdateCheckAction')}
+                </button>
+              </div>
+            )}
+          >
+            {updateError ? <small className="settings-action-error">{t('settingsUpdateError')}</small> : null}
+          </ListRow>
+          <ListRow
             icon={<SvgIcon icon={mailOutline} />}
             title={t('settingsDebugMailTitle')}
             detail={t('settingsDebugMailDetail')}
@@ -429,26 +449,6 @@ export function SettingsScreen({
             {testPushStatus === 'success' ? <small>{t('settingsTestNotificationSuccess')}</small> : null}
             {testPushStatus === 'error' ? <small className="settings-action-error">{t('settingsTestNotificationError')}</small> : null}
             {testPushStatus === 'enableError' ? <small className="settings-action-error">{t('settingsEnableNotificationsError')}</small> : null}
-          </ListRow>
-          <ListRow
-            icon={<SvgIcon icon={informationCircleOutline} />}
-            title={t('settingsUpdateTitle')}
-            detail={updateDetail}
-            trailing={(
-              <div className="settings-row-control">
-                {updateInfo.badgeLabel ? <span className={`settings-update-badge ${updateSeverity}`}>{updateInfo.badgeLabel}</span> : null}
-                <button
-                  type="button"
-                  className={`settings-inline-action settings-inline-action-contained settings-update-action ${updateSeverity}`}
-                  disabled={updatingApp}
-                  onClick={() => { void forceUpdate(); }}
-                >
-                  {updatingApp ? t('settingsUpdateChecking') : updateInfo.available ? t('settingsUpdateAction') : t('settingsUpdateCheckAction')}
-                </button>
-              </div>
-            )}
-          >
-            {updateError ? <small className="settings-action-error">{t('settingsUpdateError')}</small> : null}
           </ListRow>
         </div>
       </section>
