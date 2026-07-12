@@ -18,15 +18,13 @@ test('normalizes bounded Web Push subscriptions', () => {
 });
 
 test('normalizes push preference values before storage', () => {
-  assert.deepEqual(normalizePushPreferences({ notificationWindowStart: '00:00', notificationWindowEnd: '23:59', reminderRepeatMinutes: 30 }), {
+  assert.deepEqual(normalizePushPreferences({ notificationWindowStart: '00:00', notificationWindowEnd: '23:59' }), {
     notificationWindowStart: '00:00',
     notificationWindowEnd: '23:59',
-    reminderRepeatMinutes: 30,
   });
-  assert.deepEqual(normalizePushPreferences({ notificationWindowStart: '99:00', notificationWindowEnd: 'bad', reminderRepeatMinutes: 999 }), {
+  assert.deepEqual(normalizePushPreferences({ notificationWindowStart: '99:00', notificationWindowEnd: 'bad' }), {
     notificationWindowStart: '08:00',
     notificationWindowEnd: '21:00',
-    reminderRepeatMinutes: 20,
   });
   assert.equal(normalizePushPreferences(undefined), undefined);
 });

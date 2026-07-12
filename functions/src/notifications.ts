@@ -8,7 +8,6 @@ export interface NormalizedPushSubscription {
 export interface NormalizedPushPreferences {
   notificationWindowStart: string;
   notificationWindowEnd: string;
-  reminderRepeatMinutes: number;
 }
 
 const base64UrlPattern = /^[A-Za-z0-9_-]+={0,2}$/;
@@ -42,10 +41,7 @@ export const normalizePushPreferences = (value: unknown): NormalizedPushPreferen
     && notificationTimePattern.test(candidate.notificationWindowEnd)
     ? candidate.notificationWindowEnd
     : '21:00';
-  const reminderRepeatMinutes = [0, 20, 30].includes(Number(candidate.reminderRepeatMinutes))
-    ? Number(candidate.reminderRepeatMinutes)
-    : 20;
-  return { notificationWindowStart, notificationWindowEnd, reminderRepeatMinutes };
+  return { notificationWindowStart, notificationWindowEnd };
 };
 
 export interface CheckNotificationInput {

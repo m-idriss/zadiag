@@ -11,7 +11,7 @@ import { analyzeWithGemini, parseImageDataUrl, type AnalysisResult, type Routine
 import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
 import { createDefaultRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, isRoutineValidationMode, routineFromCatalog, type RoutineAssignmentDocument } from './routines.js';
 import { buildCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription } from './notifications.js';
-import { isCheckRequestRateLimited, normalizeReminderRepeatMinutes, shouldSendCheckReminder } from './reminders.js';
+import { isCheckRequestRateLimited } from './reminders.js';
 import { recordAuditEvent } from './audit.js';
 import { expiredPendingCheckCleanupUpdate, staleCleanupCutoffs } from './cleanup.js';
 import { reportOperationalAlert } from './observability.js';
@@ -1211,17 +1211,6 @@ export const sendTestPushNotification = onCall({
   }
 });
 
-export const updateNotificationPreferences = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
-  const uid = requireUid(request.auth);
-  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
-  const reminderRepeatMinutes = normalizeReminderRepeatMinutes(request.data?.reminderRepeatMinutes);
-  const aggregateRef = await requireAggregatePermission(uid, familyId, 'manageRoutines', 'parent');
-  await aggregateRef.update({
-    'notificationPreferences.reminderRepeatMinutes': reminderRepeatMinutes,
-    updatedAt: FieldValue.serverTimestamp(),
-  });
-});
-
 export const regenerateLinkCode = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
   const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
@@ -1637,115 +1626,6 @@ export const dispatchPlannedChecks = onSchedule({
         routineId,
         ...getRoutineNotificationNames(assignmentData, routineId),
       }, false);
-    }));
-  }));
-});
-
-export const dispatchCheckReminders = onSchedule({
-  region,
-  schedule: 'every 5 minutes',
-  timeZone: 'UTC',
-  secrets: [vapidPrivateKey, vapidPublicKey],
-}, async () => {
-  const aggregates = await loadScheduledAggregates();
-  if (!aggregates.length) return;
-
-  const now = new Date();
-  webpush.setVapidDetails('https://www.zadiag.com', vapidPublicKey.value(), vapidPrivateKey.value());
-
-  await Promise.allSettled(aggregates.map(async (familyDoc) => {
-    const familyData = familyDoc.data() as {
-      members?: Record<string, string>;
-      notificationPreferences?: { reminderRepeatMinutes?: unknown };
-    };
-    if (!await aggregateHasActiveParticipant(familyDoc)) return;
-
-    const repeatMinutes = normalizeReminderRepeatMinutes(familyData.notificationPreferences?.reminderRepeatMinutes);
-    if (repeatMinutes <= 0) return;
-
-    const [pendingChecks, subscriptions] = await Promise.all([
-      familyDoc.ref.collection('checks')
-        .where('status', '==', 'pending')
-        .limit(20)
-        .get(),
-      familyDoc.ref.collection('pushSubscriptions').get(),
-    ]);
-    if (pendingChecks.empty || subscriptions.empty) return;
-
-    const assignmentCache = new Map<string, Promise<FirebaseFirestore.DocumentSnapshot>>();
-    const assignmentFor = (routineId: string) => {
-      const cached = assignmentCache.get(routineId);
-      if (cached) return cached;
-      const next = familyDoc.ref.collection('routineAssignments').doc(routineId).get();
-      assignmentCache.set(routineId, next);
-      return next;
-    };
-
-    await Promise.allSettled(pendingChecks.docs.map(async (checkDoc) => {
-      const checkData = checkDoc.data() as {
-        routineId?: string;
-        sessionId?: string;
-        requestedAt?: string;
-        expiresAt?: string;
-        status?: string;
-      };
-      if (!shouldSendCheckReminder({
-        requestedAt: checkData.requestedAt,
-        expiresAt: checkData.expiresAt,
-        repeatMinutes,
-        now,
-      })) return;
-
-      const routineId = String(checkData.routineId ?? DEFAULT_ROUTINE_ID);
-      const assignment = await assignmentFor(routineId);
-      const notificationNames = getRoutineNotificationNames(assignment.data(), routineId);
-
-      await Promise.allSettled(subscriptions.docs.map(async (subscriptionDoc) => {
-        if (pushRecipientRole(subscriptionDoc) !== 'child') return;
-        const reminderRef = checkDoc.ref.collection('reminders').doc(subscriptionDoc.id);
-        const reserved = await db.runTransaction(async (transaction): Promise<boolean> => {
-          const [freshCheck, reminder] = await Promise.all([
-            transaction.get(checkDoc.ref),
-            transaction.get(reminderRef),
-          ]);
-          const freshCheckData = freshCheck.data() as {
-            requestedAt?: string;
-            expiresAt?: string;
-            status?: string;
-          } | undefined;
-          if (!freshCheck.exists || freshCheckData?.status !== 'pending') return false;
-          const lastReminderAt = reminder.data()?.lastSentAt;
-          if (!shouldSendCheckReminder({
-            requestedAt: freshCheckData.requestedAt,
-            expiresAt: freshCheckData.expiresAt,
-            lastReminderAt: typeof lastReminderAt === 'string' ? lastReminderAt : undefined,
-            repeatMinutes,
-            now,
-          })) return false;
-          transaction.set(reminderRef, {
-            lastSentAt: now.toISOString(),
-            repeatMinutes,
-            updatedAt: FieldValue.serverTimestamp(),
-          }, { merge: true });
-          return true;
-        });
-        if (!reserved) return;
-        const dispatchResult = await sendCheckPushNotification(subscriptionDoc, {
-          sessionId: String(checkData.sessionId ?? checkDoc.id),
-          routineId,
-          ...notificationNames,
-        }, true);
-        if (dispatchResult !== 'success') {
-          await reminderRef.delete().catch((error) => {
-            console.error('Unable to release failed reminder reservation', {
-              checkId: checkDoc.id,
-              subscriptionId: subscriptionDoc.id,
-              dispatchResult,
-              error,
-            });
-          });
-        }
-      }));
     }));
   }));
 });

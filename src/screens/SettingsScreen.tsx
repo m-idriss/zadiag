@@ -9,7 +9,7 @@ import {
   trashOutline,
 } from 'ionicons/icons';
 import type { AppPreferences, Locale, MembershipRole, ParticipantAccess, ParticipantMember, PushSubscriptionHealth, Role, VerificationEvent } from '../domain/models';
-import { formatMessage, type MessageKey } from '../services/i18n';
+import type { MessageKey } from '../services/i18n';
 import { buildDiagnosticsEmailBody, createCorrelationId } from '../services/appLogs';
 import type { AppUpdateInfo } from '../services/appUpdate';
 import { Disclaimer } from '../components/Disclaimer';
@@ -201,9 +201,6 @@ export function SettingsScreen({
   const notificationWindowValue = preferences.notificationWindowStart === '08:00' && preferences.notificationWindowEnd === '21:00'
     ? 'day'
     : 'anytime';
-  const reminderRepeatLabel = preferences.reminderRepeatMinutes === 0
-    ? t('settingsReminderRepeatDetailOff')
-    : formatMessage(t('settingsReminderRepeatDetail'), { minutes: preferences.reminderRepeatMinutes });
   const updateSeverity = updateInfo.available ? updateInfo.severity : 'none';
   const updateDetail = updateInfo.available
     ? updateInfo.severity === 'major'
@@ -265,27 +262,6 @@ export function SettingsScreen({
         t={t}
       />
       </div>
-      {role === 'parent' ? (
-        <section className="settings-section" aria-labelledby="settings-participant-reminders-heading">
-          <h2 id="settings-participant-reminders-heading">{t('settingsParticipantRemindersSection')}</h2>
-          <div className="card settings-list">
-            <ListRow
-              icon={<SvgIcon icon={notificationsOutline} />}
-              title={t('settingsReminderRepeatTitle')}
-              detail={reminderRepeatLabel}
-              trailing={(
-                <SegmentedControl
-                  ariaLabel={t('settingsReminderRepeatTitle')}
-                  className="settings-choice-toggle"
-                  value={preferences.reminderRepeatMinutes}
-                  onChange={(value) => { void setPreferences({ reminderRepeatMinutes: value }); }}
-                  options={[0, 20, 30].map((minutes) => ({ value: minutes, label: minutes === 0 ? t('off') : `${minutes}m` }))}
-                />
-              )}
-            />
-          </div>
-        </section>
-      ) : null}
       <section className="settings-section" aria-labelledby="settings-device-heading">
         <h2 id="settings-device-heading">{t('settingsDeviceSection')}</h2>
         <div className="card settings-list">

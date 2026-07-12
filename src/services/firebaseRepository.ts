@@ -63,7 +63,6 @@ interface FamilyDocument {
   linkingCode?: string;
   parentRecoveryCode?: string;
   members?: Record<string, string>;
-  notificationPreferences?: Partial<Pick<AppPreferences, 'reminderRepeatMinutes'>>;
 }
 
 const asReviewStatus = (value: unknown): VerificationEvent['reviewStatus'] =>
@@ -292,7 +291,6 @@ export class FirebaseRepository implements AppRepository {
     this.persistPreferences();
     this.emit();
     await this.syncPushSubscriptionPreferences();
-    await this.syncFamilyNotificationPreferences();
   }
 
   async linkParent(childName: string) {
@@ -775,14 +773,6 @@ export class FirebaseRepository implements AppRepository {
       this.state.family.childLinked = childLinked || this.state.family.childLinked;
       this.state.family.linkingCode = family.linkingCode ?? this.state.family.linkingCode;
       this.state.family.parentRecoveryCode = family.parentRecoveryCode ?? this.state.family.parentRecoveryCode;
-      if (role === 'parent' && typeof family.notificationPreferences?.reminderRepeatMinutes === 'number') {
-        this.state.preferences = normalizeAppPreferences({
-          ...this.state.preferences,
-          reminderRepeatMinutes: family.notificationPreferences.reminderRepeatMinutes,
-        });
-        this.persistPreferences();
-      }
-
       this.emit();
 
       const familyMembers = family.members;
@@ -859,22 +849,6 @@ export class FirebaseRepository implements AppRepository {
       });
     } catch (error) {
       console.error('Unable to update push subscription preferences', error);
-    }
-  }
-
-  private async syncFamilyNotificationPreferences() {
-    if (this.state.role !== 'parent' || !this.user || !this.state.family.id) return;
-    try {
-      const updateNotificationPreferences = httpsCallable<{
-        familyId: string;
-        reminderRepeatMinutes: number;
-      }, void>(this.services.functions, 'updateNotificationPreferences');
-      await updateNotificationPreferences({
-        familyId: this.state.family.id,
-        reminderRepeatMinutes: normalizeAppPreferences(this.state.preferences).reminderRepeatMinutes,
-      });
-    } catch (error) {
-      console.error('Unable to update notification preferences', error);
     }
   }
 

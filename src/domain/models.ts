@@ -177,14 +177,12 @@ export interface AppPreferences {
   compactMode: boolean;
   notificationWindowStart: string;
   notificationWindowEnd: string;
-  reminderRepeatMinutes: number;
 }
 
 export const defaultAppPreferences: AppPreferences = {
   compactMode: true,
   notificationWindowStart: '08:00',
   notificationWindowEnd: '21:00',
-  reminderRepeatMinutes: 20,
 };
 
 export const normalizeAppPreferences = (preferences?: Partial<AppPreferences>): AppPreferences => ({
