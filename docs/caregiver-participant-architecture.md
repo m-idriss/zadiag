@@ -210,7 +210,7 @@ interface AppState {
 }
 ```
 
-Single-participant accounts open directly as today. Accounts with several participants get a compact selector that shows the participant name and the user's display label. A management screen lists all linked participants for the current user and, within each participant, its caregivers and their status. Self-managed profiles use first-person copy and do not pretend the user is their own child.
+Single-participant accounts open directly as today. Accounts with several participants get a concise selector that shows the participant name and the user's display label. A management screen lists all linked participants for the current user and, within each participant, its caregivers and their status. Self-managed profiles use first-person copy and do not pretend the user is their own child.
 
 The active participant ID is a UI preference, not an authorization fact. Repository operations always pass the participant ID and the server rechecks membership.
 

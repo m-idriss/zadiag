@@ -83,7 +83,6 @@ export function App() {
   const useLocalDemo = isLocalDemoEnvironment();
   const t = createTranslator(state.locale);
   const preferences = normalizeAppPreferences(state.preferences);
-  const appRootClassName = 'app-root';
   const {
     appUpdateInfo,
     applySnackbarUpdate,
@@ -269,28 +268,22 @@ export function App() {
 
   if (startupError) {
     return (
-      <div className={appRootClassName}>
-        <main className="page startup-recovery-page">
-          <section className="startup-recovery-card" aria-live="polite">
-            <img src="/icons/icon-192.png" alt="" />
-            <p className="eyebrow">{t('startupRestoreEyebrow')}</p>
-            <h1>{t('startupRestoreTitle')}</h1>
-            <p>{t('startupRestoreBody')}</p>
-            <button type="button" className="primary-action-button startup-recovery-action" onClick={() => window.location.reload()}>
-              {t('startupRestoreRetry')}
-            </button>
-          </section>
-        </main>
-      </div>
+      <main className="page startup-recovery-page">
+        <section className="startup-recovery-card" aria-live="polite">
+          <img src="/icons/icon-192.png" alt="" />
+          <p className="eyebrow">{t('startupRestoreEyebrow')}</p>
+          <h1>{t('startupRestoreTitle')}</h1>
+          <p>{t('startupRestoreBody')}</p>
+          <button type="button" className="primary-action-button startup-recovery-action" onClick={() => window.location.reload()}>
+            {t('startupRestoreRetry')}
+          </button>
+        </section>
+      </main>
     );
   }
 
   if (!ready) {
-    return (
-      <div className={appRootClassName}>
-        <SplashScreen progress={splashProgress} message={t(splashMessage)} />
-      </div>
-    );
+    return <SplashScreen progress={splashProgress} message={t(splashMessage)} />;
   }
 
   let content: React.ReactNode;
@@ -437,7 +430,7 @@ export function App() {
   }
 
   return (
-    <div className={appRootClassName}>
+    <>
       <Suspense fallback={<SplashScreen progress={ready ? 96 : splashProgress} message={t(ready ? 'splashFinalizing' : splashMessage)} />}>
         {content}
       </Suspense>
@@ -463,6 +456,6 @@ export function App() {
           onClose={() => setResetNoticeKey(undefined)}
         />
       ) : null}
-    </div>
+    </>
   );
 }

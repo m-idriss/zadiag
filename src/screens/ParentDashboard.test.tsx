@@ -538,7 +538,7 @@ describe('ParentDashboard', () => {
     expect(reviewCheck).toHaveBeenCalledWith('legacy-review', 'not_detected');
   });
 
-  it('reviews a proof with a horizontal swipe on the compact block', async () => {
+  it('reviews a proof with a horizontal swipe on the review block', async () => {
     const assignment = createDefaultRoutineAssignment();
     const reviewCheck = vi.fn().mockResolvedValue(undefined);
     const state: AppState = {

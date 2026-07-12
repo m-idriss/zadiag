@@ -15,18 +15,18 @@
   --surface-solid: #fff;
   --shadow-sm: 0 1px 2px rgba(16, 42, 67, .03), 0 8px 28px rgba(16, 42, 67, .055);
   --shadow-md: 0 2px 5px rgba(16, 42, 67, .035), 0 18px 44px rgba(16, 42, 67, .09);
-  --radius-card: 22px;
+  --radius-card: 18px;
   --radius-control: 14px;
   --height-action: 36px;
   --font-body: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-display: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --icon-font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Apple Symbols", "Segoe UI Symbol", "Noto Sans Symbols 2", "Noto Sans Symbols", 'Nunito', system-ui, sans-serif;
-  --block-padding: 16px;
-  --block-padding-lg: 20px;
-  --block-padding-sm: 14px;
-  --row-padding-y: 12px;
-  --row-padding-x: 14px;
-  --panel-gap: 10px;
+  --block-padding: 12px;
+  --block-padding-lg: 14px;
+  --block-padding-sm: 10px;
+  --row-padding-y: 9px;
+  --row-padding-x: 11px;
+  --panel-gap: 8px;
   --card-radius: var(--radius-card);
   font-family: var(--font-body);
   font-synthesis: none;
@@ -121,7 +121,7 @@ button:disabled { cursor: not-allowed; }
   font-variant-emoji: emoji;
 }
 
-.app-root {
+#root {
   min-height: 100dvh;
   background: transparent;
   overflow: hidden;
@@ -387,7 +387,6 @@ button:disabled { cursor: not-allowed; }
 .routine-next { margin: 0; font-size: 13px; font-weight: 800; color: var(--teal) !important; }
 .routine-details-button { justify-self: start; padding: 8px 0; border: 0; background: transparent; color: var(--teal); font-weight: 900; }
 .empty-state { padding: 30px 18px; text-align: center; }
-.empty-state.compact { padding: 12px 4px; text-align: left; font-size: 13px; }
 .routine-detail-header { align-items: flex-start; margin-top: 20px; }
 .routine-detail-header .routine-status { margin-top: 6px; }
 .routine-detail-progress { display: flex; align-items: center; gap: 18px; }
@@ -1545,149 +1544,139 @@ button:disabled { cursor: not-allowed; }
   font-weight: 850;
 }
 .settings-reset-button .svg-icon { font-size: 20px; }
-.app-root {
-  --block-padding: 12px;
-  --block-padding-lg: 14px;
-  --block-padding-sm: 10px;
-  --row-padding-y: 9px;
-  --row-padding-x: 11px;
-  --panel-gap: 8px;
-  --radius-card: 18px;
-  --card-radius: var(--radius-card);
-}
-.app-root .content-screen { gap: 14px; }
-.app-root .settings-list { padding: 0; }
-.app-root .privacy-card ul { gap: 8px; margin-top: 0; }
-.app-root .page,
-.app-root .content-screen {
+.content-screen { gap: 14px; }
+.settings-list { padding: 0; }
+.privacy-card ul { gap: 8px; margin-top: 0; }
+.page,
+.content-screen {
   padding: calc(18px + env(safe-area-inset-top)) 18px calc(96px + env(safe-area-inset-bottom));
 }
-.app-root .page h1,
-.app-root .screen-header h1 {
+.page h1,
+.screen-header h1 {
   margin-bottom: 5px;
   font-size: clamp(24px, 7vw, 32px);
   font-weight: 650;
   letter-spacing: -.025em;
 }
-.app-root .page h2,
-.app-root .content-screen h2 {
+.page h2,
+.content-screen h2 {
   font-size: 17px;
   font-weight: 650;
   letter-spacing: -.014em;
 }
-.app-root .page p,
-.app-root .content-screen p { font-size: 12px; line-height: 1.38; }
-.app-root .screen-header p { font-size: 10px; line-height: 1.32; }
-.app-root .action-button {
+.page p,
+.content-screen p { font-size: 12px; line-height: 1.38; }
+.screen-header p { font-size: 10px; line-height: 1.32; }
+.action-button {
   min-height: var(--height-action);
   border-radius: 12px;
   font-weight: 620;
 }
-.app-root .routine-tab-panel { gap: 14px; }
-.app-root .content-section,
-.app-root .dashboard-summary-section,
-.app-root .routine-history-panel,
-.app-root .routines-list-section,
-.app-root .settings-section { gap: 6px; }
-.app-root .section-heading,
-.app-root .dashboard-summary-section > h2,
-.app-root .settings-section > h2 { margin-inline: 4px; }
-.app-root .settings-section > h2,
-.app-root .section-heading h2,
-.app-root .dashboard-summary-section > h2,
-.app-root .section-heading small,
-.app-root .filter-group > span,
-.app-root .routine-catalog-heading small,
-.app-root .routine-plan-stats small {
+.routine-tab-panel { gap: 14px; }
+.content-section,
+.dashboard-summary-section,
+.routine-history-panel,
+.routines-list-section,
+.settings-section { gap: 6px; }
+.section-heading,
+.dashboard-summary-section > h2,
+.settings-section > h2 { margin-inline: 4px; }
+.settings-section > h2,
+.section-heading h2,
+.dashboard-summary-section > h2,
+.section-heading small,
+.filter-group > span,
+.routine-catalog-heading small,
+.routine-plan-stats small {
   font-size: 9px;
   font-weight: 650;
   letter-spacing: .055em;
 }
-.app-root .settings-row,
-.app-root .history-row,
-.app-root .parent-history-row,
-.app-root .routine-catalog-item {
+.settings-row,
+.history-row,
+.parent-history-row,
+.routine-catalog-item {
   min-height: 54px;
   gap: 8px;
   padding: var(--row-padding-y) var(--row-padding-x);
 }
-.app-root .settings-row-icon,
-.app-root .history-icon,
-.app-root .parent-empty-history-card > .app-icon,
-.app-root .parent-empty-history-card > .settings-row-icon,
-.app-root .today-task-icon,
-.app-root .routine-icon {
+.settings-row-icon,
+.history-icon,
+.parent-empty-history-card > .app-icon,
+.parent-empty-history-card > .settings-row-icon,
+.today-task-icon,
+.routine-icon {
   width: 36px;
   height: 36px;
   border-radius: 11px;
   font-size: 19px;
 }
-.app-root .settings-row-copy strong,
-.app-root .parent-review-copy strong,
-.app-root .parent-history-row strong,
-.app-root .routine-card-heading h2,
-.app-root .routine-catalog-item h3,
-.app-root .today-task-copy h3,
-.app-root .upcoming-check-card h3 {
+.settings-row-copy strong,
+.parent-review-copy strong,
+.parent-history-row strong,
+.routine-card-heading h2,
+.routine-catalog-item h3,
+.today-task-copy h3,
+.upcoming-check-card h3 {
   font-size: 13px;
   font-weight: 650;
 }
-.app-root .settings-row-copy small,
-.app-root .parent-review-copy small,
-.app-root .parent-review-copy p,
-.app-root .parent-history-row small,
-.app-root .routine-card-heading p,
-.app-root .routine-catalog-item p,
-.app-root .today-task-copy p,
-.app-root .upcoming-check-card p,
-.app-root .routine-next-inline,
-.app-root .privacy-card li {
+.settings-row-copy small,
+.parent-review-copy small,
+.parent-review-copy p,
+.parent-history-row small,
+.routine-card-heading p,
+.routine-catalog-item p,
+.today-task-copy p,
+.upcoming-check-card p,
+.routine-next-inline,
+.privacy-card li {
   font-size: 11px;
   font-weight: 500;
 }
-.app-root .routine-catalog-item-content { gap: 3px; }
-.app-root .routine-catalog-meta { gap: 4px; }
-.app-root .routine-catalog-meta span {
+.routine-catalog-item-content { gap: 3px; }
+.routine-catalog-meta { gap: 4px; }
+.routine-catalog-meta span {
   min-height: 21px;
   padding: 3px 6px;
   border-radius: 7px;
   font-size: 9px;
   font-weight: 700;
 }
-.app-root .settings-locale-toggle button,
-.app-root .summary-range-toggle button,
-.app-root .filter-chips button,
-.app-root .routine-tabs button {
+.settings-locale-toggle button,
+.summary-range-toggle button,
+.filter-chips button,
+.routine-tabs button {
   min-height: var(--height-action);
   padding: 5px 8px;
   font-size: 11px;
   font-weight: 700;
 }
-.app-root .settings-choice-toggle button { min-width: 38px; }
-.app-root .settings-switch {
+.settings-choice-toggle button { min-width: 38px; }
+.settings-switch {
   width: 52px;
   height: var(--height-action);
   padding: 4px;
 }
-.app-root .settings-switch span { width: 26px; height: 26px; }
-.app-root .settings-switch.active span { transform: translateX(16px); }
-.app-root .settings-inline-action,
-.app-root .primary-action-button,
-.app-root .request-check,
-.app-root .parent-review-button,
-.app-root .history-retake-button,
-.app-root .routine-list-detail-button,
-.app-root .routine-list-edit-button,
-.app-root .routine-list-delete-button,
-.app-root .routine-catalog-add,
-.app-root .routine-edit-plan-button {
+.settings-switch span { width: 26px; height: 26px; }
+.settings-switch.active span { transform: translateX(16px); }
+.settings-inline-action,
+.primary-action-button,
+.request-check,
+.parent-review-button,
+.history-retake-button,
+.routine-list-detail-button,
+.routine-list-edit-button,
+.routine-list-delete-button,
+.routine-catalog-add,
+.routine-edit-plan-button {
   min-height: var(--height-action);
   padding: 8px 11px;
   border-radius: 10px;
   font-size: 11px;
   font-weight: 620;
 }
-.app-root .routine-card-actions .routine-list-detail-button {
+.routine-card-actions .routine-list-detail-button {
   width: var(--height-action);
   height: var(--height-action);
   min-width: var(--height-action);
@@ -1698,154 +1687,154 @@ button:disabled { cursor: not-allowed; }
   padding: 0;
   line-height: 0;
 }
-.app-root .status-pill,
-.app-root .routine-status {
+.status-pill,
+.routine-status {
   padding: 5px 8px;
   font-size: 9px;
   font-weight: 620;
 }
-.app-root .parent-review-card,
-.app-root .today-pending-panel .today-routine-card,
-.app-root .parent-active-check-card,
-.app-root .upcoming-check-card,
-.app-root .today-task.completed,
-.app-root .parent-empty-history-card,
-.app-root .responsible-state-card {
+.parent-review-card,
+.today-pending-panel .today-routine-card,
+.parent-active-check-card,
+.upcoming-check-card,
+.today-task.completed,
+.parent-empty-history-card,
+.responsible-state-card {
   padding: var(--row-padding-y) var(--row-padding-x);
   border-radius: 18px;
 }
-.app-root .adherence-summary-card {
+.adherence-summary-card {
   gap: 12px;
   padding: var(--row-padding-y) var(--row-padding-x);
 }
-.app-root .progress-ring {
+.progress-ring {
   width: 74px;
   height: 74px;
   flex-basis: 74px;
 }
-.app-root .progress-ring::after {
+.progress-ring::after {
   width: 56px;
   height: 56px;
 }
-.app-root .summary-range-toggle {
+.summary-range-toggle {
   min-height: 34px;
   margin-top: 0;
 }
-.app-root .history-filter-card {
+.history-filter-card {
   gap: 8px;
   padding: var(--row-padding-y) var(--row-padding-x);
 }
-.app-root .filter-group { gap: 5px; }
-.app-root .filter-chips { gap: 5px; }
-.app-root .parent-history-list { gap: 7px; }
-.app-root .history-results-heading { min-height: 22px; }
-.app-root .parent-review-main {
+.filter-group { gap: 5px; }
+.filter-chips { gap: 5px; }
+.parent-history-list { gap: 7px; }
+.history-results-heading { min-height: 22px; }
+.parent-review-main {
   grid-template-columns: 54px minmax(0, 1fr) auto;
   gap: 10px;
   min-height: 54px;
 }
-.app-root .parent-review-image {
+.parent-review-image {
   width: 54px;
   height: 54px;
   border-radius: 10px;
 }
-.app-root .parent-review-actions {
+.parent-review-actions {
   grid-template-columns: repeat(2, 44px);
   gap: 6px;
 }
-.app-root .participant-review-actions {
+.participant-review-actions {
   grid-template-columns: minmax(82px, auto);
 }
-.app-root .parent-review-button {
+.parent-review-button {
   width: 44px;
   min-height: 44px;
   padding: 0;
   border-radius: 10px;
   font-size: 19px;
 }
-.app-root .parent-review-button .app-icon { font-size: 20px; }
-.app-root .participant-retake-button {
+.parent-review-button .app-icon { font-size: 20px; }
+.participant-retake-button {
   min-height: 44px;
   padding: 7px 10px;
 }
-.app-root .today-routine-primary { gap: 9px; }
-.app-root .today-task-stack {
+.today-routine-primary { gap: 9px; }
+.today-task-stack {
   gap: 5px;
   padding: calc(var(--row-padding-y) - 1px) calc(var(--row-padding-x) - 1px);
   border-radius: 13px;
 }
-.app-root .today-task-stack-row span:first-child,
-.app-root .today-task-copy small {
+.today-task-stack-row span:first-child,
+.today-task-copy small {
   font-size: 10px;
   font-weight: 600;
 }
-.app-root .routine-card-link {
+.routine-card-link {
   gap: 9px;
   padding: var(--block-padding);
 }
-.app-root .routine-list-card-title {
+.routine-list-card-title {
   grid-template-columns: minmax(0, 1fr) auto 32px;
   gap: 6px;
 }
-.app-root .routine-schedule-toggle {
+.routine-schedule-toggle {
   width: 32px;
   height: 32px;
   border-radius: 10px;
 }
-.app-root .routine-schedule-chips span i { display: none; }
-.app-root .routine-detail-hero {
+.routine-schedule-chips span i { display: none; }
+.routine-detail-hero {
   grid-template-columns: 48px minmax(0, 1fr);
   gap: 10px;
   padding: 9px 10px;
   border-radius: 18px;
 }
-.app-root .routine-hero-icon {
+.routine-hero-icon {
   width: 48px;
   height: 48px;
   border-radius: 14px;
   font-size: 25px;
 }
-.app-root .routine-detail-hero h1 { font-size: 17px; font-weight: 650; }
-.app-root .next-check-card,
-.app-root .routine-advice,
-.app-root .routine-heatmap,
-.app-root .streak-grid > div {
+.routine-detail-hero h1 { font-size: 17px; font-weight: 650; }
+.next-check-card,
+.routine-advice,
+.routine-heatmap,
+.streak-grid > div {
   padding: var(--block-padding);
   border-radius: 16px;
 }
-.app-root .routine-history-row {
+.routine-history-row {
   min-height: 58px;
   grid-template-columns: 44px minmax(0, 1fr) auto 8px;
 }
-.app-root .submission-thumb {
+.submission-thumb {
   width: 44px;
   height: 44px;
   border-radius: 10px;
   font-size: 21px;
 }
-.app-root .progress-ring {
+.progress-ring {
   width: 74px;
   height: 74px;
   flex-basis: 74px;
 }
-.app-root .progress-ring::after { width: 56px; height: 56px; }
-.app-root .progress-ring span { font-size: 16px; font-weight: 650; }
-.app-root .bottom-nav {
+.progress-ring::after { width: 56px; height: 56px; }
+.progress-ring span { font-size: 16px; font-weight: 650; }
+.bottom-nav {
   right: 10px;
   bottom: calc(8px + env(safe-area-inset-bottom));
   left: 10px;
   padding: 6px;
   border-radius: 20px;
 }
-.app-root .bottom-nav button {
+.bottom-nav button {
   min-height: 44px;
   padding: 6px 6px 4px;
   border-radius: 14px;
   font-size: 10px;
   font-weight: 700;
 }
-.app-root .bottom-nav button > span,
-.app-root .bottom-nav button .app-icon { font-size: 20px; }
+.bottom-nav button > span,
+.bottom-nav button .app-icon { font-size: 20px; }
 
 @media (max-width: 430px) {
   .welcome-page { gap: 15px; }
@@ -1891,7 +1880,6 @@ button:disabled { cursor: not-allowed; }
 
 @media (min-width: 700px) {
   body { background: #e9efed; }
-  .app-root { width: 100%; box-shadow: none; }
 }
 
 .language-toggle {

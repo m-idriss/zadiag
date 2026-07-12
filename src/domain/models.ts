@@ -174,20 +174,18 @@ export interface PushSubscriptionHealth {
 }
 
 export interface AppPreferences {
-  compactMode: boolean;
   notificationWindowStart: string;
   notificationWindowEnd: string;
 }
 
 export const defaultAppPreferences: AppPreferences = {
-  compactMode: true,
   notificationWindowStart: '08:00',
   notificationWindowEnd: '21:00',
 };
 
 export const normalizeAppPreferences = (preferences?: Partial<AppPreferences>): AppPreferences => ({
-  ...defaultAppPreferences,
-  ...preferences,
+  notificationWindowStart: preferences?.notificationWindowStart ?? defaultAppPreferences.notificationWindowStart,
+  notificationWindowEnd: preferences?.notificationWindowEnd ?? defaultAppPreferences.notificationWindowEnd,
 });
 
 export interface AppState {

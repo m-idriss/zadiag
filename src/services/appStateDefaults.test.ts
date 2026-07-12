@@ -17,4 +17,17 @@ describe('app state defaults', () => {
       events: [],
     });
   });
+
+  it('drops obsolete display preferences from persisted state', () => {
+    localStorage.setItem(PREFERENCES_KEY, JSON.stringify({
+      notificationWindowStart: '09:00',
+      notificationWindowEnd: '20:00',
+      legacyLayoutMode: true,
+    }));
+
+    expect(initialRemoteState().preferences).toEqual({
+      notificationWindowStart: '09:00',
+      notificationWindowEnd: '20:00',
+    });
+  });
 });
