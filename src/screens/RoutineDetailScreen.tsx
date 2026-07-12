@@ -315,9 +315,9 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
 
       {selectedHistoryEvent ? (
         <div className="history-detail-backdrop" onClick={() => setSelectedHistoryEventId(undefined)}>
-          <div ref={historyDialogRef} className="history-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="history-detail-title" tabIndex={-1} onClick={(event) => event.stopPropagation()}>
+          <div ref={historyDialogRef} className={`history-detail-dialog${proofUrls[selectedHistoryEvent.id] ? '' : ' no-proof'}`} role="dialog" aria-modal="true" aria-labelledby="history-detail-title" tabIndex={-1} onClick={(event) => event.stopPropagation()}>
             <header>
-              <div><small>{t('historyDetailTitle')}</small><h2 id="history-detail-title">{formatDateTime(selectedHistoryEvent.requestedAt)}</h2></div>
+              <div className="history-detail-heading"><small>{t('historyDetailTitle')}</small><h2 id="history-detail-title">{formatDateTime(selectedHistoryEvent.requestedAt)}</h2><StatusPill status={selectedHistoryEvent.status} t={t} /></div>
               <button type="button" data-autofocus aria-label={t('close')} onClick={() => setSelectedHistoryEventId(undefined)}><AppIcon name="close" /></button>
             </header>
             {proofUrls[selectedHistoryEvent.id] ? (
@@ -325,7 +325,6 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
                 <img src={proofUrls[selectedHistoryEvent.id]} alt={t('responsibleReviewImageAlt')} />
               </div>
             ) : null}
-            <div className="history-detail-status"><StatusPill status={selectedHistoryEvent.status} t={t} /></div>
             <dl>
               <div><dt>{t('historyRequestedAt')}</dt><dd>{formatDateTime(selectedHistoryEvent.requestedAt)}</dd></div>
               {selectedHistoryEvent.capturedAt ? <div><dt>{t('historyCapturedAt')}</dt><dd>{formatDateTime(selectedHistoryEvent.capturedAt)}</dd></div> : null}
@@ -333,9 +332,10 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
               {analysisSourceLabel(selectedHistoryEvent.analysisSource) ? <div><dt>{t('analysisSource')}</dt><dd>{analysisSourceLabel(selectedHistoryEvent.analysisSource)}</dd></div> : null}
               {scoreLabel(selectedHistoryEvent.confidence) ? <div><dt>{t('analysisConfidence')}</dt><dd>{scoreLabel(selectedHistoryEvent.confidence)}</dd></div> : null}
               {scoreLabel(selectedHistoryEvent.imageQuality) ? <div><dt>{t('analysisQuality')}</dt><dd>{scoreLabel(selectedHistoryEvent.imageQuality)}</dd></div> : null}
-              {selectedHistoryEvent.reason ? <div><dt>{t('analysisReason')}</dt><dd>{selectedHistoryEvent.reason}</dd></div> : null}
+              {selectedHistoryEvent.reason ? <div className="wide"><dt>{t('analysisReason')}</dt><dd>{selectedHistoryEvent.reason}</dd></div> : null}
               {reviewStatusLabel(selectedHistoryEvent.reviewStatus) ? <div><dt>{t('historyReviewDecision')}</dt><dd>{reviewStatusLabel(selectedHistoryEvent.reviewStatus)}</dd></div> : null}
               {selectedHistoryEvent.reviewedAt ? <div><dt>{t('historyReviewedAt')}</dt><dd>{formatDateTime(selectedHistoryEvent.reviewedAt)}</dd></div> : null}
+              {selectedHistoryEvent.reviewReason ? <div className="wide"><dt>{t('historyReviewComment')}</dt><dd>{selectedHistoryEvent.reviewReason}</dd></div> : null}
             </dl>
           </div>
         </div>
