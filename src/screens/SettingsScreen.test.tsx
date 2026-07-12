@@ -66,6 +66,8 @@ describe('SettingsScreen recovery diagnostics', () => {
     expect(container.textContent).not.toContain('Install & notifications');
     expect(container.querySelectorAll('.relationship-manager')).toHaveLength(1);
     expect(container.querySelectorAll('.settings-contact-button')).toHaveLength(0);
+    expect(container.querySelector('.relationship-manager .profile-context-summary')?.textContent).toContain('Leo');
+    expect(container.querySelector('.relationship-manager .profile-context-summary')?.textContent).toContain('Owner');
     const diagnosticsToggle = Array.from(container.querySelectorAll('button')).find(
       (button) => button.getAttribute('aria-label') === 'Recovery diagnostics',
     );
@@ -73,10 +75,8 @@ describe('SettingsScreen recovery diagnostics', () => {
 
     expect(container.textContent).toContain('Family ID');
     expect(container.textContent).toContain('family-1');
-    expect(container.textContent).toContain('Role');
-    expect(container.textContent).toContain('Owner');
-    expect(container.textContent).toContain('Followed profile');
-    expect(container.textContent).toContain('Leo');
+    expect(container.querySelector('.settings-diagnostics-list')?.textContent).not.toContain('Followed profile');
+    expect(container.querySelector('.settings-diagnostics-list')?.textContent).not.toContain('Role');
     expect(container.textContent).toContain('Notifications');
     expect(container.textContent).toContain('Not enabled');
     expect(container.textContent).toContain('Push permission');
