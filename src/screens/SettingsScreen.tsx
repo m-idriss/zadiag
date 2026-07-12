@@ -9,13 +9,14 @@ import {
   trashOutline,
 } from 'ionicons/icons';
 import type { AppPreferences, Locale, MembershipRole, ParticipantAccess, ParticipantMember, PushSubscriptionHealth, Role, VerificationEvent } from '../domain/models';
-import type { MessageKey } from '../services/i18n';
+import { formatMessage, type MessageKey } from '../services/i18n';
 import { buildDiagnosticsEmailBody, createCorrelationId } from '../services/appLogs';
 import type { AppUpdateInfo } from '../services/appUpdate';
 import { Disclaimer } from '../components/Disclaimer';
 import { ActionButton, ListRow, SegmentedControl } from '../components/ui';
 import { SvgIcon } from '../components/SvgIcon';
 import { RelationshipManager } from '../components/RelationshipManager';
+import { languageTag } from '../services/locale';
 
 const SUPPORT_EMAIL = 'contact@3dime.com';
 
@@ -213,7 +214,7 @@ export function SettingsScreen({
     : 'anytime';
   const reminderRepeatLabel = preferences.reminderRepeatMinutes === 0
     ? t('settingsReminderRepeatDetailOff')
-    : t('settingsReminderRepeatDetail').replace('{minutes}', String(preferences.reminderRepeatMinutes));
+    : formatMessage(t('settingsReminderRepeatDetail'), { minutes: preferences.reminderRepeatMinutes });
   const updateSeverity = updateInfo.available ? updateInfo.severity : 'none';
   const updateDetail = updateInfo.available
     ? updateInfo.severity === 'major'
@@ -230,7 +231,7 @@ export function SettingsScreen({
       ? 'settingsServiceWorkerUnsupported'
       : 'settingsServiceWorkerMissing';
   const formattedLastSync = lastSyncAt
-    ? new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-US', {
+    ? new Intl.DateTimeFormat(languageTag(locale), {
       day: '2-digit',
       month: '2-digit',
       hour: '2-digit',
@@ -241,7 +242,7 @@ export function SettingsScreen({
     if (!value) return t('settingsDiagnosticsMissing');
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
-    return new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-US', {
+    return new Intl.DateTimeFormat(languageTag(locale), {
       day: '2-digit',
       month: '2-digit',
       hour: '2-digit',

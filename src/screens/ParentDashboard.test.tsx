@@ -105,7 +105,8 @@ describe('ParentDashboard', () => {
       ],
     };
 
-    act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
+    // This scenario may cross midnight, so include both calendar days.
+    act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} summaryRange="twoDays" t={(key) => translate('en', key)} />));
 
     expect(Array.from(container.querySelectorAll('.filter-chips button')).some((button) => button.textContent === 'All')).toBe(false);
     expect(container.querySelectorAll('.parent-history-row')).toHaveLength(2);
@@ -136,7 +137,7 @@ describe('ParentDashboard', () => {
     expect(container.querySelectorAll('.parent-history-row')).toHaveLength(0);
 
     act(() => root.render(<div />));
-    act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
+    act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} summaryRange="twoDays" t={(key) => translate('en', key)} />));
 
     const restoredHydrationButton = Array.from(container.querySelectorAll('.filter-chips button')).find((button) => button.textContent === 'Hydration');
     const restoredMissedButton = Array.from(container.querySelectorAll('.filter-chips button')).find((button) => button.textContent === 'Missed');

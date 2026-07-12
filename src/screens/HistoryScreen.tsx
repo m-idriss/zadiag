@@ -3,10 +3,11 @@ import type { MessageKey } from '../services/i18n';
 import { StatusPill } from '../components/StatusPill';
 import { withResolvedEventStatuses } from '../domain/adherence';
 import { ListRow } from '../components/ui';
+import { languageTag } from '../services/locale';
 
 export function HistoryScreen({ events, locale, t }: { events: VerificationEvent[]; locale: Locale; t: (key: MessageKey) => string }) {
   const closed = withResolvedEventStatuses(events).filter((event) => event.status !== 'pending' && event.status !== 'analyzing');
-  const formatDateTime = (value: string) => new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-US', {
+  const formatDateTime = (value: string) => new Intl.DateTimeFormat(languageTag(locale), {
     dateStyle: 'short',
     timeStyle: 'short',
   }).format(new Date(value));

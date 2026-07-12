@@ -12,6 +12,7 @@ import { EmptyState } from '../components/ui';
 import { activePendingEvents as activePendingChecks, upcomingRoutineChecks } from '../domain/dashboardChecks';
 import { ParticipantSelector } from '../components/ParticipantSelector';
 import { useModalFocus } from '../hooks/useModalFocus';
+import { languageTag } from '../services/locale';
 
 export function ParentDashboard({
   state,
@@ -58,7 +59,7 @@ export function ParentDashboard({
     .filter((event) => event.status === 'uncertain' && !['approved', 'rejected'].includes(event.reviewStatus ?? ''))
     .sort((a, b) => Date.parse(b.capturedAt ?? b.requestedAt) - Date.parse(a.capturedAt ?? a.requestedAt)),
   [state.events]);
-  const locale = state.locale === 'fr' ? 'fr-FR' : 'en-US';
+  const locale = languageTag(state.locale);
   const nowDate = useMemo(() => new Date(now), [now]);
   const dateTimeFormatter = useMemo(() => new Intl.DateTimeFormat(locale, {
     dateStyle: 'short',

@@ -1,3 +1,5 @@
+import { translationsForRoutine } from './routineTranslations';
+
 export type Role = 'parent' | 'child';
 export type Locale = 'en' | 'fr';
 export type VerificationStatus =
@@ -261,25 +263,7 @@ export const defaultRoutine: Routine = {
     { id: 'photo', icon: '📷', title: 'Take a clear photo', description: 'Use good light and keep your mouth centered.' },
     { id: 'send', icon: '📤', title: 'Send your proof', description: 'Submit it so the responsible person can review it.' },
   ],
-  translations: {
-    fr: {
-      name: 'Élastiques orthodontiques',
-      description: 'Contrôles quotidiens du port des élastiques orthodontiques.',
-      instructions: 'Porte tes élastiques selon les consignes de ton praticien et envoie une photo claire pour chaque contrôle.',
-      proofExample: 'Photo de la bouche avec les élastiques visibles, en bonne lumière.',
-      analysis: {
-        expectedEvidence: 'Une vue claire de la bouche montrant si les élastiques orthodontiques sont portés.',
-        detectedCriteria: 'les élastiques orthodontiques sont clairement visibles sur les dents ou l’appareil.',
-        notDetectedCriteria: 'la bouche ou les dents sont visibles et les élastiques orthodontiques sont clairement absents.',
-        uncertaintyCriteria: 'la bouche n’est pas assez visible, l’image est floue ou sombre, ou il est impossible de savoir si les élastiques sont présents.',
-      },
-      instructionSteps: [
-        { id: 'wear', icon: '🦷', title: 'Mets tes élastiques', description: 'Suis les consignes de ton praticien.' },
-        { id: 'photo', icon: '📷', title: 'Prends une photo', description: 'Cadre bien ta bouche avec une lumière claire.' },
-        { id: 'send', icon: '📤', title: 'Envoie ta preuve', description: 'Le responsable pourra ensuite la vérifier.' },
-      ],
-    },
-  },
+  translations: translationsForRoutine(DEFAULT_ROUTINE_ID),
 };
 
 export const createDefaultRoutineAssignment = (assignedAt = new Date().toISOString()): RoutineAssignment => ({

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { AppState, VerificationEvent } from '../domain/models';
-import type { MessageKey } from '../services/i18n';
+import { formatMessage, type MessageKey } from '../services/i18n';
+import { languageTag } from '../services/locale';
 import { Disclaimer } from '../components/Disclaimer';
 import { StatusPill } from '../components/StatusPill';
 import { AppIcon, routineIconName } from '../components/Icon';
@@ -67,10 +68,10 @@ export function ChildDashboard({
     () => filterEventsBySummaryRange(historyEvents, summaryRange, now),
     [historyEvents, now, summaryRange],
   );
-  const formatTime = (value: string) => new Intl.DateTimeFormat(state.locale === 'fr' ? 'fr-FR' : 'en-US', {
+  const formatTime = (value: string) => new Intl.DateTimeFormat(languageTag(state.locale), {
     timeStyle: 'short',
   }).format(new Date(value));
-  const locale = state.locale === 'fr' ? 'fr-FR' : 'en-US';
+  const locale = languageTag(state.locale);
   const presentations = new Map(state.routineAssignments.map((assignment) => [assignment.routineId, presentRoutine(assignment.routine, state.locale)]));
   const presentationFor = (event: VerificationEvent) => {
     return presentations.get(event.routineId) ?? { name: t('routine'), icon: undefined, style: {} };
@@ -98,7 +99,7 @@ export function ChildDashboard({
   const emptyTodayTitle = hasAttentionToday ? t('keepGoing') : t('niceWork');
   const emptyTodayHint = hasAttentionToday ? t('missedTodayHint') : t('nextCheckHint');
   const missedTodayLabel = missedTodayCount > 0
-    ? t(missedTodayCount === 1 ? 'missedTodayCountOne' : 'missedTodayCountMany').replace('{count}', String(missedTodayCount))
+    ? formatMessage(t(missedTodayCount === 1 ? 'missedTodayCountOne' : 'missedTodayCountMany'), { count: missedTodayCount })
     : undefined;
   const upcomingChecks = useMemo(() => upcomingRoutineChecks(state.routineAssignments, nowDate)
     .map((item) => ({
@@ -226,7 +227,7 @@ export function ChildDashboard({
   return (
     <div className="content-screen child-home">
       <header className="screen-header participant-header">
-        <div><h1>{t('activity')}</h1><p>{t('participantTodaySubtitle').replace('{name}', state.family.childName)}</p></div>
+        <div><h1>{t('activity')}</h1><p>{formatMessage(t('participantTodaySubtitle'), { name: state.family.childName })}</p></div>
         <div className="avatar" aria-hidden="true">{participantInitial}</div>
       </header>
       {pendingSection}
