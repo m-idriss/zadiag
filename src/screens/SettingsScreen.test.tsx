@@ -67,7 +67,10 @@ describe('SettingsScreen recovery diagnostics', () => {
     expect(container.querySelectorAll('.relationship-manager')).toHaveLength(1);
     expect(container.querySelectorAll('.settings-contact-button')).toHaveLength(0);
     expect(container.querySelector('.relationship-manager .profile-context-summary')?.textContent).toContain('Leo');
-    expect(container.querySelector('.relationship-manager .profile-context-summary')?.textContent).toContain('Owner');
+    const managerToggle = container.querySelector('.relationship-manager-toggle') as HTMLButtonElement;
+    act(() => managerToggle.click());
+    expect(container.querySelector('.relationship-profile-list')?.textContent).toContain('Leo');
+    expect(container.querySelector('.relationship-profile-list')?.textContent).toContain('Owner');
     const diagnosticsToggle = Array.from(container.querySelectorAll('button')).find(
       (button) => button.getAttribute('aria-label') === 'Recovery diagnostics',
     );

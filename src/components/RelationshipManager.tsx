@@ -36,9 +36,6 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
   const selectedAccess = activeAccess.find((entry) => entry.participant.id === activeParticipantId) ?? activeAccess[0];
   const selectedParticipantId = selectedAccess?.participant.id;
   const isOwner = selectedAccess?.membership.role === 'owner';
-  const selectedRoleKey = selectedAccess
-    ? `relationshipRole${selectedAccess.membership.role[0].toUpperCase()}${selectedAccess.membership.role.slice(1)}` as MessageKey
-    : undefined;
   const removableMembers = selectedAccess?.members?.filter((member) => !member.isCurrentUser && member.status === 'active') ?? [];
   const canLeaveSelectedAccess = !isOwner || (selectedAccess?.members?.filter((member) => member.role === 'owner' && member.status === 'active').length ?? 0) > 1;
 
@@ -79,7 +76,6 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
         <ProfileContextCard
           className="relationship-manager-toggle"
           title={selectedAccess?.participant.displayName ?? t('relationshipManagerTitle')}
-          subtitle={selectedRoleKey ? t(selectedRoleKey) : t('relationshipManagerHint')}
           actionIcon={settingsOutline}
           actionLabel={t('relationshipManageAction')}
           expanded={open}
