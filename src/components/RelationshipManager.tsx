@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { settingsOutline } from 'ionicons/icons';
 import type { MembershipRole, ParticipantAccess, ParticipantMember } from '../domain/models';
-import type { MessageKey } from '../services/i18n';
+import { formatMessage, type MessageKey } from '../services/i18n';
 import { ProfileContextCard } from './ProfileContextCard';
 
 type InviteRole = Exclude<MembershipRole, 'owner'>;
@@ -211,7 +211,7 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
             <h3>{t('relationshipDeleteProfileTitle')}</h3>
             <p>{t('relationshipDeleteProfileHint')}</p>
             <button type="button" aria-busy={busy === 'delete'} disabled={Boolean(busy)} onClick={() => {
-              const confirmation = t('relationshipDeleteProfileConfirm').replace('{name}', selectedAccess?.participant.displayName ?? '');
+              const confirmation = formatMessage(t('relationshipDeleteProfileConfirm'), { name: selectedAccess?.participant.displayName ?? '' });
               if (!window.confirm(confirmation)) return;
               void run('delete', async () => {
                 await onDeleteParticipant(selectedParticipantId);

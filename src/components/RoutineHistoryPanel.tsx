@@ -8,6 +8,7 @@ import { canRetakeCapture, stalePendingCheckReason, withResolvedEventStatuses } 
 import { coalesceActivePendingEventsByRoutine } from '../domain/dashboardChecks';
 import { EmptyState, ListRow } from './ui';
 import { readUiStorageJson, writeUiStorageString } from '../services/uiStorage';
+import { languageTag } from '../services/locale';
 
 const eventTimestamp = (event: VerificationEvent) =>
   Date.parse(event.capturedAt ?? event.requestedAt);
@@ -69,7 +70,7 @@ export function RoutineHistoryPanel({
   const [excludedRoutineIds, setExcludedRoutineIds] = useState<string[]>(() => readStoredFilters(titleId).routineIds);
   const [requestingEventId, setRequestingEventId] = useState<string>();
   const [hiddenRequestEventIds, setHiddenRequestEventIds] = useState<Record<string, string>>({});
-  const formatterLocale = locale === 'fr' ? 'fr-FR' : 'en-US';
+  const formatterLocale = languageTag(locale);
   const now = Date.now();
   const dateTimeFormatter = useMemo(() => new Intl.DateTimeFormat(formatterLocale, {
     dateStyle: 'short',

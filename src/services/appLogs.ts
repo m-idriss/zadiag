@@ -1,5 +1,6 @@
 import type { Locale, PushSubscriptionHealth, Role, VerificationEvent } from '../domain/models';
 import { firebaseConfig, firebaseEnabled } from './firebaseConfig';
+import { translate } from './i18n';
 
 type LogLevel = 'log' | 'info' | 'warn' | 'error' | 'debug';
 
@@ -221,9 +222,9 @@ export const buildDiagnosticsEmailBody = (input: DiagnosticsInput): string => {
     : ['No logs recorded yet.'];
 
   return [
-    'Bonjour équipe 3Dime,',
+    translate(input.locale, 'diagnosticsEmailGreeting'),
     '',
-    'Voici un rapport de debug généré depuis Zadiag.',
+    translate(input.locale, 'diagnosticsEmailIntro'),
     '',
     '--- CORRELATION ---',
     ...correlationLines,

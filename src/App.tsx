@@ -2,7 +2,8 @@ import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType } from
 import { normalizeAppPreferences, type Locale, type Role, type VerificationEvent } from './domain/models';
 import { routeForState, type AppRoute } from './domain/appRouting';
 import { createRepository } from './services/repositoryFactory';
-import { translate, type MessageKey } from './services/i18n';
+import { createTranslator, type MessageKey } from './services/i18n';
+import { documentLanguage } from './services/locale';
 import { BottomNav, type Tab } from './components/BottomNav';
 import { SplashScreen } from './components/SplashScreen';
 import { Snackbar } from './components/Snackbar';
@@ -57,7 +58,7 @@ export const resetNoticeMessageKey = (role: Role | undefined): MessageKey =>
 
 export const isParticipantInvitationCode = (code: string) => /^ZI-\d{6}$/.test(code.trim().toUpperCase());
 
-export const documentLanguageForLocale = (locale: Locale) => locale === 'fr' ? 'fr' : 'en';
+export const documentLanguageForLocale = (locale: Locale) => documentLanguage(locale);
 
 export function App() {
   const repository = useMemo(createRepository, []);
@@ -80,7 +81,7 @@ export function App() {
     () => ('serviceWorker' in navigator ? 'notRegistered' : 'unsupported'),
   );
   const useLocalDemo = isLocalDemoEnvironment();
-  const t = (key: MessageKey) => translate(state.locale, key);
+  const t = createTranslator(state.locale);
   const preferences = normalizeAppPreferences(state.preferences);
   const appRootClassName = 'app-root';
   const {

@@ -2,7 +2,8 @@ import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { addCircleOutline } from 'ionicons/icons';
 import type { AppState, MonitoringPlan, RoutineAssignment, RoutineCategory, RoutineValidationMode, ScheduleGroup, VerificationEvent } from '../domain/models';
 import { groupsFromLegacyPlan, nextPlannedWindow, summarizeWeekdaysShort } from '../domain/monitoringPlan';
-import type { MessageKey } from '../services/i18n';
+import { formatMessage, type MessageKey } from '../services/i18n';
+import { languageTag } from '../services/locale';
 import { AppIcon, routineIconName } from '../components/Icon';
 import { ProfileContextCard } from '../components/ProfileContextCard';
 import { presentRoutine } from '../domain/routinePresentation';
@@ -259,10 +260,11 @@ export function RoutinesScreen({
     }
     const routineEvents = state.events.filter((event) => event.routineId === assignment.routineId);
     const activeChecks = routineEvents.filter((event) => event.status === 'pending' && Date.parse(event.expiresAt) > Date.now()).length;
-    const confirmation = t('confirmDeleteRoutine')
-      .replace('{routine}', routineName)
-      .replace('{checks}', String(routineEvents.length))
-      .replace('{activeChecks}', String(activeChecks));
+    const confirmation = formatMessage(t('confirmDeleteRoutine'), {
+      routine: routineName,
+      checks: routineEvents.length,
+      activeChecks,
+    });
     if (!window.confirm(confirmation)) return;
     setDeletingRoutineId(assignment.routineId);
     setDeleteErrorRoutineId(undefined);
@@ -361,7 +363,7 @@ export function RoutinesScreen({
             const next = activePendingByRoutineId.get(assignment.routineId);
             const rate = completionRatesByRoutineId.get(assignment.routineId) ?? 0;
             const visual = presentRoutine(assignment.routine, state.locale);
-            const locale = state.locale === 'fr' ? 'fr-FR' : 'en-US';
+            const locale = languageTag(state.locale);
             const planned = next ? undefined : nextPlannedWindow(assignment.plan, nowDate);
             const nextLabel = next
               ? `${t('before')} ${formatRoutineTime(new Date(next.expiresAt), locale)}`
@@ -436,7 +438,7 @@ export function RoutinesScreen({
                         <button
                           type="button"
                           className="routine-list-delete-button"
-                          aria-label={t('deleteRoutine').replace('{routine}', visual.name)}
+                          aria-label={formatMessage(t('deleteRoutine'), { routine: visual.name })}
                           disabled={deletingRoutineId === assignment.routineId || deletingLastRoutine}
                           onClick={() => { void deleteRoutine(assignment, visual.name); }}
                         >
@@ -453,7 +455,7 @@ export function RoutinesScreen({
                         {requestStatus === 'error' && (
                           <p role="status" aria-live="polite" className="request-feedback error">
                             {retryBlocked
-                              ? `${t('requestCheckError')} ${t('retryInSeconds').replace('{seconds}', String(retryInSeconds))}`
+                              ? `${t('requestCheckError')} ${formatMessage(t('retryInSeconds'), { seconds: retryInSeconds })}`
                               : t('requestCheckError')}
                           </p>
                         )}

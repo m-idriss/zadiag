@@ -10,6 +10,7 @@ import { dayPeriodLabelKey } from '../domain/taskTimeLabel';
 import { RoutineEditScreen } from './RoutineEditScreen';
 import { SvgIcon } from '../components/SvgIcon';
 import { ActionButton } from '../components/ui';
+import { languageTag } from '../services/locale';
 import { useModalFocus } from '../hooks/useModalFocus';
 
 type DetailTab = 'details' | 'tracking' | 'plan';
@@ -171,7 +172,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   const rawEvents = state.events.filter((event) => event.routineId === assignment.routineId);
   const events = withResolvedEventStatuses(rawEvents, now);
   const summary = adherenceSummary(events);
-  const locale = state.locale === 'fr' ? 'fr-FR' : 'en-US';
+  const locale = languageTag(state.locale);
   const visual = presentRoutine(assignment.routine, state.locale);
   const next = rawEvents.find((event) => event.status === 'pending' && Date.parse(event.expiresAt) > now);
   const formatDateTime = (value: string) => new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));

@@ -154,6 +154,8 @@ const messages = {
     settingsNotificationsDetailDisabled: 'Enable reminders to receive checks',
     settingsDebugMailTitle: 'Send report',
     settingsDebugMailDetail: 'Include device, app and recent logs.',
+    diagnosticsEmailGreeting: 'Hello 3Dime team,',
+    diagnosticsEmailIntro: 'Here is a debug report generated from Zadiag.',
     settingsDebugMailSend: 'Send',
     settingsDebugMailError: 'Unable to open your email app. Please try again.',
     settingsTestNotificationTitle: 'Test notification',
@@ -468,6 +470,8 @@ const messages = {
     settingsNotificationsDetailDisabled: 'Active les rappels pour recevoir les contrôles',
     settingsDebugMailTitle: 'Envoyer un rapport',
     settingsDebugMailDetail: 'Inclut appareil, app et logs récents.',
+    diagnosticsEmailGreeting: 'Bonjour équipe 3Dime,',
+    diagnosticsEmailIntro: 'Voici un rapport de debug généré depuis Zadiag.',
     settingsDebugMailSend: 'Envoyer',
     settingsDebugMailError: 'Impossible d’ouvrir l’app email. Réessaie.',
     settingsTestNotificationTitle: 'Notification test',
@@ -632,4 +636,18 @@ const messages = {
 } as const;
 
 export type MessageKey = keyof typeof messages.en;
-export const translate = (locale: Locale, key: MessageKey) => messages[locale][key];
+export const messageCatalogs = messages;
+export type MessageParams = Readonly<Record<string, string | number>>;
+export type Translator = (key: MessageKey, params?: MessageParams) => string;
+
+export const formatMessage = (message: string, params?: MessageParams) => {
+  if (!params) return message;
+  return message.replace(/\{([^{}]+)\}/g, (placeholder, name: string) =>
+    Object.hasOwn(params, name) ? String(params[name]) : placeholder);
+};
+
+export const translate = (locale: Locale, key: MessageKey, params?: MessageParams) =>
+  formatMessage(messages[locale][key], params);
+
+export const createTranslator = (locale: Locale): Translator =>
+  (key, params) => translate(locale, key, params);

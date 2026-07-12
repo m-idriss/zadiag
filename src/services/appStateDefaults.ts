@@ -5,10 +5,11 @@ import {
   type Locale,
   type Role,
 } from '../domain/models';
+import { resolveLocale } from './locale';
 
 export const PREFERENCES_KEY = 'zadiag.preferences.v1';
 
-export const browserLocale = (): Locale => navigator.language?.startsWith('fr') ? 'fr' : 'en';
+export const browserLocale = (): Locale => resolveLocale(navigator.language);
 
 export const readStoredPreferences = () => {
   try {
