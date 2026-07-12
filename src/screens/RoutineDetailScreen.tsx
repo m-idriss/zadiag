@@ -166,7 +166,9 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   const [proofUrls, setProofUrls] = useState<Record<string, string>>({});
   const [proofErrors, setProofErrors] = useState<Record<string, boolean>>({});
   const [enlargedProofUrl, setEnlargedProofUrl] = useState<string>();
+  const [selectedHistoryEventId, setSelectedHistoryEventId] = useState<string>();
   const proofDialogRef = useModalFocus<HTMLDivElement>(Boolean(enlargedProofUrl), () => setEnlargedProofUrl(undefined));
+  const historyDialogRef = useModalFocus<HTMLDivElement>(Boolean(selectedHistoryEventId), () => setSelectedHistoryEventId(undefined));
   const todayHeatmapRef = useRef<HTMLSpanElement | null>(null);
   const now = Date.now();
   const rawEvents = state.events.filter((event) => event.routineId === assignment.routineId);
@@ -180,7 +182,11 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   const days = calendarDays(events, locale);
   const monthSections = calendarMonthSections(days, locale);
   const currentStreak = streakFor(events);
+  const selectedHistoryEvent = events.find((event) => event.id === selectedHistoryEventId);
   const tabs: DetailTab[] = edit ? ['plan', 'details', 'tracking'] : ['details', 'tracking'];
+  const analysisSourceLabel = (source?: VerificationEvent['analysisSource']) => source ? t(source === 'ai' ? 'analysisSourceAi' : source === 'fallback' ? 'analysisSourceFallback' : 'analysisSourceSelf') : undefined;
+  const reviewStatusLabel = (status?: VerificationEvent['reviewStatus']) => status ? t(status === 'approved' ? 'historyReviewApproved' : status === 'rejected' ? 'historyReviewRejected' : 'historyReviewPending') : undefined;
+  const scoreLabel = (score?: number) => score === undefined ? undefined : `${Math.round(score * 100)}%`;
 
   useEffect(() => {
     if (!tabs.includes(tab)) {
@@ -224,7 +230,8 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
         <span className={`submission-thumb ${event.proofImagePath ? 'submission-thumb-loading' : ''}`} aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
       )}
       <div><strong>{formatDateTime(event.requestedAt)}</strong><small>{event.reason ?? t('noAnalysisYet')}</small></div>
-      <StatusPill status={event.status} t={t} /><span aria-hidden="true"><SvgIcon icon={chevronForwardOutline} /></span>
+      <StatusPill status={event.status} t={t} />
+      <button type="button" className="routine-history-open" aria-label={`${t('historyDetailTitle')} · ${formatDateTime(event.requestedAt)}`} onClick={() => setSelectedHistoryEventId(event.id)}><SvgIcon icon={chevronForwardOutline} /></button>
     </article>
     );
   };
@@ -305,6 +312,34 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
 
       {tab === 'details' && detailsPanel}
       {tab === 'tracking' && trackingPanel}
+
+      {selectedHistoryEvent ? (
+        <div className="history-detail-backdrop" onClick={() => setSelectedHistoryEventId(undefined)}>
+          <div ref={historyDialogRef} className="history-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="history-detail-title" tabIndex={-1} onClick={(event) => event.stopPropagation()}>
+            <header>
+              <div><small>{t('historyDetailTitle')}</small><h2 id="history-detail-title">{formatDateTime(selectedHistoryEvent.requestedAt)}</h2></div>
+              <button type="button" data-autofocus aria-label={t('close')} onClick={() => setSelectedHistoryEventId(undefined)}><AppIcon name="close" /></button>
+            </header>
+            {proofUrls[selectedHistoryEvent.id] ? (
+              <div className="history-detail-proof">
+                <img src={proofUrls[selectedHistoryEvent.id]} alt={t('responsibleReviewImageAlt')} />
+              </div>
+            ) : null}
+            <div className="history-detail-status"><StatusPill status={selectedHistoryEvent.status} t={t} /></div>
+            <dl>
+              <div><dt>{t('historyRequestedAt')}</dt><dd>{formatDateTime(selectedHistoryEvent.requestedAt)}</dd></div>
+              {selectedHistoryEvent.capturedAt ? <div><dt>{t('historyCapturedAt')}</dt><dd>{formatDateTime(selectedHistoryEvent.capturedAt)}</dd></div> : null}
+              <div><dt>{t('historyExpiresAt')}</dt><dd>{formatDateTime(selectedHistoryEvent.expiresAt)}</dd></div>
+              {analysisSourceLabel(selectedHistoryEvent.analysisSource) ? <div><dt>{t('analysisSource')}</dt><dd>{analysisSourceLabel(selectedHistoryEvent.analysisSource)}</dd></div> : null}
+              {scoreLabel(selectedHistoryEvent.confidence) ? <div><dt>{t('analysisConfidence')}</dt><dd>{scoreLabel(selectedHistoryEvent.confidence)}</dd></div> : null}
+              {scoreLabel(selectedHistoryEvent.imageQuality) ? <div><dt>{t('analysisQuality')}</dt><dd>{scoreLabel(selectedHistoryEvent.imageQuality)}</dd></div> : null}
+              {selectedHistoryEvent.reason ? <div><dt>{t('analysisReason')}</dt><dd>{selectedHistoryEvent.reason}</dd></div> : null}
+              {reviewStatusLabel(selectedHistoryEvent.reviewStatus) ? <div><dt>{t('historyReviewDecision')}</dt><dd>{reviewStatusLabel(selectedHistoryEvent.reviewStatus)}</dd></div> : null}
+              {selectedHistoryEvent.reviewedAt ? <div><dt>{t('historyReviewedAt')}</dt><dd>{formatDateTime(selectedHistoryEvent.reviewedAt)}</dd></div> : null}
+            </dl>
+          </div>
+        </div>
+      ) : null}
 
       {enlargedProofUrl ? (
         <div ref={proofDialogRef} className="proof-lightbox" role="dialog" aria-modal="true" aria-label={t('responsibleReviewImageAlt')} tabIndex={-1} onClick={() => setEnlargedProofUrl(undefined)}>

@@ -96,7 +96,7 @@ describe('participant routines navigation', () => {
       routineAssignments: [assignment],
       events: [
         { id: 'done', routineId: assignment.routineId, sessionId: 'one', requestedAt: '2026-07-02T08:00:00.000Z', expiresAt: '2026-07-02T09:00:00.000Z', status: 'detected' },
-        { id: 'missed', routineId: assignment.routineId, sessionId: 'two', requestedAt: '2026-07-02T10:00:00.000Z', expiresAt: '2026-07-02T11:00:00.000Z', status: 'not_detected', proofImagePath: 'families/family/checks/missed/proof.jpg' },
+        { id: 'missed', routineId: assignment.routineId, sessionId: 'two', requestedAt: '2026-07-02T10:00:00.000Z', capturedAt: '2026-07-02T10:20:00.000Z', expiresAt: '2026-07-02T11:00:00.000Z', status: 'not_detected', proofImagePath: 'families/family/checks/missed/proof.jpg', analysisSource: 'ai', confidence: 0.82, imageQuality: 0.74, reason: 'Elastics not visible', reviewStatus: 'approved', reviewedAt: '2026-07-02T10:30:00.000Z' },
         { id: 'next', routineId: assignment.routineId, sessionId: 'three', requestedAt: '2026-07-02T18:00:00.000Z', expiresAt: '2026-07-02T20:00:00.000Z', status: 'pending' },
         { id: 'other', routineId: 'another-routine', sessionId: 'four', requestedAt: '2026-07-02T12:00:00.000Z', expiresAt: '2026-07-02T13:00:00.000Z', status: 'detected', reason: 'Other routine event' },
       ],
@@ -144,6 +144,19 @@ describe('participant routines navigation', () => {
     expect(container.querySelector('.proof-lightbox img')?.getAttribute('src')).toBe('data:image/png;base64,PROOF');
     act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
     expect(container.querySelector('.proof-lightbox')).toBeNull();
+
+    const historyRows = Array.from(container.querySelectorAll('.routine-history-row'));
+    const missedHistoryRow = historyRows.find((row) => row.textContent?.includes('Elastics not visible'));
+    const historyOpen = missedHistoryRow?.querySelector<HTMLButtonElement>('.routine-history-open');
+    expect(historyOpen?.getAttribute('aria-label')).toContain('Check details');
+    act(() => historyOpen?.click());
+    expect(container.querySelector('.history-detail-dialog')).not.toBeNull();
+    expect(container.querySelector('.history-detail-dialog')?.textContent).toContain('Proof sent');
+    expect(container.querySelector('.history-detail-dialog')?.textContent).toContain('AI');
+    expect(container.querySelector('.history-detail-dialog')?.textContent).toContain('82%');
+    expect(container.querySelector('.history-detail-dialog')?.textContent).toContain('Approved');
+    act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
+    expect(container.querySelector('.history-detail-dialog')).toBeNull();
 
     expect(container.textContent).toContain('Overall progress');
     expect(container.textContent).toContain('Activity');
