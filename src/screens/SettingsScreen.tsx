@@ -85,7 +85,6 @@ export function SettingsScreen({
   createRelationshipRecovery?: (participantId: string) => Promise<{ recoveryCode: string; expiresAt: string }>;
   recoverRelationship?: (code: string) => Promise<{ participantId: string; recoveryCode?: string; expiresAt?: string }>;
 }) {
-  const [mailError, setMailError] = useState(false);
   const [contactMailError, setContactMailError] = useState(false);
   const [updatingApp, setUpdatingApp] = useState(false);
   const [updateError, setUpdateError] = useState(false);
@@ -129,12 +128,12 @@ export function SettingsScreen({
   const confirmReset = () => {
     if (window.confirm(t('resetConfirm'))) reset();
   };
-  const sendDiagnosticsEmail = () => {
-    setMailError(false);
+  const contactSupport = () => {
+    setContactMailError(false);
     try {
       const correlationId = createCorrelationId();
-      const subject = `Zadiag debug report [${correlationId}] - ${new Date().toISOString()}`;
-      const body = buildDiagnosticsEmailBody({
+      const subject = `Zadiag contact [${correlationId}]`;
+      const diagnostics = buildDiagnosticsEmailBody({
         correlationId,
         locale,
         role,
@@ -146,18 +145,8 @@ export function SettingsScreen({
         totalChecks,
         events,
       });
+      const body = `${t('settingsContactEmailPrompt')}\n\n\n${diagnostics}`;
       const mailto = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      window.location.href = mailto;
-    } catch (error) {
-      console.error(error);
-      setMailError(true);
-    }
-  };
-  const contactSupport = () => {
-    setContactMailError(false);
-    try {
-      const subject = 'Zadiag contact';
-      const mailto = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}`;
       window.location.href = mailto;
     } catch (error) {
       console.error(error);
@@ -418,14 +407,6 @@ export function SettingsScreen({
             )}
           >
             {updateError ? <small className="settings-action-error">{t('settingsUpdateError')}</small> : null}
-          </ListRow>
-          <ListRow
-            icon={<SvgIcon icon={mailOutline} />}
-            title={t('settingsDebugMailTitle')}
-            detail={t('settingsDebugMailDetail')}
-            trailing={<button type="button" className="settings-inline-action settings-inline-action-contained" onClick={sendDiagnosticsEmail}>{t('settingsDebugMailSend')}</button>}
-          >
-            {mailError ? <small className="settings-action-error">{t('settingsDebugMailError')}</small> : null}
           </ListRow>
           <ListRow
             icon={<SvgIcon icon={mailOutline} />}
