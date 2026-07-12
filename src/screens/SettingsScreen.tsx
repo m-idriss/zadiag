@@ -334,13 +334,6 @@ export function SettingsScreen({
               )}
             />
           ) : null}
-          {role === 'parent' ? (
-            <ListRow
-              icon={<SvgIcon icon={informationCircleOutline} />}
-              title={t('settingsChildInstallTitle')}
-              detail={childInstalled ? t('settingsChildInstallDetailLinked') : t('settingsChildInstallDetailPending')}
-            />
-          ) : null}
           <ListRow
             icon={<SvgIcon icon={notificationsOutline} />}
             title={t('settingsTestNotificationTitle')}
