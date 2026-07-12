@@ -289,8 +289,6 @@ button:disabled { cursor: not-allowed; }
 .role-section { display: grid; gap: 12px; }
 .role-section-heading h2 { margin: 0 0 6px; }
 .welcome-page .role-help { margin: 0; font-size: 13px; }
-.installed-badge { width: max-content; display: flex; align-items: center; gap: 7px; margin: 6px 0 4px; padding: 7px 11px; border-radius: 99px; background: var(--mint); color: var(--teal); font-size: 12px; font-weight: 900; }
-.installed-badge .app-icon { width: 18px; height: 18px; padding: 3px; border-radius: 50%; background: var(--teal); color: white; }
 .role-grid { display: grid; gap: 10px; }
 .role-device-note { margin: 0 2px; color: var(--muted); font-size: 12px; line-height: 1.35; }
 .role-button { width: 100%; min-height: 78px; margin: 0; display: flex; align-items: center; justify-content: flex-start; padding: 0 15px; border: 1px solid rgba(255,255,255,.92); border-radius: 22px; background: white; color: var(--navy); box-shadow: var(--shadow-sm); cursor: pointer; text-align: left; transition: transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s ease; }

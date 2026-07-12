@@ -22,7 +22,6 @@ export function WelcomeScreen({
       </div>
       <section className="card welcome-hero" aria-labelledby="welcome-title">
         <div className="brand-icon"><img src="/icons/icon.svg" alt="" /></div>
-        <div className="installed-badge"><AppIcon name="check" />{t('setupInstalledBadge')}</div>
         <h1 id="welcome-title">Zadiag</h1>
         <p className="hero-copy">{t('tagline')}</p>
       </section>
