@@ -240,6 +240,11 @@ export function SettingsScreen({
     : effectivePushHealth?.endpointPresent
       ? t('yes')
       : t('settingsDiagnosticsMissing');
+  const activeProfileAccess = participantAccess?.find((entry) => entry.membership.status === 'active' && entry.participant.id === activeParticipantId)
+    ?? participantAccess?.find((entry) => entry.membership.status === 'active');
+  const activeProfileRoleKey = activeProfileAccess
+    ? `relationshipRole${activeProfileAccess.membership.role[0].toUpperCase()}${activeProfileAccess.membership.role.slice(1)}` as MessageKey
+    : undefined;
   return (
     <div className="content-screen settings-screen">
       <div className="page-context-top settings-context-top">
@@ -354,8 +359,8 @@ export function SettingsScreen({
               {diagnosticsOpen ? (
                 <>
                   <div><dt>{t('settingsDiagnosticsFamilyId')}</dt><dd>{familyId ?? t('settingsDiagnosticsMissing')}</dd></div>
-                  <div><dt>{t('settingsDiagnosticsRole')}</dt><dd>{t(role)}</dd></div>
-                  <div><dt>{t('settingsDiagnosticsParticipant')}</dt><dd>{childInstalled ? t('settingsChildInstallStatusLinked') : t('settingsChildInstallStatusPending')}</dd></div>
+                  <div><dt>{t('settingsDiagnosticsRole')}</dt><dd>{activeProfileRoleKey ? t(activeProfileRoleKey) : t('settingsDiagnosticsMissing')}</dd></div>
+                  <div><dt>{t('settingsDiagnosticsParticipant')}</dt><dd>{activeProfileAccess?.participant.displayName ?? t('settingsDiagnosticsMissing')}</dd></div>
                   <div><dt>{t('settingsDiagnosticsNotifications')}</dt><dd>{notificationsEnabled ? t('settingsNotificationsStatusEnabled') : t('settingsNotificationsStatusDisabled')}</dd></div>
                   <div><dt>{t('settingsDiagnosticsPushPermission')}</dt><dd>{effectivePushHealth?.permission ?? t('settingsDiagnosticsMissing')}</dd></div>
                   <div><dt>{t('settingsDiagnosticsPushEndpoint')}</dt><dd>{effectivePushHealth?.endpointPresent ? t('yes') : t('no')}</dd></div>

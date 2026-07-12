@@ -46,6 +46,11 @@ const renderSettings = ({
         totalChecks={0}
         serviceWorkerStatus="registered"
         lastSyncAt="2026-07-07T19:45:00.000Z"
+        participantAccess={[
+          { participant: { id: 'maya', displayName: 'Maya' }, membership: { role: 'caregiver', status: 'active' } },
+          { participant: { id: 'leo', displayName: 'Leo' }, membership: { role: 'owner', status: 'active' } },
+        ]}
+        activeParticipantId="leo"
       />,
     );
   });
@@ -69,9 +74,9 @@ describe('SettingsScreen recovery diagnostics', () => {
     expect(container.textContent).toContain('Family ID');
     expect(container.textContent).toContain('family-1');
     expect(container.textContent).toContain('Role');
-    expect(container.textContent).toContain('Responsible');
-    expect(container.textContent).toContain('Participant linked');
-    expect(container.textContent).toContain('Completed');
+    expect(container.textContent).toContain('Owner');
+    expect(container.textContent).toContain('Followed profile');
+    expect(container.textContent).toContain('Leo');
     expect(container.textContent).toContain('Notifications');
     expect(container.textContent).toContain('Not enabled');
     expect(container.textContent).toContain('Push permission');
