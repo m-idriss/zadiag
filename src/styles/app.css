@@ -1687,6 +1687,17 @@ button:disabled { cursor: not-allowed; }
   font-size: 11px;
   font-weight: 620;
 }
+.app-root .routine-card-actions .routine-list-detail-button {
+  width: var(--height-action);
+  height: var(--height-action);
+  min-width: var(--height-action);
+  min-height: var(--height-action);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 0;
+}
 .app-root .status-pill,
 .app-root .routine-status {
   padding: 5px 8px;
