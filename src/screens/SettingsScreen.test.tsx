@@ -56,6 +56,10 @@ describe('SettingsScreen recovery diagnostics', () => {
   it('shows recovery diagnostics needed by support', () => {
     const { container, root } = renderSettings();
 
+    const participantReminders = container.querySelector('[aria-labelledby="settings-participant-reminders-heading"]');
+    expect(participantReminders?.textContent).toContain('Participant reminders');
+    expect(participantReminders?.textContent).toContain('Reminder repeat');
+    expect(container.querySelector('[aria-labelledby="settings-device-heading"]')?.textContent).not.toContain('Reminder repeat');
     expect(container.textContent).toContain('Recovery diagnostics');
     expect(container.textContent).not.toContain('Sensitive area');
     expect(container.textContent).not.toContain('Install & notifications');

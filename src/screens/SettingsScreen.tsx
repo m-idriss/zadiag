@@ -265,6 +265,27 @@ export function SettingsScreen({
         t={t}
       />
       </div>
+      {role === 'parent' ? (
+        <section className="settings-section" aria-labelledby="settings-participant-reminders-heading">
+          <h2 id="settings-participant-reminders-heading">{t('settingsParticipantRemindersSection')}</h2>
+          <div className="card settings-list">
+            <ListRow
+              icon={<SvgIcon icon={notificationsOutline} />}
+              title={t('settingsReminderRepeatTitle')}
+              detail={reminderRepeatLabel}
+              trailing={(
+                <SegmentedControl
+                  ariaLabel={t('settingsReminderRepeatTitle')}
+                  className="settings-choice-toggle"
+                  value={preferences.reminderRepeatMinutes}
+                  onChange={(value) => { void setPreferences({ reminderRepeatMinutes: value }); }}
+                  options={[0, 20, 30].map((minutes) => ({ value: minutes, label: minutes === 0 ? t('off') : `${minutes}m` }))}
+                />
+              )}
+            />
+          </div>
+        </section>
+      ) : null}
       <section className="settings-section" aria-labelledby="settings-device-heading">
         <h2 id="settings-device-heading">{t('settingsDeviceSection')}</h2>
         <div className="card settings-list">
@@ -303,22 +324,6 @@ export function SettingsScreen({
                     { value: 'day' as const, label: t('settingsNotificationWindowDay') },
                     { value: 'anytime' as const, label: t('settingsNotificationWindowAnytime') },
                   ]}
-                />
-              )}
-            />
-          ) : null}
-          {role === 'parent' ? (
-            <ListRow
-              icon={<SvgIcon icon={notificationsOutline} />}
-              title={t('settingsReminderRepeatTitle')}
-              detail={reminderRepeatLabel}
-              trailing={(
-                <SegmentedControl
-                  ariaLabel={t('settingsReminderRepeatTitle')}
-                  className="settings-choice-toggle"
-                  value={preferences.reminderRepeatMinutes}
-                  onChange={(value) => { void setPreferences({ reminderRepeatMinutes: value }); }}
-                  options={[0, 20, 30].map((minutes) => ({ value: minutes, label: minutes === 0 ? t('off') : `${minutes}m` }))}
                 />
               )}
             />
