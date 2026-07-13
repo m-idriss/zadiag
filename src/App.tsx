@@ -199,6 +199,27 @@ export function App() {
   }, [state.events, state.role]);
 
   const sync = () => setState(repository.snapshot());
+  const withRepositorySync = <TArgs extends unknown[], TResult>(
+    action: (...args: TArgs) => Promise<TResult>,
+  ) => async (...args: TArgs): Promise<TResult> => {
+    const result = await action.apply(repository, args);
+    sync();
+    return result;
+  };
+  const withOptionalRepositorySync = <TArgs extends unknown[], TResult>(
+    action: ((...args: TArgs) => Promise<TResult>) | undefined,
+  ) => action ? withRepositorySync(action) : undefined;
+  const withRepositorySyncVoid = <TArgs extends unknown[]>(
+    action: (...args: TArgs) => Promise<unknown>,
+  ) => async (...args: TArgs): Promise<void> => {
+    await action.apply(repository, args);
+    sync();
+  };
+  const bindOptionalRepository = <TArgs extends unknown[], TResult>(
+    action: ((...args: TArgs) => Promise<TResult>) | undefined,
+  ) => action ? (...args: TArgs) => action.apply(repository, args) : undefined;
+  const syncLocale = withRepositorySync(repository.setLocale);
+  const selectActiveParticipant = withOptionalRepositorySync(repository.selectActiveParticipant);
   const selectRole = async (role: Role) => {
     await repository.selectRole(role);
     sync();
@@ -300,7 +321,7 @@ export function App() {
     content = (
       <InstallScreen
         locale={state.locale}
-        setLocale={(locale) => { void repository.setLocale(locale).then(sync); }}
+        setLocale={(locale) => { void syncLocale(locale); }}
         t={t}
       />
     );
@@ -308,7 +329,7 @@ export function App() {
     content = (
       <WelcomeScreen
         locale={state.locale}
-        setLocale={(locale) => { void repository.setLocale(locale).then(sync); }}
+        setLocale={(locale) => { void syncLocale(locale); }}
         chooseRole={selectRole}
         t={t}
       />
@@ -360,14 +381,12 @@ export function App() {
             state={state}
             start={role === 'child' ? () => startCapture() : undefined}
             edit={canManageRoutines}
-            requestCheck={canManageRoutines ? async (routineId) => { await repository.requestCheckNow(routineId); sync(); } : undefined}
+            requestCheck={canManageRoutines ? withRepositorySync(repository.requestCheckNow) : undefined}
             getProofImageUrl={(eventId) => repository.getProofImageUrl(eventId)}
-            onAssignRoutine={canManageRoutines ? async (routineId) => { await repository.assignRoutine(routineId); sync(); } : undefined}
-            onDeleteRoutine={canManageRoutines ? async (routineId) => { await repository.deleteRoutine(routineId); sync(); } : undefined}
-            onRetryRoutines={repository.retryRemoteSync ? async () => { await repository.retryRemoteSync?.(); sync(); } : undefined}
-            onSelectParticipant={repository.selectActiveParticipant
-              ? (participantId) => { void repository.selectActiveParticipant?.(participantId).then(sync); }
-              : undefined}
+            onAssignRoutine={canManageRoutines ? withRepositorySync(repository.assignRoutine) : undefined}
+            onDeleteRoutine={canManageRoutines ? withRepositorySync(repository.deleteRoutine) : undefined}
+            onRetryRoutines={withOptionalRepositorySync(repository.retryRemoteSync)}
+            onSelectParticipant={selectActiveParticipant}
             onSaveMonitoringPlan={canManageRoutines ? async (routineId, plan, validationMode) => {
               setSavingRoutineId(routineId);
               try {
@@ -390,9 +409,9 @@ export function App() {
             notificationsEnabled={state.notificationsEnabled}
             pushHealth={state.pushHealth}
             preferences={preferences}
-            setPreferences={async (nextPreferences) => { await repository.setPreferences(nextPreferences); sync(); }}
-            enableNotifications={async () => { await enableNotifications(); sync(); }}
-            sendTestPushNotification={async () => { await repository.sendTestPushNotification(); sync(); }}
+            setPreferences={withRepositorySync(repository.setPreferences)}
+            enableNotifications={withRepositorySync(enableNotifications)}
+            sendTestPushNotification={withRepositorySync(repository.sendTestPushNotification)}
             childInstalled={state.family.childLinked}
             familyId={state.family.id}
             events={state.events}
@@ -403,19 +422,19 @@ export function App() {
             participantAccess={state.participantAccess}
             activeParticipantId={state.activeParticipantId}
             accountDisplayName={state.accountDisplayName}
-            updateAccountProfile={repository.updateAccountProfile ? async (displayName) => { const name = await repository.updateAccountProfile!(displayName); sync(); return name; } : undefined}
-            updateParticipantColor={repository.updateParticipantColor ? async (participantId, profileColor) => { const color = await repository.updateParticipantColor!(participantId, profileColor); sync(); return color; } : undefined}
-            selectParticipant={repository.selectActiveParticipant ? async (participantId) => { await repository.selectActiveParticipant?.(participantId); sync(); } : undefined}
-            createParticipant={repository.createParticipant ? async (displayName, selfManaged) => { const id = await repository.createParticipant?.(displayName, selfManaged); sync(); return id!; } : undefined}
-            inviteParticipantMember={repository.inviteParticipantMember ? (participantId, membershipRole) => repository.inviteParticipantMember!(participantId, membershipRole) : undefined}
-            acceptParticipantInvitation={repository.acceptParticipantInvitation ? async (code) => { const id = await repository.acceptParticipantInvitation?.(code); sync(); return id!; } : undefined}
-            leaveParticipant={repository.leaveParticipant ? async (participantId) => { await repository.leaveParticipant?.(participantId); sync(); } : undefined}
-            removeParticipantMember={repository.removeParticipantMember ? async (participantId, targetUid) => { const members = await repository.removeParticipantMember?.(participantId, targetUid); sync(); return members ?? []; } : undefined}
-            deleteParticipant={repository.deleteParticipant ? async (participantId) => { await repository.deleteParticipant?.(participantId); sync(); } : undefined}
-            createRelationshipRecovery={repository.createRelationshipRecovery ? (participantId) => repository.createRelationshipRecovery!(participantId) : undefined}
-            recoverRelationship={repository.recoverRelationship ? async (code) => { const recovered = await repository.recoverRelationship!(code); sync(); return recovered; } : undefined}
+            updateAccountProfile={withOptionalRepositorySync(repository.updateAccountProfile)}
+            updateParticipantColor={withOptionalRepositorySync(repository.updateParticipantColor)}
+            selectParticipant={selectActiveParticipant}
+            createParticipant={withOptionalRepositorySync(repository.createParticipant)}
+            inviteParticipantMember={bindOptionalRepository(repository.inviteParticipantMember)}
+            acceptParticipantInvitation={withOptionalRepositorySync(repository.acceptParticipantInvitation)}
+            leaveParticipant={withOptionalRepositorySync(repository.leaveParticipant)}
+            removeParticipantMember={withOptionalRepositorySync(repository.removeParticipantMember)}
+            deleteParticipant={withOptionalRepositorySync(repository.deleteParticipant)}
+            createRelationshipRecovery={bindOptionalRepository(repository.createRelationshipRecovery)}
+            recoverRelationship={withOptionalRepositorySync(repository.recoverRelationship)}
             locale={state.locale}
-            setLocale={async (locale) => { await repository.setLocale(locale); sync(); }}
+            setLocale={syncLocale}
             updateInfo={appUpdateInfo}
             forceAppUpdate={forceAppUpdate}
             reset={() => { void reset(); }}
@@ -425,16 +444,14 @@ export function App() {
         : role === 'parent'
           ? <ParentDashboard
               state={state}
-              regenerateCode={async () => { await repository.regenerateLinkCode(); sync(); }}
+              regenerateCode={withRepositorySync(repository.regenerateLinkCode)}
               onCreateRoutine={() => setTab('routines')}
               getProofImageUrl={(eventId) => repository.getProofImageUrl(eventId)}
-              reviewCheck={async (eventId, decision) => { await repository.reviewCheck(eventId, decision); sync(); }}
-              requestCheck={async (routineId) => { await repository.requestCheckNow(routineId); sync(); }}
+              reviewCheck={withRepositorySyncVoid(repository.reviewCheck)}
+              requestCheck={withRepositorySync(repository.requestCheckNow)}
               summaryRange={dashboardSummaryRange}
               onSummaryRangeChange={setDashboardSummaryRange}
-              onSelectParticipant={repository.selectActiveParticipant
-                ? (participantId) => { void repository.selectActiveParticipant?.(participantId).then(sync); }
-                : undefined}
+              onSelectParticipant={selectActiveParticipant}
               onOpenHistoryEvent={openHistoryEvent}
               t={t}
             />
