@@ -1,5 +1,6 @@
 import type { RoutineAssignment, VerificationEvent } from './models';
 import { nextPlannedWindow } from './monitoringPlan';
+import { presentRoutine } from './routinePresentation';
 
 interface UpcomingRoutineCheck {
   id: string;
@@ -58,3 +59,12 @@ export const upcomingRoutineChecks = (
     .filter((item): item is UpcomingRoutineCheck => Boolean(item))
     .sort((a, b) => a.planned.start.getTime() - b.planned.start.getTime())
     .slice(0, limit);
+
+export const presentedUpcomingRoutineChecks = (
+  assignments: RoutineAssignment[],
+  locale: Parameters<typeof presentRoutine>[1],
+  now = new Date(),
+) => upcomingRoutineChecks(assignments, now).map((item) => ({
+  ...item,
+  presentation: presentRoutine(item.assignment.routine, locale),
+}));

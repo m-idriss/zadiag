@@ -7,10 +7,11 @@ import { StatusPill } from '../components/StatusPill';
 import { AppIcon, routineIconName } from '../components/Icon';
 import { RoutineHistoryPanel } from '../components/RoutineHistoryPanel';
 import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } from '../components/AdherenceSummaryCard';
+import { UpcomingChecksSection } from '../components/UpcomingChecksSection';
 import { presentRoutine } from '../domain/routinePresentation';
-import { eventWindowLabel, plannedWindowLabel } from '../domain/taskTimeLabel';
+import { eventWindowLabel } from '../domain/taskTimeLabel';
 import { canRetakeCapture, resolvedEventStatus, withResolvedEventStatuses } from '../domain/adherence';
-import { upcomingRoutineChecks } from '../domain/dashboardChecks';
+import { presentedUpcomingRoutineChecks } from '../domain/dashboardChecks';
 import { ProfileContextCard } from '../components/ProfileContextCard';
 import { profileColorFor } from '../domain/profileColor';
 
@@ -106,11 +107,7 @@ export function ChildDashboard({
   const missedTodayLabel = missedTodayCount > 0
     ? formatMessage(t(missedTodayCount === 1 ? 'missedTodayCountOne' : 'missedTodayCountMany'), { count: missedTodayCount })
     : undefined;
-  const upcomingChecks = useMemo(() => upcomingRoutineChecks(state.routineAssignments, nowDate)
-    .map((item) => ({
-      ...item,
-      presentation: presentRoutine(item.assignment.routine, state.locale),
-    })),
+  const upcomingChecks = useMemo(() => presentedUpcomingRoutineChecks(state.routineAssignments, state.locale, nowDate),
   [nowDate, state.locale, state.routineAssignments]);
   const pendingSection = (
     <section className="today-section" aria-labelledby="pending-tasks-title">
@@ -204,24 +201,6 @@ export function ChildDashboard({
       </div>
     </section>
   );
-  const upcomingSection = upcomingChecks.length > 0 && (
-    <section className="today-section upcoming-checks-section" aria-labelledby="upcoming-checks-title">
-      <div className="section-heading upcoming-checks-heading">
-        <h2 id="upcoming-checks-title">{t('upcomingChecks')}</h2>
-      </div>
-      <div className="upcoming-checks-list">
-        {upcomingChecks.map((item) => (
-          <article className="upcoming-check-card" style={item.presentation.style} key={item.id}>
-            <span className="settings-row-icon today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(item.presentation.icon)} /></span>
-            <div>
-              <h3>{item.presentation.name}</h3>
-              <p>{plannedWindowLabel(item.planned.start, item.planned.end, nowDate, locale, t)}</p>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
   const historySection = (
     <section className="today-section participant-history-section dashboard-summary-section" aria-labelledby="participant-summary-title">
       <h2 id="participant-summary-title">{t('overview')}</h2>
@@ -242,7 +221,7 @@ export function ChildDashboard({
         </div>
       </div>
       {pendingSection}
-      {upcomingSection}
+      <UpcomingChecksSection checks={upcomingChecks} now={nowDate} locale={locale} titleId="upcoming-checks-title" t={t} />
       {attentionSection}
       {historySection}
       <Disclaimer t={t} />
