@@ -12,8 +12,8 @@ import { withResolvedEventStatuses } from '../domain/adherence';
 import { EmptyState } from '../components/ui';
 import { activePendingEvents as activePendingChecks, presentedUpcomingRoutineChecks } from '../domain/dashboardChecks';
 import { ParticipantSelector } from '../components/ParticipantSelector';
-import { useModalFocus } from '../hooks/useModalFocus';
 import { languageTag } from '../services/locale';
+import { ProofLightbox } from '../components/ProofLightbox';
 
 export function ParentDashboard({
   state,
@@ -50,7 +50,6 @@ export function ParentDashboard({
   const [requestingActiveReminder, setRequestingActiveReminder] = useState(false);
   const [activeReminderStatus, setActiveReminderStatus] = useState<'sent' | 'error'>();
   const [enlargedProofUrl, setEnlargedProofUrl] = useState<string>();
-  const proofDialogRef = useModalFocus<HTMLDivElement>(Boolean(enlargedProofUrl), () => setEnlargedProofUrl(undefined));
   const swipeStartRef = useRef<{ eventId: string; x: number; y: number } | undefined>(undefined);
   const summaryRange = controlledSummaryRange ?? localSummaryRange;
   const setSummaryRange = onSummaryRangeChange ?? setLocalSummaryRange;
@@ -400,10 +399,7 @@ export function ParentDashboard({
       ) : null}
 
       {enlargedProofUrl ? (
-        <div ref={proofDialogRef} className="proof-lightbox" role="dialog" aria-modal="true" aria-label={t('responsibleReviewImageAlt')} tabIndex={-1} onClick={() => setEnlargedProofUrl(undefined)}>
-          <button type="button" className="proof-lightbox-close" data-autofocus aria-label={t('close')} onClick={() => setEnlargedProofUrl(undefined)}><AppIcon name="close" /></button>
-          <img src={enlargedProofUrl} alt={t('responsibleReviewImageAlt')} onClick={(event) => event.stopPropagation()} />
-        </div>
+        <ProofLightbox src={enlargedProofUrl} alt={t('responsibleReviewImageAlt')} closeLabel={t('close')} onClose={() => setEnlargedProofUrl(undefined)} />
       ) : null}
 
       <section className="today-section participant-history-section parent-history-section dashboard-summary-section" aria-labelledby="responsible-summary-title">

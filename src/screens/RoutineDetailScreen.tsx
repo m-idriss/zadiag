@@ -12,6 +12,7 @@ import { SvgIcon } from '../components/SvgIcon';
 import { ActionButton } from '../components/ui';
 import { languageTag } from '../services/locale';
 import { useModalFocus } from '../hooks/useModalFocus';
+import { ProofLightbox } from '../components/ProofLightbox';
 
 type DetailTab = 'details' | 'tracking' | 'plan';
 type DetailInitialTab = DetailTab | 'overview';
@@ -170,7 +171,6 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   const [proofErrors, setProofErrors] = useState<Record<string, boolean>>({});
   const [enlargedProofUrl, setEnlargedProofUrl] = useState<string>();
   const [selectedHistoryEventId, setSelectedHistoryEventId] = useState<string | undefined>(initialEventId);
-  const proofDialogRef = useModalFocus<HTMLDivElement>(Boolean(enlargedProofUrl), () => setEnlargedProofUrl(undefined));
   const historyDialogRef = useModalFocus<HTMLDivElement>(Boolean(selectedHistoryEventId), () => setSelectedHistoryEventId(undefined));
   const todayHeatmapRef = useRef<HTMLSpanElement | null>(null);
   const now = Date.now();
@@ -349,10 +349,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
       ) : null}
 
       {enlargedProofUrl ? (
-        <div ref={proofDialogRef} className="proof-lightbox" role="dialog" aria-modal="true" aria-label={t('responsibleReviewImageAlt')} tabIndex={-1} onClick={() => setEnlargedProofUrl(undefined)}>
-          <button type="button" className="proof-lightbox-close" data-autofocus aria-label={t('close')} onClick={() => setEnlargedProofUrl(undefined)}><AppIcon name="close" /></button>
-          <img src={enlargedProofUrl} alt={t('responsibleReviewImageAlt')} onClick={(event) => event.stopPropagation()} />
-        </div>
+        <ProofLightbox src={enlargedProofUrl} alt={t('responsibleReviewImageAlt')} closeLabel={t('close')} onClose={() => setEnlargedProofUrl(undefined)} />
       ) : null}
 
       {tab === 'plan' && edit && onSaveMonitoringPlan && <div className="routine-tab-panel routine-plan-tab-panel">
