@@ -13,4 +13,7 @@ systemctl --user status zadiag-synthetic-monitor.service
 journalctl --user -u zadiag-synthetic-monitor.service -f
 xvfb-run -a node ops/pi-synthetic-monitor/browser-control.mjs status
 xvfb-run -a node ops/pi-synthetic-monitor/browser-control.mjs activate
+set -a; source .pi-monitor/env; set +a
+node ops/pi-synthetic-monitor/sync-runtime.mjs
+node ops/pi-synthetic-monitor/send-probe.mjs
 ```

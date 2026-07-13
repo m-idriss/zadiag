@@ -1,4 +1,5 @@
 import { chromium } from 'playwright-core';
+import { createHash } from 'node:crypto';
 import process from 'node:process';
 
 const required = (name) => {
@@ -41,34 +42,62 @@ if (!page.url().startsWith(appUrl)) {
 log('chromium_started', { appUrl });
 
 let consecutiveHealthFailures = 0;
+const seenNotificationTags = new Set();
+const sendReceipt = async (body) => {
+  const receipt = await fetch(receiptUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ monitorId, token: receiptToken, ...body }),
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!receipt.ok) throw new Error(`Synthetic receipt returned ${receipt.status}`);
+};
+
 const heartbeat = async () => {
   try {
     if (page.isClosed()) throw new Error('Chromium page is closed');
     const health = await page.evaluate(async () => {
       const registration = await navigator.serviceWorker?.ready.catch(() => undefined);
       const subscription = await registration?.pushManager.getSubscription().catch(() => null);
+      const notifications = registration
+        ? await registration.getNotifications().catch(() => [])
+        : [];
       return {
         url: location.href,
         controlled: Boolean(navigator.serviceWorker?.controller),
         subscription: Boolean(subscription),
+        notifications: notifications.map((notification) => ({
+          tag: notification.tag,
+          kind: notification.data?.kind,
+          checkId: notification.data?.checkId,
+          sessionId: notification.data?.sessionId,
+          routineId: notification.data?.routineId,
+        })),
       };
     });
     if (!health.url.startsWith(appUrl)) await page.goto(appUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
-    const receipt = await fetch(receiptUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        monitorId,
-        receiptId: `heartbeat-${new Date().toISOString().slice(0, 13)}`,
-        token: receiptToken,
-        stage: 'heartbeat',
-        kind: 'pi-browser',
-      }),
-      signal: AbortSignal.timeout(10_000),
+    await sendReceipt({
+      receiptId: `heartbeat-${new Date().toISOString().slice(0, 13)}`,
+      stage: 'heartbeat',
+      kind: 'pi-browser',
     });
-    if (!receipt.ok) throw new Error(`Heartbeat receipt returned ${receipt.status}`);
+    for (const notification of health.notifications) {
+      const identity = notification.tag || JSON.stringify(notification);
+      if (seenNotificationTags.has(identity)) continue;
+      const receiptId = `notification-${createHash('sha256').update(identity).digest('hex').slice(0, 24)}`;
+      await sendReceipt({
+        receiptId,
+        stage: 'received',
+        kind: notification.kind || 'browser-notification',
+        checkId: notification.checkId,
+        sessionId: notification.sessionId,
+        routineId: notification.routineId,
+      });
+      seenNotificationTags.add(identity);
+      log('push_received', { tag: notification.tag, kind: notification.kind });
+    }
     consecutiveHealthFailures = 0;
-    log('heartbeat_ok', health);
+    log('heartbeat_ok', { ...health, notifications: health.notifications.length });
   } catch (error) {
     consecutiveHealthFailures += 1;
     log('heartbeat_failed', { attempts: consecutiveHealthFailures, error: String(error?.message ?? error).slice(0, 240) });
