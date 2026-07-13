@@ -7,6 +7,7 @@ import { documentLanguage } from './services/locale';
 import { BottomNav, type Tab } from './components/BottomNav';
 import { SplashScreen } from './components/SplashScreen';
 import { Snackbar } from './components/Snackbar';
+import { PullToUpdate } from './components/PullToUpdate';
 import { isSummaryRange, type SummaryRange } from './components/AdherenceSummaryCard';
 import { firebaseEnabled } from './services/firebaseConfig';
 import { browserRouteContext, isLocalDemoEnvironment, routineCentricUiEnabled } from './services/browserEnvironment';
@@ -426,7 +427,12 @@ export function App() {
               onSummaryRangeChange={setDashboardSummaryRange}
               t={t}
             />;
-    content = <div className="app-shell">{screen}<BottomNav tab={tab} role={role} routineCentricEnabled={routineCentricUiEnabled} onChange={setTab} t={t} /></div>;
+    content = (
+      <PullToUpdate onUpdate={forceAppUpdate} t={t}>
+        {screen}
+        <BottomNav tab={tab} role={role} routineCentricEnabled={routineCentricUiEnabled} onChange={setTab} t={t} />
+      </PullToUpdate>
+    );
   }
 
   return (

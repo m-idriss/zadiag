@@ -412,6 +412,28 @@ button:disabled { cursor: not-allowed; }
 
 .app-shell { position: relative; height: 100dvh; overflow: hidden; background: var(--cream); }
 .app-shell > .content-screen { height: 100%; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+.pull-update-indicator {
+  position: absolute;
+  z-index: 45;
+  top: calc(9px + env(safe-area-inset-top));
+  left: 50%;
+  width: min(220px, calc(100% - 44px));
+  display: grid;
+  gap: 5px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255,255,255,.72);
+  border-radius: 14px;
+  background: rgba(21,50,75,.94);
+  box-shadow: 0 10px 24px rgba(16,42,67,.18);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -18px) scale(.96);
+  transition: opacity .16s ease, transform .2s cubic-bezier(.22,1,.36,1);
+}
+.pull-update-indicator.visible { opacity: 1; transform: translate(-50%, 0) scale(1); }
+.pull-update-indicator small { color: #fff; font-size: 11px; font-weight: 850; text-align: center; }
+.pull-update-bar { height: 4px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.2); }
+.pull-update-bar > div { height: 100%; border-radius: inherit; background: #fff; transition: width .1s linear; }
 .app-snackbar {
   position: fixed;
   z-index: 50;
@@ -1454,11 +1476,6 @@ button:disabled { cursor: not-allowed; }
 .settings-switch span { width: 26px; height: 26px; display: block; border-radius: 50%; background: white; box-shadow: 0 4px 10px rgba(16,42,67,.16); transform: translateX(0); transition: transform .18s cubic-bezier(.22,1,.36,1); }
 .settings-switch.active { border-color: color-mix(in srgb, var(--teal) 30%, white); background: var(--teal); }
 .settings-switch.active span { transform: translateX(16px); }
-.settings-pull-indicator { max-height: 0; overflow: hidden; display: grid; gap: 6px; transition: max-height .18s ease, margin .18s ease; margin: 0; }
-.settings-pull-indicator.visible { max-height: 48px; margin-top: -8px; }
-.settings-pull-indicator small { color: var(--muted); font-size: 11px; font-weight: 800; }
-.settings-pull-bar { height: 6px; border-radius: 999px; background: #e7efec; overflow: hidden; }
-.settings-pull-bar > div { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--teal), #41b6a2); transition: width .12s linear; }
 .settings-inline-action {
   width: fit-content;
   min-height: var(--height-action);
