@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, type CSSProperties } from 'react';
 import { checkmarkOutline, personCircleOutline } from 'ionicons/icons';
 import type { ParticipantAccess } from '../domain/models';
 import { ProfileContextCard } from './ProfileContextCard';
@@ -53,7 +53,7 @@ export function ParticipantSelector({ access, activeParticipantId, label, title,
                 if (!active) onSelect(entry.participant.id);
               }}
             >
-              <span className="participant-switcher-option-avatar" style={{ color: profileColorFor(entry.participant) }} aria-hidden="true">{entry.participant.displayName.trim().charAt(0).toUpperCase() || '?'}</span>
+              <span className="participant-switcher-option-avatar" style={{ '--profile-color': profileColorFor(entry.participant) } as CSSProperties} aria-hidden="true">{entry.participant.displayName.trim().charAt(0).toUpperCase() || '?'}</span>
               <span>{entry.participant.displayName}</span>
               {active ? <SvgIcon icon={checkmarkOutline} /> : null}
             </button>

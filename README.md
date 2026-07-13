@@ -88,6 +88,7 @@ React · TypeScript · Vite · Firebase · Workbox · Vitest
 [Architecture](docs/caregiver-participant-architecture.md) ·
 [Routine system](docs/create-routine.md) ·
 [Engineering guardrails](AGENTS.md) ·
+[UI design](DESIGN.md) ·
 [Pilot rollout](docs/routine-rollout.md)
 
 </details>

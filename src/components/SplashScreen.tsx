@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'react';
+
 export function SplashScreen({ progress, message }: { progress: number; message: string }) {
   const width = `${Math.max(0, Math.min(100, progress))}%`;
   return (
@@ -7,7 +9,7 @@ export function SplashScreen({ progress, message }: { progress: number; message:
         <strong>Zadiag</strong>
         <span>{message}</span>
         <div className="app-splash-progress" aria-hidden="true">
-          <div style={{ width }} />
+          <div style={{ '--splash-progress': width } as CSSProperties} />
         </div>
       </div>
     </div>

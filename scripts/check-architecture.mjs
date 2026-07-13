@@ -142,14 +142,6 @@ files.forEach((file) => {
   if (!state.has(file)) visitGraph(file);
 });
 
-const cssPath = join(clientRoot, 'styles', 'app.css');
-const css = await readFile(cssPath, 'utf8');
-const definitions = new Set([...css.matchAll(/(--[\w-]+)\s*:/g)].map((match) => match[1]));
-const references = new Set([...css.matchAll(/var\((--[\w-]+)/g)].map((match) => match[1]));
-for (const definition of definitions) {
-  if (!references.has(definition)) errors.push(`${relativePath(cssPath)}: unused CSS custom property ${definition}`);
-}
-
 if (errors.length) {
   console.error(`Architecture check failed with ${errors.length} issue${errors.length === 1 ? '' : 's'}:`);
   errors.forEach((error) => console.error(`- ${error}`));

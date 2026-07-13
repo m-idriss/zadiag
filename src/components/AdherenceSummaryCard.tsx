@@ -33,15 +33,15 @@ const startOfToday = (now: number) => {
 };
 
 const ringSegments: Array<{ status: VerificationStatus; color: string }> = [
-  { status: 'detected', color: 'var(--teal)' },
-  { status: 'not_detected', color: '#f5b8af' },
-  { status: 'uncertain', color: '#f5d7a8' },
-  { status: 'missed', color: '#d7e0e4' },
-  { status: 'expired', color: '#c9d3d8' },
+  { status: 'detected', color: 'var(--color-primary)' },
+  { status: 'not_detected', color: 'var(--color-summary-not-detected)' },
+  { status: 'uncertain', color: 'var(--color-summary-uncertain)' },
+  { status: 'missed', color: 'var(--color-summary-missed)' },
+  { status: 'expired', color: 'var(--color-summary-expired)' },
 ];
 
 const summaryRing = (statusCounts: Record<string, number>, total: number) => {
-  if (!total) return '#e8efed 0deg 360deg';
+  if (!total) return 'var(--color-summary-empty) 0deg 360deg';
   let cursor = 0;
   const segments = ringSegments.flatMap(({ status, color }) => {
     const count = statusCounts[status] ?? 0;
@@ -50,7 +50,7 @@ const summaryRing = (statusCounts: Record<string, number>, total: number) => {
     cursor += (count / total) * 360;
     return `${color} ${start}deg ${cursor}deg`;
   });
-  return segments.length ? segments.join(', ') : '#e8efed 0deg 360deg';
+  return segments.length ? segments.join(', ') : 'var(--color-summary-empty) 0deg 360deg';
 };
 
 export const filterEventsBySummaryRange = (events: VerificationEvent[], range: SummaryRange, now = Date.now()) => {

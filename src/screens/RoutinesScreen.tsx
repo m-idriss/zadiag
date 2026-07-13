@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { AppState, MonitoringPlan, RoutineAssignment, RoutineCategory, RoutineValidationMode, ScheduleGroup, VerificationEvent } from '../domain/models';
 import { groupsFromLegacyPlan, nextPlannedWindow, summarizeWeekdaysShort } from '../domain/monitoringPlan';
 import { formatMessage, type MessageKey } from '../services/i18n';
@@ -419,7 +419,7 @@ export function RoutinesScreen({
                   </button>
                 </div>
                 <div className="routine-progress-row">
-                  <div className="routine-progress-track"><span style={{ width: `${Math.round(rate * 100)}%` }} /></div>
+                  <div className="routine-progress-track"><span style={{ '--routine-progress': `${Math.round(rate * 100)}%` } as CSSProperties} /></div>
                 </div>
                 <p className="routine-next-inline"><span>{t('nextCheck')}</span><strong>{nextLabel}</strong></p>
                 {scheduleExpanded && (

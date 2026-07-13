@@ -53,6 +53,8 @@ do not duplicate them in feature documentation.
   normal delivery. Use `pnpm check:full` when Firestore rules are affected.
 - Keep bundle and architecture checks green. Do not silence a guardrail with an
   exception unless the repository architecture itself is intentionally changed.
+- Follow `DESIGN.md` for UI changes and keep `pnpm check:design` green. New
+  visual foundations belong in semantic tokens, not individual screens.
 - Bump the application version once per deployable batch, not once per edit.
 - Use an explicit commit message describing the completed outcome. Push only a
   validated coherent batch and confirm that the worktree is clean afterward.
