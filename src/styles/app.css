@@ -771,7 +771,6 @@ button:disabled { cursor: not-allowed; }
 .profile-context-icon .svg-icon { font-size: 21px; }
 .profile-context-summary { min-width: 0; display: grid; gap: 3px; }
 .profile-context-summary strong { overflow: hidden; font-size: 14px; font-weight: 720; text-overflow: ellipsis; white-space: nowrap; }
-.profile-context-card.has-profile-color { box-shadow: inset 4px 0 var(--profile-color), var(--shadow-sm); }
 .profile-context-card.has-profile-color .profile-context-summary strong { color: var(--profile-color); font-weight: 850; }
 .page-context-top .profile-context-card.has-profile-color .profile-context-icon,
 .routines-top .profile-context-card.has-profile-color .profile-context-icon { background: linear-gradient(145deg, var(--profile-color), color-mix(in srgb, var(--profile-color) 76%, #15324b)); box-shadow: 0 8px 18px color-mix(in srgb, var(--profile-color) 22%, transparent); }
