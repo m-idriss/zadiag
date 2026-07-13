@@ -9,7 +9,6 @@ import { presentRoutine } from '../domain/routinePresentation';
 import { assignableRoutineTemplates, marketplaceFromTemplates, presentRoutineTemplate } from '../domain/routineMarketplace';
 import { withResolvedEventStatuses } from '../domain/adherence';
 import { readUiStorageJson, readUiStorageString, removeUiStorageItem, writeUiStorageString } from '../services/uiStorage';
-import { profileColorFor } from '../domain/profileColor';
 
 const RoutineDetailScreen = lazy(() => import('./RoutineDetailScreen').then((module) => ({ default: module.RoutineDetailScreen })));
 
@@ -325,7 +324,6 @@ export function RoutinesScreen({
         <button
           type="button"
           className="primary-action-button routines-add-dock-button"
-          style={activeParticipantAccess ? { background: profileColorFor(activeParticipantAccess.participant) } : undefined}
           aria-expanded={catalogOpen}
           onClick={() => setCatalogOpen((open) => !open)}
         >

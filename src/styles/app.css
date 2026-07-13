@@ -873,7 +873,7 @@ button:disabled { cursor: not-allowed; }
 .routines-top-heading h1 { margin-top: 0; }
 .routines-screen-can-assign { padding-bottom: calc(168px + env(safe-area-inset-bottom)); }
 .routine-add-switcher { position: fixed; z-index: 13; bottom: calc(84px + env(safe-area-inset-bottom)); left: 50%; width: min(calc(100% - 36px), 604px); transform: translateX(-50%); }
-.routines-add-dock-button { width: 100%; min-height: 52px; margin: 0; border: 1px solid rgba(255,255,255,.7); box-shadow: 0 12px 30px rgba(16,42,67,.18); }
+.routines-add-dock-button { width: 100%; min-height: 52px; margin: 0; border: 1px solid rgba(255,255,255,.7); background: var(--navy); color: #fff; box-shadow: 0 12px 30px rgba(16,42,67,.18); }
 .routines-add-dock-button .app-icon { font-size: 20px; }
 .routine-add-switcher .routine-catalog-popover { position: absolute; right: 0; bottom: calc(100% + 10px); left: 0; z-index: 2; width: 100%; margin: 0; background: var(--surface-solid); box-shadow: 0 22px 52px rgba(16,42,67,.18); }
 .today-task { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
