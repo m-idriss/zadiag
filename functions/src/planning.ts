@@ -239,16 +239,20 @@ export const shouldAutoDispatchCheck = (
     return getLocalDateKey(new Date(check.requestedAt), timeZone) === localDateKey;
   });
 
-  if (todaysChecks.length >= plan.checksPerDay) {
+  // A plan can be edited after checks have already been dispatched. Count the
+  // current plan windows represented by today's checks instead of stale
+  // dispatch keys from the previous plan, and count each current window once.
+  const dispatchedCurrentWindowIds = new Set(todaysChecks.flatMap((check) => {
+    if (!check.requestedAt) return [];
+    const dispatchedWindow = getWindowForDate(plan, new Date(check.requestedAt), timeZone);
+    return dispatchedWindow ? [dispatchedWindow.id] : [];
+  }));
+
+  if (dispatchedCurrentWindowIds.size >= plan.checksPerDay) {
     return { shouldDispatch: false, reason: 'quota_reached' };
   }
 
-  const alreadyDispatchedThisWindow = todaysChecks.some((check) => {
-    if (check.dispatchKey) return check.dispatchKey === `${localDateKey}_${window.id}`;
-    if (!check.requestedAt) return false;
-    const pastWindow = getWindowForDate(plan, new Date(check.requestedAt), timeZone);
-    return pastWindow?.id === window.id;
-  });
+  const alreadyDispatchedThisWindow = dispatchedCurrentWindowIds.has(window.id);
 
   if (alreadyDispatchedThisWindow) {
     return { shouldDispatch: false, reason: 'already_dispatched' };

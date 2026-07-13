@@ -156,3 +156,36 @@ test('dispatches grouped schedules on their own weekdays', () => {
   assert.equal(weekendLate.shouldDispatch, true);
   assert.equal(weekendLate.windowId, 'weekend_late');
 });
+
+test('uses the edited plan windows when checks from an older plan already exist', () => {
+  const editedPlan = {
+    ...plan,
+    checksPerDay: 2,
+    windows: [
+      { id: 'g1_midday', start: '07:00', end: '13:00' },
+      { id: 'g1_evening', start: '17:00', end: '23:00' },
+    ],
+    scheduleGroups: [{
+      id: 'g1',
+      weekdays: [1, 2, 3, 4, 5, 6, 7],
+      windows: [
+        { id: 'midday', start: '07:00', end: '13:00' },
+        { id: 'evening', start: '17:00', end: '23:00' },
+      ],
+    }],
+  };
+  const decision = shouldAutoDispatchCheck(editedPlan, [
+    {
+      requestedAt: '2026-07-13T05:51:08.653Z',
+      dispatchKey: '2026-07-13_morning',
+    },
+    {
+      requestedAt: '2026-07-13T10:15:08.074Z',
+      dispatchKey: '2026-07-13_midday',
+    },
+  ], new Date('2026-07-13T16:36:00.000Z'), editedPlan.timeZone, false);
+
+  assert.equal(decision.shouldDispatch, true);
+  assert.equal(decision.windowId, 'g1_evening');
+  assert.equal(decision.dispatchKey, '2026-07-13_g1_evening');
+});

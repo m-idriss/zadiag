@@ -2069,7 +2069,12 @@ export const updatePlan = onCall({ region, cors, enforceAppCheck: true }, async 
   await assignmentRef.update({ plan: parsedPlan.data, updatedAt: FieldValue.serverTimestamp() });
 });
 
-export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+export const analyzeCheck = onCall({
+  region,
+  cors,
+  enforceAppCheck: true,
+  secrets: [vapidPrivateKey, vapidPublicKey],
+}, async (request) => {
   const requestStartedAt = Date.now();
   const uid = requireUid(request.auth);
   const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
