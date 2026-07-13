@@ -219,7 +219,7 @@ button:disabled { cursor: not-allowed; }
   align-items: center;
   justify-content: center;
   gap: 8px;
-  width: auto;
+  width: 100%;
   min-height: var(--height-action);
   padding: 12px 16px;
   border: 0;
@@ -231,14 +231,9 @@ button:disabled { cursor: not-allowed; }
   line-height: 1.1;
   transition: transform .16s ease, filter .16s ease;
 }
-.action-button.block { width: 100%; }
-.action-button.fill-outline { border: 1px solid currentColor; background: transparent; }
-.action-button.tone-primary { background: var(--teal); color: white; }
-.action-button.tone-navy { background: var(--navy); color: white; }
+.action-button.fill-outline { border: 1px solid currentColor; background: transparent; color: var(--teal); }
 .action-button.tone-light { background: white; color: var(--navy); }
 .action-button.tone-danger { background: color-mix(in srgb, var(--coral) 9%, white); color: color-mix(in srgb, var(--coral) 82%, var(--navy)); }
-.action-button.fill-outline.tone-primary { background: transparent; color: var(--teal); }
-.action-button.fill-outline.tone-navy { background: transparent; color: var(--navy); }
 .action-button.fill-outline.tone-danger { background: transparent; color: color-mix(in srgb, var(--coral) 82%, var(--navy)); }
 .action-button.fill-outline.tone-light { color: white; background: transparent; border-color: rgba(255,255,255,.65); }
 .action-button:disabled { opacity: .55; cursor: default; }

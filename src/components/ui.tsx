@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes, ReactElement, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, CSSProperties, ReactElement, ReactNode } from 'react';
 import { AppIcon, type AppIconName } from './Icon';
 
 const joinClassNames = (...names: Array<string | undefined | false>) =>
@@ -6,48 +6,7 @@ const joinClassNames = (...names: Array<string | undefined | false>) =>
 
 type IconSlot = AppIconName | ReactElement;
 
-export function Card({
-  as: Component = 'section',
-  className,
-  children,
-  style,
-  ...props
-}: HTMLAttributes<HTMLElement> & {
-  as?: 'div' | 'section' | 'article';
-  className?: string;
-  children: ReactNode;
-  style?: CSSProperties;
-}) {
-  return <Component className={joinClassNames('card', className)} style={style} {...props}>{children}</Component>;
-}
-
-export function Section({
-  className,
-  title,
-  titleId,
-  count,
-  children,
-}: {
-  className?: string;
-  title?: ReactNode;
-  titleId?: string;
-  count?: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <section className={className} aria-labelledby={titleId}>
-      {title ? (
-        <div className="section-heading">
-          <h2 id={titleId}>{title}</h2>
-          {count !== undefined ? <span>{count}</span> : null}
-        </div>
-      ) : null}
-      {children}
-    </section>
-  );
-}
-
-export function IconTile({
+function IconTile({
   icon,
   className,
 }: {
@@ -127,30 +86,7 @@ export function SegmentedControl<T extends string | number>({
   );
 }
 
-export function Switch({
-  checked,
-  label,
-  onChange,
-}: {
-  checked: boolean;
-  label: string;
-  onChange: (checked: boolean) => void;
-}) {
-  return (
-    <button
-      type="button"
-      className={joinClassNames('settings-switch', checked && 'active')}
-      aria-pressed={checked}
-      aria-label={label}
-      onClick={() => onChange(!checked)}
-    >
-      <span aria-hidden="true" />
-    </button>
-  );
-}
-
 export function ActionButton({
-  block = true,
   children,
   className,
   fill = 'solid',
@@ -158,14 +94,18 @@ export function ActionButton({
   type = 'button',
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
-  block?: boolean;
   fill?: 'solid' | 'outline';
-  tone?: 'primary' | 'light' | 'navy' | 'danger';
+  tone?: 'primary' | 'light' | 'danger';
 }) {
   return (
     <button
       type={type}
-      className={joinClassNames('action-button', block && 'block', `fill-${fill}`, `tone-${tone}`, className)}
+      className={joinClassNames(
+        'action-button',
+        fill === 'outline' && 'fill-outline',
+        tone !== 'primary' && `tone-${tone}`,
+        className,
+      )}
       {...props}
     >
       {children}
@@ -187,13 +127,13 @@ export function EmptyState({
   children?: ReactNode;
 }) {
   return (
-    <Card className={joinClassNames('parent-empty-history-card', className)}>
+    <section className={joinClassNames('card', 'parent-empty-history-card', className)}>
       <IconTile icon={icon} />
       <div>
         <h2>{title}</h2>
         {detail !== undefined ? <p>{detail}</p> : null}
         {children}
       </div>
-    </Card>
+    </section>
   );
 }
