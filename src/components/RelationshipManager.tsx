@@ -135,7 +135,10 @@ export function RelationshipManager({ access, activeParticipantId, accountDispla
                 {teamMembers.map((member) => {
                   const roleKey = `relationshipRole${member.role[0].toUpperCase()}${member.role.slice(1)}` as MessageKey;
                   const removing = busy === 'remove' && removingUid === member.uid;
-                  const memberName = member.displayName || (member.isCurrentUser ? accountDisplayName : undefined) || t('relationshipMemberUnnamed');
+                  const memberName = member.displayName
+                    || (member.role === 'participant' ? selectedAccess.participant.displayName : undefined)
+                    || (member.isCurrentUser ? accountDisplayName || t('relationshipMemberYou') : undefined)
+                    || t('relationshipMemberLegacyAccount');
                   return (
                     <div className="relationship-member-row" key={member.uid}>
                       <span><strong>{memberName}</strong><small>{t(roleKey)}{member.isCurrentUser ? ` · ${t('relationshipMemberYou')}` : ''}</small></span>

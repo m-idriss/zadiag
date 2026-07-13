@@ -183,7 +183,7 @@ describe('RelationshipManager', () => {
         members: [
           { uid: 'owner-1', displayName: 'Idriss', role: 'owner', status: 'active', isCurrentUser: true },
           { uid: 'owner-2', displayName: 'Sarah', role: 'owner', status: 'active' },
-          { uid: 'participant-1', displayName: 'Yoan', role: 'participant', status: 'active' },
+          { uid: 'participant-1', role: 'participant', status: 'active' },
         ],
       }]}
       activeParticipantId="yoan-profile"
@@ -196,6 +196,8 @@ describe('RelationshipManager', () => {
     expect(container.textContent).toContain('Sarah');
     expect(container.textContent).toContain('Owner · You');
     expect(container.textContent).toContain('Participant');
+    const memberNames = Array.from(container.querySelectorAll('.relationship-member-row strong')).map((item) => item.textContent);
+    expect(memberNames).toEqual(['Idriss', 'Sarah', 'Yoan']);
 
     const accountInput = container.querySelector('input[aria-label="Your name"]') as HTMLInputElement;
     act(() => {
