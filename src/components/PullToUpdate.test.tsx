@@ -46,8 +46,8 @@ describe('PullToUpdate', () => {
     dispatchTouch(page, 'touchstart', 20, 20);
     dispatchTouch(page, 'touchmove', 20, 100);
 
-    expect(container?.querySelectorAll('.pull-update-spinner-ray')).toHaveLength(8);
-    expect(container?.querySelector('.pull-update-indicator')?.textContent).toBe('');
+    expect(document.querySelectorAll('.pull-update-spinner-ray')).toHaveLength(8);
+    expect(document.querySelector('.pull-update-indicator')?.textContent).toBe('');
 
     dispatchTouch(page, 'touchend', 20, 100);
 
@@ -72,16 +72,10 @@ describe('PullToUpdate', () => {
     expect(onUpdate).not.toHaveBeenCalled();
   });
 
-  it('only fixes the indicator when requested by the current page', () => {
-    container = document.createElement('div');
-    document.body.append(container);
-    root = createRoot(container);
-    act(() => root?.render(
-      <PullToUpdate fixedIndicator onUpdate={async () => false} t={t}>
-        <div className="content-screen">Page</div>
-      </PullToUpdate>,
-    ));
+  it('renders the shared indicator in the viewport layer', () => {
+    renderPullToUpdate(async () => false);
 
-    expect(container.querySelector('.app-shell')?.classList.contains('pull-update-fixed')).toBe(true);
+    expect(document.body.querySelector(':scope > .pull-update-indicator')).not.toBeNull();
+    expect(container?.querySelector('.pull-update-indicator')).toBeNull();
   });
 });

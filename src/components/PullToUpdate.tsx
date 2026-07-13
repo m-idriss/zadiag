@@ -1,4 +1,5 @@
 import { useRef, useState, type ReactNode, type TouchEvent } from 'react';
+import { createPortal } from 'react-dom';
 import type { MessageKey } from '../services/i18n';
 
 const PULL_THRESHOLD = 72;
@@ -12,12 +13,10 @@ type PullGesture = {
 
 export function PullToUpdate({
   children,
-  fixedIndicator = false,
   onUpdate,
   t,
 }: {
   children: ReactNode;
-  fixedIndicator?: boolean;
   onUpdate: () => Promise<unknown>;
   t: (key: MessageKey) => string;
 }) {
@@ -83,30 +82,33 @@ export function PullToUpdate({
       ? t('settingsPullUpdateRelease')
       : t('settingsPullUpdatePull');
   const visible = updating || pullDistance > 0;
+  const indicator = (
+    <div className={`pull-update-indicator ${visible ? 'visible' : ''}`} role="status" aria-label={label}>
+      <svg className="pull-update-spinner" viewBox="0 0 32 32" aria-hidden="true">
+        {Array.from({ length: 8 }, (_, index) => (
+          <line
+            className="pull-update-spinner-ray"
+            x1="16"
+            y1="4"
+            x2="16"
+            y2="9"
+            key={index}
+            transform={`rotate(${index * 45} 16 16)`}
+          />
+        ))}
+      </svg>
+    </div>
+  );
 
   return (
     <div
-      className={`app-shell ${fixedIndicator ? 'pull-update-fixed' : ''}`}
+      className="app-shell"
       onTouchStart={startPull}
       onTouchMove={movePull}
       onTouchEnd={endPull}
       onTouchCancel={resetPull}
     >
-      <div className={`pull-update-indicator ${visible ? 'visible' : ''}`} role="status" aria-label={label}>
-        <svg className="pull-update-spinner" viewBox="0 0 32 32" aria-hidden="true">
-          {Array.from({ length: 8 }, (_, index) => (
-            <line
-              className="pull-update-spinner-ray"
-              x1="16"
-              y1="4"
-              x2="16"
-              y2="9"
-              key={index}
-              transform={`rotate(${index * 45} 16 16)`}
-            />
-          ))}
-        </svg>
-      </div>
+      {createPortal(indicator, document.body)}
       {children}
     </div>
   );
