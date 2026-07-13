@@ -25,13 +25,15 @@ describe('participant routines navigation', () => {
   });
 
   it('replaces Progress with Routines for participants', () => {
-    act(() => root.render(<BottomNav tab="home" role="child" onChange={() => undefined} t={(key) => translate('en', key)} />));
+    act(() => root.render(<BottomNav tab="home" role="child" profileColor="#7C3AED" onChange={() => undefined} t={(key) => translate('en', key)} />));
 
     expect(container.textContent).toContain('Home');
     expect(container.textContent).toContain('Routines');
     expect(container.textContent).not.toContain('My progress');
     expect(container.querySelector('nav')?.getAttribute('aria-label')).toBe('Primary navigation');
     expect(container.querySelector('button[aria-current="page"]')?.textContent).toContain('Home');
+    expect((container.querySelector('button[aria-current="page"] .app-icon') as HTMLElement | null)?.style.color).toBe('rgb(124, 58, 237)');
+    expect((container.querySelector('button:not(.active) .app-icon') as HTMLElement | null)?.style.color).toBe('');
   });
 
   it('can roll participant navigation back with the feature flag', () => {

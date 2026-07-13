@@ -2051,7 +2051,7 @@ button:disabled { cursor: not-allowed; }
   transition: color .2s ease, background .2s ease, transform .16s ease;
 }
 .bottom-nav button > span { font-size: 22px; line-height: 1; }
-.bottom-nav button.active { background: #fff; color: var(--teal); box-shadow: 0 5px 16px rgba(16,42,67,.065); }
+.bottom-nav button.active { background: #fff; color: var(--navy); box-shadow: 0 5px 16px rgba(16,42,67,.065); }
 .bottom-nav button:active { transform: scale(.95); }
 
 .app-splash { background: linear-gradient(155deg, #fbfcfb, #eef6f3); }

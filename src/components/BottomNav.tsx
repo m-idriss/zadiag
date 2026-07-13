@@ -20,12 +20,14 @@ export function BottomNav({
   tab,
   role,
   routineCentricEnabled = true,
+  profileColor,
   onChange,
   t,
 }: {
   tab: Tab;
   role: 'parent' | 'child';
   routineCentricEnabled?: boolean;
+  profileColor?: string;
   onChange: (tab: Tab) => void;
   t: (key: MessageKey) => string;
 }) {
@@ -58,7 +60,7 @@ export function BottomNav({
             aria-current={tab === item.tab ? 'page' : undefined}
             onClick={() => onChange(item.tab)}
           >
-            <AppIcon name={item.icon} />{item.label}
+            <AppIcon name={item.icon} style={tab === item.tab ? { color: profileColor ?? 'var(--teal)' } : undefined} />{item.label}
           </button>
         ))}
       </nav>
