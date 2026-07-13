@@ -1,11 +1,10 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
-import { addCircleOutline } from 'ionicons/icons';
 import type { AppState, MonitoringPlan, RoutineAssignment, RoutineCategory, RoutineValidationMode, ScheduleGroup, VerificationEvent } from '../domain/models';
 import { groupsFromLegacyPlan, nextPlannedWindow, summarizeWeekdaysShort } from '../domain/monitoringPlan';
 import { formatMessage, type MessageKey } from '../services/i18n';
 import { languageTag } from '../services/locale';
 import { AppIcon, routineIconName } from '../components/Icon';
-import { ProfileContextCard } from '../components/ProfileContextCard';
+import { ParticipantSelector } from '../components/ParticipantSelector';
 import { presentRoutine } from '../domain/routinePresentation';
 import { assignableRoutineTemplates, marketplaceFromTemplates, presentRoutineTemplate } from '../domain/routineMarketplace';
 import { withResolvedEventStatuses } from '../domain/adherence';
@@ -117,6 +116,7 @@ export function RoutinesScreen({
   onAssignRoutine,
   onDeleteRoutine,
   onRetryRoutines,
+  onSelectParticipant,
   onSaveMonitoringPlan,
   savingRoutineId,
   focusedEventId,
@@ -131,6 +131,7 @@ export function RoutinesScreen({
   onAssignRoutine?: (routineId: string) => Promise<void>;
   onDeleteRoutine?: (routineId: string) => Promise<void>;
   onRetryRoutines?: () => Promise<void>;
+  onSelectParticipant?: (participantId: string) => void;
   onSaveMonitoringPlan?: (routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode) => Promise<void>;
   savingRoutineId?: string;
   focusedEventId?: string;
@@ -307,23 +308,30 @@ export function RoutinesScreen({
   );
 
   return (
-    <div className="content-screen routines-screen">
+    <div className={`content-screen routines-screen${canAssignRoutine ? ' routines-screen-can-assign' : ''}`}>
       <div className="routines-top">
         <header className="screen-header routines-top-heading">
           <div><h1>{t('myRoutines')}</h1></div>
         </header>
+      <ParticipantSelector
+        access={state.participantAccess}
+        activeParticipantId={state.activeParticipantId}
+        label={t('followedPerson')}
+        title={activeParticipantAccess?.participant.displayName ?? state.family.childName}
+        actionLabel={t('relationshipSwitchAction')}
+        onSelect={onSelectParticipant}
+      />
       {canAssignRoutine ? <div className="routine-add-switcher">
-        <div className="card relationship-manager-card routines-add-card">
-          <ProfileContextCard
-            className="routines-add-button"
-            title={activeParticipantAccess?.participant.displayName ?? state.family.childName}
-            profileColor={activeParticipantAccess ? profileColorFor(activeParticipantAccess.participant) : undefined}
-            actionIcon={addCircleOutline}
-            actionLabel={t('addRoutine')}
-            expanded={catalogOpen}
-            onClick={() => setCatalogOpen((open) => !open)}
-          />
-        </div>
+        <button
+          type="button"
+          className="primary-action-button routines-add-dock-button"
+          style={activeParticipantAccess ? { background: profileColorFor(activeParticipantAccess.participant) } : undefined}
+          aria-expanded={catalogOpen}
+          onClick={() => setCatalogOpen((open) => !open)}
+        >
+          <AppIcon name="add" />
+          {t('addRoutine')}
+        </button>
       {catalogOpen && (
         <section className="card routine-catalog-card routine-catalog-popover" aria-labelledby="routine-catalog-title">
           <div className="routine-catalog-heading">
@@ -362,8 +370,6 @@ export function RoutinesScreen({
           {assignError && <p role="alert" className="request-feedback error">{t('routineAddError')}</p>}
         </section>
       )}
-      </div> : activeParticipantAccess ? <div className="card relationship-manager-card participant-switcher-static routines-profile-static">
-        <ProfileContextCard as="div" title={activeParticipantAccess.participant.displayName} profileColor={profileColorFor(activeParticipantAccess.participant)} />
       </div> : null}
       </div>
       <section className="settings-section routines-list-section" aria-labelledby="routines-list-title">

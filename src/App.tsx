@@ -365,6 +365,9 @@ export function App() {
             onAssignRoutine={canManageRoutines ? async (routineId) => { await repository.assignRoutine(routineId); sync(); } : undefined}
             onDeleteRoutine={canManageRoutines ? async (routineId) => { await repository.deleteRoutine(routineId); sync(); } : undefined}
             onRetryRoutines={repository.retryRemoteSync ? async () => { await repository.retryRemoteSync?.(); sync(); } : undefined}
+            onSelectParticipant={repository.selectActiveParticipant
+              ? (participantId) => { void repository.selectActiveParticipant?.(participantId).then(sync); }
+              : undefined}
             onSaveMonitoringPlan={canManageRoutines ? async (routineId, plan, validationMode) => {
               setSavingRoutineId(routineId);
               try {

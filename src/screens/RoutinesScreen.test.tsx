@@ -93,8 +93,8 @@ describe('participant routines navigation', () => {
     expect(container.textContent).toContain('Validation: AI analysis');
     expect(container.textContent).toContain('Proof example');
     expect(container.textContent).toContain('visible glass');
-    expect(container.querySelector('.routines-add-button')?.getAttribute('aria-label')).toBe('Add a routine');
-    expect(container.querySelector('.routines-add-button')?.textContent).not.toContain('Add a routine');
+    expect(container.querySelector('.routines-add-dock-button')?.textContent).toContain('Add a routine');
+    expect(container.querySelector('.routine-add-switcher .routine-catalog-popover')).not.toBeNull();
   });
 
   it('shows the assigned routine frequency, completion and next task', async () => {
@@ -364,7 +364,7 @@ describe('participant routines navigation', () => {
     const assignRoutine = vi.fn().mockResolvedValue(undefined);
     act(() => root.render(<RoutinesScreen state={state} onAssignRoutine={assignRoutine} t={(key) => translate('en', key)} />));
 
-    const addButton = container.querySelector('.routines-add-button');
+    const addButton = container.querySelector('.routines-add-dock-button');
     act(() => addButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
 
     expect(container.textContent).toContain('Choose a routine');
