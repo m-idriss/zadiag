@@ -1,7 +1,11 @@
 const resultPattern = /Validated|Validé|Not detected|Non détecté|Needs review|À vérifier/i;
 const analyzingPattern = /Checking the photo|Analyse de la photo/i;
+const cameraEnabledContexts = new WeakSet();
 
-export const installSyntheticCamera = (context) => context.addInitScript(() => {
+export const installSyntheticCamera = (context) => {
+  if (cameraEnabledContexts.has(context)) return Promise.resolve();
+  cameraEnabledContexts.add(context);
+  return context.addInitScript(() => {
   const originalMediaDevices = navigator.mediaDevices;
   Object.defineProperty(navigator, 'mediaDevices', {
     configurable: true,
@@ -41,9 +45,10 @@ export const installSyntheticCamera = (context) => context.addInitScript(() => {
       },
     },
   });
-});
+  });
+};
 
-export const answerPendingCheck = async ({ context, page, appUrl, path }) => {
+export const answerPendingCheck = async ({ context, page, appUrl, path, proofWaitMs = 20_000 }) => {
   await installSyntheticCamera(context);
   let destination = new URL('/', appUrl);
   try {
@@ -55,7 +60,7 @@ export const answerPendingCheck = async ({ context, page, appUrl, path }) => {
   await page.goto(destination.href, { waitUntil: 'domcontentloaded', timeout: 30_000 });
   const proofButton = page.getByRole('button', { name: /Proof|Preuve/i }).first();
   try {
-    await proofButton.waitFor({ state: 'visible', timeout: 20_000 });
+    await proofButton.waitFor({ state: 'visible', timeout: proofWaitMs });
   } catch {
     return { outcome: 'already_settled' };
   }

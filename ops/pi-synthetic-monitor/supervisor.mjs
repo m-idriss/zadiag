@@ -181,6 +181,19 @@ const heartbeat = async () => {
         processingCheckIds.delete(checkId);
       }
     }
+    const fallbackStartedAt = Date.now();
+    const fallbackAnswer = await answerPendingCheck({
+      context,
+      page,
+      appUrl,
+      proofWaitMs: 5_000,
+    });
+    if (fallbackAnswer.outcome !== 'already_settled') {
+      log('check_answered_without_push', {
+        outcome: fallbackAnswer.outcome,
+        durationMs: Date.now() - fallbackStartedAt,
+      });
+    }
     const directive = await sendReceipt({
       receiptId: `heartbeat-${new Date().toISOString().slice(0, 13)}`,
       stage: 'heartbeat',
