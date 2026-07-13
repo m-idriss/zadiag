@@ -34,3 +34,10 @@ and ways to bypass retention or deletion controls.
 
 General product suggestions and non-sensitive defects belong in the regular
 issue tracker. Never test against another person's account or data.
+
+## Automated dependency controls
+
+GitHub audits production dependencies every week and Dependabot monitors the web
+application, Functions, and workflow actions. Routine minor and patch updates are
+grouped to keep each maintenance change coherent. Security findings still require
+impact review, relevant tests, and the normal delivery checks before merging.

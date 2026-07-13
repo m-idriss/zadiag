@@ -42,7 +42,15 @@ Before opening the delivery pull request:
 
 The merge into `main` creates the single production deployment. There is no automatic follow-up version commit.
 
-Use the manual **Force app version bump** GitHub workflow only when a version-only release is intentionally required. Because it writes to `main`, it creates its own production deployment.
+Use the manual **Publish version-only release** GitHub workflow only when a version-only release is intentionally required. Because it writes to `main`, it creates its own production deployment.
+
+The workflow accepts only a version greater than the current application version. It refuses an existing tag or release, then pushes the version commit and annotated tag atomically. GitHub release immutability is enabled for the repository and applies to future releases. Published version tags and releases are never moved or edited; use a new version to correct a release.
+
+## Dependency security
+
+Production dependency audits run every Monday and can also be started manually through the **Dependency security** workflow. Dependabot checks the web app, Functions, and GitHub Actions weekly. Minor and patch updates are grouped by deployment unit so routine maintenance remains reviewable without producing a stream of tiny pull requests.
+
+Treat an audit or Dependabot alert as a signal to inspect the affected dependency and its reachable use before upgrading. Keep the remediation in one validated batch and run `pnpm check` (`pnpm check:full` when Firestore rules are involved) before merging it.
 
 ## Expected deployment count
 

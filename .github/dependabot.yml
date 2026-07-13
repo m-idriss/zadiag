@@ -1,0 +1,52 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:20"
+    open-pull-requests-limit: 5
+    groups:
+      routine-updates:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: npm
+    directory: /functions
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:30"
+    open-pull-requests-limit: 5
+    groups:
+      routine-updates:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:40"
+    open-pull-requests-limit: 3
+    groups:
+      routine-actions:
+        patterns:
+          - "*"
