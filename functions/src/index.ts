@@ -14,7 +14,7 @@ import { buildCheckNotificationPayload, buildReviewNotificationPayload, buildTes
 import { isCheckRequestRateLimited } from './reminders.js';
 import { recordAuditEvent } from './audit.js';
 import { expiredPendingCheckCleanupUpdate, staleCleanupCutoffs } from './cleanup.js';
-import { reportOperationalAlert } from './observability.js';
+import { reportOperationalAlert, reportOperationalEvent } from './observability.js';
 import { canLeaveMembership, canRemoveMembership, createMembership, hasParticipantPermission, isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, membershipRoles, migrateLegacyFamilyRelationships, scheduledAggregatePaths, type MembershipRole } from './relationships.js';
 
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
@@ -51,6 +51,22 @@ interface RoutineNotificationNames {
 type PushRecipientRole = 'child' | 'parent';
 type PushNotificationDocument = FirebaseFirestore.QueryDocumentSnapshot | FirebaseFirestore.DocumentSnapshot;
 type PushDispatchResult = 'success' | 'failed' | 'invalidated' | 'skipped';
+
+interface PushDispatchSummary {
+  recipients: number;
+  success: number;
+  failed: number;
+  invalidated: number;
+  skipped: number;
+}
+
+const pushDispatchSummary = (results: PushDispatchResult[]): PushDispatchSummary => ({
+  recipients: results.length,
+  success: results.filter((result) => result === 'success').length,
+  failed: results.filter((result) => result === 'failed').length,
+  invalidated: results.filter((result) => result === 'invalidated').length,
+  skipped: results.filter((result) => result === 'skipped').length,
+});
 
 const getRoutineAnalysisContext = (
   assignment: Partial<RoutineAssignmentDocument> | undefined,
@@ -349,8 +365,8 @@ const sendCheckPushNotification = async (
 const sendReviewPushNotification = async (
   subscriptionDocument: PushNotificationDocument,
   check: { checkId: string; routineId: string } & RoutineNotificationNames,
-) => {
-  if (pushRecipientRole(subscriptionDocument) !== 'parent') return;
+): Promise<PushDispatchResult> => {
+  if (pushRecipientRole(subscriptionDocument) !== 'parent') return 'skipped';
   const subscription = subscriptionDocument.data() as { locale?: string } | undefined;
   const payload = buildReviewNotificationPayload({
     checkId: check.checkId,
@@ -360,28 +376,75 @@ const sendReviewPushNotification = async (
     routineIcon: check.routineIcon,
     locale: subscription?.locale,
   });
-  await sendPushPayload(subscriptionDocument, payload);
+  return sendPushPayload(subscriptionDocument, payload);
+};
+
+const dispatchPushNotifications = async (
+  subscriptions: PushNotificationDocument[],
+  context: {
+    familyId: string;
+    checkId?: string;
+    routineId?: string;
+    notificationType: 'check' | 'review' | 'test';
+  },
+  dispatch: (document: PushNotificationDocument) => Promise<PushDispatchResult>,
+): Promise<PushDispatchSummary> => {
+  const settled = await Promise.allSettled(subscriptions.map(dispatch));
+  const results = settled.map((result, index): PushDispatchResult => {
+    if (result.status === 'fulfilled') return result.value;
+    reportOperationalAlert({
+      kind: 'push_send_failed',
+      familyId: context.familyId,
+      checkId: context.checkId,
+      routineId: context.routineId,
+      actorUid: subscriptions[index]?.id,
+      details: { notificationType: context.notificationType, phase: 'dispatch_unhandled_rejection' },
+      error: result.reason,
+    });
+    return 'failed';
+  });
+  const summary = pushDispatchSummary(results);
+  reportOperationalEvent({
+    kind: 'push_dispatch_summary',
+    familyId: context.familyId,
+    checkId: context.checkId,
+    routineId: context.routineId,
+    details: { notificationType: context.notificationType, ...summary },
+  });
+  return summary;
 };
 
 const sendCheckPushNotifications = async (
   familyRef: FirebaseFirestore.DocumentReference,
-  check: { sessionId: string; routineId: string } & RoutineNotificationNames,
+  check: { checkId: string; sessionId: string; routineId: string } & RoutineNotificationNames,
   resend: boolean,
-) => {
+): Promise<PushDispatchSummary> => {
   const subscriptions = await familyRef.collection('pushSubscriptions').get();
-  if (subscriptions.empty) return;
-  webpush.setVapidDetails('https://www.zadiag.com', vapidPublicKey.value(), vapidPrivateKey.value());
-  await Promise.allSettled(subscriptions.docs.map((document) => sendCheckPushNotification(document, check, resend)));
+  if (!subscriptions.empty) {
+    webpush.setVapidDetails('https://www.zadiag.com', vapidPublicKey.value(), vapidPrivateKey.value());
+  }
+  return dispatchPushNotifications(subscriptions.docs, {
+    familyId: familyRef.id,
+    checkId: check.checkId,
+    routineId: check.routineId,
+    notificationType: 'check',
+  }, (document) => sendCheckPushNotification(document, check, resend));
 };
 
 const sendReviewPushNotifications = async (
   familyRef: FirebaseFirestore.DocumentReference,
   check: { checkId: string; routineId: string } & RoutineNotificationNames,
-) => {
+): Promise<PushDispatchSummary> => {
   const subscriptions = await familyRef.collection('pushSubscriptions').get();
-  if (subscriptions.empty) return;
-  webpush.setVapidDetails('https://www.zadiag.com', vapidPublicKey.value(), vapidPrivateKey.value());
-  await Promise.allSettled(subscriptions.docs.map((document) => sendReviewPushNotification(document, check)));
+  if (!subscriptions.empty) {
+    webpush.setVapidDetails('https://www.zadiag.com', vapidPublicKey.value(), vapidPrivateKey.value());
+  }
+  return dispatchPushNotifications(subscriptions.docs, {
+    familyId: familyRef.id,
+    checkId: check.checkId,
+    routineId: check.routineId,
+    notificationType: 'review',
+  }, (document) => sendReviewPushNotification(document, check));
 };
 
 const getRoutineNotificationNames = (
@@ -1202,11 +1265,14 @@ export const sendTestPushNotification = onCall({
     throw new HttpsError('failed-precondition', 'No push subscription is available for this device.');
   }
   webpush.setVapidDetails('https://www.zadiag.com', vapidPublicKey.value(), vapidPrivateKey.value());
-  const dispatchResult = await sendPushPayload(subscriptionDocument, buildTestNotificationPayload({
+  const dispatch = await dispatchPushNotifications([subscriptionDocument], {
+    familyId,
+    notificationType: 'test',
+  }, (document) => sendPushPayload(document, buildTestNotificationPayload({
     locale: subscription.locale,
     role,
-  }));
-  if (dispatchResult !== 'success') {
+  })));
+  if (dispatch.success !== 1) {
     throw new HttpsError('unavailable', 'The test notification could not be delivered.');
   }
 });
@@ -1344,7 +1410,7 @@ export const requestCheckNow = onCall({
 
   const assignment = await assignmentRef.get();
   const routineNames = getRoutineNotificationNames(assignment.data(), routineId);
-  await sendCheckPushNotifications(familyRef, { ...check, ...routineNames }, resend);
+  await sendCheckPushNotifications(familyRef, { ...check, checkId: check.id, ...routineNames }, resend);
   await recordAuditEvent(db, {
     action: 'request_check',
     actorUid: uid,
@@ -1529,105 +1595,166 @@ export const dispatchPlannedChecks = onSchedule({
   timeZone: 'UTC',
   secrets: [vapidPrivateKey, vapidPublicKey],
 }, async () => {
-  // Query only families that likely have active routines (have children and recent activity)
-  const aggregates = await loadScheduledAggregates();
-  if (!aggregates.length) return;
-
+  const startedAt = Date.now();
   const now = new Date();
-  await Promise.allSettled(aggregates.map(async (familyDoc) => {
-    const familyData = familyDoc.data() as {
-      members?: Record<string, string>;
-    };
-    const hasChild = await aggregateHasActiveParticipant(familyDoc);
-    if (!hasChild) return;
-    await ensureFamilyRoutineMigration(familyDoc.ref);
-    const assignments = await familyDoc.ref.collection('routineAssignments').where('status', '==', 'active').get();
-    const recentSince = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
-    await Promise.allSettled(assignments.docs.map(async (assignmentDoc) => {
-      const assignmentData = assignmentDoc.data() as RoutineAssignmentDocument;
-      const routineId = assignmentData.routineId || assignmentDoc.id;
-      const parsedPlan = monitoringPlanSchema.safeParse(assignmentData.plan);
-      if (!parsedPlan.success) {
-        console.error('Skipping routine with invalid monitoring plan', familyDoc.id, routineId, parsedPlan.error.issues);
-        return;
-      }
-      const plan = parsedPlan.data;
-      const recentChecksQuery = familyDoc.ref.collection('checks')
-        .where('routineId', '==', routineId)
-        .where('requestedAt', '>=', recentSince)
-        .orderBy('requestedAt', 'desc');
-      const recentChecksSnapshot = await recentChecksQuery.get();
-      const recentChecks = recentChecksSnapshot.docs.map((doc) => doc.data() as {
-        requestedAt?: string; status?: string; expiresAt?: string; dispatchKey?: string;
-      });
-      const activePendingCheck = recentChecks.some((check) => {
-        const expiresAt = Date.parse(String(check.expiresAt ?? ''));
-        return check.status === 'pending' && Number.isFinite(expiresAt) && expiresAt > now.getTime();
-      });
-      const decision = shouldAutoDispatchCheck(plan, recentChecks, now, plan.timeZone, activePendingCheck);
-      if (!decision.shouldDispatch || !decision.dispatchKey) return;
-
-      const checkRef = familyDoc.ref.collection('checks').doc();
-      const expiresAt = checkExpiresAt(plan, now);
-      const check = {
-        routineId,
-        sessionId: crypto.randomUUID(),
-        requestedAt: now.toISOString(),
-        expiresAt: expiresAt.toISOString(),
-        status: 'pending',
-        requestedBy: 'system',
-        dispatchKey: decision.dispatchKey,
-        dispatchSource: 'schedule',
-      };
-
-      const created = await db.runTransaction(async (transaction): Promise<boolean> => {
-        const freshAssignmentRef = familyDoc.ref.collection('routineAssignments').doc(assignmentDoc.id);
-        const activePendingQuery = familyDoc.ref.collection('checks')
+  const stats = {
+    aggregatesFound: 0,
+    aggregatesEligible: 0,
+    assignmentsExamined: 0,
+    invalidPlans: 0,
+    checksCreated: 0,
+    pushSuccess: 0,
+    pushFailed: 0,
+    pushInvalidated: 0,
+    pushSkipped: 0,
+    failures: 0,
+  };
+  try {
+    const aggregates = await loadScheduledAggregates();
+    stats.aggregatesFound = aggregates.length;
+    const aggregateResults = await Promise.allSettled(aggregates.map(async (familyDoc) => {
+      const hasChild = await aggregateHasActiveParticipant(familyDoc);
+      if (!hasChild) return;
+      stats.aggregatesEligible += 1;
+      await ensureFamilyRoutineMigration(familyDoc.ref);
+      const assignments = await familyDoc.ref.collection('routineAssignments').where('status', '==', 'active').get();
+      stats.assignmentsExamined += assignments.size;
+      const recentSince = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
+      const assignmentResults = await Promise.allSettled(assignments.docs.map(async (assignmentDoc) => {
+        const assignmentData = assignmentDoc.data() as RoutineAssignmentDocument;
+        const routineId = assignmentData.routineId || assignmentDoc.id;
+        const parsedPlan = monitoringPlanSchema.safeParse(assignmentData.plan);
+        if (!parsedPlan.success) {
+          stats.invalidPlans += 1;
+          reportOperationalAlert({
+            kind: 'scheduler_dispatch_failed',
+            familyId: familyDoc.id,
+            routineId,
+            details: { phase: 'invalid_monitoring_plan' },
+            error: parsedPlan.error,
+          });
+          return;
+        }
+        const plan = parsedPlan.data;
+        const recentChecksQuery = familyDoc.ref.collection('checks')
           .where('routineId', '==', routineId)
-          .where('status', '==', 'pending')
-          .limit(5);
-        const [freshFamily, freshAssignment, activePending, freshRecentChecks, freshMemberships] = await Promise.all([
-          transaction.get(familyDoc.ref),
-          transaction.get(freshAssignmentRef),
-          transaction.get(activePendingQuery),
-          transaction.get(recentChecksQuery),
-          familyDoc.ref.parent.id === 'participants'
-            ? transaction.get(familyDoc.ref.collection('memberships'))
-            : Promise.resolve(undefined),
-        ]);
-        const freshAssignmentData = freshAssignment.data() as RoutineAssignmentDocument | undefined;
-        if (!freshFamily.exists || !freshAssignment.exists || freshAssignmentData?.status !== 'active') return false;
-        const hasActiveParticipant = familyDoc.ref.parent.id === 'families'
-          ? Object.values(freshFamily.data()?.members ?? {}).includes('child')
-          : freshMemberships?.docs.some((membership) => (
-            membership.data().status === 'active'
-            && (membership.data().role === 'participant' || membership.data().label === 'self')
-          ));
-        if (!hasActiveParticipant) return false;
-        const freshPlan = monitoringPlanSchema.safeParse(freshAssignmentData.plan);
-        if (!freshPlan.success) return false;
-        const stillHasActivePending = activePending.docs.some((pending) => Date.parse(String(pending.data().expiresAt ?? '')) > now.getTime());
-        if (stillHasActivePending) return false;
-        const freshDecision = shouldAutoDispatchCheck(
-          freshPlan.data,
-          freshRecentChecks.docs.map((doc) => doc.data() as { requestedAt?: string; status?: string; dispatchKey?: string }),
-          now,
-          freshPlan.data.timeZone,
-          false,
-        );
-        if (!freshDecision.shouldDispatch || freshDecision.dispatchKey !== decision.dispatchKey) return false;
-        transaction.update(freshAssignmentRef, { lastScheduledCheckDispatchAt: now.toISOString() });
-        transaction.create(checkRef, check);
-        return true;
-      });
+          .where('requestedAt', '>=', recentSince)
+          .orderBy('requestedAt', 'desc');
+        const recentChecksSnapshot = await recentChecksQuery.get();
+        const recentChecks = recentChecksSnapshot.docs.map((doc) => doc.data() as {
+          requestedAt?: string; status?: string; expiresAt?: string; dispatchKey?: string;
+        });
+        const activePendingCheck = recentChecks.some((check) => {
+          const expiresAt = Date.parse(String(check.expiresAt ?? ''));
+          return check.status === 'pending' && Number.isFinite(expiresAt) && expiresAt > now.getTime();
+        });
+        const decision = shouldAutoDispatchCheck(plan, recentChecks, now, plan.timeZone, activePendingCheck);
+        if (!decision.shouldDispatch || !decision.dispatchKey) return;
 
-      if (created) await sendCheckPushNotifications(familyDoc.ref, {
-        sessionId: check.sessionId,
-        routineId,
-        ...getRoutineNotificationNames(assignmentData, routineId),
-      }, false);
+        const checkRef = familyDoc.ref.collection('checks').doc();
+        const expiresAt = checkExpiresAt(plan, now);
+        const check = {
+          routineId,
+          sessionId: crypto.randomUUID(),
+          requestedAt: now.toISOString(),
+          expiresAt: expiresAt.toISOString(),
+          status: 'pending',
+          requestedBy: 'system',
+          dispatchKey: decision.dispatchKey,
+          dispatchSource: 'schedule',
+        };
+
+        const created = await db.runTransaction(async (transaction): Promise<boolean> => {
+          const freshAssignmentRef = familyDoc.ref.collection('routineAssignments').doc(assignmentDoc.id);
+          const activePendingQuery = familyDoc.ref.collection('checks')
+            .where('routineId', '==', routineId)
+            .where('status', '==', 'pending')
+            .limit(5);
+          const [freshFamily, freshAssignment, activePending, freshRecentChecks, freshMemberships] = await Promise.all([
+            transaction.get(familyDoc.ref),
+            transaction.get(freshAssignmentRef),
+            transaction.get(activePendingQuery),
+            transaction.get(recentChecksQuery),
+            familyDoc.ref.parent.id === 'participants'
+              ? transaction.get(familyDoc.ref.collection('memberships'))
+              : Promise.resolve(undefined),
+          ]);
+          const freshAssignmentData = freshAssignment.data() as RoutineAssignmentDocument | undefined;
+          if (!freshFamily.exists || !freshAssignment.exists || freshAssignmentData?.status !== 'active') return false;
+          const hasActiveParticipant = familyDoc.ref.parent.id === 'families'
+            ? Object.values(freshFamily.data()?.members ?? {}).includes('child')
+            : freshMemberships?.docs.some((membership) => (
+              membership.data().status === 'active'
+              && (membership.data().role === 'participant' || membership.data().label === 'self')
+            ));
+          if (!hasActiveParticipant) return false;
+          const freshPlan = monitoringPlanSchema.safeParse(freshAssignmentData.plan);
+          if (!freshPlan.success) return false;
+          const stillHasActivePending = activePending.docs.some((pending) => Date.parse(String(pending.data().expiresAt ?? '')) > now.getTime());
+          if (stillHasActivePending) return false;
+          const freshDecision = shouldAutoDispatchCheck(
+            freshPlan.data,
+            freshRecentChecks.docs.map((doc) => doc.data() as { requestedAt?: string; status?: string; dispatchKey?: string }),
+            now,
+            freshPlan.data.timeZone,
+            false,
+          );
+          if (!freshDecision.shouldDispatch || freshDecision.dispatchKey !== decision.dispatchKey) return false;
+          transaction.update(freshAssignmentRef, { lastScheduledCheckDispatchAt: now.toISOString() });
+          transaction.create(checkRef, check);
+          return true;
+        });
+
+        if (!created) return;
+        stats.checksCreated += 1;
+        const dispatch = await sendCheckPushNotifications(familyDoc.ref, {
+          checkId: checkRef.id,
+          sessionId: check.sessionId,
+          routineId,
+          ...getRoutineNotificationNames(assignmentData, routineId),
+        }, false);
+        stats.pushSuccess += dispatch.success;
+        stats.pushFailed += dispatch.failed;
+        stats.pushInvalidated += dispatch.invalidated;
+        stats.pushSkipped += dispatch.skipped;
+      }));
+      assignmentResults.forEach((result, index) => {
+        if (result.status === 'fulfilled') return;
+        stats.failures += 1;
+        const assignment = assignments.docs[index];
+        reportOperationalAlert({
+          kind: 'scheduler_dispatch_failed',
+          familyId: familyDoc.id,
+          routineId: assignment?.data().routineId || assignment?.id,
+          details: { phase: 'routine_dispatch' },
+          error: result.reason,
+        });
+      });
     }));
-  }));
+    aggregateResults.forEach((result, index) => {
+      if (result.status === 'fulfilled') return;
+      stats.failures += 1;
+      reportOperationalAlert({
+        kind: 'scheduler_dispatch_failed',
+        familyId: aggregates[index]?.id,
+        details: { phase: 'aggregate_dispatch' },
+        error: result.reason,
+      });
+    });
+  } catch (error) {
+    stats.failures += 1;
+    reportOperationalAlert({
+      kind: 'scheduler_dispatch_failed',
+      details: { phase: 'scheduler_run' },
+      error,
+    });
+    throw error;
+  } finally {
+    reportOperationalEvent({
+      kind: 'scheduler_run_summary',
+      details: { ...stats, durationMs: Date.now() - startedAt },
+    });
+  }
 });
 
 export const updatePlan = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
@@ -1645,6 +1772,7 @@ export const updatePlan = onCall({ region, cors, enforceAppCheck: true }, async 
 });
 
 export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const requestStartedAt = Date.now();
   const uid = requireUid(request.auth);
   const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const checkId = requireDocumentId(request.data?.checkId, 'Check ID');
@@ -1717,6 +1845,20 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
         hasProofImage: Boolean(proofImagePath),
       },
     });
+    reportOperationalEvent({
+      kind: 'analysis_completed',
+      familyId,
+      checkId,
+      routineId,
+      actorUid: uid,
+      details: {
+        status: 'detected',
+        analysisSource: 'self',
+        reviewRequired: false,
+        hasProofImage: Boolean(proofImagePath),
+        durationMs: Date.now() - requestStartedAt,
+      },
+    });
     return response;
   }
   const routineAnalysis = getRoutineAnalysisContext(assignmentData, routineId, locale);
@@ -1765,15 +1907,23 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
     transaction.update(checkRef, analysisUpdate);
     return { id: check.id, ...checkData, ...analysisUpdate };
   });
+  let reviewDispatch: PushDispatchSummary | undefined;
   if (analysisUpdate.reviewStatus === 'pending') {
     try {
-      await sendReviewPushNotifications(checkRef.parent.parent!, {
+      reviewDispatch = await sendReviewPushNotifications(checkRef.parent.parent!, {
         checkId: checkRef.id,
         routineId,
         ...getRoutineNotificationNames(assignmentData, routineId),
       });
     } catch (error) {
-      console.error('Unable to send review push notifications', error);
+      reportOperationalAlert({
+        kind: 'push_send_failed',
+        familyId,
+        checkId,
+        routineId,
+        details: { notificationType: 'review', phase: 'review_dispatch' },
+        error,
+      });
     }
   }
   await recordAuditEvent(db, {
@@ -1788,6 +1938,22 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
       analysisSource: analysisUpdate.analysisSource,
       reviewStatus: analysisUpdate.reviewStatus ?? null,
       hasProofImage: Boolean(proofImagePath),
+    },
+  });
+  reportOperationalEvent({
+    kind: 'analysis_completed',
+    familyId,
+    checkId,
+    routineId,
+    actorUid: uid,
+    details: {
+      status: analysisUpdate.status,
+      analysisSource: analysisUpdate.analysisSource,
+      reviewRequired: analysisUpdate.reviewStatus === 'pending',
+      hasProofImage: Boolean(proofImagePath),
+      reviewPushSuccess: reviewDispatch?.success ?? 0,
+      reviewPushFailed: reviewDispatch?.failed ?? 0,
+      durationMs: Date.now() - requestStartedAt,
     },
   });
   return response;
@@ -1837,7 +2003,14 @@ export const getProofImageUrl = onCall({ region, cors, enforceAppCheck: true }, 
     });
     return { url };
   } catch (error) {
-    console.error('Unable to create signed proof image URL, returning inline proof image', error);
+    reportOperationalEvent({
+      kind: 'proof_image_fallback',
+      familyId,
+      checkId,
+      actorUid: uid,
+      details: { fallback: 'inline_data_url' },
+      error,
+    });
     const [[buffer], [metadata]] = await Promise.all([
       proofFile.download(),
       proofFile.getMetadata(),
