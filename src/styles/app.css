@@ -415,31 +415,26 @@ button:disabled { cursor: not-allowed; }
 .pull-update-indicator {
   position: absolute;
   z-index: 45;
-  top: calc(9px + env(safe-area-inset-top));
+  top: calc(11px + env(safe-area-inset-top));
   left: 50%;
-  width: fit-content;
-  max-width: calc(100% - 44px);
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 8px 12px;
-  border: 1px solid rgba(255,255,255,.72);
-  border-radius: 14px;
-  background: rgba(21,50,75,.94);
-  box-shadow: 0 10px 24px rgba(16,42,67,.18);
+  width: 32px;
+  height: 32px;
   opacity: 0;
   pointer-events: none;
-  transform: translate(-50%, -18px) scale(.96);
+  transform: translate(-50%, -18px) scale(.82);
   transition: opacity .16s ease, transform .2s cubic-bezier(.22,1,.36,1);
 }
 .pull-update-indicator.visible { opacity: 1; transform: translate(-50%, 0) scale(1); }
-.pull-update-indicator small { color: #fff; font-size: 11px; font-weight: 850; white-space: nowrap; }
-.pull-update-spinner { width: 22px; height: 22px; flex: 0 0 22px; overflow: visible; transform: rotate(-90deg); }
-.pull-update-spinner circle { fill: none; stroke-width: 2.5; }
-.pull-update-spinner-track { stroke: rgba(255,255,255,.22); }
-.pull-update-spinner-progress { stroke: #fff; stroke-linecap: round; transition: stroke-dasharray .1s linear; }
-.pull-update-spinner.spinning { animation: pull-update-spin .8s linear infinite; }
-@keyframes pull-update-spin { to { transform: rotate(270deg); } }
+.pull-update-spinner { width: 32px; height: 32px; overflow: visible; animation: pull-update-spin .8s steps(8, end) infinite; }
+.pull-update-spinner-ray { stroke: var(--navy); stroke-width: 3; stroke-linecap: round; }
+.pull-update-spinner-ray:nth-child(2) { opacity: .86; }
+.pull-update-spinner-ray:nth-child(3) { opacity: .74; }
+.pull-update-spinner-ray:nth-child(4) { opacity: .62; }
+.pull-update-spinner-ray:nth-child(5) { opacity: .5; }
+.pull-update-spinner-ray:nth-child(6) { opacity: .4; }
+.pull-update-spinner-ray:nth-child(7) { opacity: .3; }
+.pull-update-spinner-ray:nth-child(8) { opacity: .22; }
+@keyframes pull-update-spin { to { transform: rotate(360deg); } }
 .app-snackbar {
   position: fixed;
   z-index: 50;

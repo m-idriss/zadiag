@@ -75,16 +75,12 @@ export function PullToUpdate({
       .finally(() => setUpdating(false));
   };
 
-  const progress = updating
-    ? 100
-    : Math.max(0, Math.min(100, Math.round((pullDistance / PULL_THRESHOLD) * 100)));
   const label = updating
     ? t('settingsPullUpdateChecking')
     : pullDistance >= PULL_THRESHOLD
       ? t('settingsPullUpdateRelease')
       : t('settingsPullUpdatePull');
   const visible = updating || pullDistance > 0;
-  const spinnerProgress = updating ? 72 : progress;
 
   return (
     <div
@@ -94,12 +90,20 @@ export function PullToUpdate({
       onTouchEnd={endPull}
       onTouchCancel={resetPull}
     >
-      <div className={`pull-update-indicator ${visible ? 'visible' : ''}`} aria-live="polite">
-        <svg className={`pull-update-spinner ${updating ? 'spinning' : ''}`} viewBox="0 0 24 24" aria-hidden="true">
-          <circle className="pull-update-spinner-track" cx="12" cy="12" r="9" pathLength="100" />
-          <circle className="pull-update-spinner-progress" cx="12" cy="12" r="9" pathLength="100" style={{ strokeDasharray: `${spinnerProgress} 100` }} />
+      <div className={`pull-update-indicator ${visible ? 'visible' : ''}`} role="status" aria-label={label}>
+        <svg className="pull-update-spinner" viewBox="0 0 32 32" aria-hidden="true">
+          {Array.from({ length: 8 }, (_, index) => (
+            <line
+              className="pull-update-spinner-ray"
+              x1="16"
+              y1="4"
+              x2="16"
+              y2="9"
+              key={index}
+              transform={`rotate(${index * 45} 16 16)`}
+            />
+          ))}
         </svg>
-        <small>{label}</small>
       </div>
       {children}
     </div>

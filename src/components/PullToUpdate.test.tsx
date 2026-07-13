@@ -45,6 +45,10 @@ describe('PullToUpdate', () => {
 
     dispatchTouch(page, 'touchstart', 20, 20);
     dispatchTouch(page, 'touchmove', 20, 100);
+
+    expect(container?.querySelectorAll('.pull-update-spinner-ray')).toHaveLength(8);
+    expect(container?.querySelector('.pull-update-indicator')?.textContent).toBe('');
+
     dispatchTouch(page, 'touchend', 20, 100);
 
     await act(async () => Promise.resolve());
