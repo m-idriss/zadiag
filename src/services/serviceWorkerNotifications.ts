@@ -57,10 +57,10 @@ export const reportSyntheticPushReceipt = async (
       receiptId: receipt.receiptId,
       token: receipt.token,
       stage,
-      kind: payload.kind,
-      checkId: payload.checkId,
-      sessionId: payload.sessionId,
-      routineId: payload.routineId,
+      kind: payload?.kind,
+      checkId: payload?.checkId,
+      sessionId: payload?.sessionId,
+      routineId: payload?.routineId,
     }),
   });
   return response.ok;
