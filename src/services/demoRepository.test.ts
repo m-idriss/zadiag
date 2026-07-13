@@ -162,10 +162,10 @@ describe('DemoRepository compatibility', () => {
     await repository.selectRole('parent');
     const selfManagedId = await repository.createParticipant('Jordan', true);
 
-    expect(repository.snapshot().participantAccess).toContainEqual({
+    expect(repository.snapshot().participantAccess).toContainEqual(expect.objectContaining({
       participant: { id: selfManagedId, displayName: 'Jordan', selfManaged: true },
       membership: { role: 'owner', status: 'active', label: 'self' },
-    });
+    }));
     await expect(repository.inviteParticipantMember(selfManagedId, 'caregiver')).resolves.toMatchObject({ code: 'ZI-123456' });
     await expect(repository.acceptParticipantInvitation('invalid')).rejects.toThrow('invalid_code');
     await expect(repository.acceptParticipantInvitation('ZI-123456')).resolves.toBe('demo-invited');

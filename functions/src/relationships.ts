@@ -18,6 +18,7 @@ export type MembershipLabel = 'parent' | 'partner' | 'relative' | 'professional'
 
 export interface MembershipDocument {
   uid: string;
+  displayName?: string;
   role: MembershipRole;
   label?: MembershipLabel;
   permissions: PermissionSet;
@@ -60,16 +61,19 @@ export const createMembership = ({
   uid,
   role,
   label,
+  displayName,
   invitedBy,
   now = new Date().toISOString(),
 }: {
   uid: string;
   role: MembershipRole;
   label?: MembershipLabel;
+  displayName?: string;
   invitedBy?: string;
   now?: string;
 }): MembershipDocument => ({
   uid,
+  ...(displayName ? { displayName } : {}),
   role,
   ...(label ? { label } : {}),
   permissions: defaultPermissionsForRole(role),

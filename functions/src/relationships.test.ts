@@ -41,12 +41,14 @@ test('schedules migrated participants without processing their legacy family twi
 test('models self-management as a regular owner membership', () => {
   const membership = createMembership({
     uid: 'jordan',
+    displayName: 'Jordan',
     role: 'owner',
     label: 'self',
     now: '2026-07-10T10:00:00.000Z',
   });
 
   assert.equal(membership.uid, 'jordan');
+  assert.equal(membership.displayName, 'Jordan');
   assert.equal(membership.label, 'self');
   assert.equal(hasParticipantPermission(membership, 'manageRoutines'), true);
   assert.equal(hasParticipantPermission(membership, 'submitChecks'), true);

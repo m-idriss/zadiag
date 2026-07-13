@@ -10,6 +10,7 @@ export type AuditAction =
   | 'review_proof'
   | 'reset_account'
   | 'create_participant'
+  | 'update_account_profile'
   | 'create_relationship_invitation'
   | 'accept_relationship_invitation'
   | 'migrate_family_relationships'

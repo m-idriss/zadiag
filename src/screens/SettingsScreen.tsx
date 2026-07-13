@@ -43,6 +43,8 @@ export function SettingsScreen({
   lastSyncAt,
   participantAccess,
   activeParticipantId,
+  accountDisplayName,
+  updateAccountProfile,
   selectParticipant,
   createParticipant,
   inviteParticipantMember,
@@ -75,9 +77,11 @@ export function SettingsScreen({
   lastSyncAt?: string;
   participantAccess?: ParticipantAccess[];
   activeParticipantId?: string;
+  accountDisplayName?: string;
+  updateAccountProfile?: (displayName: string) => Promise<string>;
   selectParticipant?: (participantId: string) => Promise<void>;
   createParticipant?: (displayName: string, selfManaged: boolean) => Promise<string>;
-  inviteParticipantMember?: (participantId: string, role: Exclude<MembershipRole, 'owner'>) => Promise<{ code: string; expiresAt: string }>;
+  inviteParticipantMember?: (participantId: string, role: MembershipRole) => Promise<{ code: string; expiresAt: string }>;
   acceptParticipantInvitation?: (code: string) => Promise<string>;
   leaveParticipant?: (participantId: string) => Promise<void>;
   removeParticipantMember?: (participantId: string, targetUid: string) => Promise<ParticipantMember[]>;
@@ -249,6 +253,8 @@ export function SettingsScreen({
       <RelationshipManager
         access={participantAccess}
         activeParticipantId={activeParticipantId}
+        accountDisplayName={accountDisplayName}
+        onUpdateAccountDisplayName={updateAccountProfile}
         onSelect={selectParticipant}
         onCreate={createParticipant}
         onInvite={inviteParticipantMember}

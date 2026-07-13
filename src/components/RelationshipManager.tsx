@@ -1,14 +1,16 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { settingsOutline } from 'ionicons/icons';
 import type { MembershipRole, ParticipantAccess, ParticipantMember } from '../domain/models';
 import { formatMessage, type MessageKey } from '../services/i18n';
 import { ProfileContextCard } from './ProfileContextCard';
 
-type InviteRole = Exclude<MembershipRole, 'owner'>;
+type InviteRole = MembershipRole;
 
-export function RelationshipManager({ access, activeParticipantId, onSelect, onCreate, onInvite, onAccept, onLeave, onRemoveMember, onDeleteParticipant, onCreateRecovery, onRecover, hideHeading = false, t }: {
+export function RelationshipManager({ access, activeParticipantId, accountDisplayName, onUpdateAccountDisplayName, onSelect, onCreate, onInvite, onAccept, onLeave, onRemoveMember, onDeleteParticipant, onCreateRecovery, onRecover, hideHeading = false, t }: {
   access: ParticipantAccess[] | undefined;
   activeParticipantId?: string;
+  accountDisplayName?: string;
+  onUpdateAccountDisplayName?: (displayName: string) => Promise<string>;
   onSelect?: (participantId: string) => Promise<void>;
   onCreate?: (displayName: string, selfManaged: boolean) => Promise<string>;
   onInvite?: (participantId: string, role: InviteRole) => Promise<{ code: string; expiresAt: string }>;
@@ -22,13 +24,14 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
   t: (key: MessageKey) => string;
 }) {
   const [name, setName] = useState('');
+  const [accountName, setAccountName] = useState(accountDisplayName ?? '');
   const [selfManaged, setSelfManaged] = useState(false);
   const [inviteRole, setInviteRole] = useState<InviteRole>('caregiver');
   const [joinCode, setJoinCode] = useState('');
   const [invitationCode, setInvitationCode] = useState<string>();
   const [recoveryCode, setRecoveryCode] = useState<string>();
   const [recoverCode, setRecoverCode] = useState('');
-  const [busy, setBusy] = useState<'create' | 'invite' | 'accept' | 'recovery' | 'remove' | 'delete'>();
+  const [busy, setBusy] = useState<'account' | 'create' | 'invite' | 'accept' | 'recovery' | 'remove' | 'delete'>();
   const [removingUid, setRemovingUid] = useState<string>();
   const [error, setError] = useState<MessageKey>();
   const [open, setOpen] = useState(false);
@@ -36,8 +39,10 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
   const selectedAccess = activeAccess.find((entry) => entry.participant.id === activeParticipantId) ?? activeAccess[0];
   const selectedParticipantId = selectedAccess?.participant.id;
   const isOwner = selectedAccess?.membership.role === 'owner';
-  const removableMembers = selectedAccess?.members?.filter((member) => !member.isCurrentUser && member.status === 'active') ?? [];
+  const teamMembers = selectedAccess?.members?.filter((member) => member.status === 'active') ?? [];
   const canLeaveSelectedAccess = !isOwner || (selectedAccess?.members?.filter((member) => member.role === 'owner' && member.status === 'active').length ?? 0) > 1;
+
+  useEffect(() => { setAccountName(accountDisplayName ?? ''); }, [accountDisplayName]);
 
   const run = async (kind: NonNullable<typeof busy>, action: () => Promise<void>, errorKey?: (error: unknown) => MessageKey) => {
     setError(undefined);
@@ -68,6 +73,14 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
       setJoinCode('');
     });
   };
+  const saveAccountName = (event: FormEvent) => {
+    event.preventDefault();
+    if (!onUpdateAccountDisplayName || !accountName.trim()) return;
+    void run('account', async () => {
+      const savedName = await onUpdateAccountDisplayName(accountName.trim());
+      setAccountName(savedName);
+    });
+  };
 
   return (
     <section className="settings-section relationship-manager" aria-labelledby={hideHeading ? undefined : 'relationship-manager-heading'} aria-label={hideHeading ? t('relationshipManagerTitle') : undefined}>
@@ -83,6 +96,16 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
         />
         {open ? <div className="relationship-manager-body">
         <p>{t('relationshipManagerHint')}</p>
+        {onUpdateAccountDisplayName ? <form className="relationship-account-form" onSubmit={saveAccountName}>
+          <div className="relationship-subsection-heading">
+            <h3>{t('accountProfileTitle')}</h3>
+            <small>{t('accountProfileHint')}</small>
+          </div>
+          <div className="relationship-account-controls">
+            <input aria-label={t('accountProfileNameLabel')} value={accountName} maxLength={40} autoComplete="name" autoCapitalize="words" enterKeyHint="done" onChange={(event) => setAccountName(event.target.value)} placeholder={t('accountProfileNameLabel')} />
+            <button type="submit" aria-busy={busy === 'account'} disabled={Boolean(busy) || !accountName.trim() || accountName.trim() === (accountDisplayName ?? '').trim()}>{busy === 'account' ? <span className="button-spinner" aria-hidden="true" /> : null}{busy === 'account' ? t('relationshipWorking') : t('accountProfileSave')}</button>
+          </div>
+        </form> : null}
         <div className="relationship-subsection-heading relationship-scope-heading">
           <h3>{t('relationshipAccountProfilesTitle')}</h3>
           <small>{t('relationshipAccountProfilesHint')}</small>
@@ -107,15 +130,16 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
               <h3 id="relationship-team-title">{t('relationshipTeamTitle')}</h3>
               <small>{t('relationshipTeamHint')}</small>
             </div>
-            {removableMembers.length ? (
+            {teamMembers.length ? (
               <div className="relationship-member-list">
-                {removableMembers.map((member) => {
+                {teamMembers.map((member) => {
                   const roleKey = `relationshipRole${member.role[0].toUpperCase()}${member.role.slice(1)}` as MessageKey;
                   const removing = busy === 'remove' && removingUid === member.uid;
+                  const memberName = member.displayName || (member.isCurrentUser ? accountDisplayName : undefined) || t('relationshipMemberUnnamed');
                   return (
                     <div className="relationship-member-row" key={member.uid}>
-                      <span><strong>{t(roleKey)}</strong><small>{t('relationshipMemberAccess')}</small></span>
-                      {onRemoveMember ? <button type="button" aria-busy={removing} disabled={Boolean(busy)} onClick={() => {
+                      <span><strong>{memberName}</strong><small>{t(roleKey)}{member.isCurrentUser ? ` · ${t('relationshipMemberYou')}` : ''}</small></span>
+                      {onRemoveMember && !member.isCurrentUser ? <button type="button" aria-busy={removing} disabled={Boolean(busy)} onClick={() => {
                         if (!window.confirm(t('relationshipRemoveMemberConfirm'))) return;
                         setRemovingUid(member.uid);
                         void run('remove', () => onRemoveMember(selectedParticipantId, member.uid).then(() => undefined))
@@ -135,6 +159,7 @@ export function RelationshipManager({ access, activeParticipantId, onSelect, onC
           <div className="relationship-form">
             <p>{t('relationshipInviteHint')}</p>
             <select aria-label={t('relationshipInviteRole')} value={inviteRole} onChange={(event) => setInviteRole(event.target.value as InviteRole)}>
+              <option value="owner">{t('relationshipRoleOwner')}</option>
               <option value="caregiver">{t('relationshipRoleCaregiver')}</option>
               <option value="participant">{t('relationshipInviteParticipantOption')}</option>
               <option value="viewer">{t('relationshipRoleViewer')}</option>

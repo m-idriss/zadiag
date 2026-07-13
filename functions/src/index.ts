@@ -551,6 +551,9 @@ export const createParticipant = onCall({ region, cors, enforceAppCheck: true },
   const now = new Date().toISOString();
 
   await db.runTransaction(async (transaction) => {
+    const user = await transaction.get(userRef);
+    const existingAccountName = typeof user.data()?.displayName === 'string' ? user.data()!.displayName.trim() : '';
+    const accountDisplayName = existingAccountName || (selfManaged ? displayName : '');
     transaction.create(participantRef, {
       displayName,
       ...(selfManaged ? { userId: uid } : {}),
@@ -563,6 +566,7 @@ export const createParticipant = onCall({ region, cors, enforceAppCheck: true },
     transaction.create(membershipRef, createMembership({
       uid,
       role: 'owner',
+      ...(accountDisplayName ? { displayName: accountDisplayName } : {}),
       ...(selfManaged ? { label: 'self' as const } : {}),
       now,
     }));
@@ -572,7 +576,11 @@ export const createParticipant = onCall({ region, cors, enforceAppCheck: true },
       status: 'active',
       updatedAt: now,
     });
-    transaction.set(userRef, { relationshipModelVersion: 2, updatedAt: now }, { merge: true });
+    transaction.set(userRef, {
+      relationshipModelVersion: 2,
+      ...(accountDisplayName ? { displayName: accountDisplayName } : {}),
+      updatedAt: now,
+    }, { merge: true });
   });
   await recordAuditEvent(db, {
     action: 'create_participant',
@@ -583,11 +591,46 @@ export const createParticipant = onCall({ region, cors, enforceAppCheck: true },
   return { participantId: participantRef.id };
 });
 
+export const updateAccountProfile = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = requireUid(request.auth);
+  let displayName: string;
+  try { displayName = assertChildName(request.data?.displayName); }
+  catch { throw new HttpsError('invalid-argument', 'A valid account name is required.'); }
+
+  const userRef = db.collection('users').doc(uid);
+  const participantRefs = await userRef.collection('participantRefs').where('status', '==', 'active').get();
+  const membershipRefs = participantRefs.docs.map((reference) => (
+    db.collection('participants').doc(reference.id).collection('memberships').doc(uid)
+  ));
+  const membershipSnapshots = membershipRefs.length ? await db.getAll(...membershipRefs) : [];
+  const activeMemberships = membershipSnapshots.filter((membership) => (
+    membership.exists && membership.data()?.uid === uid && membership.data()?.status === 'active'
+  ));
+  const now = new Date().toISOString();
+  const writes: Array<(batch: FirebaseFirestore.WriteBatch) => void> = [
+    (batch) => batch.set(userRef, { displayName, relationshipModelVersion: 2, updatedAt: now }, { merge: true }),
+    ...activeMemberships.map((membership) => (batch: FirebaseFirestore.WriteBatch) => (
+      batch.set(membership.ref, { displayName, updatedAt: now }, { merge: true })
+    )),
+  ];
+  for (let offset = 0; offset < writes.length; offset += 400) {
+    const batch = db.batch();
+    writes.slice(offset, offset + 400).forEach((write) => write(batch));
+    await batch.commit();
+  }
+  await recordAuditEvent(db, {
+    action: 'update_account_profile',
+    actorUid: uid,
+    metadata: { updatedMemberships: activeMemberships.length },
+  });
+  return { displayName, updatedMemberships: activeMemberships.length };
+});
+
 export const createRelationshipInvitation = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = requireUid(request.auth);
   const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
   const intendedRole = String(request.data?.role ?? '') as MembershipRole;
-  if (!membershipRoles.includes(intendedRole) || intendedRole === 'owner') {
+  if (!membershipRoles.includes(intendedRole)) {
     throw new HttpsError('invalid-argument', 'The invitation role is invalid.');
   }
   const membership = await db.collection('participants').doc(participantId).collection('memberships').doc(uid).get();
@@ -629,7 +672,7 @@ export const acceptRelationshipInvitation = onCall({ region, cors, enforceAppChe
     const invitationData = invitation.data() ?? {};
     const targetParticipantId = String(invitationData.participantId ?? '');
     const intendedRole = String(invitationData.intendedRole ?? '') as MembershipRole;
-    if (!targetParticipantId || !membershipRoles.includes(intendedRole) || intendedRole === 'owner') {
+    if (!targetParticipantId || !membershipRoles.includes(intendedRole)) {
       throw new HttpsError('failed-precondition', 'The invitation is invalid.');
     }
     if (invitationData.consumedAt) {
@@ -643,9 +686,10 @@ export const acceptRelationshipInvitation = onCall({ region, cors, enforceAppChe
     const membershipRef = participantRef.collection('memberships').doc(uid);
     const participantIndexRef = db.collection('users').doc(uid).collection('participantRefs').doc(targetParticipantId);
     const userRef = db.collection('users').doc(uid);
-    const [participant, existingMembership] = await Promise.all([
+    const [participant, existingMembership, user] = await Promise.all([
       transaction.get(participantRef),
       transaction.get(membershipRef),
+      transaction.get(userRef),
     ]);
     if (!participant.exists || participant.data()?.status !== 'active') {
       throw new HttpsError('not-found', 'The participant could not be found.');
@@ -664,13 +708,20 @@ export const acceptRelationshipInvitation = onCall({ region, cors, enforceAppChe
       if (!participantUserId) transaction.update(participantRef, { userId: uid, updatedAt: new Date().toISOString() });
     }
     const now = new Date().toISOString();
+    const existingAccountName = typeof user.data()?.displayName === 'string' ? user.data()!.displayName.trim() : '';
+    const accountDisplayName = existingAccountName || (intendedRole === 'participant'
+      ? String(participant.data()?.displayName ?? '').trim()
+      : '');
     if (!existingMembership.exists) {
       transaction.create(membershipRef, createMembership({
         uid,
         role: intendedRole,
+        ...(accountDisplayName ? { displayName: accountDisplayName } : {}),
         invitedBy: String(invitationData.createdBy ?? ''),
         now,
       }));
+    } else if (accountDisplayName && existingMembership.data()?.displayName !== accountDisplayName) {
+      transaction.set(membershipRef, { displayName: accountDisplayName, updatedAt: now }, { merge: true });
     }
     transaction.set(participantIndexRef, {
       participantId: targetParticipantId,
@@ -678,7 +729,11 @@ export const acceptRelationshipInvitation = onCall({ region, cors, enforceAppChe
       status: 'active',
       updatedAt: now,
     });
-    transaction.set(userRef, { relationshipModelVersion: 2, updatedAt: now }, { merge: true });
+    transaction.set(userRef, {
+      relationshipModelVersion: 2,
+      ...(accountDisplayName ? { displayName: accountDisplayName } : {}),
+      updatedAt: now,
+    }, { merge: true });
     transaction.update(invitationRef, { consumedAt: now, consumedBy: uid });
     transaction.delete(db.collection('recoveryAttempts').doc(uid));
     return targetParticipantId;
@@ -856,10 +911,12 @@ export const recoverRelationship = onCall({ region, cors, enforceAppCheck: true 
     const nextMembershipRef = participantRef.collection('memberships').doc(uid);
     const nextIndexRef = db.collection('users').doc(uid).collection('participantRefs').doc(targetParticipantId);
     const previousIndexRef = db.collection('users').doc(previousUid).collection('participantRefs').doc(targetParticipantId);
-    const [participant, previousMembership, nextMembership] = await Promise.all([
+    const userRef = db.collection('users').doc(uid);
+    const [participant, previousMembership, nextMembership, user] = await Promise.all([
       transaction.get(participantRef),
       transaction.get(previousMembershipRef),
       transaction.get(nextMembershipRef),
+      transaction.get(userRef),
     ]);
     if (!participant.exists || !previousMembership.exists || previousMembership.data()?.status !== 'active') {
       throw new HttpsError('failed-precondition', 'The relationship can no longer be recovered.');
@@ -869,9 +926,16 @@ export const recoverRelationship = onCall({ region, cors, enforceAppCheck: true 
     }
     const now = new Date().toISOString();
     const previousData = previousMembership.data()!;
+    const existingAccountName = typeof user.data()?.displayName === 'string' ? user.data()!.displayName.trim() : '';
+    const accountDisplayName = existingAccountName || (previousData.role === 'participant'
+      ? String(participant.data()?.displayName ?? '').trim()
+      : '');
+    const nextMembershipData = { ...previousData };
+    delete nextMembershipData.displayName;
     transaction.set(nextMembershipRef, {
-      ...previousData,
+      ...nextMembershipData,
       uid,
+      ...(accountDisplayName ? { displayName: accountDisplayName } : {}),
       status: 'active',
       recoveryCodeHash: nextCodeHash,
       recoveredFrom: previousUid,
@@ -883,7 +947,11 @@ export const recoverRelationship = onCall({ region, cors, enforceAppCheck: true 
       status: 'active',
       updatedAt: now,
     });
-    transaction.set(db.collection('users').doc(uid), { relationshipModelVersion: 2, updatedAt: now }, { merge: true });
+    transaction.set(userRef, {
+      relationshipModelVersion: 2,
+      ...(accountDisplayName ? { displayName: accountDisplayName } : {}),
+      updatedAt: now,
+    }, { merge: true });
     if (previousUid !== uid) {
       transaction.set(previousMembershipRef, {
         status: 'suspended',

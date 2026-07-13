@@ -171,6 +171,41 @@ describe('RelationshipManager', () => {
     expect(removeMember).toHaveBeenCalledWith('alex', 'assistant');
   });
 
+  it('names the account once and identifies every responsible and participant account', async () => {
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+    const updateAccount = vi.fn().mockResolvedValue('Idriss');
+    act(() => root?.render(<RelationshipManager
+      access={[{
+        participant: { id: 'yoan-profile', displayName: 'Yoan' },
+        membership: { role: 'owner', status: 'active' },
+        members: [
+          { uid: 'owner-1', displayName: 'Idriss', role: 'owner', status: 'active', isCurrentUser: true },
+          { uid: 'owner-2', displayName: 'Sarah', role: 'owner', status: 'active' },
+          { uid: 'participant-1', displayName: 'Yoan', role: 'participant', status: 'active' },
+        ],
+      }]}
+      activeParticipantId="yoan-profile"
+      accountDisplayName="Idriss"
+      onUpdateAccountDisplayName={updateAccount}
+      t={(key) => translate('en', key)}
+    />));
+    expandManager();
+    expect(container.textContent).toContain('Idriss');
+    expect(container.textContent).toContain('Sarah');
+    expect(container.textContent).toContain('Owner · You');
+    expect(container.textContent).toContain('Participant');
+
+    const accountInput = container.querySelector('input[aria-label="Your name"]') as HTMLInputElement;
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(accountInput, 'Idriss Martin');
+      accountInput.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => accountInput.closest('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    expect(updateAccount).toHaveBeenCalledWith('Idriss Martin');
+  });
+
   it('replaces the impossible last-owner exit with profile deletion', async () => {
     container = document.createElement('div');
     document.body.append(container);

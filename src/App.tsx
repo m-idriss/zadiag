@@ -386,6 +386,8 @@ export function App() {
             lastSyncAt={lastSyncAt}
             participantAccess={state.participantAccess}
             activeParticipantId={state.activeParticipantId}
+            accountDisplayName={state.accountDisplayName}
+            updateAccountProfile={repository.updateAccountProfile ? async (displayName) => { const name = await repository.updateAccountProfile!(displayName); sync(); return name; } : undefined}
             selectParticipant={repository.selectActiveParticipant ? async (participantId) => { await repository.selectActiveParticipant?.(participantId); sync(); } : undefined}
             createParticipant={repository.createParticipant ? async (displayName, selfManaged) => { const id = await repository.createParticipant?.(displayName, selfManaged); sync(); return id!; } : undefined}
             inviteParticipantMember={repository.inviteParticipantMember ? (participantId, membershipRole) => repository.inviteParticipantMember!(participantId, membershipRole) : undefined}

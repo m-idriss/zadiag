@@ -6,8 +6,9 @@ export interface AppRepository {
   subscribe(listener: () => void): () => void;
   selectRole(role: Role): Promise<void>;
   selectActiveParticipant?(participantId: string): Promise<void>;
+  updateAccountProfile?(displayName: string): Promise<string>;
   createParticipant?(displayName: string, selfManaged?: boolean): Promise<string>;
-  inviteParticipantMember?(participantId: string, role: Exclude<MembershipRole, 'owner'>): Promise<{ code: string; expiresAt: string }>;
+  inviteParticipantMember?(participantId: string, role: MembershipRole): Promise<{ code: string; expiresAt: string }>;
   acceptParticipantInvitation?(code: string): Promise<string>;
   leaveParticipant?(participantId: string): Promise<void>;
   removeParticipantMember?(participantId: string, targetUid: string): Promise<ParticipantMember[]>;

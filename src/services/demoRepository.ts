@@ -1,6 +1,7 @@
 import type {
   AnalysisResult,
   AppState,
+  MembershipRole,
   MonitoringPlan,
   Role,
   RoutineAssignment,
@@ -160,6 +161,7 @@ function initialState(): AppState {
   const hydrationRoutine = routineFromCatalog(HYDRATION_ROUTINE_ID);
   return {
     locale: browserLocale(),
+    accountDisplayName: 'Responsable démo',
     notificationsEnabled: false,
     pushHealth: { permission: 'default', endpointPresent: false },
     preferences: normalizeAppPreferences(),
@@ -240,6 +242,19 @@ export class DemoRepository implements AppRepository {
     this.persist();
   }
 
+  async updateAccountProfile(displayName: string) {
+    const normalizedName = displayName.trim();
+    this.state.accountDisplayName = normalizedName;
+    this.state.participantAccess = this.state.participantAccess?.map((entry) => ({
+      ...entry,
+      members: entry.members?.map((member) => member.isCurrentUser
+        ? { ...member, displayName: normalizedName }
+        : member),
+    }));
+    this.persist();
+    return normalizedName;
+  }
+
   async createParticipant(displayName: string, selfManaged = false) {
     const participantId = `demo-${Date.now()}`;
     this.state.participantAccess = [
@@ -247,6 +262,7 @@ export class DemoRepository implements AppRepository {
       {
         participant: { id: participantId, displayName: displayName.trim(), selfManaged },
         membership: { role: 'owner', status: 'active', ...(selfManaged ? { label: 'self' as const } : {}) },
+        members: [{ uid: 'demo-current', displayName: this.state.accountDisplayName, role: 'owner', status: 'active', isCurrentUser: true }],
       },
     ];
     this.state.activeParticipantId = participantId;
@@ -255,7 +271,7 @@ export class DemoRepository implements AppRepository {
     return participantId;
   }
 
-  async inviteParticipantMember(participantId: string, role: 'caregiver' | 'participant' | 'viewer') {
+  async inviteParticipantMember(participantId: string, role: MembershipRole) {
     if (!activeParticipantAccess(this.state.participantAccess, participantId) || role === 'viewer' && this.state.role === 'child') {
       throw new Error('permission_denied');
     }

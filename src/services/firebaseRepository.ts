@@ -41,6 +41,7 @@ import { readUiStorageString, removeUiStorageItem, writeUiStorageString } from '
 const ACTIVE_PARTICIPANT_KEY_PREFIX = 'zadiag.activeParticipant.';
 
 interface UserProfile {
+  displayName?: string;
   familyId?: string;
   role?: Role;
   linkingCode?: string;
@@ -164,6 +165,19 @@ export class FirebaseRepository implements AppRepository {
     }
   }
 
+  async updateAccountProfile(displayName: string) {
+    const normalizedName = displayName.trim();
+    const updateProfile = httpsCallable<
+      { displayName: string },
+      { displayName: string; updatedMemberships: number }
+    >(this.services.functions, 'updateAccountProfile');
+    const result = await updateProfile({ displayName: normalizedName });
+    this.state.accountDisplayName = result.data.displayName;
+    await this.loadParticipantAccess();
+    this.emit();
+    return result.data.displayName;
+  }
+
   async createParticipant(displayName: string, selfManaged = false) {
     const normalizedName = displayName.trim();
     const result = await coalesceInFlight(this.inFlightCallables, `createParticipant:${normalizedName}:${selfManaged}`, async () => {
@@ -173,15 +187,16 @@ export class FirebaseRepository implements AppRepository {
       >(this.services.functions, 'createParticipant');
       return createParticipant({ displayName: normalizedName, selfManaged });
     });
+    await this.loadAccountProfile();
     await this.loadParticipantAccess();
     const access = activeParticipantAccess(this.state.participantAccess, result.data.participantId);
     if (access) await this.attachParticipant(result.data.participantId, access.membership.role);
     return result.data.participantId;
   }
 
-  async inviteParticipantMember(participantId: string, role: Exclude<MembershipRole, 'owner'>) {
+  async inviteParticipantMember(participantId: string, role: MembershipRole) {
     const createInvitation = httpsCallable<
-      { participantId: string; role: Exclude<MembershipRole, 'owner'> },
+      { participantId: string; role: MembershipRole },
       { code: string; expiresAt: string }
     >(this.services.functions, 'createRelationshipInvitation');
     const result = await createInvitation({ participantId, role });
@@ -197,6 +212,7 @@ export class FirebaseRepository implements AppRepository {
       );
       return acceptInvitation({ code: normalizedCode });
     });
+    await this.loadAccountProfile();
     await this.loadParticipantAccess();
     const access = activeParticipantAccess(this.state.participantAccess, result.data.participantId);
     if (access) await this.attachParticipant(result.data.participantId, access.membership.role);
@@ -274,6 +290,7 @@ export class FirebaseRepository implements AppRepository {
       { participantId: string; recoveryCode?: string; expiresAt?: string }
     >(this.services.functions, 'recoverRelationship');
     const result = await recover({ code: code.trim().toUpperCase() });
+    await this.loadAccountProfile();
     await this.loadParticipantAccess();
     const access = activeParticipantAccess(this.state.participantAccess, result.data.participantId);
     if (access) await this.attachParticipant(result.data.participantId, access.membership.role);
@@ -537,6 +554,7 @@ export class FirebaseRepository implements AppRepository {
     if (!this.user) return;
     const profile = await getDoc(doc(this.services.db, 'users', this.user.uid));
     const data = profile.exists() ? profile.data() as UserProfile : undefined;
+    this.state.accountDisplayName = data?.displayName?.trim() || undefined;
     try { await this.loadParticipantAccess(); }
     catch (error) { console.error('Unable to load participant relationships', error); }
     if (!data) {
@@ -568,6 +586,13 @@ export class FirebaseRepository implements AppRepository {
       this.emit();
     }
     this.runInBackground('Unable to sync push subscription locale', () => this.syncPushSubscriptionLocale());
+  }
+
+  private async loadAccountProfile() {
+    if (!this.user) return;
+    const profile = await getDoc(doc(this.services.db, 'users', this.user.uid));
+    const data = profile.exists() ? profile.data() as UserProfile : undefined;
+    this.state.accountDisplayName = data?.displayName?.trim() || undefined;
   }
 
   private async loadParticipantAccess() {
@@ -602,6 +627,7 @@ export class FirebaseRepository implements AppRepository {
           .filter((item) => item.data().status === 'active')
           .map((item): ParticipantMember => ({
             uid: item.id,
+            displayName: typeof item.data().displayName === 'string' ? item.data().displayName.trim() || undefined : undefined,
             role: item.data().role as MembershipRole,
             status: 'active',
             label: item.data().label,

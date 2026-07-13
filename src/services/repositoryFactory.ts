@@ -37,13 +37,19 @@ class LazyFirebaseRepository implements AppRepository {
     return repository.selectActiveParticipant(participantId);
   }
 
+  async updateAccountProfile(displayName: string) {
+    const repository = await this.load();
+    if (!repository.updateAccountProfile) throw new Error('account_profile_update_unavailable');
+    return repository.updateAccountProfile(displayName);
+  }
+
   async createParticipant(displayName: string, selfManaged?: boolean) {
     const repository = await this.load();
     if (!repository.createParticipant) throw new Error('participant_creation_unavailable');
     return repository.createParticipant(displayName, selfManaged);
   }
 
-  async inviteParticipantMember(participantId: string, role: Exclude<MembershipRole, 'owner'>) {
+  async inviteParticipantMember(participantId: string, role: MembershipRole) {
     const repository = await this.load();
     if (!repository.inviteParticipantMember) throw new Error('participant_invitation_unavailable');
     return repository.inviteParticipantMember(participantId, role);

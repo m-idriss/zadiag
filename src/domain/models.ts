@@ -155,6 +155,7 @@ export interface MembershipSummary {
 
 export interface ParticipantMember extends MembershipSummary {
   uid: string;
+  displayName?: string;
   isCurrentUser?: boolean;
 }
 
@@ -190,6 +191,7 @@ export const normalizeAppPreferences = (preferences?: Partial<AppPreferences>): 
 
 export interface AppState {
   role?: Role;
+  accountDisplayName?: string;
   locale: Locale;
   notificationsEnabled: boolean;
   pushHealth?: PushSubscriptionHealth;
