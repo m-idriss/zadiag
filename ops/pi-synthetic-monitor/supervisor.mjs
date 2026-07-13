@@ -51,6 +51,24 @@ const sendReceipt = async (body) => {
     signal: AbortSignal.timeout(10_000),
   });
   if (!receipt.ok) throw new Error(`Synthetic receipt returned ${receipt.status}`);
+  if (receipt.status === 204) return {};
+  return receipt.json().catch(() => ({}));
+};
+
+const renewPushSubscription = async () => {
+  const unsubscribed = await page.evaluate(async () => {
+    const registration = await navigator.serviceWorker?.ready.catch(() => undefined);
+    const subscription = await registration?.pushManager.getSubscription().catch(() => null);
+    return subscription ? subscription.unsubscribe() : true;
+  });
+  if (!unsubscribed) throw new Error('Unable to unsubscribe the stale Push endpoint');
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 30_000 });
+  await page.waitForFunction(async () => {
+    const registration = await navigator.serviceWorker?.ready.catch(() => undefined);
+    return Boolean(await registration?.pushManager.getSubscription().catch(() => null));
+  }, undefined, { timeout: 30_000 });
+  await page.waitForTimeout(5_000);
+  log('push_subscription_renewed');
 };
 
 const heartbeat = async () => {
@@ -76,11 +94,6 @@ const heartbeat = async () => {
       };
     });
     if (!health.url.startsWith(appUrl)) await page.goto(appUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
-    await sendReceipt({
-      receiptId: `heartbeat-${new Date().toISOString().slice(0, 13)}`,
-      stage: 'heartbeat',
-      kind: 'pi-browser',
-    });
     for (const notification of health.notifications) {
       const identity = notification.tag || JSON.stringify(notification);
       if (seenNotificationTags.has(identity)) continue;
@@ -96,6 +109,12 @@ const heartbeat = async () => {
       seenNotificationTags.add(identity);
       log('push_received', { tag: notification.tag, kind: notification.kind });
     }
+    const directive = await sendReceipt({
+      receiptId: `heartbeat-${new Date().toISOString().slice(0, 13)}`,
+      stage: 'heartbeat',
+      kind: 'pi-browser',
+    });
+    if (directive.renewPushSubscription === true) await renewPushSubscription();
     consecutiveHealthFailures = 0;
     log('heartbeat_ok', { ...health, notifications: health.notifications.length });
   } catch (error) {

@@ -15,6 +15,7 @@ import { isCheckRequestRateLimited } from './reminders.js';
 import { recordAuditEvent } from './audit.js';
 import { expiredPendingCheckCleanupUpdate, staleCleanupCutoffs } from './cleanup.js';
 import { reportOperationalAlert, reportOperationalEvent } from './observability.js';
+import { shouldRecoverSyntheticPush } from './syntheticMonitor.js';
 import { canLeaveMembership, canRemoveMembership, createMembership, hasParticipantPermission, isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, membershipRoles, migrateLegacyFamilyRelationships, scheduledAggregatePaths, type MembershipRole } from './relationships.js';
 
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
@@ -387,6 +388,18 @@ const sendPushPayload = async (
   }
 };
 
+const markSyntheticPushExpected = async (
+  target: SyntheticMonitorTarget,
+  receiptId: string,
+  expectedAt: Date,
+) => {
+  await db.collection('syntheticMonitors').doc(target.monitorId).set({
+    lastPushExpectedAt: expectedAt,
+    lastExpectedReceiptId: receiptId,
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+};
+
 const sendCheckPushNotification = async (
   subscriptionDocument: PushNotificationDocument,
   check: { checkId: string; sessionId: string; routineId: string } & RoutineNotificationNames,
@@ -406,7 +419,12 @@ const sendCheckPushNotification = async (
   });
   const receipt = syntheticReceiptPayload(syntheticMonitor, subscriptionDocument.id, check.checkId);
   const payload = receipt ? { ...basePayload, checkId: check.checkId, syntheticReceipt: receipt } : basePayload;
-  return sendPushPayload(subscriptionDocument, payload);
+  const expectedAt = new Date();
+  const result = await sendPushPayload(subscriptionDocument, payload);
+  if (result === 'success' && receipt && syntheticMonitor) {
+    await markSyntheticPushExpected(syntheticMonitor, receipt.receiptId, expectedAt);
+  }
+  return result;
 };
 
 const sendReviewPushNotification = async (
@@ -1321,7 +1339,14 @@ export const sendTestPushNotification = onCall({
   const dispatch = await dispatchPushNotifications([subscriptionDocument], {
     familyId,
     notificationType: 'test',
-  }, (document) => sendPushPayload(document, receipt ? { ...basePayload, syntheticReceipt: receipt } : basePayload));
+  }, async (document) => {
+    const expectedAt = new Date();
+    const result = await sendPushPayload(document, receipt ? { ...basePayload, syntheticReceipt: receipt } : basePayload);
+    if (result === 'success' && receipt && syntheticMonitor) {
+      await markSyntheticPushExpected(syntheticMonitor, receipt.receiptId, expectedAt);
+    }
+    return result;
+  });
   if (dispatch.success !== 1) {
     throw new HttpsError('unavailable', 'The test notification could not be delivered.');
   }
@@ -1372,6 +1397,7 @@ export const recordSyntheticPushReceipt = onRequest({ region }, async (request, 
   const monitorRef = db.collection('syntheticMonitors').doc(monitorId);
   const receiptRef = monitorRef.collection('receipts').doc(`${receiptId}_${stage}`);
   let participantId = '';
+  let renewPushSubscription = false;
   try {
     await db.runTransaction(async (transaction) => {
       const monitor = await transaction.get(monitorRef);
@@ -1380,6 +1406,16 @@ export const recordSyntheticPushReceipt = onRequest({ region }, async (request, 
       if (!monitor.exists || data?.enabled !== true || data.receiptTokenHash !== hashLinkCode(token)) {
         throw new HttpsError('permission-denied', 'Synthetic monitor receipt rejected.');
       }
+      const timestampMillis = (value: unknown) => (
+        value && typeof (value as { toMillis?: unknown }).toMillis === 'function'
+          ? (value as { toMillis: () => number }).toMillis()
+          : undefined
+      );
+      renewPushSubscription = stage === 'heartbeat' && shouldRecoverSyntheticPush({
+        expectedAtMs: timestampMillis(data.lastPushExpectedAt),
+        receivedAtMs: timestampMillis(data.lastPushReceivedAt),
+        recoveryRequestedAtMs: timestampMillis(data.lastRecoveryRequestedAt),
+      }, Date.now());
       const now = FieldValue.serverTimestamp();
       transaction.set(receiptRef, {
         stage,
@@ -1397,6 +1433,7 @@ export const recordSyntheticPushReceipt = onRequest({ region }, async (request, 
         ...(stage === 'received' ? { lastPushReceivedAt: now } : {}),
         ...(stage === 'opened' ? { lastPushOpenedAt: now } : {}),
         ...(stage === 'heartbeat' ? { lastHeartbeatAt: now } : {}),
+        ...(renewPushSubscription ? { lastRecoveryRequestedAt: now } : {}),
         updatedAt: now,
       }, { merge: true });
     });
@@ -1425,6 +1462,16 @@ export const recordSyntheticPushReceipt = onRequest({ region }, async (request, 
       ...(typeof body.kind === 'string' ? { notificationType: body.kind.slice(0, 64) } : {}),
     },
   });
+  if (renewPushSubscription) {
+    reportOperationalAlert({
+      kind: 'push_delivery_unconfirmed',
+      familyId: participantId,
+      actorUid: monitorId,
+      details: { recovery: 'renew_subscription' },
+    });
+    response.status(200).json({ renewPushSubscription: true });
+    return;
+  }
   response.status(204).send('');
 });
 

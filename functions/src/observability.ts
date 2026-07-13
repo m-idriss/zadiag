@@ -3,6 +3,7 @@ import * as logger from 'firebase-functions/logger';
 export type OperationalAlertKind =
   | 'push_send_failed'
   | 'push_subscription_invalidated'
+  | 'push_delivery_unconfirmed'
   | 'scheduler_dispatch_failed'
   | 'analysis_failed'
   | 'storage_cleanup_failed';

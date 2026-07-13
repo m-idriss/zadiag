@@ -67,6 +67,20 @@ const status = async () => page.evaluate(async () => {
 let result;
 if (command === 'uid') {
   result = { uid: await readUid() };
+} else if (command === 'renew-push') {
+  const unsubscribed = await page.evaluate(async () => {
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.getSubscription();
+    return subscription ? subscription.unsubscribe() : true;
+  });
+  if (!unsubscribed) throw new Error('Unable to unsubscribe the stale Push endpoint');
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 30_000 });
+  await page.waitForFunction(async () => {
+    const activeRegistration = await navigator.serviceWorker?.ready.catch(() => undefined);
+    return Boolean(await activeRegistration?.pushManager.getSubscription().catch(() => null));
+  }, undefined, { timeout: 30_000 });
+  await page.waitForTimeout(5_000);
+  result = { uid: await readUid(), renewed: true, ...await status(), diagnostics };
 } else if (command === 'activate') {
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 30_000 });
   await page.waitForTimeout(5_000);
