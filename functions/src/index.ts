@@ -1718,7 +1718,7 @@ export const updateRoutineAssignment = onCall({
     const routineId = requireDocumentId(request.data?.routineId ?? DEFAULT_ROUTINE_ID, 'Routine ID');
     const plan = request.data?.plan;
     const rawValidationMode = request.data?.validationMode;
-    if (rawValidationMode !== undefined && !isRoutineValidationMode(rawValidationMode)) {
+    if (rawValidationMode !== undefined && rawValidationMode !== null && !isRoutineValidationMode(rawValidationMode)) {
       throw new HttpsError('invalid-argument', 'The validation mode is invalid.');
     }
     const validationMode = isRoutineValidationMode(rawValidationMode) ? rawValidationMode : undefined;

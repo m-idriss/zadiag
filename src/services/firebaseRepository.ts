@@ -14,6 +14,7 @@ import {
 import { httpsCallable } from 'firebase/functions';
 import { getDownloadURL, ref as storageRef } from 'firebase/storage';
 import type { AppRepository } from './contracts';
+import { routineUpdatePayload } from './routineUpdate';
 import { getFirebaseServices, type FirebaseServices } from './firebaseClient';
 import {
   DEFAULT_ROUTINE_ID,
@@ -375,7 +376,7 @@ export class FirebaseRepository implements AppRepository {
     try {
       await coalesceInFlight(this.inFlightCallables, `updateRoutine:${familyId}:${routineId}`, async () => {
         const updateRoutine = httpsCallable<{ familyId: string; routineId: string; plan: MonitoringPlan; validationMode?: RoutineValidationMode }, void>(this.services.functions, 'updateRoutineAssignment');
-        return updateRoutine({ familyId, routineId, plan, validationMode });
+        return updateRoutine(routineUpdatePayload(familyId, routineId, plan, validationMode));
       });
     }
     catch (error) { throw error; }
