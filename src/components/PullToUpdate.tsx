@@ -12,10 +12,12 @@ type PullGesture = {
 
 export function PullToUpdate({
   children,
+  fixedIndicator = false,
   onUpdate,
   t,
 }: {
   children: ReactNode;
+  fixedIndicator?: boolean;
   onUpdate: () => Promise<unknown>;
   t: (key: MessageKey) => string;
 }) {
@@ -84,7 +86,7 @@ export function PullToUpdate({
 
   return (
     <div
-      className="app-shell"
+      className={`app-shell ${fixedIndicator ? 'pull-update-fixed' : ''}`}
       onTouchStart={startPull}
       onTouchMove={movePull}
       onTouchEnd={endPull}

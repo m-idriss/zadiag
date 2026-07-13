@@ -428,7 +428,7 @@ export function App() {
               t={t}
             />;
     content = (
-      <PullToUpdate onUpdate={forceAppUpdate} t={t}>
+      <PullToUpdate fixedIndicator={tab === 'routines'} onUpdate={forceAppUpdate} t={t}>
         {screen}
         <BottomNav tab={tab} role={role} routineCentricEnabled={routineCentricUiEnabled} onChange={setTab} t={t} />
       </PullToUpdate>

@@ -71,4 +71,17 @@ describe('PullToUpdate', () => {
 
     expect(onUpdate).not.toHaveBeenCalled();
   });
+
+  it('only fixes the indicator when requested by the current page', () => {
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+    act(() => root?.render(
+      <PullToUpdate fixedIndicator onUpdate={async () => false} t={t}>
+        <div className="content-screen">Page</div>
+      </PullToUpdate>,
+    ));
+
+    expect(container.querySelector('.app-shell')?.classList.contains('pull-update-fixed')).toBe(true);
+  });
 });
