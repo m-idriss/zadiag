@@ -477,6 +477,10 @@ button:disabled { cursor: not-allowed; }
 .routines-top .profile-context-action { background: #e8eef2; color: #15324b; }
 .page-context-top .profile-context-action.expanded,
 .routines-top .profile-context-action.expanded { background: #dbe5eb; }
+.page-context-top .profile-context-card.has-profile-color .profile-context-action,
+.routines-top .profile-context-card.has-profile-color .profile-context-action { background: color-mix(in srgb, var(--profile-color) 12%, white); color: var(--profile-color); }
+.page-context-top .profile-context-card.has-profile-color .profile-context-action.expanded,
+.routines-top .profile-context-card.has-profile-color .profile-context-action.expanded { background: color-mix(in srgb, var(--profile-color) 19%, white); }
 .parent-context-top .participant-switcher-label { color: #657681; }
 .parent-context-top .participant-switcher-option-avatar { background: #eef2f5; color: #15324b; }
 .parent-context-top .participant-switcher-menu button.active { background: #e8eef2; color: #15324b; }
@@ -2047,7 +2051,7 @@ button:disabled { cursor: not-allowed; }
   transition: color .2s ease, background .2s ease, transform .16s ease;
 }
 .bottom-nav button > span { font-size: 22px; line-height: 1; }
-.bottom-nav button.active { background: #fff; color: var(--navy); box-shadow: 0 5px 16px rgba(16,42,67,.065); }
+.bottom-nav button.active { background: #fff; color: var(--teal); box-shadow: 0 5px 16px rgba(16,42,67,.065); }
 .bottom-nav button:active { transform: scale(.95); }
 
 .app-splash { background: linear-gradient(155deg, #fbfcfb, #eef6f3); }
