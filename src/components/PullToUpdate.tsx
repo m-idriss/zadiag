@@ -4,6 +4,9 @@ import type { MessageKey } from '../services/i18n';
 
 const PULL_THRESHOLD = 72;
 const MAX_PULL_DISTANCE = 110;
+const HORIZONTAL_SWIPE_THRESHOLD = 64;
+const HORIZONTAL_SWIPE_DOMINANCE = 1.35;
+const SWIPE_NAVIGATION_EXCLUSION_SELECTOR = 'button, a, input, select, textarea, summary, [role="button"], dialog, .parent-review-card, [data-swipe-navigation="ignore"]';
 
 type PullGesture = {
   startX: number;
@@ -11,16 +14,24 @@ type PullGesture = {
   scrollContainer: HTMLElement;
 };
 
+type SwipeGesture = {
+  startX: number;
+  startY: number;
+};
+
 export function PullToUpdate({
   children,
+  onHorizontalSwipe,
   onUpdate,
   t,
 }: {
   children: ReactNode;
+  onHorizontalSwipe?: (direction: 'left' | 'right') => void;
   onUpdate: () => Promise<unknown>;
   t: (key: MessageKey) => string;
 }) {
   const gestureRef = useRef<PullGesture | undefined>(undefined);
+  const swipeGestureRef = useRef<SwipeGesture | undefined>(undefined);
   const distanceRef = useRef(0);
   const [pullDistance, setPullDistance] = useState(0);
   const [updating, setUpdating] = useState(false);
@@ -32,11 +43,15 @@ export function PullToUpdate({
   };
 
   const startPull = (event: TouchEvent<HTMLDivElement>) => {
-    if (updating || event.touches.length !== 1) return;
+    if (event.touches.length !== 1) return;
     const target = event.target instanceof Element ? event.target : undefined;
+    const touch = event.touches[0];
+    swipeGestureRef.current = onHorizontalSwipe && !target?.closest(SWIPE_NAVIGATION_EXCLUSION_SELECTOR)
+      ? { startX: touch.clientX, startY: touch.clientY }
+      : undefined;
+    if (updating) return;
     const scrollContainer = target?.closest<HTMLElement>('.content-screen, .page');
     if (!scrollContainer || scrollContainer.scrollTop > 0) return;
-    const touch = event.touches[0];
     gestureRef.current = {
       startX: touch.clientX,
       startY: touch.clientY,
@@ -65,15 +80,29 @@ export function PullToUpdate({
     setPullDistance(distance);
   };
 
-  const endPull = () => {
-    if (!gestureRef.current || updating) return;
-    const shouldUpdate = distanceRef.current >= PULL_THRESHOLD;
+  const endPull = (event: TouchEvent<HTMLDivElement>) => {
+    const shouldUpdate = Boolean(gestureRef.current && !updating && distanceRef.current >= PULL_THRESHOLD);
+    const swipeGesture = swipeGestureRef.current;
+    const touch = event.changedTouches[0];
+    swipeGestureRef.current = undefined;
     resetPull();
-    if (!shouldUpdate) return;
-    setUpdating(true);
-    void onUpdate()
-      .catch((error) => console.error('Pull to update failed', error))
-      .finally(() => setUpdating(false));
+    if (shouldUpdate) {
+      setUpdating(true);
+      void onUpdate()
+        .catch((error) => console.error('Pull to update failed', error))
+        .finally(() => setUpdating(false));
+      return;
+    }
+    if (!swipeGesture || !touch || !onHorizontalSwipe) return;
+    const deltaX = touch.clientX - swipeGesture.startX;
+    const deltaY = touch.clientY - swipeGesture.startY;
+    if (Math.abs(deltaX) < HORIZONTAL_SWIPE_THRESHOLD || Math.abs(deltaX) < Math.abs(deltaY) * HORIZONTAL_SWIPE_DOMINANCE) return;
+    onHorizontalSwipe(deltaX < 0 ? 'left' : 'right');
+  };
+
+  const cancelGestures = () => {
+    swipeGestureRef.current = undefined;
+    resetPull();
   };
 
   const label = updating
@@ -106,7 +135,7 @@ export function PullToUpdate({
       onTouchStart={startPull}
       onTouchMove={movePull}
       onTouchEnd={endPull}
-      onTouchCancel={resetPull}
+      onTouchCancel={cancelGestures}
     >
       {createPortal(indicator, document.body)}
       {children}

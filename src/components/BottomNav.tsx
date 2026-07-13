@@ -3,6 +3,19 @@ import { AppIcon, type AppIconName } from './Icon';
 
 export type Tab = 'home' | 'history' | 'routines' | 'settings';
 
+export const navigationTabs = (role: 'parent' | 'child', routineCentricEnabled = true): Tab[] => (
+  role === 'parent' || routineCentricEnabled
+    ? ['home', 'routines', 'settings']
+    : ['home', 'history', 'settings']
+);
+
+export const tabAfterSwipe = (tabs: Tab[], current: Tab, direction: 'left' | 'right'): Tab => {
+  const currentIndex = tabs.indexOf(current);
+  if (currentIndex < 0) return tabs[0] ?? current;
+  const nextIndex = currentIndex + (direction === 'left' ? 1 : -1);
+  return tabs[nextIndex] ?? current;
+};
+
 export function BottomNav({
   tab,
   role,
@@ -16,21 +29,23 @@ export function BottomNav({
   onChange: (tab: Tab) => void;
   t: (key: MessageKey) => string;
 }) {
-  const items: { tab: Tab; icon: AppIconName; label: string }[] = role === 'parent'
-    ? [
-        { tab: 'home', icon: 'home', label: t('homeNav') },
-        { tab: 'routines', icon: 'routines', label: t('routines') },
-        { tab: 'settings', icon: 'settings', label: t('settings') },
-      ]
-    : routineCentricEnabled ? [
-        { tab: 'home', icon: 'today', label: t('homeNav') },
-        { tab: 'routines', icon: 'routines', label: t('routines') },
-        { tab: 'settings', icon: 'settings', label: t('settings') },
-      ] : [
-        { tab: 'home', icon: 'today', label: t('homeNav') },
-        { tab: 'history', icon: 'stats', label: t('progress') },
-        { tab: 'settings', icon: 'settings', label: t('settings') },
-      ];
+  const icons: Record<Tab, AppIconName> = {
+    home: role === 'parent' ? 'home' : 'today',
+    history: 'stats',
+    routines: 'routines',
+    settings: 'settings',
+  };
+  const labels: Record<Tab, string> = {
+    home: t('homeNav'),
+    history: t('progress'),
+    routines: t('routines'),
+    settings: t('settings'),
+  };
+  const items = navigationTabs(role, routineCentricEnabled).map((itemTab) => ({
+    tab: itemTab,
+    icon: icons[itemTab],
+    label: labels[itemTab],
+  }));
   return (
     <>
       <div className="bottom-nav-backdrop" aria-hidden="true" />

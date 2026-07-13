@@ -1,7 +1,7 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BottomNav } from '../components/BottomNav';
+import { BottomNav, navigationTabs, tabAfterSwipe } from '../components/BottomNav';
 import { createDefaultRoutineAssignment, type AppState } from '../domain/models';
 import { translate } from '../services/i18n';
 import { RoutinesScreen } from './RoutinesScreen';
@@ -46,6 +46,16 @@ describe('participant routines navigation', () => {
     expect(container.textContent).toContain('Routines');
     expect(container.textContent).toContain('Settings');
     expect(container.textContent).not.toContain('History');
+  });
+
+  it('moves between tabs in visual navigation order without wrapping', () => {
+    const tabs = navigationTabs('parent');
+    expect(tabs).toEqual(['home', 'routines', 'settings']);
+    expect(tabAfterSwipe(tabs, 'home', 'left')).toBe('routines');
+    expect(tabAfterSwipe(tabs, 'routines', 'left')).toBe('settings');
+    expect(tabAfterSwipe(tabs, 'settings', 'left')).toBe('settings');
+    expect(tabAfterSwipe(tabs, 'settings', 'right')).toBe('routines');
+    expect(tabAfterSwipe(tabs, 'home', 'right')).toBe('home');
   });
 
   it('announces routine loading and error states', () => {

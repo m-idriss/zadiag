@@ -4,7 +4,7 @@ import { routeForState, type AppRoute } from './domain/appRouting';
 import { createRepository } from './services/repositoryFactory';
 import { createTranslator, type MessageKey } from './services/i18n';
 import { documentLanguage } from './services/locale';
-import { BottomNav, type Tab } from './components/BottomNav';
+import { BottomNav, navigationTabs, tabAfterSwipe, type Tab } from './components/BottomNav';
 import { SplashScreen } from './components/SplashScreen';
 import { Snackbar } from './components/Snackbar';
 import { PullToUpdate } from './components/PullToUpdate';
@@ -428,7 +428,11 @@ export function App() {
               t={t}
             />;
     content = (
-      <PullToUpdate onUpdate={forceAppUpdate} t={t}>
+      <PullToUpdate
+        onHorizontalSwipe={(direction) => setTab((current) => tabAfterSwipe(navigationTabs(role, routineCentricUiEnabled), current, direction))}
+        onUpdate={forceAppUpdate}
+        t={t}
+      >
         {screen}
         <BottomNav tab={tab} role={role} routineCentricEnabled={routineCentricUiEnabled} onChange={setTab} t={t} />
       </PullToUpdate>

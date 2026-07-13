@@ -27,12 +27,15 @@ describe('PullToUpdate', () => {
     container?.remove();
   });
 
-  const renderPullToUpdate = (onUpdate: () => Promise<unknown>) => {
+  const renderPullToUpdate = (
+    onUpdate: () => Promise<unknown>,
+    onHorizontalSwipe?: (direction: 'left' | 'right') => void,
+  ) => {
     container = document.createElement('div');
     document.body.append(container);
     root = createRoot(container);
     act(() => root?.render(
-      <PullToUpdate onUpdate={onUpdate} t={t}>
+      <PullToUpdate onHorizontalSwipe={onHorizontalSwipe} onUpdate={onUpdate} t={t}>
         <div className="content-screen">Page</div>
       </PullToUpdate>,
     ));
@@ -77,5 +80,33 @@ describe('PullToUpdate', () => {
 
     expect(document.body.querySelector(':scope > .pull-update-indicator')).not.toBeNull();
     expect(container?.querySelector('.pull-update-indicator')).toBeNull();
+  });
+
+  it('navigates with a deliberate horizontal swipe in either direction', () => {
+    const onHorizontalSwipe = vi.fn();
+    const page = renderPullToUpdate(async () => false, onHorizontalSwipe);
+
+    dispatchTouch(page, 'touchstart', 120, 80);
+    dispatchTouch(page, 'touchend', 30, 85);
+    dispatchTouch(page, 'touchstart', 30, 80);
+    dispatchTouch(page, 'touchend', 120, 75);
+
+    expect(onHorizontalSwipe).toHaveBeenNthCalledWith(1, 'left');
+    expect(onHorizontalSwipe).toHaveBeenNthCalledWith(2, 'right');
+  });
+
+  it('leaves interactive controls and review-card swipes untouched', () => {
+    const onHorizontalSwipe = vi.fn();
+    const page = renderPullToUpdate(async () => false, onHorizontalSwipe);
+    page.innerHTML = '<button type="button">Action</button><article class="parent-review-card"><span>Review</span></article>';
+    const button = page.querySelector('button') as HTMLButtonElement;
+    const review = page.querySelector('.parent-review-card span') as HTMLSpanElement;
+
+    dispatchTouch(button, 'touchstart', 120, 80);
+    dispatchTouch(button, 'touchend', 30, 80);
+    dispatchTouch(review, 'touchstart', 120, 80);
+    dispatchTouch(review, 'touchend', 30, 80);
+
+    expect(onHorizontalSwipe).not.toHaveBeenCalled();
   });
 });
