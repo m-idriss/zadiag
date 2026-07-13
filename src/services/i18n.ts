@@ -364,7 +364,7 @@ const messages = {
     childNickname: 'Prénom du participant', linkingCode: 'Code d’invitation ou de liaison',
     consent: 'Je suis le responsable ou représentant légal et je consens au traitement des photos de la bouche.',
     createContinue: 'Créer et continuer', linkContinue: 'Lier et continuer',
-    invalidCode: 'Ce code d’invitation ou de liaison n’est pas valide.', homeNav: 'Accueil', overview: 'Aperçu', activity: 'Activité', history: 'Historique', settings: 'Réglages', routines: 'Routines',
+    invalidCode: 'Ce code d’invitation ou de liaison n’est pas valide.', homeNav: 'Accueil', overview: 'Aperçu', activity: 'Activités', history: 'Historique', settings: 'Réglages', routines: 'Routines',
     invitationNotFound: 'Cette invitation n’existe pas. Générez un nouveau code depuis le compte responsable.',
     invitationExpired: 'Cette invitation a expiré. Générez un nouveau code.', invitationUsed: 'Cette invitation a déjà été utilisée.',
     participantAlreadyLinked: 'Cette personne suivie est déjà liée à un autre compte participant.',
