@@ -106,6 +106,13 @@ export function ParentDashboard({
     if (event.analysisSource === 'self') return t('analysisSourceSelf');
     return undefined;
   };
+  const automatedVerdictLabel = (event: VerificationEvent) => t(
+    event.automatedStatus === 'not_detected'
+      ? 'notDetected'
+      : event.automatedStatus === 'detected'
+        ? 'validated'
+        : 'uncertain',
+  );
 
   useEffect(() => {
     if (!getProofImageUrl) return;
@@ -374,7 +381,7 @@ export function ParentDashboard({
                       {(source || confidence || quality) ? (
                         <div className="parent-review-analysis">
                           {source ? <span>{t('analysisSource')}: {source}</span> : null}
-                          <span>{t('analysisVerdict')}: {t('uncertain')}</span>
+                          <span>{t('analysisVerdict')}: {automatedVerdictLabel(event)}</span>
                           {confidence ? <span>{t('analysisConfidence')} {confidence}</span> : null}
                           {quality ? <span>{t('analysisQuality')} {quality}</span> : null}
                         </div>

@@ -8,6 +8,18 @@ export type AnalysisResult = {
   reasonRaw?: string;
 };
 
+export const routeAnalysisStatusForReview = (
+  status: AnalysisResult['status'],
+  hasProofImage: boolean,
+): { status: AnalysisResult['status']; automatedStatus: AnalysisResult['status']; reviewRequired: boolean } => {
+  const reviewRequired = hasProofImage && status !== 'detected';
+  return {
+    status: reviewRequired ? 'uncertain' : status,
+    automatedStatus: status,
+    reviewRequired,
+  };
+};
+
 export type RoutineAnalysisContext = {
   routineName: string;
   expectedEvidence: string;

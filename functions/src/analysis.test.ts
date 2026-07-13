@@ -1,6 +1,21 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { analyzeGeminiResponse, analyzeWithGemini, extractJsonPayload, localizeAnalysisReason, normalizeAnalysisResult } from './analysis.js';
+import { analyzeGeminiResponse, analyzeWithGemini, extractJsonPayload, localizeAnalysisReason, normalizeAnalysisResult, routeAnalysisStatusForReview } from './analysis.js';
+
+test('routes every negative AI verdict with proof to responsible review', () => {
+  assert.deepEqual(routeAnalysisStatusForReview('not_detected', true), {
+    status: 'uncertain', automatedStatus: 'not_detected', reviewRequired: true,
+  });
+  assert.deepEqual(routeAnalysisStatusForReview('uncertain', true), {
+    status: 'uncertain', automatedStatus: 'uncertain', reviewRequired: true,
+  });
+  assert.deepEqual(routeAnalysisStatusForReview('detected', true), {
+    status: 'detected', automatedStatus: 'detected', reviewRequired: false,
+  });
+  assert.deepEqual(routeAnalysisStatusForReview('not_detected', false), {
+    status: 'not_detected', automatedStatus: 'not_detected', reviewRequired: false,
+  });
+});
 
 test('extracts and normalizes a Gemini JSON payload', () => {
   const payload = extractJsonPayload('```json\n{"status":"not detected","confidence":"87%","imageQuality":"0.72","reason":"clear enough"}\n```');

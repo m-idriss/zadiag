@@ -79,6 +79,7 @@ const asEvent = (id: string, data: DocumentData): VerificationEvent => ({
   capturedAt: data.capturedAt ? String(data.capturedAt) : undefined,
   status: data.status,
   analysisSource: data.analysisSource,
+  automatedStatus: ['detected', 'not_detected', 'uncertain'].includes(String(data.automatedStatus)) ? data.automatedStatus : undefined,
   confidence: data.confidence,
   imageQuality: data.imageQuality,
   reason: data.reason,

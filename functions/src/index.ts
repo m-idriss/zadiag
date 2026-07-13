@@ -7,7 +7,7 @@ import { GoogleAuth } from 'google-auth-library';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, createRecoveryCode, createRelationshipInvitationCode, hashLinkCode, isFirestoreDocumentId, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, isRelationshipInvitationCode, normalizeLinkCode, sensitiveCodeAttemptState } from './helpers.js';
-import { analyzeWithGemini, parseImageDataUrl, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
+import { analyzeWithGemini, parseImageDataUrl, routeAnalysisStatusForReview, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
 import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
 import { createDefaultRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, isRoutineValidationMode, routineFromCatalog, type RoutineAssignmentDocument } from './routines.js';
 import { buildCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription, type SyntheticReceiptPayload } from './notifications.js';
@@ -2152,13 +2152,15 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
     });
     console.error('AI analysis failed, returning fallback result', error);
   }
+  const routedAnalysis = routeAnalysisStatusForReview(result.status ?? 'uncertain', Boolean(proofImagePath));
   const analysisUpdate = {
     capturedAt,
-    status: result.status ?? 'uncertain',
+    status: routedAnalysis.status,
+    automatedStatus: routedAnalysis.automatedStatus,
     analysisSource: result.reason === 'analysis_unavailable' ? 'fallback' : 'ai',
     ...(proofImagePath ? { proofImagePath } : {}),
     ...(proofImagePath ? { proofImageExpiresAt: new Date(Date.now() + proofImageRetentionDays * 86_400_000).toISOString() } : {}),
-    ...((result.status ?? 'uncertain') === 'uncertain' && proofImagePath ? { reviewStatus: 'pending' } : {}),
+    ...(routedAnalysis.reviewRequired ? { reviewStatus: 'pending' } : {}),
     ...(result.confidence !== undefined ? { confidence: result.confidence } : {}),
     ...(result.imageQuality !== undefined ? { imageQuality: result.imageQuality } : {}),
     ...(result.reason ? { reason: result.reason } : {}),
@@ -2201,6 +2203,7 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
       checkId,
       routineId,
       status: analysisUpdate.status,
+      automatedStatus: analysisUpdate.automatedStatus,
       analysisSource: analysisUpdate.analysisSource,
       reviewStatus: analysisUpdate.reviewStatus ?? null,
       hasProofImage: Boolean(proofImagePath),
@@ -2214,6 +2217,7 @@ export const analyzeCheck = onCall({ region, cors, enforceAppCheck: true }, asyn
     actorUid: uid,
     details: {
       status: analysisUpdate.status,
+      automatedStatus: analysisUpdate.automatedStatus,
       analysisSource: analysisUpdate.analysisSource,
       reviewRequired: analysisUpdate.reviewStatus === 'pending',
       hasProofImage: Boolean(proofImagePath),

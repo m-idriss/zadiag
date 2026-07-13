@@ -117,6 +117,7 @@ export interface VerificationEvent extends RoutineTask {
   sessionId: string;
   capturedAt?: string;
   analysisSource?: 'ai' | 'fallback' | 'self';
+  automatedStatus?: Extract<VerificationStatus, 'detected' | 'not_detected' | 'uncertain'>;
   confidence?: number;
   imageQuality?: number;
   reason?: string;
