@@ -809,10 +809,11 @@ button:disabled { cursor: not-allowed; }
 .relationship-profile-actions-body > small { color: var(--muted); font-size: 11px; line-height: 1.35; }
 .relationship-profile-list { display: grid; gap: 8px; }
 .relationship-profile-entry { overflow: hidden; border: 1px solid rgba(16,42,67,.07); border-radius: 12px; background: #fbfcfb; }
-.relationship-profile-entry.active { border-color: rgba(21,50,75,.25); background: #f3f6f8; box-shadow: inset 3px 0 #15324b; }
+.relationship-profile-entry.active { border-color: color-mix(in srgb, var(--profile-color) 32%, white); background: color-mix(in srgb, var(--profile-color) 7%, white); box-shadow: inset 3px 0 var(--profile-color); }
 .relationship-profile-entry > summary { display: grid; grid-template-columns: minmax(0, 1fr) auto 20px; align-items: center; gap: 10px; min-height: 48px; padding: 8px 11px; cursor: pointer; color: var(--navy); list-style: none; }
 .relationship-profile-entry > summary::-webkit-details-marker { display: none; }
 .relationship-profile-entry > summary > span { min-width: 0; display: grid; gap: 2px; }
+.relationship-profile-entry > summary strong { color: var(--profile-color); }
 .relationship-profile-entry > summary small { color: var(--muted); font-size: 10px; }
 .relationship-profile-entry > summary::after {
   content: '';
@@ -826,7 +827,8 @@ button:disabled { cursor: not-allowed; }
   transition: transform .18s ease;
 }
 .relationship-profile-entry[open] > summary::after { transform: rotate(45deg); }
-.relationship-profile-entry .relationship-profile-actions-body { padding: 4px 11px 12px; border-top: 1px solid rgba(16,42,67,.07); background: rgba(255,255,255,.72); }
+.relationship-profile-entry.active > summary::after { color: var(--profile-color); }
+.relationship-profile-entry .relationship-profile-actions-body { padding: 4px 11px 12px; border-top: 1px solid color-mix(in srgb, var(--profile-color) 14%, white); background: rgba(255,255,255,.72); }
 .relationship-create-tool { overflow: hidden; border: 1px solid rgba(21,50,75,.12); border-radius: 12px; background: #fbfcfd; }
 .relationship-create-tool > summary { min-height: 48px; padding: 0 11px; color: #15324b; }
 .relationship-create-tool .relationship-form { padding: 2px 11px 12px; }

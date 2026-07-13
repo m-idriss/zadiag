@@ -116,11 +116,15 @@ export function RelationshipManager({ access, activeParticipantId, accountDispla
         {activeAccess.length ? <div className="relationship-profile-list">
           {activeAccess.map((entry) => {
             const entrySelected = entry.participant.id === selectedParticipantId;
-            return <details className={`relationship-profile-entry${entrySelected ? ' active' : ''}`} key={entry.participant.id} onToggle={(event) => {
-              if (!event.currentTarget.open || entrySelected) return;
-              setError(undefined);
-              void onSelect?.(entry.participant.id);
-            }}>
+            return <details
+              className={`relationship-profile-entry${entrySelected ? ' active' : ''}`}
+              style={{ '--profile-color': profileColorFor(entry.participant) } as CSSProperties}
+              key={entry.participant.id}
+              onToggle={(event) => {
+                if (!event.currentTarget.open || entrySelected) return;
+                setError(undefined);
+                void onSelect?.(entry.participant.id);
+              }}>
               <summary>
                 <span><strong>{entry.participant.displayName}</strong><small>{t(`relationshipRole${entry.membership.role[0].toUpperCase()}${entry.membership.role.slice(1)}` as MessageKey)}</small></span>
                 {entry.participant.selfManaged ? <small>{t('relationshipSelfManaged')}</small> : null}

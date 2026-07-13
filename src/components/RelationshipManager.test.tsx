@@ -27,7 +27,7 @@ describe('RelationshipManager', () => {
     const create = vi.fn().mockResolvedValue('jordan');
     const invite = vi.fn().mockResolvedValue({ code: 'ZI-123456', expiresAt: new Date().toISOString() });
     act(() => root?.render(<RelationshipManager
-      access={[{ participant: { id: 'alex', displayName: 'Alex' }, membership: { role: 'owner', status: 'active' } }]}
+      access={[{ participant: { id: 'alex', displayName: 'Alex', profileColor: 'violet' }, membership: { role: 'owner', status: 'active' } }]}
       activeParticipantId="alex"
       onCreate={create}
       onInvite={invite}
@@ -36,6 +36,7 @@ describe('RelationshipManager', () => {
     expect(container.querySelector('input[aria-label="Name"]')).toBeNull();
     expandManager();
     expect(container.querySelector('.relationship-profile-list')).not.toBeNull();
+    expect((container.querySelector('.relationship-profile-entry') as HTMLElement).style.getPropertyValue('--profile-color')).toBe('#7C3AED');
     const name = container.querySelector('input[aria-label="Name"]') as HTMLInputElement;
     const checkbox = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
     act(() => {
