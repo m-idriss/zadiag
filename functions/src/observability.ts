@@ -1,6 +1,6 @@
 import * as logger from 'firebase-functions/logger';
 
-export type OperationalAlertKind =
+type OperationalAlertKind =
   | 'push_send_failed'
   | 'push_subscription_invalidated'
   | 'push_delivery_unconfirmed'
@@ -8,7 +8,7 @@ export type OperationalAlertKind =
   | 'analysis_failed'
   | 'storage_cleanup_failed';
 
-export type OperationalEventKind =
+type OperationalEventKind =
   | 'push_dispatch_summary'
   | 'scheduler_run_summary'
   | 'analysis_completed'
@@ -17,7 +17,7 @@ export type OperationalEventKind =
 
 type AlertValue = string | number | boolean | null | undefined;
 
-export interface OperationalAlertInput {
+interface OperationalAlertInput {
   kind: OperationalAlertKind;
   familyId?: string;
   checkId?: string;
@@ -27,7 +27,7 @@ export interface OperationalAlertInput {
   error?: unknown;
 }
 
-export interface OperationalEventInput {
+interface OperationalEventInput {
   kind: OperationalEventKind;
   familyId?: string;
   checkId?: string;

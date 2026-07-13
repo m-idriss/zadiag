@@ -1,11 +1,11 @@
-export type NotificationLocale = 'en' | 'fr';
+type NotificationLocale = 'en' | 'fr';
 
-export interface NormalizedPushSubscription {
+interface NormalizedPushSubscription {
   endpoint: string;
   keys: { p256dh: string; auth: string };
 }
 
-export interface NormalizedPushPreferences {
+interface NormalizedPushPreferences {
   notificationWindowStart: string;
   notificationWindowEnd: string;
 }
@@ -44,7 +44,7 @@ export const normalizePushPreferences = (value: unknown): NormalizedPushPreferen
   return { notificationWindowStart, notificationWindowEnd };
 };
 
-export interface CheckNotificationInput {
+interface CheckNotificationInput {
   sessionId: string;
   routineId: string;
   routineName: string;
@@ -54,7 +54,7 @@ export interface CheckNotificationInput {
   locale?: string;
 }
 
-export interface CheckNotificationPayload {
+interface CheckNotificationPayload {
   version: 2;
   kind: 'check-ready' | 'check-reminder';
   sessionId: string;
@@ -72,7 +72,7 @@ export interface SyntheticReceiptPayload {
   url: string;
 }
 
-export interface ReviewNotificationInput {
+interface ReviewNotificationInput {
   checkId: string;
   routineId: string;
   routineName: string;
@@ -81,7 +81,7 @@ export interface ReviewNotificationInput {
   locale?: string;
 }
 
-export interface ReviewNotificationPayload {
+interface ReviewNotificationPayload {
   version: 2;
   kind: 'review-needed';
   checkId: string;
@@ -92,12 +92,12 @@ export interface ReviewNotificationPayload {
   path: string;
 }
 
-export interface TestNotificationInput {
+interface TestNotificationInput {
   locale?: string;
   role?: 'child' | 'parent';
 }
 
-export interface TestNotificationPayload {
+interface TestNotificationPayload {
   version: 2;
   kind: 'test';
   tag: string;
@@ -106,7 +106,7 @@ export interface TestNotificationPayload {
   path: string;
 }
 
-export const normalizeNotificationLocale = (locale?: string): NotificationLocale =>
+const normalizeNotificationLocale = (locale?: string): NotificationLocale =>
   locale === 'fr' ? 'fr' : 'en';
 
 const notificationRoutineLabel = (

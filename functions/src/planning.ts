@@ -64,13 +64,13 @@ export const monitoringPlanSchema = z.object({
   }
 });
 
-export interface PlannedCheckRecord {
+interface PlannedCheckRecord {
   requestedAt?: string;
   status?: string;
   dispatchKey?: string;
 }
 
-export interface AutoDispatchDecision {
+interface AutoDispatchDecision {
   shouldDispatch: boolean;
   windowId?: string;
   dispatchKey?: string;
@@ -102,7 +102,7 @@ const WEEKDAY_LOOKUP: Record<string, number> = {
   Sat: 6,
 };
 
-export const getLocalDateParts = (date: Date, timeZone: string): LocalDateParts => {
+const getLocalDateParts = (date: Date, timeZone: string): LocalDateParts => {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone,
     year: 'numeric',
@@ -129,12 +129,12 @@ export const getLocalDateKey = (date: Date, timeZone: string) => {
   return `${parts.year.toString().padStart(4, '0')}-${parts.month.toString().padStart(2, '0')}-${parts.day.toString().padStart(2, '0')}`;
 };
 
-export const getLocalTimeMinutes = (date: Date, timeZone: string) => {
+const getLocalTimeMinutes = (date: Date, timeZone: string) => {
   const parts = getLocalDateParts(date, timeZone);
   return parts.hour * 60 + parts.minute;
 };
 
-export const getWindowForMinutes = (plan: MonitoringPlan, minutes: number) => {
+const getWindowForMinutes = (plan: MonitoringPlan, minutes: number) => {
   for (const window of plan.windows) {
     const [startHour, startMinute] = window.start.split(':').map(Number);
     const [endHour, endMinute] = window.end.split(':').map(Number);
@@ -145,7 +145,7 @@ export const getWindowForMinutes = (plan: MonitoringPlan, minutes: number) => {
   return undefined;
 };
 
-export const getWindowsForWeekday = (plan: MonitoringPlan, weekday: number) => {
+const getWindowsForWeekday = (plan: MonitoringPlan, weekday: number) => {
   if (!plan.scheduleGroups?.length) return plan.weekdays.includes(weekday) ? plan.windows : [];
   return plan.scheduleGroups
     .filter((group) => group.weekdays.includes(weekday))
@@ -155,7 +155,7 @@ export const getWindowsForWeekday = (plan: MonitoringPlan, weekday: number) => {
     })));
 };
 
-export const getWindowForMinutesAndWeekday = (plan: MonitoringPlan, minutes: number, weekday: number) => {
+const getWindowForMinutesAndWeekday = (plan: MonitoringPlan, minutes: number, weekday: number) => {
   for (const window of getWindowsForWeekday(plan, weekday)) {
     const [startHour, startMinute] = window.start.split(':').map(Number);
     const [endHour, endMinute] = window.end.split(':').map(Number);

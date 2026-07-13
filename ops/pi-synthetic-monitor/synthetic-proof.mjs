@@ -2,7 +2,7 @@ const resultPattern = /Validated|Validé|Not detected|Non détecté|Needs review
 const analyzingPattern = /Checking the photo|Analyse de la photo/i;
 const cameraEnabledContexts = new WeakSet();
 
-export const installSyntheticCamera = (context) => {
+const installSyntheticCamera = (context) => {
   if (cameraEnabledContexts.has(context)) return Promise.resolve();
   cameraEnabledContexts.add(context);
   return context.addInitScript(() => {

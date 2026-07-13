@@ -1,6 +1,6 @@
 export const membershipRoles = ['owner', 'caregiver', 'participant', 'viewer'] as const;
-export const profileColorKeys = ['blue', 'indigo', 'violet', 'rose', 'coral', 'amber', 'emerald', 'teal'] as const;
-export type ProfileColorKey = typeof profileColorKeys[number];
+const profileColorKeys = ['blue', 'indigo', 'violet', 'rose', 'coral', 'amber', 'emerald', 'teal'] as const;
+type ProfileColorKey = typeof profileColorKeys[number];
 
 export const isProfileColorKey = (value: unknown): value is ProfileColorKey =>
   typeof value === 'string' && profileColorKeys.includes(value as ProfileColorKey);
@@ -15,13 +15,13 @@ export const membershipPermissions = [
   'manageCaregivers',
   'manageParticipant',
 ] as const;
-export type MembershipPermission = typeof membershipPermissions[number];
-export type PermissionSet = Record<MembershipPermission, boolean>;
+type MembershipPermission = typeof membershipPermissions[number];
+type PermissionSet = Record<MembershipPermission, boolean>;
 
-export type MembershipStatus = 'active' | 'suspended';
-export type MembershipLabel = 'parent' | 'partner' | 'relative' | 'professional' | 'self' | 'other';
+type MembershipStatus = 'active' | 'suspended';
+type MembershipLabel = 'parent' | 'partner' | 'relative' | 'professional' | 'self' | 'other';
 
-export interface MembershipDocument {
+interface MembershipDocument {
   uid: string;
   displayName?: string;
   role: MembershipRole;
@@ -116,13 +116,13 @@ export const canLeaveMembership = (
   activeOwnerCount: number,
 ) => target?.status === 'active' && !(target.role === 'owner' && activeOwnerCount <= 1);
 
-export interface LegacyFamilyDocument {
+interface LegacyFamilyDocument {
   childName?: unknown;
   members?: Record<string, unknown>;
   createdAt?: unknown;
 }
 
-export interface LegacyRelationshipMigration {
+interface LegacyRelationshipMigration {
   participantId: string;
   participant: {
     displayName: string;

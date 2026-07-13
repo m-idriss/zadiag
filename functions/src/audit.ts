@@ -1,6 +1,6 @@
 import { FieldValue, type Firestore } from 'firebase-admin/firestore';
 
-export type AuditAction =
+type AuditAction =
   | 'create_family'
   | 'join_family'
   | 'regenerate_link_code'
@@ -25,7 +25,7 @@ export type AuditAction =
 
 type AuditMetadataValue = string | number | boolean | null | undefined;
 
-export interface AuditEventInput {
+interface AuditEventInput {
   action: AuditAction;
   actorUid: string;
   familyId?: string;

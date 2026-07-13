@@ -1,4 +1,4 @@
-export interface SyntheticPushRecoveryState {
+interface SyntheticPushRecoveryState {
   expectedAtMs?: number;
   receivedAtMs?: number;
   recoveryRequestedAtMs?: number;

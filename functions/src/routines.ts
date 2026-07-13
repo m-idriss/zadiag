@@ -1,13 +1,13 @@
 import type { MonitoringPlan } from './planning.js';
 
 export const DEFAULT_ROUTINE_ID = 'orthodontic-elastics';
-export const routineValidationModes = ['auto', 'ai'] as const;
-export type RoutineValidationMode = typeof routineValidationModes[number];
+const routineValidationModes = ['auto', 'ai'] as const;
+type RoutineValidationMode = typeof routineValidationModes[number];
 
 export const isRoutineValidationMode = (value: unknown): value is RoutineValidationMode =>
   routineValidationModes.includes(value as RoutineValidationMode);
 
-export interface RoutineDocument {
+interface RoutineDocument {
   id: string;
   name: string;
   description: string;
@@ -37,7 +37,7 @@ export interface RoutineDocument {
   }>>;
 }
 
-export const defaultRoutine = {
+const defaultRoutine = {
   id: DEFAULT_ROUTINE_ID,
   name: 'Orthodontic Elastics',
   description: 'Daily orthodontic elastic wear checks.',
@@ -77,7 +77,7 @@ export const defaultRoutine = {
   },
 };
 
-export const availableRoutines: RoutineDocument[] = [
+const availableRoutines: RoutineDocument[] = [
   defaultRoutine,
   {
     id: 'daily-hydration',

@@ -1,7 +1,7 @@
 const oneHourMs = 60 * 60 * 1000;
 const oneDayMs = 24 * oneHourMs;
 
-export interface StaleCleanupCutoffs {
+interface StaleCleanupCutoffs {
   expiredBefore: string;
   consumedBefore: string;
   recoveryAttemptBefore: string;

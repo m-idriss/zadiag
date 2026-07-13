@@ -114,7 +114,7 @@ type GeminiGenerateContentResponse = {
   error?: unknown;
 };
 
-export type AnalysisLocale = 'en' | 'fr';
+type AnalysisLocale = 'en' | 'fr';
 
 const GEMINI_ANALYSIS_MAX_OUTPUT_TOKENS = 768;
 
