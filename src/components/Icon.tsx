@@ -24,6 +24,7 @@ import {
   todayOutline,
   waterOutline,
 } from 'ionicons/icons';
+import type { CSSProperties } from 'react';
 import { SvgIcon } from './SvgIcon';
 
 export type AppIconName =
@@ -83,9 +84,9 @@ const icons: Record<AppIconName, string> = {
   water: waterOutline,
 };
 
-export function AppIcon({ name, className }: { name: AppIconName; className?: string }) {
+export function AppIcon({ name, className, style }: { name: AppIconName; className?: string; style?: CSSProperties }) {
   return (
-    <SvgIcon icon={icons[name]} className={className ? `app-icon ${className}` : 'app-icon'} />
+    <SvgIcon icon={icons[name]} className={className ? `app-icon ${className}` : 'app-icon'} style={style} />
   );
 }
 
