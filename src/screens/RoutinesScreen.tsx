@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import type { AppState, MonitoringPlan, RoutineAssignment, RoutineCategory, RoutineValidationMode, ScheduleGroup, VerificationEvent } from '../domain/models';
 import { groupsFromLegacyPlan, nextPlannedWindow, summarizeWeekdaysShort } from '../domain/monitoringPlan';
 import { formatMessage, type MessageKey } from '../services/i18n';
@@ -320,7 +321,8 @@ export function RoutinesScreen({
         actionLabel={t('relationshipSwitchAction')}
         onSelect={onSelectParticipant}
       />
-      {canAssignRoutine ? <div className="routine-add-switcher">
+      {canAssignRoutine ? createPortal(
+        <div className="routine-add-switcher" data-swipe-navigation="ignore">
         <button
           type="button"
           className="primary-action-button routines-add-dock-button"
@@ -368,7 +370,9 @@ export function RoutinesScreen({
           {assignError && <p role="alert" className="request-feedback error">{t('routineAddError')}</p>}
         </section>
       )}
-      </div> : null}
+        </div>,
+        document.body,
+      ) : null}
       </div>
       <section className="settings-section routines-list-section" aria-labelledby="routines-list-title">
         <h2 id="routines-list-title">{t('routines')}</h2>

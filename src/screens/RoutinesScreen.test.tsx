@@ -86,14 +86,16 @@ describe('participant routines navigation', () => {
     };
     act(() => root.render(<RoutinesScreen state={state} onAssignRoutine={async () => undefined} t={(key) => translate('en', key)} />));
 
-    expect(container.textContent).toContain('Choose a routine');
-    expect(container.textContent).toContain('Hydration');
-    expect(container.textContent).toContain('Wellness');
-    expect(container.textContent).toContain('Validation: AI analysis');
-    expect(container.textContent).toContain('Proof example');
-    expect(container.textContent).toContain('visible glass');
-    expect(container.querySelector('.routines-add-dock-button')?.textContent).toContain('Add a routine');
-    expect(container.querySelector('.routine-add-switcher .routine-catalog-popover')).not.toBeNull();
+    expect(document.body.textContent).toContain('Choose a routine');
+    expect(document.body.textContent).toContain('Hydration');
+    expect(document.body.textContent).toContain('Wellness');
+    expect(document.body.textContent).toContain('Validation: AI analysis');
+    expect(document.body.textContent).toContain('Proof example');
+    expect(document.body.textContent).toContain('visible glass');
+    const dock = document.body.querySelector('.routine-add-switcher');
+    expect(dock?.querySelector('.routines-add-dock-button')?.textContent).toContain('Add a routine');
+    expect(dock?.querySelector('.routine-catalog-popover')).not.toBeNull();
+    expect(dock?.closest('.content-screen')).toBeNull();
   });
 
   it('shows the assigned routine frequency, completion and next task', async () => {
@@ -363,16 +365,16 @@ describe('participant routines navigation', () => {
     const assignRoutine = vi.fn().mockResolvedValue(undefined);
     act(() => root.render(<RoutinesScreen state={state} onAssignRoutine={assignRoutine} t={(key) => translate('en', key)} />));
 
-    const addButton = container.querySelector('.routines-add-dock-button');
+    const addButton = document.body.querySelector('.routines-add-dock-button');
     act(() => addButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
 
-    expect(container.textContent).toContain('Choose a routine');
-    expect(container.textContent).toContain('Hydration');
-    expect(container.textContent).toContain('Dental care');
-    expect(container.textContent).toContain('Proof example: Mouth photo');
-    expect(Array.from(container.querySelectorAll('.routine-catalog-add')).some((button) => button.textContent === 'Added')).toBe(true);
+    expect(document.body.textContent).toContain('Choose a routine');
+    expect(document.body.textContent).toContain('Hydration');
+    expect(document.body.textContent).toContain('Dental care');
+    expect(document.body.textContent).toContain('Proof example: Mouth photo');
+    expect(Array.from(document.body.querySelectorAll('.routine-catalog-add')).some((button) => button.textContent === 'Added')).toBe(true);
 
-    const hydrationButton = Array.from(container.querySelectorAll('.routine-catalog-item'))
+    const hydrationButton = Array.from(document.body.querySelectorAll('.routine-catalog-item'))
       .find((item) => item.textContent?.includes('Hydration'))
       ?.querySelector('button');
     await act(async () => {
