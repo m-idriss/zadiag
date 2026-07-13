@@ -16,6 +16,7 @@ import { InstallScreen } from './screens/InstallScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
 import { ChildDashboard } from './screens/ChildDashboard';
 import { canRetakeCapture } from './domain/adherence';
+import { profileColorFor } from './domain/profileColor';
 import { cleanupClientAfterReset } from './services/resetCleanup';
 import { readUiStorageString, writeUiStorageString } from './services/uiStorage';
 import { useAppUpdateController } from './hooks/useAppUpdateController';
@@ -348,6 +349,9 @@ export function App() {
     content = <ResultScreen event={result} retake={canRetake ? () => retryCapture(result) : undefined} done={() => { setResult(undefined); setRoute('app'); }} t={t} />;
   } else {
     const role = state.role ?? 'child';
+    const activeParticipant = state.participantAccess?.find((entry) => entry.participant.id === state.activeParticipantId)?.participant
+      ?? state.participantAccess?.find((entry) => entry.membership.status === 'active')?.participant;
+    const activeProfileColor = activeParticipant ? profileColorFor(activeParticipant) : undefined;
     const canManageRoutines = role === 'parent';
     const screen = tab === 'history'
       ? <HistoryScreen events={state.events} locale={state.locale} t={t} />
@@ -448,7 +452,14 @@ export function App() {
         t={t}
       >
         {screen}
-        <BottomNav tab={tab} role={role} routineCentricEnabled={routineCentricUiEnabled} onChange={setTab} t={t} />
+        <BottomNav
+          tab={tab}
+          role={role}
+          routineCentricEnabled={routineCentricUiEnabled}
+          profileColor={activeProfileColor}
+          onChange={setTab}
+          t={t}
+        />
       </PullToUpdate>
     );
   }

@@ -772,8 +772,6 @@ button:disabled { cursor: not-allowed; }
 .profile-context-summary { min-width: 0; display: grid; gap: 3px; }
 .profile-context-summary strong { overflow: hidden; font-size: 14px; font-weight: 720; text-overflow: ellipsis; white-space: nowrap; }
 .profile-context-card.has-profile-color .profile-context-summary strong { color: var(--profile-color); font-weight: 850; }
-.page-context-top .profile-context-card.has-profile-color .profile-context-icon,
-.routines-top .profile-context-card.has-profile-color .profile-context-icon { background: linear-gradient(145deg, var(--profile-color), color-mix(in srgb, var(--profile-color) 76%, #15324b)); box-shadow: 0 8px 18px color-mix(in srgb, var(--profile-color) 22%, transparent); }
 .profile-context-summary small { color: var(--teal); font-size: 10px; font-weight: 750; letter-spacing: .025em; }
 .profile-context-action { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; background: var(--mint); color: var(--teal); transition: transform .18s ease, background .18s ease; }
 .profile-context-action .svg-icon { font-size: 22px; }
@@ -2049,7 +2047,8 @@ button:disabled { cursor: not-allowed; }
   transition: color .2s ease, background .2s ease, transform .16s ease;
 }
 .bottom-nav button > span { font-size: 22px; line-height: 1; }
-.bottom-nav button.active { background: #fff; color: var(--teal); box-shadow: 0 5px 16px rgba(16,42,67,.065); }
+.bottom-nav button.active { background: #fff; color: var(--navy); box-shadow: 0 5px 16px rgba(16,42,67,.065); }
+.bottom-nav button.active .app-icon { color: var(--profile-color, var(--teal)); }
 .bottom-nav button:active { transform: scale(.95); }
 
 .app-splash { background: linear-gradient(155deg, #fbfcfb, #eef6f3); }
