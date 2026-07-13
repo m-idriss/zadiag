@@ -33,12 +33,12 @@ export interface MonitoringPlan {
   timeZone: string;
 }
 
-export type RoutineStatus = 'active' | 'paused' | 'completed';
+type RoutineStatus = 'active' | 'paused' | 'completed';
 export type RoutineAssignmentCreator = 'parent' | 'child' | 'system';
 export type RoutineValidationMode = 'ai' | 'auto';
 export type RoutineCategory = 'dental' | 'wellness' | 'medication' | 'activity' | 'custom';
 
-export interface RoutineInstructionStep {
+interface RoutineInstructionStep {
   id: string;
   icon: string;
   title: string;
@@ -81,7 +81,7 @@ export interface Routine {
   translations?: Partial<Record<Locale, RoutineLocalizedContent>>;
 }
 
-export type RoutineTemplateVisibility = 'builtin' | 'private' | 'unlisted' | 'public';
+type RoutineTemplateVisibility = 'builtin' | 'private' | 'unlisted' | 'public';
 
 export interface RoutineTemplate {
   id: string;
@@ -105,7 +105,7 @@ export interface RoutineAssignment {
   validationMode?: RoutineValidationMode;
 }
 
-export interface RoutineTask {
+interface RoutineTask {
   id: string;
   routineId: string;
   requestedAt: string;
@@ -129,7 +129,7 @@ export interface VerificationEvent extends RoutineTask {
   reviewReason?: string;
 }
 
-export interface FamilyState {
+interface FamilyState {
   id?: string;
   linked: boolean;
   childLinked: boolean;
@@ -140,7 +140,7 @@ export interface FamilyState {
 }
 
 export type MembershipRole = 'owner' | 'caregiver' | 'participant' | 'viewer';
-export type MembershipStatus = 'active' | 'suspended';
+type MembershipStatus = 'active' | 'suspended';
 export type ProfileColorKey = 'blue' | 'indigo' | 'violet' | 'rose' | 'coral' | 'amber' | 'emerald' | 'teal';
 
 export interface ParticipantSummary {
@@ -150,7 +150,7 @@ export interface ParticipantSummary {
   selfManaged?: boolean;
 }
 
-export interface MembershipSummary {
+interface MembershipSummary {
   role: MembershipRole;
   status: MembershipStatus;
   label?: 'parent' | 'partner' | 'relative' | 'professional' | 'self' | 'other';

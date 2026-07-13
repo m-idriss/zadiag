@@ -625,8 +625,8 @@ const messages = {
 
 export type MessageKey = keyof typeof messages.en;
 export const messageCatalogs = messages;
-export type MessageParams = Readonly<Record<string, string | number>>;
-export type Translator = (key: MessageKey, params?: MessageParams) => string;
+type MessageParams = Readonly<Record<string, string | number>>;
+type Translator = (key: MessageKey, params?: MessageParams) => string;
 
 export const formatMessage = (message: string, params?: MessageParams) => {
   if (!params) return message;

@@ -37,7 +37,7 @@ export function withResolvedEventStatuses(events: VerificationEvent[], now = Dat
   });
 }
 
-export type StalePendingCheckReason = 'expired' | 'orphaned';
+type StalePendingCheckReason = 'expired' | 'orphaned';
 
 export function stalePendingCheckReason(
   event: VerificationEvent,

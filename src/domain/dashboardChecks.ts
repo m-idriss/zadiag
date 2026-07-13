@@ -1,7 +1,7 @@
 import type { RoutineAssignment, VerificationEvent } from './models';
 import { nextPlannedWindow } from './monitoringPlan';
 
-export interface UpcomingRoutineCheck {
+interface UpcomingRoutineCheck {
   id: string;
   routineId: string;
   assignment: RoutineAssignment;

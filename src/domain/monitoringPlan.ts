@@ -101,7 +101,7 @@ export const groupsFromLegacyPlan = (plan: { weekdays: number[]; windows: TimeWi
         windows: plan.windows,
       }];
 
-export type PlannedWindow = {
+type PlannedWindow = {
   start: Date;
   end: Date;
 };
@@ -146,7 +146,7 @@ export const nextPlannedWindow = (
   return candidates.sort((a, b) => a.start.getTime() - b.start.getTime())[0];
 };
 
-export const currentPlannedWindow = (
+const currentPlannedWindow = (
   plan: Pick<MonitoringPlan, 'weekdays' | 'windows' | 'scheduleGroups'>,
   now = new Date(),
 ): PlannedWindow | undefined => {

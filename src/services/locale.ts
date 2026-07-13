@@ -2,7 +2,7 @@ import type { Locale } from '../domain/models';
 
 export const supportedLocales = ['en', 'fr'] as const satisfies readonly Locale[];
 
-export const localeConfig: Record<Locale, { languageTag: string; documentLanguage: string; label: string }> = {
+const localeConfig: Record<Locale, { languageTag: string; documentLanguage: string; label: string }> = {
   en: { languageTag: 'en-US', documentLanguage: 'en', label: 'English' },
   fr: { languageTag: 'fr-FR', documentLanguage: 'fr', label: 'Français' },
 };

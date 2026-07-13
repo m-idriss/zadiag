@@ -2,7 +2,7 @@ import type { Locale, Routine, RoutineTemplate } from './models';
 import { availableRoutines } from './routineCatalog';
 import { presentRoutine } from './routinePresentation';
 
-export interface RoutineMarketplace {
+interface RoutineMarketplace {
   templates: RoutineTemplate[];
 }
 

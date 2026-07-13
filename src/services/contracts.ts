@@ -1,4 +1,4 @@
-import type { AnalysisResult, AppPreferences, AppState, Locale, MembershipRole, MonitoringPlan, ParticipantMember, ProfileColorKey, Role, RoutineValidationMode, VerificationEvent } from '../domain/models';
+import type { AppPreferences, AppState, Locale, MembershipRole, MonitoringPlan, ParticipantMember, ProfileColorKey, Role, RoutineValidationMode, VerificationEvent } from '../domain/models';
 
 export interface AppRepository {
   initialize(): Promise<void>;
@@ -35,16 +35,6 @@ export interface AppRepository {
   reviewCheck(eventId: string, decision: 'detected' | 'not_detected'): Promise<VerificationEvent>;
   retryRemoteSync?(): Promise<void>;
   reset(): Promise<void>;
-}
-
-export interface VerificationGateway {
-  createUpload(sessionId: string): Promise<{ uploadUrl: string; nonce: string }>;
-  submit(input: {
-    sessionId: string;
-    nonce: string;
-    capturedAt: string;
-    digest: string;
-  }): Promise<AnalysisResult>;
 }
 
 export interface PushGateway {

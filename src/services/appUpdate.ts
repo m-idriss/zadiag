@@ -8,7 +8,7 @@ const waitForInstalledState = (worker: ServiceWorker) => new Promise<void>((reso
   }, { once: true });
 });
 
-export type AppUpdateSeverity = 'patch' | 'minor' | 'major' | 'unknown';
+type AppUpdateSeverity = 'patch' | 'minor' | 'major' | 'unknown';
 
 export type AppUpdateInfo = {
   available: boolean;

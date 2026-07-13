@@ -1,5 +1,4 @@
-import { defaultRoutine, type Locale, type Routine } from './models';
-import { presentRoutine } from './routinePresentation';
+import { defaultRoutine, type Routine } from './models';
 import { translationsForRoutine } from './routineTranslations';
 
 // Built-in routines shipped with the app. Shared/custom routines live in the
@@ -85,10 +84,3 @@ export const availableRoutines: Routine[] = [
 
 export const routineFromCatalog = (routineId: string) =>
   availableRoutines.find((routine) => routine.id === routineId);
-
-export const assignableRoutines = (assignedRoutineIds: string[]) => {
-  const assigned = new Set(assignedRoutineIds);
-  return availableRoutines.filter((routine) => !assigned.has(routine.id));
-};
-
-export const presentCatalogRoutine = (routine: Routine, locale: Locale) => presentRoutine(routine, locale);

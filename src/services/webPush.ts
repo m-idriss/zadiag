@@ -1,6 +1,6 @@
 import type { PushGateway } from './contracts';
 
-export type PushSetupErrorCode =
+type PushSetupErrorCode =
   | 'missing_web_push_public_key'
   | 'notification_permission_denied'
   | 'notification_permission_reset'

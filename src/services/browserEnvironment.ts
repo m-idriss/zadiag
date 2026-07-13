@@ -2,20 +2,20 @@ import type { AppRoute, RouteContext } from '../domain/appRouting';
 
 const LOCALHOST_PATTERN = /^(localhost|127\.0\.0\.1|::1)$/;
 
-export const useFirebase = import.meta.env.VITE_USE_FIREBASE === 'true';
+const useFirebase = import.meta.env.VITE_USE_FIREBASE === 'true';
 export const routineCentricUiEnabled = import.meta.env.VITE_ROUTINE_CENTRIC_UI !== 'false';
 
-export const isLocalhostHostname = (hostname = window.location.hostname) => LOCALHOST_PATTERN.test(hostname);
+const isLocalhostHostname = (hostname = window.location.hostname) => LOCALHOST_PATTERN.test(hostname);
 
 export const isLocalDemoEnvironment = (hostname = window.location.hostname) => isLocalhostHostname(hostname) && !useFirebase;
 
-export const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches
+const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches
   || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
 
-export const isIos = () => /iPad|iPhone|iPod/.test(navigator.userAgent)
+const isIos = () => /iPad|iPhone|iPod/.test(navigator.userAgent)
   || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-export const setupPreviewRoute = (): Extract<AppRoute, 'install' | 'notifications'> | null => {
+const setupPreviewRoute = (): Extract<AppRoute, 'install' | 'notifications'> | null => {
   const setupPreview = import.meta.env.DEV ? new URLSearchParams(window.location.search).get('setup') : null;
   return setupPreview === 'install' || setupPreview === 'notifications' ? setupPreview : null;
 };

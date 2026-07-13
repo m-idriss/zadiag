@@ -178,7 +178,7 @@ export const initializeAppLogs = () => {
   initialized = true;
 };
 
-export const getRecentAppLogs = (limit = DEFAULT_RECENT_LOG_LIMIT): AppLogEntry[] => logBuffer.slice(-limit);
+const getRecentAppLogs = (limit = DEFAULT_RECENT_LOG_LIMIT): AppLogEntry[] => logBuffer.slice(-limit);
 
 export const buildDiagnosticsEmailBody = (input: DiagnosticsInput): string => {
   const now = new Date().toISOString();
