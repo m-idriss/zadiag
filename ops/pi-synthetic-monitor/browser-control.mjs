@@ -20,7 +20,7 @@ const context = await chromium.launchPersistentContext(profileDir, {
   ],
 });
 
-await context.grantPermissions(['notifications'], { origin: new URL(appUrl).origin });
+await context.grantPermissions(['notifications', 'camera'], { origin: new URL(appUrl).origin });
 const page = context.pages()[0] || await context.newPage();
 const diagnostics = [];
 page.on('console', (message) => {
@@ -81,6 +81,59 @@ if (command === 'uid') {
   }, undefined, { timeout: 30_000 });
   await page.waitForTimeout(5_000);
   result = { uid: await readUid(), renewed: true, ...await status(), diagnostics };
+} else if (command === 'answer-check') {
+  await context.addInitScript(() => {
+    const originalMediaDevices = navigator.mediaDevices;
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        ...originalMediaDevices,
+        getUserMedia: async () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 640;
+          canvas.height = 480;
+          const draw = () => {
+            const context = canvas.getContext('2d');
+            if (!context) return;
+            context.fillStyle = '#c88f70';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            context.fillStyle = '#6b3029';
+            context.beginPath();
+            context.ellipse(320, 260, 155, 85, 0, 0, Math.PI * 2);
+            context.fill();
+            context.fillStyle = '#f6f1dd';
+            context.fillRect(205, 220, 230, 42);
+            context.fillStyle = '#d8d1ba';
+            for (let x = 220; x < 430; x += 30) context.fillRect(x, 220, 3, 42);
+            context.strokeStyle = '#6cc7d4';
+            context.lineWidth = 8;
+            context.beginPath();
+            context.moveTo(210, 242);
+            context.lineTo(430, 242);
+            context.stroke();
+            context.fillStyle = '#44201d';
+            context.fillRect(255, 292, 130, 18);
+          };
+          draw();
+          const timer = window.setInterval(draw, 250);
+          const stream = canvas.captureStream(8);
+          stream.getTracks().forEach((track) => track.addEventListener('ended', () => window.clearInterval(timer), { once: true }));
+          return stream;
+        },
+      },
+    });
+  });
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 30_000 });
+  await page.getByRole('button', { name: /Proof|Preuve/i }).first().click({ timeout: 20_000 });
+  await page.getByRole('button', { name: /Use photo|Utiliser la photo/i }).click({ timeout: 20_000 });
+  await page.getByRole('button', { name: /Use photo|Utiliser la photo/i }).click({ timeout: 20_000 });
+  await page.waitForFunction(() => {
+    const text = document.body?.innerText ?? '';
+    const analyzing = /Checking the photo|Analyse de la photo/i.test(text);
+    const completed = /Validated|Validé|Not detected|Non détecté|Needs review|À vérifier/i.test(text);
+    return !analyzing && completed;
+  }, undefined, { timeout: 60_000 });
+  result = { uid: await readUid(), answered: true, ...await status(), diagnostics };
 } else if (command === 'activate') {
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 30_000 });
   await page.waitForTimeout(5_000);
