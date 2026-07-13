@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import type { MessageKey } from '../services/i18n';
 import { AppIcon, type AppIconName } from './Icon';
 
@@ -51,7 +52,11 @@ export function BottomNav({
   return (
     <>
       <div className="bottom-nav-backdrop" aria-hidden="true" />
-      <nav className="bottom-nav" aria-label={t('primaryNavigation')}>
+      <nav
+        className="bottom-nav"
+        aria-label={t('primaryNavigation')}
+        style={profileColor ? { '--profile-color': profileColor } as CSSProperties : undefined}
+      >
         {items.map((item) => (
           <button
             type="button"
@@ -60,7 +65,7 @@ export function BottomNav({
             aria-current={tab === item.tab ? 'page' : undefined}
             onClick={() => onChange(item.tab)}
           >
-            <AppIcon name={item.icon} style={tab === item.tab ? { color: profileColor ?? 'var(--teal)' } : undefined} />{item.label}
+            <AppIcon name={item.icon} />{item.label}
           </button>
         ))}
       </nav>

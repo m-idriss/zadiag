@@ -5,7 +5,6 @@
 :root {
   --navy: #102a43;
   --teal: #087f6d;
-  --teal-dark: #087f6d;
   --mint: #e8f6f2;
   --cream: #f7f7f5;
   --coral: #c64d40;
@@ -27,7 +26,6 @@
   --row-padding-y: 9px;
   --row-padding-x: 11px;
   --panel-gap: 8px;
-  --card-radius: var(--radius-card);
   font-family: var(--font-body);
   font-synthesis: none;
   -webkit-font-smoothing: antialiased;
@@ -190,7 +188,7 @@ button:disabled { cursor: not-allowed; }
 .startup-recovery-card .eyebrow {
   margin: 0;
   background: rgba(21, 145, 128, .1);
-  color: var(--teal-dark);
+  color: var(--teal);
 }
 .startup-recovery-card h1 {
   max-width: 360px;
@@ -787,24 +785,24 @@ button:disabled { cursor: not-allowed; }
 .relationship-access-list > button.active { border-color: color-mix(in srgb, var(--teal) 34%, white); background: color-mix(in srgb, var(--mint) 74%, white); box-shadow: inset 3px 0 var(--teal); }
 .relationship-access-list span { display: grid; gap: 2px; }
 .relationship-access-list small { color: var(--muted); }
-.relationship-team { display: grid; gap: 9px; padding-top: 14px; border-top: 1px solid var(--border); }
+.relationship-team { display: grid; gap: 9px; padding-top: 14px; border-top: 1px solid var(--line); }
 .relationship-subsection-heading { display: grid; gap: 3px; }
 .relationship-subsection-heading h3, .relationship-leave-zone h3 { margin: 0; color: var(--navy); font-size: 15px; }
 .relationship-subsection-heading small, .relationship-team-empty { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.35; }
 .relationship-scope-heading { padding-top: 2px; }
 .relationship-account-form { display: grid; gap: 9px; padding: 11px; border: 1px solid rgba(21,50,75,.12); border-radius: 12px; background: #f7f9fb; }
 .relationship-account-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
-.relationship-account-controls input { min-width: 0; min-height: 42px; padding: 0 12px; border: 1px solid var(--border); border-radius: 10px; background: white; color: var(--navy); font: inherit; }
+.relationship-account-controls input { min-width: 0; min-height: 42px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: white; color: var(--navy); font: inherit; }
 .relationship-account-controls button { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 14px; border: 0; border-radius: 10px; background: var(--navy); color: white; font-weight: 800; }
 .relationship-account-controls button:disabled { opacity: .55; }
-.relationship-color-picker { display: grid; gap: 10px; padding-top: 14px; border-top: 1px solid var(--border); }
+.relationship-color-picker { display: grid; gap: 10px; padding-top: 14px; border-top: 1px solid var(--line); }
 .profile-color-options { display: grid; grid-template-columns: repeat(8, minmax(30px, 1fr)); gap: 7px; }
 .profile-color-options button { min-width: 0; height: 38px; display: grid; place-items: center; padding: 0; border: 2px solid transparent; border-radius: 11px; background: color-mix(in srgb, var(--swatch-color) 12%, white); }
 .profile-color-options button > span { width: 20px; height: 20px; border-radius: 50%; background: var(--swatch-color); box-shadow: 0 2px 7px color-mix(in srgb, var(--swatch-color) 25%, transparent); }
 .profile-color-options button.active { border-color: var(--swatch-color); box-shadow: 0 0 0 2px white inset; }
 .profile-color-options button.active > span::after { content: ''; width: 7px; height: 4px; display: block; margin: 6px auto 0; border-left: 2px solid white; border-bottom: 2px solid white; transform: rotate(-45deg); }
 .profile-color-options button:disabled { opacity: .58; }
-.relationship-selected-scope-heading { padding-top: 14px; border-top: 1px solid var(--border); }
+.relationship-selected-scope-heading { padding-top: 14px; border-top: 1px solid var(--line); }
 .relationship-profile-actions-body { display: grid; gap: 14px; padding: 2px 0 12px; }
 .relationship-profile-actions-body > small { color: var(--muted); font-size: 11px; line-height: 1.35; }
 .relationship-profile-list { display: grid; gap: 8px; }
@@ -837,7 +835,7 @@ button:disabled { cursor: not-allowed; }
 .relationship-member-row > span { display: grid; gap: 2px; }
 .relationship-member-row small { color: var(--muted); font-size: 10px; }
 .relationship-member-row button { min-height: var(--height-action); display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 12px; border: 1px solid color-mix(in srgb, var(--coral) 40%, white); border-radius: 10px; background: white; color: var(--coral); font-size: 11px; font-weight: 850; }
-.relationship-tool { border-top: 1px solid var(--border); }
+.relationship-tool { border-top: 1px solid var(--line); }
 .relationship-tool > summary { min-height: 46px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; color: var(--navy); font-size: 13px; font-weight: 850; list-style: none; }
 .relationship-tool > summary::-webkit-details-marker { display: none; }
 .relationship-tool > summary::after {
@@ -855,18 +853,18 @@ button:disabled { cursor: not-allowed; }
   transform: rotate(180deg);
 }
 .relationship-tool .relationship-form { padding: 2px 0 12px; border: 0; }
-.relationship-form { display: grid; gap: 10px; padding-top: 14px; border-top: 1px solid var(--border); }
+.relationship-form { display: grid; gap: 10px; padding-top: 14px; border-top: 1px solid var(--line); }
 .relationship-form h3 { margin: 0; color: var(--navy); font-size: 15px; }
-.relationship-form input, .relationship-form select { width: 100%; min-height: 44px; padding: 0 13px; border: 1px solid var(--border); border-radius: 12px; background: white; color: var(--navy); font: inherit; box-sizing: border-box; }
+.relationship-form input, .relationship-form select { width: 100%; min-height: 44px; padding: 0 13px; border: 1px solid var(--line); border-radius: 12px; background: white; color: var(--navy); font: inherit; box-sizing: border-box; }
 .relationship-form > button { min-height: var(--height-action); display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: var(--radius-control); background: var(--teal); color: white; font-weight: 800; }
 .relationship-checkbox { display: flex; align-items: center; gap: 8px; color: var(--navy); font-size: 13px; }
 .relationship-checkbox input { width: 18px; min-height: 18px; }
 .relationship-invitation-code { padding: 10px; border-radius: 10px; background: var(--mint); color: var(--navy); text-align: center; }
 .relationship-leave-button { min-height: var(--height-action); display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--coral); border-radius: 12px; background: white; color: var(--coral); font-weight: 800; }
-.relationship-leave-button:disabled { border-color: var(--border); color: var(--muted); background: #f6f8f8; }
-.relationship-leave-zone { display: grid; gap: 6px; padding-top: 14px; border-top: 1px solid var(--border); }
+.relationship-leave-button:disabled { border-color: var(--line); color: var(--muted); background: #f6f8f8; }
+.relationship-leave-zone { display: grid; gap: 6px; padding-top: 14px; border-top: 1px solid var(--line); }
 .relationship-leave-zone small { color: var(--muted); font-size: 11px; line-height: 1.35; }
-.relationship-delete-zone { display: grid; gap: 7px; padding-top: 14px; border-top: 1px solid var(--border); }
+.relationship-delete-zone { display: grid; gap: 7px; padding-top: 14px; border-top: 1px solid var(--line); }
 .relationship-delete-zone h3 { margin: 0; color: var(--coral); font-size: 15px; }
 .relationship-delete-zone p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.35; }
 .relationship-delete-zone button { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 14px; background: var(--coral); color: white; box-shadow: 0 10px 24px rgba(198,77,64,.2); font-weight: 900; }
@@ -2059,6 +2057,7 @@ button:disabled { cursor: not-allowed; }
 }
 .bottom-nav button > span { font-size: 22px; line-height: 1; }
 .bottom-nav button.active { background: #fff; color: var(--navy); box-shadow: 0 5px 16px rgba(16,42,67,.065); }
+.bottom-nav button.active .app-icon { color: var(--profile-color, var(--teal)); }
 .bottom-nav button:active { transform: scale(.95); }
 
 .app-splash { background: linear-gradient(155deg, #fbfcfb, #eef6f3); }
