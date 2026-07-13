@@ -11,7 +11,8 @@ export type OperationalEventKind =
   | 'push_dispatch_summary'
   | 'scheduler_run_summary'
   | 'analysis_completed'
-  | 'proof_image_fallback';
+  | 'proof_image_fallback'
+  | 'synthetic_push_receipt';
 
 type AlertValue = string | number | boolean | null | undefined;
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { clearBadgeAndCheckNotifications, isCheckNotificationTag } from './serviceWorkerNotifications';
+import { clearBadgeAndCheckNotifications, isCheckNotificationTag, reportSyntheticPushReceipt } from './serviceWorkerNotifications';
 
 describe('service worker notification helpers', () => {
   it('matches only check and reminder notification tags', () => {
@@ -30,5 +30,47 @@ describe('service worker notification helpers', () => {
     expect(closeVerification).toHaveBeenCalledTimes(1);
     expect(closeReminder).toHaveBeenCalledTimes(1);
     expect(closeOther).not.toHaveBeenCalled();
+  });
+});
+
+describe('synthetic push receipts', () => {
+  it('reports a synthetic receipt without leaking it into normal notifications', async () => {
+    const requests: Array<{ url: string; body: Record<string, unknown> }> = [];
+    const reported = await reportSyntheticPushReceipt({
+      kind: 'check-ready',
+      sessionId: 'session-1',
+      routineId: 'routine-1',
+      syntheticReceipt: {
+        monitorId: 'monitor-1',
+        receiptId: 'receipt-1',
+        token: 'secret-token',
+        url: 'https://europe-west1-project.cloudfunctions.net/recordSyntheticPushReceipt',
+      },
+    }, 'received', (async (input, init) => {
+      requests.push({ url: String(input), body: JSON.parse(String(init?.body)) as Record<string, unknown> });
+      return { ok: true } as Response;
+    }) as typeof fetch);
+
+    expect(reported).toBe(true);
+    expect(requests).toEqual([{
+      url: 'https://europe-west1-project.cloudfunctions.net/recordSyntheticPushReceipt',
+      body: {
+        monitorId: 'monitor-1',
+        receiptId: 'receipt-1',
+        token: 'secret-token',
+        stage: 'received',
+        kind: 'check-ready',
+        sessionId: 'session-1',
+        routineId: 'routine-1',
+      },
+    }]);
+  });
+
+  it('rejects non-HTTPS and non-Cloud-Functions receipt endpoints', async () => {
+    const fetcher = vi.fn();
+    const base = { monitorId: 'monitor-1', receiptId: 'receipt-1', token: 'secret-token' };
+    await expect(reportSyntheticPushReceipt({ syntheticReceipt: { ...base, url: 'http://example.com/receipt' } }, 'received', fetcher)).resolves.toBe(false);
+    await expect(reportSyntheticPushReceipt({ syntheticReceipt: { ...base, url: 'https://example.com/receipt' } }, 'received', fetcher)).resolves.toBe(false);
+    expect(fetcher).not.toHaveBeenCalled();
   });
 });

@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase-admin/app';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
-import { HttpsError, onCall } from 'firebase-functions/v2/https';
+import { HttpsError, onCall, onRequest } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import { GoogleAuth } from 'google-auth-library';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
@@ -10,7 +10,7 @@ import { assertChildName, createLinkCode, createRecoveryCode, createRelationship
 import { analyzeWithGemini, parseImageDataUrl, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
 import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
 import { createDefaultRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, isRoutineValidationMode, routineFromCatalog, type RoutineAssignmentDocument } from './routines.js';
-import { buildCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription } from './notifications.js';
+import { buildCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription, type SyntheticReceiptPayload } from './notifications.js';
 import { isCheckRequestRateLimited } from './reminders.js';
 import { recordAuditEvent } from './audit.js';
 import { expiredPendingCheckCleanupUpdate, staleCleanupCutoffs } from './cleanup.js';
@@ -60,6 +60,14 @@ interface PushDispatchSummary {
   skipped: number;
 }
 
+interface SyntheticMonitorTarget {
+  monitorId: string;
+  participantId: string;
+  receiptToken: string;
+  receiptTokenHash: string;
+  receiptUrl: string;
+}
+
 const pushDispatchSummary = (results: PushDispatchResult[]): PushDispatchSummary => ({
   recipients: results.length,
   success: results.filter((result) => result === 'success').length,
@@ -67,6 +75,42 @@ const pushDispatchSummary = (results: PushDispatchResult[]): PushDispatchSummary
   invalidated: results.filter((result) => result === 'invalidated').length,
   skipped: results.filter((result) => result === 'skipped').length,
 });
+
+const loadSyntheticMonitorTarget = async (
+  aggregateRef: FirebaseFirestore.DocumentReference,
+): Promise<SyntheticMonitorTarget | undefined> => {
+  if (aggregateRef.parent.id !== 'participants') return undefined;
+  const participant = await aggregateRef.get();
+  const monitorId = participant.data()?.syntheticMonitorUid;
+  if (!isFirestoreDocumentId(monitorId)) return undefined;
+  const monitor = await db.collection('syntheticMonitors').doc(monitorId).get();
+  const data = monitor.data();
+  if (!monitor.exists || data?.enabled !== true || data.participantId !== aggregateRef.id) return undefined;
+  const receiptToken = typeof data.receiptToken === 'string' ? data.receiptToken : '';
+  const receiptTokenHash = typeof data.receiptTokenHash === 'string' ? data.receiptTokenHash : '';
+  const receiptUrl = typeof data.receiptUrl === 'string' ? data.receiptUrl : '';
+  if (receiptToken.length < 32 || receiptToken.length > 256 || receiptTokenHash !== hashLinkCode(receiptToken)) return undefined;
+  try {
+    const url = new URL(receiptUrl);
+    if (url.protocol !== 'https:' || !url.hostname.endsWith('.cloudfunctions.net')) return undefined;
+  } catch {
+    return undefined;
+  }
+  return { monitorId, participantId: aggregateRef.id, receiptToken, receiptTokenHash, receiptUrl };
+};
+
+const syntheticReceiptPayload = (
+  target: SyntheticMonitorTarget | undefined,
+  recipientId: string,
+  receiptId: string,
+): SyntheticReceiptPayload | undefined => target && target.monitorId === recipientId
+  ? {
+      monitorId: target.monitorId,
+      receiptId,
+      token: target.receiptToken,
+      url: target.receiptUrl,
+    }
+  : undefined;
 
 const getRoutineAnalysisContext = (
   assignment: Partial<RoutineAssignmentDocument> | undefined,
@@ -345,12 +389,13 @@ const sendPushPayload = async (
 
 const sendCheckPushNotification = async (
   subscriptionDocument: PushNotificationDocument,
-  check: { sessionId: string; routineId: string } & RoutineNotificationNames,
+  check: { checkId: string; sessionId: string; routineId: string } & RoutineNotificationNames,
   resend: boolean,
+  syntheticMonitor?: SyntheticMonitorTarget,
 ) => {
   if (pushRecipientRole(subscriptionDocument) !== 'child') return 'skipped' as const;
   const subscription = subscriptionDocument.data() as { locale?: string } | undefined;
-  const payload = buildCheckNotificationPayload({
+  const basePayload = buildCheckNotificationPayload({
     sessionId: check.sessionId,
     routineId: check.routineId,
     routineName: check.routineName,
@@ -359,6 +404,8 @@ const sendCheckPushNotification = async (
     resend,
     locale: subscription?.locale,
   });
+  const receipt = syntheticReceiptPayload(syntheticMonitor, subscriptionDocument.id, check.checkId);
+  const payload = receipt ? { ...basePayload, checkId: check.checkId, syntheticReceipt: receipt } : basePayload;
   return sendPushPayload(subscriptionDocument, payload);
 };
 
@@ -419,7 +466,10 @@ const sendCheckPushNotifications = async (
   check: { checkId: string; sessionId: string; routineId: string } & RoutineNotificationNames,
   resend: boolean,
 ): Promise<PushDispatchSummary> => {
-  const subscriptions = await familyRef.collection('pushSubscriptions').get();
+  const [subscriptions, syntheticMonitor] = await Promise.all([
+    familyRef.collection('pushSubscriptions').get(),
+    loadSyntheticMonitorTarget(familyRef),
+  ]);
   if (!subscriptions.empty) {
     webpush.setVapidDetails('https://www.zadiag.com', vapidPublicKey.value(), vapidPrivateKey.value());
   }
@@ -428,7 +478,7 @@ const sendCheckPushNotifications = async (
     checkId: check.checkId,
     routineId: check.routineId,
     notificationType: 'check',
-  }, (document) => sendCheckPushNotification(document, check, resend));
+  }, (document) => sendCheckPushNotification(document, check, resend, syntheticMonitor));
 };
 
 const sendReviewPushNotifications = async (
@@ -1264,17 +1314,118 @@ export const sendTestPushNotification = onCall({
   if (!subscription?.endpoint) {
     throw new HttpsError('failed-precondition', 'No push subscription is available for this device.');
   }
+  const syntheticMonitor = await loadSyntheticMonitorTarget(aggregateRef);
+  const receipt = syntheticReceiptPayload(syntheticMonitor, uid, crypto.randomUUID());
+  const basePayload = buildTestNotificationPayload({ locale: subscription.locale, role });
   webpush.setVapidDetails('https://www.zadiag.com', vapidPublicKey.value(), vapidPrivateKey.value());
   const dispatch = await dispatchPushNotifications([subscriptionDocument], {
     familyId,
     notificationType: 'test',
-  }, (document) => sendPushPayload(document, buildTestNotificationPayload({
-    locale: subscription.locale,
-    role,
-  })));
+  }, (document) => sendPushPayload(document, receipt ? { ...basePayload, syntheticReceipt: receipt } : basePayload));
   if (dispatch.success !== 1) {
     throw new HttpsError('unavailable', 'The test notification could not be delivered.');
   }
+});
+
+const syntheticReceiptOrigins = new Set([
+  'https://zadiag.com',
+  'https://www.zadiag.com',
+  'https://zadiag.vercel.app',
+]);
+
+export const recordSyntheticPushReceipt = onRequest({ region }, async (request, response) => {
+  const origin = request.get('origin');
+  const allowedOrigin = origin && (
+    syntheticReceiptOrigins.has(origin)
+    || /^https:\/\/zadiag-[a-z0-9-]+\.vercel\.app$/.test(origin)
+  ) ? origin : undefined;
+  if (allowedOrigin) response.set('Access-Control-Allow-Origin', allowedOrigin);
+  response.set('Vary', 'Origin');
+  response.set('Access-Control-Allow-Headers', 'Content-Type');
+  response.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  response.set('Cache-Control', 'no-store');
+  if (request.method === 'OPTIONS') {
+    response.status(allowedOrigin ? 204 : 403).send('');
+    return;
+  }
+  if (request.method !== 'POST') {
+    response.status(405).json({ error: 'method_not_allowed' });
+    return;
+  }
+  const body = request.body && typeof request.body === 'object'
+    ? request.body as Record<string, unknown>
+    : {};
+  if (!isFirestoreDocumentId(body.monitorId) || !isFirestoreDocumentId(body.receiptId)) {
+    response.status(400).json({ error: 'invalid_receipt' });
+    return;
+  }
+  const monitorId = body.monitorId;
+  const receiptId = body.receiptId;
+  const token = typeof body.token === 'string' ? body.token : '';
+  const stage = body.stage === 'received' || body.stage === 'opened' || body.stage === 'heartbeat'
+    ? body.stage
+    : undefined;
+  if (!stage || token.length < 32 || token.length > 256) {
+    response.status(400).json({ error: 'invalid_receipt' });
+    return;
+  }
+  const monitorRef = db.collection('syntheticMonitors').doc(monitorId);
+  const receiptRef = monitorRef.collection('receipts').doc(`${receiptId}_${stage}`);
+  let participantId = '';
+  try {
+    await db.runTransaction(async (transaction) => {
+      const monitor = await transaction.get(monitorRef);
+      const data = monitor.data();
+      participantId = typeof data?.participantId === 'string' ? data.participantId : '';
+      if (!monitor.exists || data?.enabled !== true || data.receiptTokenHash !== hashLinkCode(token)) {
+        throw new HttpsError('permission-denied', 'Synthetic monitor receipt rejected.');
+      }
+      const now = FieldValue.serverTimestamp();
+      transaction.set(receiptRef, {
+        stage,
+        receiptId,
+        participantId,
+        ...(typeof body.kind === 'string' ? { kind: body.kind.slice(0, 64) } : {}),
+        ...(isFirestoreDocumentId(body.checkId) ? { checkId: body.checkId } : {}),
+        ...(typeof body.sessionId === 'string' ? { sessionId: body.sessionId.slice(0, 128) } : {}),
+        ...(isFirestoreDocumentId(body.routineId) ? { routineId: body.routineId } : {}),
+        receivedAt: now,
+      }, { merge: true });
+      transaction.set(monitorRef, {
+        lastSeenAt: now,
+        lastStage: stage,
+        ...(stage === 'received' ? { lastPushReceivedAt: now } : {}),
+        ...(stage === 'opened' ? { lastPushOpenedAt: now } : {}),
+        ...(stage === 'heartbeat' ? { lastHeartbeatAt: now } : {}),
+        updatedAt: now,
+      }, { merge: true });
+    });
+  } catch (error) {
+    if (error instanceof HttpsError && error.code === 'permission-denied') {
+      response.status(403).json({ error: 'receipt_rejected' });
+      return;
+    }
+    reportOperationalAlert({
+      kind: 'scheduler_dispatch_failed',
+      actorUid: monitorId,
+      details: { phase: 'synthetic_receipt_write' },
+      error,
+    });
+    response.status(500).json({ error: 'receipt_unavailable' });
+    return;
+  }
+  reportOperationalEvent({
+    kind: 'synthetic_push_receipt',
+    familyId: participantId,
+    actorUid: monitorId,
+    ...(isFirestoreDocumentId(body.checkId) ? { checkId: body.checkId } : {}),
+    ...(isFirestoreDocumentId(body.routineId) ? { routineId: body.routineId } : {}),
+    details: {
+      stage,
+      ...(typeof body.kind === 'string' ? { notificationType: body.kind.slice(0, 64) } : {}),
+    },
+  });
+  response.status(204).send('');
 });
 
 export const regenerateLinkCode = onCall({ region, cors, enforceAppCheck: true }, async (request) => {

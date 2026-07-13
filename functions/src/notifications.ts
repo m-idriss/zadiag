@@ -65,6 +65,13 @@ export interface CheckNotificationPayload {
   path: string;
 }
 
+export interface SyntheticReceiptPayload {
+  monitorId: string;
+  receiptId: string;
+  token: string;
+  url: string;
+}
+
 export interface ReviewNotificationInput {
   checkId: string;
   routineId: string;
