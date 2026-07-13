@@ -261,12 +261,16 @@ describe('participant Today screen', () => {
       events: [expiredPending, event('completed', 'detected', atToday(10))],
     };
 
-    act(() => root.render(<ChildDashboard state={state} start={() => undefined} t={(key) => translate('en', key)} />));
+    const openHistoryEvent = vi.fn();
+    act(() => root.render(<ChildDashboard state={state} start={() => undefined} onOpenHistoryEvent={openHistoryEvent} t={(key) => translate('en', key)} />));
 
     const content = container.textContent ?? '';
     expect(content).toContain('0 checks to complete');
     expect(content).not.toContain('Completed today');
     expect(content).toContain('Validated');
     expect(content).toContain('Missed');
+    const completedRow = Array.from(container.querySelectorAll('.history-row')).find((row) => row.textContent?.includes('Validated'));
+    act(() => completedRow?.querySelector<HTMLButtonElement>('.history-row-open-button')?.click());
+    expect(openHistoryEvent).toHaveBeenCalledWith(expect.objectContaining({ id: 'completed' }));
   });
 });

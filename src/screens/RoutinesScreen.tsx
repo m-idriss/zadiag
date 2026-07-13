@@ -118,6 +118,8 @@ export function RoutinesScreen({
   onRetryRoutines,
   onSaveMonitoringPlan,
   savingRoutineId,
+  focusedEventId,
+  onFocusedEventConsumed,
   t,
 }: {
   state: AppState;
@@ -130,9 +132,13 @@ export function RoutinesScreen({
   onRetryRoutines?: () => Promise<void>;
   onSaveMonitoringPlan?: (routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode) => Promise<void>;
   savingRoutineId?: string;
+  focusedEventId?: string;
+  onFocusedEventConsumed?: () => void;
   t: (key: MessageKey) => string;
 }) {
-  const [selectedId, setSelectedId] = useState<string | undefined>(() => readUiStorageString(ROUTINES_SELECTED_ASSIGNMENT_KEY));
+  const focusedEvent = state.events.find((event) => event.id === focusedEventId);
+  const focusedAssignment = state.routineAssignments.find((assignment) => assignment.routineId === focusedEvent?.routineId);
+  const [selectedId, setSelectedId] = useState<string | undefined>(() => focusedAssignment?.id ?? readUiStorageString(ROUTINES_SELECTED_ASSIGNMENT_KEY));
   const [requestingRoutineId, setRequestingRoutineId] = useState<string>();
   const [requestStatuses, setRequestStatuses] = useState<Record<string, RequestStatus>>({});
   const [requestRetries, setRequestRetries] = useState<Record<string, RequestRetryState>>({});
@@ -145,7 +151,7 @@ export function RoutinesScreen({
   const [assignError, setAssignError] = useState(false);
   const [deletingRoutineId, setDeletingRoutineId] = useState<string>();
   const [deleteErrorRoutineId, setDeleteErrorRoutineId] = useState<string>();
-  const [detailInitialTab, setDetailInitialTab] = useState<'overview' | 'plan'>();
+  const [detailInitialTab, setDetailInitialTab] = useState<'overview' | 'plan' | 'tracking' | undefined>(() => focusedEventId ? 'tracking' : undefined);
   const [expandedScheduleIds, setExpandedScheduleIds] = useState<Set<string>>(() => readStoredStringSet(ROUTINES_EXPANDED_SCHEDULES_KEY));
   const selected = state.routineAssignments.find((assignment) => assignment.id === selectedId);
   const canManageRoutines = state.role === 'parent' && Boolean(edit);
@@ -194,7 +200,7 @@ export function RoutinesScreen({
     writeUiStorageString(ROUTINES_EXPANDED_SCHEDULES_KEY, JSON.stringify([...expandedScheduleIds]));
   }, [expandedScheduleIds]);
 
-  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={backToList} start={start} edit={canManageRoutines} initialTab={detailInitialTab} getProofImageUrl={getProofImageUrl} onSaveMonitoringPlan={canManageRoutines && onSaveMonitoringPlan ? (plan, validationMode) => onSaveMonitoringPlan(selected.routineId, plan, validationMode) : undefined} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
+  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={backToList} start={start} edit={canManageRoutines} initialTab={detailInitialTab} initialEventId={focusedEventId} onInitialEventConsumed={onFocusedEventConsumed} getProofImageUrl={getProofImageUrl} onSaveMonitoringPlan={canManageRoutines && onSaveMonitoringPlan ? (plan, validationMode) => onSaveMonitoringPlan(selected.routineId, plan, validationMode) : undefined} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
 
   const setRequestStatus = (routineId: string, status: RequestStatus) => {
     setRequestStatuses((current) => ({ ...current, [routineId]: status }));

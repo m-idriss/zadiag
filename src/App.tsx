@@ -76,6 +76,7 @@ export function App() {
   const [resetNoticeKey, setResetNoticeKey] = useState<MessageKey>();
   const [savingRoutineId, setSavingRoutineId] = useState<string>();
   const [selectedSessionId, setSelectedSessionId] = useState<string>();
+  const [focusedHistoryEventId, setFocusedHistoryEventId] = useState<string>();
   const [lastSyncAt, setLastSyncAt] = useState<string>();
   const [dashboardSummaryRange, setDashboardSummaryRange] = useState<SummaryRange>(readDashboardSummaryRange);
   const [serviceWorkerStatus, setServiceWorkerStatus] = useState<'unsupported' | 'registered' | 'notRegistered'>(
@@ -232,6 +233,11 @@ export function App() {
     setResult(undefined);
     startCapture(event);
   };
+  const openHistoryEvent = (event: VerificationEvent) => {
+    if (!state.routineAssignments.some((assignment) => assignment.routineId === event.routineId)) return;
+    setFocusedHistoryEventId(event.id);
+    setTab('routines');
+  };
 
   const reset = async () => {
     const previousRole = state.role;
@@ -241,6 +247,7 @@ export function App() {
     setResult(undefined);
     setSubmitError(undefined);
     setSelectedSessionId(undefined);
+    setFocusedHistoryEventId(undefined);
     setSavingRoutineId(undefined);
     resetDismissedUpdate();
     setResetNoticeKey(resetNoticeMessageKey(previousRole));
@@ -367,6 +374,8 @@ export function App() {
               }
             } : undefined}
             savingRoutineId={savingRoutineId}
+            focusedEventId={focusedHistoryEventId}
+            onFocusedEventConsumed={() => setFocusedHistoryEventId(undefined)}
             t={t}
           />
       : tab === 'settings'
@@ -418,6 +427,7 @@ export function App() {
               onSelectParticipant={repository.selectActiveParticipant
                 ? (participantId) => { void repository.selectActiveParticipant?.(participantId).then(sync); }
                 : undefined}
+              onOpenHistoryEvent={openHistoryEvent}
               t={t}
             />
           : <ChildDashboard
@@ -427,6 +437,7 @@ export function App() {
               retake={retryCapture}
               summaryRange={dashboardSummaryRange}
               onSummaryRangeChange={setDashboardSummaryRange}
+              onOpenHistoryEvent={openHistoryEvent}
               t={t}
             />;
     content = (

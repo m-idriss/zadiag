@@ -32,6 +32,7 @@ const readStoredDetailTab = (assignmentId: string) => {
 
 const defaultDetailTab = (assignmentId: string, edit?: boolean, initialTab?: DetailInitialTab): DetailTab => {
   if (initialTab === 'plan') return 'plan';
+  if (initialTab === 'tracking') return 'tracking';
   if (initialTab === 'overview') return 'details';
   const stored = readStoredDetailTab(assignmentId);
   if (stored && (stored !== 'plan' || edit)) return stored;
@@ -150,7 +151,7 @@ const renderRoutineStepIcon = (icon: string) => {
   return icon;
 };
 
-export function RoutineDetailScreen({ assignment, state, back, start, getProofImageUrl, t, edit, initialTab, onSaveMonitoringPlan, routinePlanBusy }: {
+export function RoutineDetailScreen({ assignment, state, back, start, getProofImageUrl, t, edit, initialTab, initialEventId, onInitialEventConsumed, onSaveMonitoringPlan, routinePlanBusy }: {
   assignment: RoutineAssignment;
   state: AppState;
   back: () => void;
@@ -159,6 +160,8 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   t: (key: MessageKey) => string;
   edit?: boolean;
   initialTab?: DetailInitialTab;
+  initialEventId?: string;
+  onInitialEventConsumed?: () => void;
   onSaveMonitoringPlan?: (plan: RoutineAssignment['plan'], validationMode?: RoutineValidationMode) => Promise<void>;
   routinePlanBusy?: boolean;
 }) {
@@ -166,7 +169,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   const [proofUrls, setProofUrls] = useState<Record<string, string>>({});
   const [proofErrors, setProofErrors] = useState<Record<string, boolean>>({});
   const [enlargedProofUrl, setEnlargedProofUrl] = useState<string>();
-  const [selectedHistoryEventId, setSelectedHistoryEventId] = useState<string>();
+  const [selectedHistoryEventId, setSelectedHistoryEventId] = useState<string | undefined>(initialEventId);
   const proofDialogRef = useModalFocus<HTMLDivElement>(Boolean(enlargedProofUrl), () => setEnlargedProofUrl(undefined));
   const historyDialogRef = useModalFocus<HTMLDivElement>(Boolean(selectedHistoryEventId), () => setSelectedHistoryEventId(undefined));
   const todayHeatmapRef = useRef<HTMLSpanElement | null>(null);
@@ -186,6 +189,10 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   const tabs: DetailTab[] = edit ? ['plan', 'details', 'tracking'] : ['details', 'tracking'];
   const analysisSourceLabel = (source?: VerificationEvent['analysisSource']) => source ? t(source === 'ai' ? 'analysisSourceAi' : source === 'fallback' ? 'analysisSourceFallback' : 'analysisSourceSelf') : undefined;
   const reviewStatusLabel = (status?: VerificationEvent['reviewStatus']) => status ? t(status === 'approved' ? 'historyReviewApproved' : status === 'rejected' ? 'historyReviewRejected' : 'historyReviewPending') : undefined;
+
+  useEffect(() => {
+    if (initialEventId) onInitialEventConsumed?.();
+  }, [initialEventId, onInitialEventConsumed]);
   const scoreLabel = (score?: number) => score === undefined ? undefined : `${Math.round(score * 100)}%`;
 
   useEffect(() => {

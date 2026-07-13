@@ -54,6 +54,7 @@ export function RoutineHistoryPanel({
   titleId = 'routine-history-panel-title',
   retryEvents,
   onRetake,
+  onOpenEvent,
   onRequestCheck,
   t,
 }: {
@@ -63,6 +64,7 @@ export function RoutineHistoryPanel({
   titleId?: string;
   retryEvents?: VerificationEvent[];
   onRetake?: (event: VerificationEvent) => void;
+  onOpenEvent?: (event: VerificationEvent) => void;
   onRequestCheck?: (routineId: string) => Promise<void>;
   t: (key: MessageKey) => string;
 }) {
@@ -192,7 +194,7 @@ export function RoutineHistoryPanel({
               return (
                 <ListRow
                   as="section"
-                  className="card history-row parent-history-row"
+                  className={`card history-row parent-history-row${onOpenEvent ? ' history-row-clickable' : ''}`}
                   variant="bare"
                   icon={<AppIcon name={routineIconName(visual?.icon)} />}
                   iconClassName="history-icon routine-history-icon"
@@ -207,6 +209,8 @@ export function RoutineHistoryPanel({
                   )}
                   style={visual?.style}
                   trailing={(
+                    <>
+                    {onOpenEvent ? <button type="button" className="history-row-open-button" aria-label={`${t('historyDetailTitle')} · ${visual?.name ?? t('routine')} · ${formatDateTime(event.requestedAt)}`} onClick={() => onOpenEvent(event)} /> : null}
                     <div className="history-row-actions">
                       <StatusPill status={event.status} t={t} />
                       {canRequestCheck ? (
@@ -223,6 +227,7 @@ export function RoutineHistoryPanel({
                       ) : null}
                       {canRetake ? <button type="button" className="history-retake-button" onClick={() => onRetake?.(event)}>{t('retakeShort')}</button> : null}
                     </div>
+                    </>
                   )}
                   key={event.id}
                 />

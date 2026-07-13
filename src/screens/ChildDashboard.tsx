@@ -26,6 +26,7 @@ export function ChildDashboard({
   retake,
   summaryRange: controlledSummaryRange,
   onSummaryRangeChange,
+  onOpenHistoryEvent,
   t,
 }: {
   state: AppState;
@@ -34,6 +35,7 @@ export function ChildDashboard({
   retake?: (event: VerificationEvent) => void;
   summaryRange?: SummaryRange;
   onSummaryRangeChange?: (range: SummaryRange) => void;
+  onOpenHistoryEvent?: (event: VerificationEvent) => void;
   t: (key: MessageKey) => string;
 }) {
   const [localSummaryRange, setLocalSummaryRange] = useState<SummaryRange>('day');
@@ -221,7 +223,7 @@ export function ChildDashboard({
     <section className="today-section participant-history-section dashboard-summary-section" aria-labelledby="participant-summary-title">
       <h2 id="participant-summary-title">{t('overview')}</h2>
       <AdherenceSummaryCard events={historyEvents} range={summaryRange} onRangeChange={setSummaryRange} t={t} />
-      <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedHistoryEvents} retryEvents={state.events} locale={state.locale} titleId="participant-history-title" onRetake={retake} t={t} />
+      <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedHistoryEvents} retryEvents={state.events} locale={state.locale} titleId="participant-history-title" onRetake={retake} onOpenEvent={onOpenHistoryEvent} t={t} />
     </section>
   );
   return (

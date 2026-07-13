@@ -181,6 +181,36 @@ describe('participant routines navigation', () => {
     expect(container.textContent).toContain('Routines');
   });
 
+  it('opens a home history event directly in routine tracking details', async () => {
+    await import('./RoutineDetailScreen');
+    const assignment = createDefaultRoutineAssignment('2026-07-02T08:00:00.000Z');
+    const historyEvent = {
+      id: 'history-focus',
+      routineId: assignment.routineId,
+      sessionId: 'history-session',
+      requestedAt: '2026-07-02T10:00:00.000Z',
+      capturedAt: '2026-07-02T10:10:00.000Z',
+      expiresAt: '2026-07-02T11:00:00.000Z',
+      status: 'detected' as const,
+      reason: 'Validated from home',
+    };
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      routineAssignments: [assignment], events: [historyEvent], routinesLoaded: true, routinesError: false,
+    };
+    const consumed = vi.fn();
+
+    await act(async () => {
+      root.render(<RoutinesScreen state={state} focusedEventId={historyEvent.id} onFocusedEventConsumed={consumed} t={(key) => translate('en', key)} />);
+      await new Promise((resolve) => window.setTimeout(resolve, 100));
+    });
+
+    expect(container.querySelector('.routine-tabs button[aria-current="page"]')?.textContent).toBe('Tracking');
+    expect(container.querySelector('.history-detail-dialog')?.textContent).toContain('Validated from home');
+    expect(consumed).toHaveBeenCalledOnce();
+  });
+
   it('keeps participant routine management read-only even when edit callbacks are provided', async () => {
     await import('./RoutineDetailScreen');
     const assignment = createDefaultRoutineAssignment();
