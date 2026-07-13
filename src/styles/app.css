@@ -417,9 +417,11 @@ button:disabled { cursor: not-allowed; }
   z-index: 45;
   top: calc(9px + env(safe-area-inset-top));
   left: 50%;
-  width: min(220px, calc(100% - 44px));
-  display: grid;
-  gap: 5px;
+  width: fit-content;
+  max-width: calc(100% - 44px);
+  display: flex;
+  align-items: center;
+  gap: 9px;
   padding: 8px 12px;
   border: 1px solid rgba(255,255,255,.72);
   border-radius: 14px;
@@ -431,9 +433,13 @@ button:disabled { cursor: not-allowed; }
   transition: opacity .16s ease, transform .2s cubic-bezier(.22,1,.36,1);
 }
 .pull-update-indicator.visible { opacity: 1; transform: translate(-50%, 0) scale(1); }
-.pull-update-indicator small { color: #fff; font-size: 11px; font-weight: 850; text-align: center; }
-.pull-update-bar { height: 4px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.2); }
-.pull-update-bar > div { height: 100%; border-radius: inherit; background: #fff; transition: width .1s linear; }
+.pull-update-indicator small { color: #fff; font-size: 11px; font-weight: 850; white-space: nowrap; }
+.pull-update-spinner { width: 22px; height: 22px; flex: 0 0 22px; overflow: visible; transform: rotate(-90deg); }
+.pull-update-spinner circle { fill: none; stroke-width: 2.5; }
+.pull-update-spinner-track { stroke: rgba(255,255,255,.22); }
+.pull-update-spinner-progress { stroke: #fff; stroke-linecap: round; transition: stroke-dasharray .1s linear; }
+.pull-update-spinner.spinning { animation: pull-update-spin .8s linear infinite; }
+@keyframes pull-update-spin { to { transform: rotate(270deg); } }
 .app-snackbar {
   position: fixed;
   z-index: 50;

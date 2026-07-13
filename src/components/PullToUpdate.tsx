@@ -84,6 +84,7 @@ export function PullToUpdate({
       ? t('settingsPullUpdateRelease')
       : t('settingsPullUpdatePull');
   const visible = updating || pullDistance > 0;
+  const spinnerProgress = updating ? 72 : progress;
 
   return (
     <div
@@ -94,8 +95,11 @@ export function PullToUpdate({
       onTouchCancel={resetPull}
     >
       <div className={`pull-update-indicator ${visible ? 'visible' : ''}`} aria-live="polite">
+        <svg className={`pull-update-spinner ${updating ? 'spinning' : ''}`} viewBox="0 0 24 24" aria-hidden="true">
+          <circle className="pull-update-spinner-track" cx="12" cy="12" r="9" pathLength="100" />
+          <circle className="pull-update-spinner-progress" cx="12" cy="12" r="9" pathLength="100" style={{ strokeDasharray: `${spinnerProgress} 100` }} />
+        </svg>
         <small>{label}</small>
-        <div className="pull-update-bar" aria-hidden="true"><div style={{ width: `${progress}%` }} /></div>
       </div>
       {children}
     </div>
