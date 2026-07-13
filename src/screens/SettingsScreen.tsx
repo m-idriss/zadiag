@@ -8,7 +8,7 @@ import {
   timeOutline,
   trashOutline,
 } from 'ionicons/icons';
-import type { AppPreferences, Locale, MembershipRole, ParticipantAccess, ParticipantMember, PushSubscriptionHealth, Role, VerificationEvent } from '../domain/models';
+import type { AppPreferences, Locale, MembershipRole, ParticipantAccess, ParticipantMember, ProfileColorKey, PushSubscriptionHealth, Role, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { buildDiagnosticsEmailBody, createCorrelationId } from '../services/appLogs';
 import type { AppUpdateInfo } from '../services/appUpdate';
@@ -45,6 +45,7 @@ export function SettingsScreen({
   activeParticipantId,
   accountDisplayName,
   updateAccountProfile,
+  updateParticipantColor,
   selectParticipant,
   createParticipant,
   inviteParticipantMember,
@@ -79,6 +80,7 @@ export function SettingsScreen({
   activeParticipantId?: string;
   accountDisplayName?: string;
   updateAccountProfile?: (displayName: string) => Promise<string>;
+  updateParticipantColor?: (participantId: string, profileColor: ProfileColorKey) => Promise<ProfileColorKey>;
   selectParticipant?: (participantId: string) => Promise<void>;
   createParticipant?: (displayName: string, selfManaged: boolean) => Promise<string>;
   inviteParticipantMember?: (participantId: string, role: MembershipRole) => Promise<{ code: string; expiresAt: string }>;
@@ -255,6 +257,7 @@ export function SettingsScreen({
         activeParticipantId={activeParticipantId}
         accountDisplayName={accountDisplayName}
         onUpdateAccountDisplayName={updateAccountProfile}
+        onUpdateParticipantColor={updateParticipantColor}
         onSelect={selectParticipant}
         onCreate={createParticipant}
         onInvite={inviteParticipantMember}

@@ -10,6 +10,7 @@ import { presentRoutine } from '../domain/routinePresentation';
 import { assignableRoutineTemplates, marketplaceFromTemplates, presentRoutineTemplate } from '../domain/routineMarketplace';
 import { withResolvedEventStatuses } from '../domain/adherence';
 import { readUiStorageJson, readUiStorageString, removeUiStorageItem, writeUiStorageString } from '../services/uiStorage';
+import { profileColorFor } from '../domain/profileColor';
 
 const RoutineDetailScreen = lazy(() => import('./RoutineDetailScreen').then((module) => ({ default: module.RoutineDetailScreen })));
 
@@ -316,6 +317,7 @@ export function RoutinesScreen({
           <ProfileContextCard
             className="routines-add-button"
             title={activeParticipantAccess?.participant.displayName ?? state.family.childName}
+            profileColor={activeParticipantAccess ? profileColorFor(activeParticipantAccess.participant) : undefined}
             actionIcon={addCircleOutline}
             actionLabel={t('addRoutine')}
             expanded={catalogOpen}
@@ -360,6 +362,8 @@ export function RoutinesScreen({
           {assignError && <p role="alert" className="request-feedback error">{t('routineAddError')}</p>}
         </section>
       )}
+      </div> : activeParticipantAccess ? <div className="card relationship-manager-card participant-switcher-static routines-profile-static">
+        <ProfileContextCard as="div" title={activeParticipantAccess.participant.displayName} profileColor={profileColorFor(activeParticipantAccess.participant)} />
       </div> : null}
       </div>
       <section className="settings-section routines-list-section" aria-labelledby="routines-list-title">

@@ -25,6 +25,7 @@ import {
   type MembershipRole,
   type ParticipantAccess,
   type ParticipantMember,
+  type ProfileColorKey,
   type Role,
   type RoutineAssignment,
   type RoutineAssignmentCreator,
@@ -34,6 +35,7 @@ import {
 import { routineFromCatalog } from '../domain/routineCatalog';
 import { isFreshCapture } from '../domain/adherence';
 import { activeParticipantAccess, preferredParticipantId } from '../domain/participantAccess';
+import { isProfileColorKey } from '../domain/profileColor';
 import { initialRemoteState, PREFERENCES_KEY } from './appStateDefaults';
 import { coalesceInFlight } from './idempotency';
 import { readUiStorageString, removeUiStorageItem, writeUiStorageString } from './uiStorage';
@@ -50,6 +52,7 @@ interface UserProfile {
 }
 interface ParticipantDocument {
   displayName?: string;
+  profileColor?: unknown;
   userId?: string;
   status?: string;
 }
@@ -177,6 +180,18 @@ export class FirebaseRepository implements AppRepository {
     await this.loadParticipantAccess();
     this.emit();
     return result.data.displayName;
+  }
+
+  async updateParticipantColor(participantId: string, profileColor: ProfileColorKey) {
+    const updateColor = httpsCallable<
+      { participantId: string; profileColor: ProfileColorKey },
+      { participantId: string; profileColor: ProfileColorKey }
+    >(this.services.functions, 'updateParticipantColor');
+    const result = await updateColor({ participantId, profileColor });
+    const access = this.state.participantAccess?.find((entry) => entry.participant.id === participantId);
+    if (access) access.participant.profileColor = result.data.profileColor;
+    this.emit();
+    return result.data.profileColor;
   }
 
   async createParticipant(displayName: string, selfManaged = false) {
@@ -617,6 +632,7 @@ export class FirebaseRepository implements AppRepository {
         participant: {
           id: participantId,
           displayName: String(participantData.displayName ?? ''),
+          profileColor: isProfileColorKey(participantData.profileColor) ? participantData.profileColor : undefined,
           selfManaged: participantData.userId === this.user!.uid && membershipData.label === 'self',
         },
         membership: {
@@ -672,6 +688,15 @@ export class FirebaseRepository implements AppRepository {
     this.state.routinesLoaded = false;
     this.state.routinesError = false;
     const participantRef = doc(this.services.db, 'participants', participantId);
+    this.remoteSubscriptions.push(onSnapshot(participantRef, (snapshot) => {
+      const data = snapshot.data() as ParticipantDocument | undefined;
+      const currentAccess = this.state.participantAccess?.find((entry) => entry.participant.id === participantId);
+      if (!data || !currentAccess) return;
+      currentAccess.participant.displayName = String(data.displayName ?? currentAccess.participant.displayName);
+      currentAccess.participant.profileColor = isProfileColorKey(data.profileColor) ? data.profileColor : undefined;
+      this.state.family.childName = currentAccess.participant.displayName;
+      this.emit();
+    }));
     if (this.user) {
       this.remoteSubscriptions.push(onSnapshot(doc(participantRef, 'pushSubscriptions', this.user.uid), (snapshot) => {
         const data = snapshot.data() as PushSubscriptionDocument | undefined;

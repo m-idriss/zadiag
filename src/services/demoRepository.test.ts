@@ -167,6 +167,8 @@ describe('DemoRepository compatibility', () => {
       membership: { role: 'owner', status: 'active', label: 'self' },
     }));
     await expect(repository.inviteParticipantMember(selfManagedId, 'caregiver')).resolves.toMatchObject({ code: 'ZI-123456' });
+    await expect(repository.updateParticipantColor(selfManagedId, 'violet')).resolves.toBe('violet');
+    expect(repository.snapshot().participantAccess?.find((entry) => entry.participant.id === selfManagedId)?.participant.profileColor).toBe('violet');
     await expect(repository.acceptParticipantInvitation('invalid')).rejects.toThrow('invalid_code');
     await expect(repository.acceptParticipantInvitation('ZI-123456')).resolves.toBe('demo-invited');
     expect(repository.snapshot().activeParticipantId).toBe('demo-invited');

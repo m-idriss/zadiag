@@ -11,6 +11,8 @@ import { presentRoutine } from '../domain/routinePresentation';
 import { eventWindowLabel, plannedWindowLabel } from '../domain/taskTimeLabel';
 import { canRetakeCapture, resolvedEventStatus, withResolvedEventStatuses } from '../domain/adherence';
 import { upcomingRoutineChecks } from '../domain/dashboardChecks';
+import { ProfileContextCard } from '../components/ProfileContextCard';
+import { profileColorFor } from '../domain/profileColor';
 
 const isToday = (value: string, now = new Date()) => {
   const date = new Date(value);
@@ -43,7 +45,8 @@ export function ChildDashboard({
   const setSummaryRange = onSummaryRangeChange ?? setLocalSummaryRange;
   const now = Date.now();
   const nowDate = useMemo(() => new Date(now), [now]);
-  const participantInitial = state.family.childName.trim().charAt(0).toUpperCase() || '?';
+  const activeParticipantAccess = state.participantAccess?.find((entry) => entry.participant.id === state.activeParticipantId)
+    ?? state.participantAccess?.find((entry) => entry.membership.status === 'active');
   const today = state.events.filter((event) => isToday(event.requestedAt));
   const pending = today.filter((event) => (
     event.status === 'analyzing'
@@ -228,10 +231,16 @@ export function ChildDashboard({
   );
   return (
     <div className="content-screen child-home">
-      <header className="screen-header participant-header">
-        <div><h1>{t('activity')}</h1><p>{formatMessage(t('participantTodaySubtitle'), { name: state.family.childName })}</p></div>
-        <div className="avatar" aria-hidden="true">{participantInitial}</div>
-      </header>
+      <div className="page-context-top participant-context-top">
+        <header className="screen-header page-context-heading"><div><h1>{t('activity')}</h1></div></header>
+        <div className="card relationship-manager-card participant-switcher-static">
+          <ProfileContextCard
+            as="div"
+            title={activeParticipantAccess?.participant.displayName ?? state.family.childName}
+            profileColor={activeParticipantAccess ? profileColorFor(activeParticipantAccess.participant) : undefined}
+          />
+        </div>
+      </div>
       {pendingSection}
       {upcomingSection}
       {attentionSection}

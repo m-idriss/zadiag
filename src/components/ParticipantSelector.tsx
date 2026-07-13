@@ -3,6 +3,7 @@ import { checkmarkOutline, personCircleOutline } from 'ionicons/icons';
 import type { ParticipantAccess } from '../domain/models';
 import { ProfileContextCard } from './ProfileContextCard';
 import { SvgIcon } from './SvgIcon';
+import { profileColorFor } from '../domain/profileColor';
 
 export function ParticipantSelector({ access, activeParticipantId, label, title, subtitle, actionLabel, onSelect }: {
   access: ParticipantAccess[] | undefined;
@@ -23,7 +24,7 @@ export function ParticipantSelector({ access, activeParticipantId, label, title,
   const displayTitle = title ?? `${label} ${selected.participant.displayName}`;
   if (activeAccess.length < 2 || !onSelect) {
     return <div className="card relationship-manager-card participant-switcher-static">
-      <ProfileContextCard as="div" title={displayTitle} subtitle={subtitle} />
+      <ProfileContextCard as="div" title={displayTitle} subtitle={subtitle} profileColor={profileColorFor(selected.participant)} />
     </div>;
   }
   return (
@@ -35,6 +36,7 @@ export function ParticipantSelector({ access, activeParticipantId, label, title,
         subtitle={subtitle}
         actionIcon={personCircleOutline}
         actionLabel={`${actionLabel ?? label} : ${selected.participant.displayName}`}
+        profileColor={profileColorFor(selected.participant)}
       />
       <div className="participant-switcher-menu" role="group" aria-label={label}>
         <span className="participant-switcher-label">{label}</span>
@@ -51,7 +53,7 @@ export function ParticipantSelector({ access, activeParticipantId, label, title,
                 if (!active) onSelect(entry.participant.id);
               }}
             >
-              <span className="participant-switcher-option-avatar" aria-hidden="true">{entry.participant.displayName.trim().charAt(0).toUpperCase() || '?'}</span>
+              <span className="participant-switcher-option-avatar" style={{ color: profileColorFor(entry.participant) }} aria-hidden="true">{entry.participant.displayName.trim().charAt(0).toUpperCase() || '?'}</span>
               <span>{entry.participant.displayName}</span>
               {active ? <SvgIcon icon={checkmarkOutline} /> : null}
             </button>

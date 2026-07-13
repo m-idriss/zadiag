@@ -141,10 +141,12 @@ export interface FamilyState {
 
 export type MembershipRole = 'owner' | 'caregiver' | 'participant' | 'viewer';
 export type MembershipStatus = 'active' | 'suspended';
+export type ProfileColorKey = 'blue' | 'indigo' | 'violet' | 'rose' | 'coral' | 'amber' | 'emerald' | 'teal';
 
 export interface ParticipantSummary {
   id: string;
   displayName: string;
+  profileColor?: ProfileColorKey;
   selfManaged?: boolean;
 }
 

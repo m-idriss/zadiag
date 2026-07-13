@@ -2,6 +2,7 @@ import type {
   AnalysisResult,
   AppState,
   MembershipRole,
+  ProfileColorKey,
   MonitoringPlan,
   Role,
   RoutineAssignment,
@@ -253,6 +254,14 @@ export class DemoRepository implements AppRepository {
     }));
     this.persist();
     return normalizedName;
+  }
+
+  async updateParticipantColor(participantId: string, profileColor: ProfileColorKey) {
+    const access = activeParticipantAccess(this.state.participantAccess, participantId);
+    if (!access || !['owner', 'participant'].includes(access.membership.role)) throw new Error('permission_denied');
+    access.participant.profileColor = profileColor;
+    this.persist();
+    return profileColor;
   }
 
   async createParticipant(displayName: string, selfManaged = false) {

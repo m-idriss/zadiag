@@ -176,6 +176,7 @@ describe('RelationshipManager', () => {
     document.body.append(container);
     root = createRoot(container);
     const updateAccount = vi.fn().mockResolvedValue('Idriss');
+    const updateColor = vi.fn().mockResolvedValue('violet');
     act(() => root?.render(<RelationshipManager
       access={[{
         participant: { id: 'yoan-profile', displayName: 'Yoan' },
@@ -189,6 +190,7 @@ describe('RelationshipManager', () => {
       activeParticipantId="yoan-profile"
       accountDisplayName="Idriss"
       onUpdateAccountDisplayName={updateAccount}
+      onUpdateParticipantColor={updateColor}
       t={(key) => translate('en', key)}
     />));
     expandManager();
@@ -198,6 +200,10 @@ describe('RelationshipManager', () => {
     expect(container.textContent).toContain('Participant');
     const memberNames = Array.from(container.querySelectorAll('.relationship-member-row strong')).map((item) => item.textContent);
     expect(memberNames).toEqual(['Idriss', 'Sarah', 'Yoan']);
+    const violet = container.querySelector<HTMLButtonElement>('button[aria-label="Violet"]');
+    expect(container.querySelectorAll('.profile-color-options button')).toHaveLength(8);
+    await act(async () => violet?.click());
+    expect(updateColor).toHaveBeenCalledWith('yoan-profile', 'violet');
 
     const accountInput = container.querySelector('input[aria-label="Your name"]') as HTMLInputElement;
     act(() => {

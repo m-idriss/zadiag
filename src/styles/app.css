@@ -771,6 +771,10 @@ button:disabled { cursor: not-allowed; }
 .profile-context-icon .svg-icon { font-size: 21px; }
 .profile-context-summary { min-width: 0; display: grid; gap: 3px; }
 .profile-context-summary strong { overflow: hidden; font-size: 14px; font-weight: 720; text-overflow: ellipsis; white-space: nowrap; }
+.profile-context-card.has-profile-color { box-shadow: inset 4px 0 var(--profile-color), var(--shadow-sm); }
+.profile-context-card.has-profile-color .profile-context-summary strong { color: var(--profile-color); font-weight: 850; }
+.page-context-top .profile-context-card.has-profile-color .profile-context-icon,
+.routines-top .profile-context-card.has-profile-color .profile-context-icon { background: linear-gradient(145deg, var(--profile-color), color-mix(in srgb, var(--profile-color) 76%, #15324b)); box-shadow: 0 8px 18px color-mix(in srgb, var(--profile-color) 22%, transparent); }
 .profile-context-summary small { color: var(--teal); font-size: 10px; font-weight: 750; letter-spacing: .025em; }
 .profile-context-action { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; background: var(--mint); color: var(--teal); transition: transform .18s ease, background .18s ease; }
 .profile-context-action .svg-icon { font-size: 22px; }
@@ -792,6 +796,13 @@ button:disabled { cursor: not-allowed; }
 .relationship-account-controls input { min-width: 0; min-height: 42px; padding: 0 12px; border: 1px solid var(--border); border-radius: 10px; background: white; color: var(--navy); font: inherit; }
 .relationship-account-controls button { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 14px; border: 0; border-radius: 10px; background: var(--navy); color: white; font-weight: 800; }
 .relationship-account-controls button:disabled { opacity: .55; }
+.relationship-color-picker { display: grid; gap: 10px; padding-top: 14px; border-top: 1px solid var(--border); }
+.profile-color-options { display: grid; grid-template-columns: repeat(8, minmax(30px, 1fr)); gap: 7px; }
+.profile-color-options button { min-width: 0; height: 38px; display: grid; place-items: center; padding: 0; border: 2px solid transparent; border-radius: 11px; background: color-mix(in srgb, var(--swatch-color) 12%, white); }
+.profile-color-options button > span { width: 20px; height: 20px; border-radius: 50%; background: var(--swatch-color); box-shadow: 0 2px 7px color-mix(in srgb, var(--swatch-color) 25%, transparent); }
+.profile-color-options button.active { border-color: var(--swatch-color); box-shadow: 0 0 0 2px white inset; }
+.profile-color-options button.active > span::after { content: ''; width: 7px; height: 4px; display: block; margin: 6px auto 0; border-left: 2px solid white; border-bottom: 2px solid white; transform: rotate(-45deg); }
+.profile-color-options button:disabled { opacity: .58; }
 .relationship-selected-scope-heading { padding-top: 14px; border-top: 1px solid var(--border); }
 .relationship-profile-actions-body { display: grid; gap: 14px; padding: 2px 0 12px; }
 .relationship-profile-actions-body > small { color: var(--muted); font-size: 11px; line-height: 1.35; }

@@ -1,16 +1,18 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
 import { settingsOutline } from 'ionicons/icons';
-import type { MembershipRole, ParticipantAccess, ParticipantMember } from '../domain/models';
+import type { MembershipRole, ParticipantAccess, ParticipantMember, ProfileColorKey } from '../domain/models';
 import { formatMessage, type MessageKey } from '../services/i18n';
 import { ProfileContextCard } from './ProfileContextCard';
+import { profileColorFor, profileColorHex, profileColorKeyFor, profileColorPalette } from '../domain/profileColor';
 
 type InviteRole = MembershipRole;
 
-export function RelationshipManager({ access, activeParticipantId, accountDisplayName, onUpdateAccountDisplayName, onSelect, onCreate, onInvite, onAccept, onLeave, onRemoveMember, onDeleteParticipant, onCreateRecovery, onRecover, hideHeading = false, t }: {
+export function RelationshipManager({ access, activeParticipantId, accountDisplayName, onUpdateAccountDisplayName, onUpdateParticipantColor, onSelect, onCreate, onInvite, onAccept, onLeave, onRemoveMember, onDeleteParticipant, onCreateRecovery, onRecover, hideHeading = false, t }: {
   access: ParticipantAccess[] | undefined;
   activeParticipantId?: string;
   accountDisplayName?: string;
   onUpdateAccountDisplayName?: (displayName: string) => Promise<string>;
+  onUpdateParticipantColor?: (participantId: string, profileColor: ProfileColorKey) => Promise<ProfileColorKey>;
   onSelect?: (participantId: string) => Promise<void>;
   onCreate?: (displayName: string, selfManaged: boolean) => Promise<string>;
   onInvite?: (participantId: string, role: InviteRole) => Promise<{ code: string; expiresAt: string }>;
@@ -31,7 +33,7 @@ export function RelationshipManager({ access, activeParticipantId, accountDispla
   const [invitationCode, setInvitationCode] = useState<string>();
   const [recoveryCode, setRecoveryCode] = useState<string>();
   const [recoverCode, setRecoverCode] = useState('');
-  const [busy, setBusy] = useState<'account' | 'create' | 'invite' | 'accept' | 'recovery' | 'remove' | 'delete'>();
+  const [busy, setBusy] = useState<'account' | 'color' | 'create' | 'invite' | 'accept' | 'recovery' | 'remove' | 'delete'>();
   const [removingUid, setRemovingUid] = useState<string>();
   const [error, setError] = useState<MessageKey>();
   const [open, setOpen] = useState(false);
@@ -89,6 +91,7 @@ export function RelationshipManager({ access, activeParticipantId, accountDispla
         <ProfileContextCard
           className="relationship-manager-toggle"
           title={selectedAccess?.participant.displayName ?? t('relationshipManagerTitle')}
+          profileColor={selectedAccess ? profileColorFor(selectedAccess.participant) : undefined}
           actionIcon={settingsOutline}
           actionLabel={t('relationshipManageAction')}
           expanded={open}
@@ -123,6 +126,32 @@ export function RelationshipManager({ access, activeParticipantId, accountDispla
                 {entry.participant.selfManaged ? <small>{t('relationshipSelfManaged')}</small> : null}
               </summary>
               {entrySelected ? <div className="relationship-profile-actions-body">
+
+        {selectedParticipantId && selectedAccess && onUpdateParticipantColor && ['owner', 'participant'].includes(selectedAccess.membership.role) ? (
+          <section className="relationship-color-picker" aria-labelledby="relationship-color-title">
+            <div className="relationship-subsection-heading">
+              <h3 id="relationship-color-title">{t('profileColorTitle')}</h3>
+              <small>{t('profileColorHint')}</small>
+            </div>
+            <div className="profile-color-options">
+              {profileColorPalette.map((color) => {
+                const selected = profileColorKeyFor(selectedAccess.participant) === color.key;
+                const colorLabel = t(`profileColor${color.key[0].toUpperCase()}${color.key.slice(1)}` as MessageKey);
+                return <button
+                  type="button"
+                  key={color.key}
+                  className={selected ? 'active' : undefined}
+                  style={{ '--swatch-color': profileColorHex(color.key) } as CSSProperties}
+                  aria-label={colorLabel}
+                  aria-pressed={selected}
+                  aria-busy={busy === 'color' && selected}
+                  disabled={Boolean(busy)}
+                  onClick={() => { void run('color', () => onUpdateParticipantColor(selectedParticipantId, color.key).then(() => undefined)); }}
+                ><span aria-hidden="true" /></button>;
+              })}
+            </div>
+          </section>
+        ) : null}
 
         {isOwner && selectedParticipantId ? (
           <section className="relationship-team" aria-labelledby="relationship-team-title">

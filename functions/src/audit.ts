@@ -11,6 +11,7 @@ export type AuditAction =
   | 'reset_account'
   | 'create_participant'
   | 'update_account_profile'
+  | 'update_participant_color'
   | 'create_relationship_invitation'
   | 'accept_relationship_invitation'
   | 'migrate_family_relationships'

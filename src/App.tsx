@@ -397,6 +397,7 @@ export function App() {
             activeParticipantId={state.activeParticipantId}
             accountDisplayName={state.accountDisplayName}
             updateAccountProfile={repository.updateAccountProfile ? async (displayName) => { const name = await repository.updateAccountProfile!(displayName); sync(); return name; } : undefined}
+            updateParticipantColor={repository.updateParticipantColor ? async (participantId, profileColor) => { const color = await repository.updateParticipantColor!(participantId, profileColor); sync(); return color; } : undefined}
             selectParticipant={repository.selectActiveParticipant ? async (participantId) => { await repository.selectActiveParticipant?.(participantId); sync(); } : undefined}
             createParticipant={repository.createParticipant ? async (displayName, selfManaged) => { const id = await repository.createParticipant?.(displayName, selfManaged); sync(); return id!; } : undefined}
             inviteParticipantMember={repository.inviteParticipantMember ? (participantId, membershipRole) => repository.inviteParticipantMember!(participantId, membershipRole) : undefined}

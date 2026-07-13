@@ -16,7 +16,7 @@ import { recordAuditEvent } from './audit.js';
 import { expiredPendingCheckCleanupUpdate, staleCleanupCutoffs } from './cleanup.js';
 import { reportOperationalAlert, reportOperationalEvent } from './observability.js';
 import { shouldRecoverSyntheticPush } from './syntheticMonitor.js';
-import { canLeaveMembership, canRemoveMembership, createMembership, hasParticipantPermission, isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, membershipRoles, migrateLegacyFamilyRelationships, scheduledAggregatePaths, type MembershipRole } from './relationships.js';
+import { canLeaveMembership, canRemoveMembership, createMembership, hasParticipantPermission, isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, isProfileColorKey, membershipRoles, migrateLegacyFamilyRelationships, scheduledAggregatePaths, type MembershipRole } from './relationships.js';
 
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
   ?? (process.env.GCLOUD_PROJECT ? `${process.env.GCLOUD_PROJECT}.firebasestorage.app` : undefined);
@@ -624,6 +624,38 @@ export const updateAccountProfile = onCall({ region, cors, enforceAppCheck: true
     metadata: { updatedMemberships: activeMemberships.length },
   });
   return { displayName, updatedMemberships: activeMemberships.length };
+});
+
+export const updateParticipantColor = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = requireUid(request.auth);
+  const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
+  const profileColor = request.data?.profileColor;
+  if (!isProfileColorKey(profileColor)) throw new HttpsError('invalid-argument', 'The profile color is invalid.');
+  const participantRef = db.collection('participants').doc(participantId);
+  const membershipRef = participantRef.collection('memberships').doc(uid);
+  const now = new Date().toISOString();
+
+  await db.runTransaction(async (transaction) => {
+    const [participant, membership] = await Promise.all([
+      transaction.get(participantRef),
+      transaction.get(membershipRef),
+    ]);
+    if (!participant.exists || participant.data()?.status !== 'active') {
+      throw new HttpsError('not-found', 'The participant could not be found.');
+    }
+    const membershipData = membership.data();
+    if (!membership.exists || membershipData?.status !== 'active' || !['owner', 'participant'].includes(String(membershipData.role ?? ''))) {
+      throw new HttpsError('permission-denied', 'Only a primary responsible person or the participant can change this color.');
+    }
+    transaction.update(participantRef, { profileColor, updatedAt: now });
+  });
+  await recordAuditEvent(db, {
+    action: 'update_participant_color',
+    actorUid: uid,
+    participantId,
+    metadata: { profileColor },
+  });
+  return { participantId, profileColor };
 });
 
 export const createRelationshipInvitation = onCall({ region, cors, enforceAppCheck: true }, async (request) => {

@@ -5,11 +5,18 @@ import {
   canLeaveMembership,
   canRemoveMembership,
   createMembership,
+  isProfileColorKey,
   defaultPermissionsForRole,
   hasParticipantPermission,
   membershipPermissions,
   scheduledAggregatePaths,
 } from './relationships.js';
+
+test('accepts only supported participant profile colors', () => {
+  assert.equal(isProfileColorKey('violet'), true);
+  assert.equal(isProfileColorKey('navy'), false);
+  assert.equal(isProfileColorKey('#ffffff'), false);
+});
 
 test('defines explicit defaults for each membership role', () => {
   const owner = defaultPermissionsForRole('owner');

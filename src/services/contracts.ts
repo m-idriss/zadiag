@@ -1,4 +1,4 @@
-import type { AnalysisResult, AppPreferences, AppState, Locale, MembershipRole, MonitoringPlan, ParticipantMember, Role, RoutineValidationMode, VerificationEvent } from '../domain/models';
+import type { AnalysisResult, AppPreferences, AppState, Locale, MembershipRole, MonitoringPlan, ParticipantMember, ProfileColorKey, Role, RoutineValidationMode, VerificationEvent } from '../domain/models';
 
 export interface AppRepository {
   initialize(): Promise<void>;
@@ -7,6 +7,7 @@ export interface AppRepository {
   selectRole(role: Role): Promise<void>;
   selectActiveParticipant?(participantId: string): Promise<void>;
   updateAccountProfile?(displayName: string): Promise<string>;
+  updateParticipantColor?(participantId: string, profileColor: ProfileColorKey): Promise<ProfileColorKey>;
   createParticipant?(displayName: string, selfManaged?: boolean): Promise<string>;
   inviteParticipantMember?(participantId: string, role: MembershipRole): Promise<{ code: string; expiresAt: string }>;
   acceptParticipantInvitation?(code: string): Promise<string>;

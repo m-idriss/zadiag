@@ -1,4 +1,5 @@
 import { peopleOutline } from 'ionicons/icons';
+import type { CSSProperties } from 'react';
 import { SvgIcon } from './SvgIcon';
 
 type ProfileContextCardProps = {
@@ -11,6 +12,7 @@ type ProfileContextCardProps = {
   as?: 'button' | 'summary' | 'div';
   className?: string;
   onClick?: () => void;
+  profileColor?: string;
 };
 
 export function ProfileContextCard({
@@ -23,8 +25,10 @@ export function ProfileContextCard({
   as = 'button',
   className,
   onClick,
+  profileColor,
 }: ProfileContextCardProps) {
-  const classes = `profile-context-card${className ? ` ${className}` : ''}`;
+  const classes = `profile-context-card${profileColor ? ' has-profile-color' : ''}${className ? ` ${className}` : ''}`;
+  const style = profileColor ? { '--profile-color': profileColor } as CSSProperties : undefined;
   const content = <>
     <span className="profile-context-icon" aria-hidden="true"><SvgIcon icon={leadingIcon} /></span>
     <span className="profile-context-summary">
@@ -38,7 +42,7 @@ export function ProfileContextCard({
     ) : null}
   </>;
 
-  if (as === 'summary') return <summary className={classes} aria-label={actionLabel}>{content}</summary>;
-  if (as === 'div') return <div className={classes}>{content}</div>;
-  return <button type="button" className={classes} aria-label={actionLabel} aria-expanded={expanded} onClick={onClick}>{content}</button>;
+  if (as === 'summary') return <summary className={classes} style={style} aria-label={actionLabel}>{content}</summary>;
+  if (as === 'div') return <div className={classes} style={style}>{content}</div>;
+  return <button type="button" className={classes} style={style} aria-label={actionLabel} aria-expanded={expanded} onClick={onClick}>{content}</button>;
 }

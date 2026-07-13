@@ -1,4 +1,9 @@
 export const membershipRoles = ['owner', 'caregiver', 'participant', 'viewer'] as const;
+export const profileColorKeys = ['blue', 'indigo', 'violet', 'rose', 'coral', 'amber', 'emerald', 'teal'] as const;
+export type ProfileColorKey = typeof profileColorKeys[number];
+
+export const isProfileColorKey = (value: unknown): value is ProfileColorKey =>
+  typeof value === 'string' && profileColorKeys.includes(value as ProfileColorKey);
 export type MembershipRole = typeof membershipRoles[number];
 
 export const membershipPermissions = [

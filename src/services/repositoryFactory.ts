@@ -1,6 +1,6 @@
 import type { AppRepository } from './contracts';
 import { DemoRepository } from './demoRepository';
-import { type AppPreferences, type Locale, type MembershipRole, type MonitoringPlan, type Role, type RoutineValidationMode } from '../domain/models';
+import { type AppPreferences, type Locale, type MembershipRole, type MonitoringPlan, type ProfileColorKey, type Role, type RoutineValidationMode } from '../domain/models';
 import { firebaseEnabled } from './firebaseConfig';
 import { isLocalDemoEnvironment } from './browserEnvironment';
 import { initialRemoteState } from './appStateDefaults';
@@ -41,6 +41,12 @@ class LazyFirebaseRepository implements AppRepository {
     const repository = await this.load();
     if (!repository.updateAccountProfile) throw new Error('account_profile_update_unavailable');
     return repository.updateAccountProfile(displayName);
+  }
+
+  async updateParticipantColor(participantId: string, profileColor: ProfileColorKey) {
+    const repository = await this.load();
+    if (!repository.updateParticipantColor) throw new Error('participant_color_update_unavailable');
+    return repository.updateParticipantColor(participantId, profileColor);
   }
 
   async createParticipant(displayName: string, selfManaged?: boolean) {
