@@ -1,4 +1,4 @@
-name: 🏷️ Force app version bump
+name: Publish version-only release
 
 on:
   workflow_dispatch:
@@ -21,17 +21,22 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: version-only-release
+  cancel-in-progress: false
+
 jobs:
   bump-version:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
 
@@ -51,8 +56,12 @@ jobs:
             const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
             const versionType = process.env.VERSION_TYPE;
             const customVersion = process.env.CUSTOM_VERSION;
-            const parts = String(pkg.version || '0.0.0').split('.').map((v) => Number(v) || 0);
-            let [major, minor, patch] = parts;
+            const current = String(pkg.version || '0.0.0');
+            const parts = current.split('.').map(Number);
+            if (parts.length !== 3 || parts.some((part) => !Number.isInteger(part) || part < 0)) {
+              throw new Error('Invalid current version: ' + current);
+            }
+            const [major, minor, patch] = parts;
             let next = '';
             if (versionType === 'custom') {
               if (!customVersion) throw new Error('custom_version is required when version_type=custom');
@@ -67,6 +76,11 @@ jobs:
               throw new Error('Unsupported version type');
             }
             if (!/^\\d+\\.\\d+\\.\\d+$/.test(next)) throw new Error('Invalid version format: ' + next);
+            const nextParts = next.split('.').map(Number);
+            const isNewer = nextParts.some((part, index) =>
+              part > parts[index] && nextParts.slice(0, index).every((value, previous) => value === parts[previous])
+            );
+            if (!isNewer) throw new Error('New version must be greater than ' + current);
             pkg.version = next;
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\\n');
             process.stdout.write(next);
@@ -74,29 +88,35 @@ jobs:
           echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
           echo "Target version: $NEW_VERSION"
 
-      - name: Commit and push version bump
-        run: |
-          git add package.json
-          git commit -m "chore(version): bump to ${{ steps.bump.outputs.version }} [skip ci]"
-          git push
-
-      - name: Create or update Git tag
+      - name: Refuse an existing tag or release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="v${{ steps.bump.outputs.version }}"
-          git tag -f -a "$TAG" -m "Release ${{ steps.bump.outputs.version }}"
-          git push origin "$TAG" --force
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "::error::Tag $TAG already exists and will not be overwritten."
+            exit 1
+          fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::error::Release $TAG already exists and will not be overwritten."
+            exit 1
+          fi
 
-      - name: Create or update GitHub Release
+      - name: Commit, tag, and push atomically
+        run: |
+          TAG="v${{ steps.bump.outputs.version }}"
+          git add package.json
+          git commit -m "chore(version): bump to ${{ steps.bump.outputs.version }} [skip ci]"
+          git tag -a "$TAG" -m "Release ${{ steps.bump.outputs.version }}"
+          git push --atomic origin HEAD:main "$TAG"
+
+      - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="v${{ steps.bump.outputs.version }}"
           TITLE="Release ${{ steps.bump.outputs.version }}"
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release edit "$TAG" --title "$TITLE" --notes "Manual release for $TAG" --latest
-          else
-            gh release create "$TAG" --title "$TITLE" --notes "Manual release for $TAG" --latest
-          fi
+          gh release create "$TAG" --verify-tag --title "$TITLE" --notes "Version-only release for $TAG" --latest
 
       - name: Summary
         run: |
