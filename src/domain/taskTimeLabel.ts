@@ -1,6 +1,6 @@
-import type { MessageKey } from '../services/i18n';
+type TaskTimeLabelKey = 'thisMorning' | 'thisAfternoon' | 'thisEvening' | 'tomorrow';
 
-export const dayPeriodLabelKey = (value: string): MessageKey => {
+export const dayPeriodLabelKey = (value: string): TaskTimeLabelKey => {
   const hour = new Date(value).getHours();
   if (hour < 12) return 'thisMorning';
   if (hour < 18) return 'thisAfternoon';
@@ -23,7 +23,7 @@ export const plannedWindowLabel = (
   windowEnd: Date,
   now: Date,
   locale: string,
-  t: (key: MessageKey) => string,
+  t: (key: TaskTimeLabelKey) => string,
 ) => {
   const dayLabel = isSameLocalDay(windowStart, now)
     ? t(dayPeriodLabelKey(windowStart.toISOString()))
@@ -39,5 +39,5 @@ export const eventWindowLabel = (
   windowEnd: string,
   now: Date,
   locale: string,
-  t: (key: MessageKey) => string,
+  t: (key: TaskTimeLabelKey) => string,
 ) => plannedWindowLabel(new Date(windowStart), new Date(windowEnd), now, locale, t);

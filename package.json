@@ -1,7 +1,7 @@
 {
   "name": "zadiag-pwa",
   "private": true,
-  "version": "0.5.78",
+  "version": "0.5.79",
   "type": "module",
   "packageManager": "pnpm@11.7.0",
   "engines": {
@@ -10,8 +10,9 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
+    "check:architecture": "node scripts/check-architecture.mjs",
     "check:bundle": "node scripts/check-bundle-size.mjs",
-    "check": "npm run test && npm run build && npm run check:bundle && npm --prefix functions test",
+    "check": "npm run check:architecture && npm run test && npm run build && npm run check:bundle && npm --prefix functions test",
     "check:full": "npm run check && npm run test:rules",
     "check:security": "pnpm audit --prod --audit-level high && npm --prefix functions audit --omit=dev --audit-level=high",
     "icons": "node scripts/generate-icons.mjs",
