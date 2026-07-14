@@ -10,6 +10,8 @@ body {
   --bottom-nav-offset: calc(10px + env(safe-area-inset-bottom));
   --bottom-nav-block-size: 70px;
   --bottom-nav-gap: 12px;
+  --routine-action-block-size: 52px;
+  --routine-action-clearance: 24px;
   margin: 0;
   background: linear-gradient(180deg, var(--color-canvas-elevated) 0%, var(--color-canvas-page) 100%);
   color: var(--color-text);
@@ -803,9 +805,17 @@ button:disabled { cursor: not-allowed; }
 .routines-top > .participant-switcher-static { min-width: 0; }
 .routines-top > .participant-switcher { position: static; }
 .routines-top > .participant-switcher .participant-switcher-menu { top: calc(100% + 8px); right: 0; left: 0; width: 100%; box-sizing: border-box; }
-.routines-screen-can-assign { padding-bottom: calc(168px + env(safe-area-inset-bottom)); }
+.content-screen.routines-screen-can-assign {
+  padding-bottom: calc(
+    var(--bottom-nav-offset)
+    + var(--bottom-nav-block-size)
+    + var(--bottom-nav-gap)
+    + var(--routine-action-block-size)
+    + var(--routine-action-clearance)
+  );
+}
 .routine-add-switcher { position: fixed; z-index: 13; bottom: calc(var(--bottom-nav-offset) + var(--bottom-nav-block-size) + var(--bottom-nav-gap)); left: 50%; width: min(calc(100% - 36px), 604px); transform: translateX(-50%); }
-.routines-add-dock-button { width: 100%; min-height: 52px; margin: 0; border: 1px solid rgba(255,255,255,.7); background: var(--color-text); color: var(--color-surface-solid); box-shadow: 0 12px 30px rgba(16,42,67,.18); }
+.routines-add-dock-button { width: 100%; min-height: var(--routine-action-block-size); margin: 0; border: 1px solid rgba(255,255,255,.7); background: var(--color-text); color: var(--color-surface-solid); box-shadow: 0 12px 30px rgba(16,42,67,.18); }
 .routines-add-dock-button .app-icon { font-size: 20px; }
 .routine-add-switcher .routine-catalog-popover { position: absolute; right: 0; bottom: calc(100% + 10px); left: 0; z-index: 2; width: 100%; margin: 0; background: var(--color-surface-solid); box-shadow: 0 22px 52px rgba(16,42,67,.18); }
 .today-task { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
