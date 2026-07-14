@@ -11,7 +11,7 @@ body {
   --bottom-nav-block-size: 70px;
   --bottom-nav-gap: 12px;
   --routine-action-block-size: 52px;
-  --routine-action-clearance: 24px;
+  --routine-action-clearance: 12px;
   margin: 0;
   background: linear-gradient(180deg, var(--color-canvas-elevated) 0%, var(--color-canvas-page) 100%);
   color: var(--color-text);
