@@ -2,6 +2,7 @@ import type { Locale, Role } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { Disclaimer } from '../components/Disclaimer';
 import { AppIcon } from '../components/Icon';
+import { BrandMark } from '../components/BrandMark';
 
 export function WelcomeScreen({
   locale,
@@ -21,7 +22,8 @@ export function WelcomeScreen({
         <button type="button" className={locale === 'fr' ? 'active' : ''} aria-pressed={locale === 'fr'} onClick={() => setLocale('fr')}>FR</button>
       </div>
       <section className="card welcome-hero" aria-labelledby="welcome-title">
-        <div className="brand-icon"><img src="/icons/icon.svg" alt="" /></div>
+        <BrandMark />
+        <p className="brand-kicker">{t('brandPromise')}</p>
         <h1 id="welcome-title">Zadiag</h1>
         <p className="hero-copy">{t('tagline')}</p>
       </section>

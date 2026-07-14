@@ -31,6 +31,9 @@ describe('WelcomeScreen', () => {
     ));
 
     expect(container.textContent).toContain('Choose how this device will be used');
+    expect(container.textContent).toContain('Shared routines, clearer days');
+    expect(container.querySelector('.brand-mark img')?.getAttribute('src')).toBe('/icons/icon.svg');
+    expect(container.querySelectorAll('.brand-mark-dots i')).toHaveLength(3);
     expect(container.textContent).toContain('Manage routines, link the participant phone');
     expect(container.textContent).toContain('Receive proof requests, send checks');
     expect(container.textContent).toContain('without changing the role on another phone');

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import type { Locale } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
+import { BrandMark } from '../components/BrandMark';
 
 export function ContactEmailScreen({ locale, setLocale, submit, t }: {
   locale: Locale;
@@ -26,7 +27,7 @@ export function ContactEmailScreen({ locale, setLocale, submit, t }: {
         <button type="button" className={locale === 'fr' ? 'active' : ''} aria-pressed={locale === 'fr'} onClick={() => setLocale('fr')}>FR</button>
       </div>
       <section className="card contact-email-card" aria-labelledby="contact-email-title">
-        <div className="brand-icon"><img src="/icons/icon.svg" alt="" /></div>
+        <BrandMark />
         <h1 id="contact-email-title">{t('contactEmailTitle')}</h1>
         <p>{t('contactEmailBody')}</p>
         <form onSubmit={(event) => { void onSubmit(event); }}>
@@ -44,5 +45,5 @@ export function ContactEmailScreen({ locale, setLocale, submit, t }: {
 }
 
 export function SuspendedScreen({ t }: { t: (key: MessageKey) => string }) {
-  return <main className="page welcome-page"><section className="card contact-email-card"><div className="brand-icon"><img src="/icons/icon.svg" alt="" /></div><h1>{t('accessSuspendedTitle')}</h1><p>{t('accessSuspendedBody')}</p></section></main>;
+  return <main className="page welcome-page"><section className="card contact-email-card"><BrandMark /><h1>{t('accessSuspendedTitle')}</h1><p>{t('accessSuspendedBody')}</p></section></main>;
 }
