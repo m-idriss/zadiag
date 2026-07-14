@@ -63,6 +63,22 @@ export const isParticipantInvitationCode = (code: string) => /^ZI-\d{6}$/.test(c
 
 export const documentLanguageForLocale = (locale: Locale) => documentLanguage(locale);
 
+export const setupCompletionTransition = (
+  previous: boolean | undefined,
+  state: Pick<AppState, 'role' | 'family' | 'notificationsEnabled' | 'routineAssignments' | 'routinesLoaded'>,
+): { complete: boolean | undefined; noticeKey?: MessageKey } => {
+  if (!state.role || (state.role === 'parent' && state.routinesLoaded === false)) return { complete: previous };
+  const complete = state.role === 'parent'
+    ? state.family.linked && state.family.childLinked && state.routineAssignments.length > 0
+    : state.family.linked && state.notificationsEnabled;
+  return {
+    complete,
+    ...(previous === false && complete
+      ? { noticeKey: state.role === 'parent' ? 'parentSetupComplete' : 'participantSetupComplete' }
+      : {}),
+  };
+};
+
 export const participantIdForNotificationLaunch = (
   state: AppState,
   intent = notificationLaunchIntent(),
@@ -127,14 +143,10 @@ export function App() {
 
   useEffect(() => {
     if (!ready || !state.role) return;
-    const setupComplete = state.role === 'parent'
-      ? state.family.linked && state.family.childLinked && state.routineAssignments.length > 0
-      : state.family.linked && state.notificationsEnabled;
-    if (setupCompleteRef.current === false && setupComplete) {
-      setSetupNoticeKey(state.role === 'parent' ? 'parentSetupComplete' : 'participantSetupComplete');
-    }
-    setupCompleteRef.current = setupComplete;
-  }, [ready, state.family.childLinked, state.family.linked, state.notificationsEnabled, state.role, state.routineAssignments.length]);
+    const transition = setupCompletionTransition(setupCompleteRef.current, state);
+    if (transition.noticeKey) setSetupNoticeKey(transition.noticeKey);
+    setupCompleteRef.current = transition.complete;
+  }, [ready, state.family.childLinked, state.family.linked, state.notificationsEnabled, state.role, state.routineAssignments.length, state.routinesLoaded]);
 
   useEffect(() => {
     if (!ready || !firebaseEnabled || !state.family.id || !state.role) return;

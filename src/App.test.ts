@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_ROUTINE_ID, type AppState, type VerificationEvent } from './domain/models';
-import { appBadgeCountForState, documentLanguageForLocale, isParticipantInvitationCode, participantIdForNotificationLaunch, resetNoticeMessageKey } from './App';
+import { appBadgeCountForState, documentLanguageForLocale, isParticipantInvitationCode, participantIdForNotificationLaunch, resetNoticeMessageKey, setupCompletionTransition } from './App';
 
 const activePendingEvent = (expiresAt: string): VerificationEvent => ({
   id: 'check-1',
@@ -83,5 +83,34 @@ describe('participantIdForNotificationLaunch', () => {
       { ...state, role: 'child' },
       { kind: 'review', participantId: 'alex' },
     )).toBeUndefined();
+  });
+});
+
+describe('setupCompletionTransition', () => {
+  const completeParentState = {
+    role: 'parent' as const,
+    notificationsEnabled: true,
+    family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+    routineAssignments: [{ routineId: 'routine' }] as AppState['routineAssignments'],
+    routinesLoaded: true,
+  };
+
+  it('ignores the temporary empty routine state while switching followed profiles', () => {
+    const loading = setupCompletionTransition(true, {
+      ...completeParentState,
+      routineAssignments: [],
+      routinesLoaded: false,
+    });
+    const loaded = setupCompletionTransition(loading.complete, completeParentState);
+
+    expect(loading).toEqual({ complete: true });
+    expect(loaded).toEqual({ complete: true });
+  });
+
+  it('still announces a real first routine completion', () => {
+    expect(setupCompletionTransition(false, completeParentState)).toEqual({
+      complete: true,
+      noticeKey: 'parentSetupComplete',
+    });
   });
 });
