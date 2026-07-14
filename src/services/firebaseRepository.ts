@@ -571,13 +571,7 @@ export class FirebaseRepository implements AppRepository {
     this.accessSubscription = undefined;
     if (this.state.family.linked) {
       const deleteAccountData = httpsCallable<void, void>(this.services.functions, 'deleteAccountData');
-      try {
-        await deleteAccountData();
-      } catch (error) {
-        // Account cleanup can be refused when this user is the last owner of a
-        // followed person. That safety invariant must not prevent signing out.
-        console.warn('Account data could not be deleted before sign-out', error);
-      }
+      await deleteAccountData();
     }
     if (this.user) removeUiStorageItem(`${ACTIVE_PARTICIPANT_KEY_PREFIX}${this.user.uid}`);
     await signOut(this.services.auth);

@@ -15,10 +15,12 @@ const renderSettings = ({
     lastDispatchAt: '2026-07-07T19:42:00.000Z',
   },
   sendTestPushNotification = async () => undefined,
+  reset = async () => undefined,
 }: {
   notificationsEnabled?: boolean;
   pushHealth?: PushSubscriptionHealth;
   sendTestPushNotification?: () => Promise<void>;
+  reset?: () => Promise<void>;
 } = {}) => {
   const container = document.createElement('div');
   document.body.appendChild(container);
@@ -31,7 +33,7 @@ const renderSettings = ({
         setLocale={async () => undefined}
         updateInfo={{ available: false, currentVersion: '0.3.182', severity: 'unknown' }}
         forceAppUpdate={async () => false}
-        reset={() => undefined}
+        reset={reset}
         role="parent"
         notificationsEnabled={notificationsEnabled}
         pushHealth={pushHealth}
@@ -94,6 +96,40 @@ describe('SettingsScreen recovery diagnostics', () => {
     expect(container.textContent).toContain('Service worker');
     expect(container.textContent).toContain('Registered');
     expect(container.textContent).toContain('Last sync');
+
+    act(() => root.unmount());
+    container.remove();
+  });
+});
+
+describe('SettingsScreen privacy and data', () => {
+  it('explains retention and access and exposes data actions', () => {
+    const { container, root } = renderSettings();
+
+    const trustCenter = container.querySelector('[aria-labelledby="settings-trust-heading"]');
+    expect(trustCenter?.textContent).toContain('Privacy & data');
+    expect(trustCenter?.textContent).toContain('automatically deleted after at most 30 days');
+    expect(trustCenter?.textContent).toContain('Diagnostic logs stay on this device for up to 7 days');
+    expect(trustCenter?.textContent).toContain('Who has access');
+    expect(trustCenter?.textContent).toContain('Your data copy');
+    expect(container.textContent).toContain('Delete account data');
+    expect(container.textContent).not.toContain('Immediate deletion by default');
+
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  it('keeps the user in settings and explains a refused deletion', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const { container, root } = renderSettings({ reset: async () => { throw new Error('failed-precondition'); } });
+    const deleteButton = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.includes('Delete account data'),
+    );
+
+    await act(async () => deleteButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+
+    expect(container.textContent).toContain('The data could not be deleted');
+    expect(deleteButton?.disabled).toBe(false);
 
     act(() => root.unmount());
     container.remove();

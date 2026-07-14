@@ -1,12 +1,13 @@
+import type { Role } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { AppIcon } from './Icon';
 
-export function SetupProgress({ current, t }: { current: 1 | 2 | 3; t: (key: MessageKey) => string }) {
-  const steps: Array<{ number: 1 | 2 | 3; label: MessageKey }> = [
-    { number: 1, label: 'setupInstallShort' },
-    { number: 2, label: 'setupLinkShort' },
-    { number: 3, label: 'setupNotifyShort' },
-  ];
+export function SetupProgress({ current, role = 'child', t }: { current: 1 | 2 | 3; role?: Role; t: (key: MessageKey) => string }) {
+  const labels: Record<Role, [MessageKey, MessageKey, MessageKey]> = {
+    child: ['setupInstallShort', 'setupLinkShort', 'setupNotifyShort'],
+    parent: ['parentSetupCreateShort', 'parentSetupLinkShort', 'parentSetupRoutineShort'],
+  };
+  const steps = labels[role].map((label, index) => ({ number: (index + 1) as 1 | 2 | 3, label }));
 
   return (
     <ol className="setup-progress" aria-label={t('setupProgressLabel')}>

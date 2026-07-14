@@ -68,6 +68,7 @@ describe('participant Today screen', () => {
     act(() => root.render(<ChildDashboard state={state} active={pending} start={start} t={(key) => translate('en', key)} />));
 
     expect(container.textContent).toContain('1 check to complete');
+    expect(Array.from(container.querySelectorAll('.dashboard-status-summary strong')).map((item) => item.textContent)).toEqual(['1', '0', '1']);
     expect(container.textContent).not.toContain('Completed today');
     expect(container.textContent).not.toContain('This week');
     expect(container.querySelectorAll('.today-task')).toHaveLength(1);
@@ -122,6 +123,10 @@ describe('participant Today screen', () => {
 
     const todayButton = container.querySelector<HTMLButtonElement>('.today-retake-button');
     expect(todayButton).toBeTruthy();
+    expect(Array.from(container.querySelectorAll('.dashboard-status-summary strong')).map((item) => item.textContent)).toEqual(['0', '1', '1']);
+    const retrySection = container.querySelector('.participant-review-section');
+    const upcomingSection = container.querySelector('.upcoming-checks-section');
+    expect(Boolean(retrySection && upcomingSection && (retrySection.compareDocumentPosition(upcomingSection) & Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
     act(() => todayButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(retake).toHaveBeenCalledWith(failed);
   });

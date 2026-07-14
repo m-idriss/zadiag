@@ -14,6 +14,8 @@ import { activePendingEvents as activePendingChecks, presentedUpcomingRoutineChe
 import { ParticipantSelector } from '../components/ParticipantSelector';
 import { languageTag } from '../services/locale';
 import { ProofLightbox } from '../components/ProofLightbox';
+import { SetupProgress } from '../components/SetupProgress';
+import { DashboardStatusSummary } from '../components/DashboardStatusSummary';
 
 export function ParentDashboard({
   state,
@@ -84,6 +86,7 @@ export function ParentDashboard({
       : !state.events.length && !upcomingChecks.length
           ? { icon: 'notifications' as const, title: t('responsibleEmptyNoCheckTitle'), hint: t('responsibleEmptyNoCheckHint') }
           : undefined;
+  const setupStep = !state.family.childLinked ? 2 : !state.routineAssignments.length ? 3 : undefined;
   const formatDateTime = (value: string) => dateTimeFormatter.format(new Date(value));
   const routineNameFor = (event: VerificationEvent) =>
     routinePresentationsById.get(event.routineId)?.name ?? t('routine');
@@ -206,6 +209,28 @@ export function ParentDashboard({
       />
       </div>
 
+      {setupStep ? (
+        <section className="card parent-onboarding-card" aria-labelledby="parent-onboarding-title">
+          <div className="parent-onboarding-heading">
+            <span className="eyebrow">{t('parentSetupEyebrow')}</span>
+            <h2 id="parent-onboarding-title">{t('parentSetupTitle')}</h2>
+            <p>{t(setupStep === 2 ? 'parentSetupLinkHint' : 'parentSetupRoutineHint')}</p>
+          </div>
+          <SetupProgress current={setupStep} role="parent" t={t} />
+        </section>
+      ) : null}
+
+      {!setupStep ? (
+        <DashboardStatusSummary
+          label={t('dashboardStatusSummary')}
+          items={[
+            { label: t('dashboardActive'), value: activePendingEvents.length },
+            { label: t('dashboardReview'), value: reviewEvents.length, tone: 'attention' },
+            { label: t('dashboardNext'), value: upcomingChecks.length },
+          ]}
+        />
+      ) : null}
+
       {(responsibleEmptyState || activePendingEvents.length || (!state.family.childLinked && state.family.linkingCode) || (!state.routineAssignments.length && onCreateRoutine)) ? (
         <section className="settings-section parent-setup-section" aria-labelledby="parent-setup-title">
           <h2 id="parent-setup-title">{activePendingEvents.length ? `${activePendingEvents.length} ${t(activePendingEvents.length === 1 ? 'checkToComplete' : 'checksToComplete')}` : t('responsibleCurrentChecksTitle')}</h2>
@@ -306,10 +331,6 @@ export function ParentDashboard({
         </section>
       ) : null}
 
-      {!activePendingEvents.length && state.family.childLinked && state.routineAssignments.length && upcomingChecks.length ? (
-        <UpcomingChecksSection checks={upcomingChecks} now={nowDate} locale={locale} titleId="responsible-upcoming-checks-title" t={t} />
-      ) : null}
-
       {reviewEvents.length ? (
         <section className="settings-section parent-review-section" aria-labelledby="parent-review-title">
           <div className="section-heading parent-review-heading">
@@ -396,6 +417,10 @@ export function ParentDashboard({
             })}
           </div>
         </section>
+      ) : null}
+
+      {!activePendingEvents.length && state.family.childLinked && state.routineAssignments.length && upcomingChecks.length ? (
+        <UpcomingChecksSection checks={upcomingChecks} now={nowDate} locale={locale} titleId="responsible-upcoming-checks-title" t={t} />
       ) : null}
 
       {enlargedProofUrl ? (
