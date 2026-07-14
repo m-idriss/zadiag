@@ -6,6 +6,7 @@ describe('service worker notification helpers', () => {
     expect(notificationOptionsForPayload({
       version: 2,
       kind: 'check-ready',
+      participantId: 'participant-1',
       sessionId: 'session-1',
       routineId: 'routine-1',
       body: 'Send proof.',
@@ -18,6 +19,7 @@ describe('service worker notification helpers', () => {
       tag: 'verification:session-1',
       data: {
         kind: 'check-ready',
+        participantId: 'participant-1',
         routineId: 'routine-1',
         sessionId: 'session-1',
         version: 2,

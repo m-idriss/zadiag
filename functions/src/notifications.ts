@@ -73,6 +73,7 @@ export interface SyntheticReceiptPayload {
 }
 
 interface ReviewNotificationInput {
+  participantId: string;
   checkId: string;
   routineId: string;
   routineName: string;
@@ -84,6 +85,7 @@ interface ReviewNotificationInput {
 interface ReviewNotificationPayload {
   version: 2;
   kind: 'review-needed';
+  participantId: string;
   checkId: string;
   routineId: string;
   tag: string;
@@ -145,12 +147,13 @@ export const buildReviewNotificationPayload = (input: ReviewNotificationInput): 
   return {
     version: 2,
     kind: 'review-needed',
+    participantId: input.participantId,
     checkId: input.checkId,
     routineId: input.routineId,
     tag: `review:${input.checkId}`,
     title: locale === 'fr' ? `${titlePrefix} · à vérifier` : `${titlePrefix} · review`,
     body: locale === 'fr' ? 'Une preuve attend votre validation.' : 'A proof needs your review.',
-    path: '/?open=review',
+    path: `/?open=review&participant=${encodeURIComponent(input.participantId)}`,
   };
 };
 

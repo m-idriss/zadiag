@@ -434,6 +434,7 @@ const sendReviewPushNotification = async (
   if (pushRecipientRole(subscriptionDocument) !== 'parent') return 'skipped';
   const subscription = subscriptionDocument.data() as { locale?: string } | undefined;
   const payload = buildReviewNotificationPayload({
+    participantId: subscriptionDocument.ref.parent.parent!.id,
     checkId: check.checkId,
     routineId: check.routineId,
     routineName: check.routineName,

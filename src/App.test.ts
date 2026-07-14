@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_ROUTINE_ID, type VerificationEvent } from './domain/models';
-import { appBadgeCountForState, documentLanguageForLocale, isParticipantInvitationCode, resetNoticeMessageKey } from './App';
+import { DEFAULT_ROUTINE_ID, type AppState, type VerificationEvent } from './domain/models';
+import { appBadgeCountForState, documentLanguageForLocale, isParticipantInvitationCode, participantIdForNotificationLaunch, resetNoticeMessageKey } from './App';
 
 const activePendingEvent = (expiresAt: string): VerificationEvent => ({
   id: 'check-1',
@@ -61,5 +61,27 @@ describe('documentLanguageForLocale', () => {
   it('keeps the document language aligned with the selected interface locale', () => {
     expect(documentLanguageForLocale('en')).toBe('en');
     expect(documentLanguageForLocale('fr')).toBe('fr');
+  });
+});
+
+describe('participantIdForNotificationLaunch', () => {
+  const state = {
+    role: 'parent',
+    participantAccess: [
+      { participant: { id: 'alex', displayName: 'Alex' }, membership: { role: 'owner', status: 'active' } },
+      { participant: { id: 'lea', displayName: 'Léa' }, membership: { role: 'owner', status: 'suspended' } },
+    ],
+  } as AppState;
+
+  it('opens an active profile identified by a review notification', () => {
+    expect(participantIdForNotificationLaunch(state, { kind: 'review', participantId: 'alex' })).toBe('alex');
+  });
+
+  it('does not switch to an unavailable profile or switch a participant account', () => {
+    expect(participantIdForNotificationLaunch(state, { kind: 'review', participantId: 'lea' })).toBeUndefined();
+    expect(participantIdForNotificationLaunch(
+      { ...state, role: 'child' },
+      { kind: 'review', participantId: 'alex' },
+    )).toBeUndefined();
   });
 });

@@ -5,6 +5,18 @@ const LOCALHOST_PATTERN = /^(localhost|127\.0\.0\.1|::1)$/;
 const useFirebase = import.meta.env.VITE_USE_FIREBASE === 'true';
 export const routineCentricUiEnabled = import.meta.env.VITE_ROUTINE_CENTRIC_UI !== 'false';
 
+export interface NotificationLaunchIntent {
+  kind: 'review';
+  participantId: string;
+}
+
+export const notificationLaunchIntent = (search = window.location.search): NotificationLaunchIntent | undefined => {
+  const parameters = new URLSearchParams(search);
+  const participantId = parameters.get('participant')?.trim();
+  if (parameters.get('open') !== 'review' || !participantId) return undefined;
+  return { kind: 'review', participantId };
+};
+
 const isLocalhostHostname = (hostname = window.location.hostname) => LOCALHOST_PATTERN.test(hostname);
 
 export const isLocalDemoEnvironment = (hostname = window.location.hostname) => isLocalhostHostname(hostname) && !useFirebase;

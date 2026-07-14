@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType } from 'react';
-import { normalizeAppPreferences, type Locale, type Role, type VerificationEvent } from './domain/models';
+import { normalizeAppPreferences, type AppState, type Locale, type Role, type VerificationEvent } from './domain/models';
 import { routeForState, type AppRoute } from './domain/appRouting';
 import { createRepository } from './services/repositoryFactory';
 import { createTranslator, type MessageKey } from './services/i18n';
@@ -10,7 +10,7 @@ import { Snackbar } from './components/Snackbar';
 import { PullToUpdate } from './components/PullToUpdate';
 import { isSummaryRange, type SummaryRange } from './components/AdherenceSummaryCard';
 import { firebaseEnabled } from './services/firebaseConfig';
-import { browserRouteContext, isLocalDemoEnvironment, routineCentricUiEnabled } from './services/browserEnvironment';
+import { browserRouteContext, isLocalDemoEnvironment, notificationLaunchIntent, routineCentricUiEnabled } from './services/browserEnvironment';
 import { runWhenStartupIsIdle } from './services/appUpdate';
 import { InstallScreen } from './screens/InstallScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
@@ -61,6 +61,17 @@ export const resetNoticeMessageKey = (role: Role | undefined): MessageKey =>
 export const isParticipantInvitationCode = (code: string) => /^ZI-\d{6}$/.test(code.trim().toUpperCase());
 
 export const documentLanguageForLocale = (locale: Locale) => documentLanguage(locale);
+
+export const participantIdForNotificationLaunch = (
+  state: AppState,
+  intent = notificationLaunchIntent(),
+) => intent
+  && state.role === 'parent'
+  && state.participantAccess?.some((entry) => (
+    entry.participant.id === intent.participantId && entry.membership.status === 'active'
+  ))
+  ? intent.participantId
+  : undefined;
 
 export function App() {
   const repository = useMemo(createRepository, []);
@@ -149,10 +160,17 @@ export function App() {
         console.error(error);
       }
     };
-    repository.initialize().then(() => {
+    repository.initialize().then(async () => {
       if (!alive) return;
       window.clearInterval(startupProgressTicker);
-      const restored = repository.snapshot();
+      let restored = repository.snapshot();
+      const notificationParticipantId = participantIdForNotificationLaunch(restored);
+      if (notificationParticipantId && repository.selectActiveParticipant) {
+        await repository.selectActiveParticipant(notificationParticipantId);
+        if (!alive) return;
+        restored = repository.snapshot();
+        setTab('home');
+      }
       setState(restored);
       setLastSyncAt(new Date().toISOString());
       setRoute(routeForState(restored, browserRouteContext()));

@@ -66,6 +66,7 @@ test('builds the current English reminder notification payload', () => {
 
 test('builds a French review notification payload for responsible users only', () => {
   const payload = buildReviewNotificationPayload({
+    participantId: 'participant-alex',
     checkId: 'check-1',
     routineId: 'orthodontic-elastics',
     routineName: 'Orthodontic Elastics',
@@ -76,10 +77,11 @@ test('builds a French review notification payload for responsible users only', (
 
   assert.equal(payload.version, 2);
   assert.equal(payload.kind, 'review-needed');
+  assert.equal(payload.participantId, 'participant-alex');
   assert.equal(payload.title, '🦷 Élastiques orthodontiques · à vérifier');
   assert.equal(payload.body, 'Une preuve attend votre validation.');
   assert.equal(payload.tag, 'review:check-1');
-  assert.equal(payload.path, '/?open=review');
+  assert.equal(payload.path, '/?open=review&participant=participant-alex');
 });
 
 test('builds a localized test notification payload', () => {

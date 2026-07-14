@@ -1,6 +1,7 @@
 export interface PushPayload {
   version?: number;
   kind?: string;
+  participantId?: string;
   sessionId?: string;
   routineId?: string;
   title?: string;
@@ -23,6 +24,7 @@ export const notificationOptionsForPayload = (payload?: PushPayload): Notificati
   tag: payload?.tag ?? payload?.sessionId ?? 'verification',
   data: {
     kind: payload?.kind,
+    participantId: payload?.participantId,
     routineId: payload?.routineId,
     sessionId: payload?.sessionId,
     checkId: payload?.checkId,
