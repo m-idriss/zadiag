@@ -17,6 +17,7 @@ const profileDir = required('ZADIAG_MONITOR_PROFILE_DIR');
 const monitorId = required('ZADIAG_MONITOR_ID');
 const receiptToken = required('ZADIAG_MONITOR_RECEIPT_TOKEN');
 const receiptUrl = required('ZADIAG_MONITOR_RECEIPT_URL');
+const appCheckDebugToken = process.env.ZADIAG_MONITOR_APP_CHECK_DEBUG_TOKEN?.trim();
 const heartbeatMs = Number(process.env.ZADIAG_MONITOR_HEARTBEAT_MS || 300_000);
 const statePath = process.env.ZADIAG_MONITOR_STATE_PATH || resolve(profileDir, '..', 'handled-checks.json');
 
@@ -38,11 +39,15 @@ const context = await chromium.launchPersistentContext(profileDir, {
   ],
 });
 
+if (appCheckDebugToken) {
+  await context.addInitScript((token) => {
+    globalThis.FIREBASE_APPCHECK_DEBUG_TOKEN = token;
+  }, appCheckDebugToken);
+}
+
 await context.grantPermissions(['notifications', 'camera'], { origin: new URL(appUrl).origin });
 const page = context.pages()[0] || await context.newPage();
-if (!page.url().startsWith(appUrl)) {
-  await page.goto(appUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
-}
+await page.goto(appUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
 log('chromium_started', { appUrl });
 
 let consecutiveHealthFailures = 0;

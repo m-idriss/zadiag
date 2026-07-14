@@ -4,6 +4,7 @@ import { randomBytes } from 'node:crypto';
 import process from 'node:process';
 import { createMembership } from '../../functions/lib/relationships.js';
 import { createDefaultRoutineAssignment, DEFAULT_ROUTINE_ID } from '../../functions/lib/routines.js';
+import { ensureMonitorAppCheckDebugToken } from './app-check-debug.mjs';
 
 const require = createRequire(import.meta.url);
 const firebaseAuth = require('../../node_modules/firebase-tools/lib/auth');
@@ -136,6 +137,13 @@ const environment = [
   'ZADIAG_MONITOR_APP_URL=https://www.zadiag.com',
   'ZADIAG_MONITOR_DEBUG_PORT=9223',
 ].join('\n');
-await writeFile(new URL('env', runtimeDirectory), `${environment}\n`, { mode: 0o600 });
+const environmentUrl = new URL('env', runtimeDirectory);
+await writeFile(environmentUrl, `${environment}\n`, { mode: 0o600 });
+await ensureMonitorAppCheckDebugToken({
+  accessToken,
+  environmentPath: environmentUrl.pathname,
+  projectNumber: process.env.ZADIAG_FIREBASE_PROJECT_NUMBER,
+  appId: process.env.ZADIAG_FIREBASE_APP_ID,
+});
 
 console.log(JSON.stringify({ participantId, monitorUid, ownerUid, displayName, receiptUrl }, null, 2));

@@ -45,6 +45,14 @@ const installSyntheticCamera = (context) => {
       },
     },
   });
+  Object.defineProperty(globalThis, 'FaceDetector', {
+    configurable: true,
+    value: class SyntheticFaceDetector {
+      async detect() {
+        return [{ boundingBox: new DOMRectReadOnly(120, 80, 400, 320) }];
+      }
+    },
+  });
   });
 };
 
@@ -67,13 +75,19 @@ export const answerPendingCheck = async ({ context, page, appUrl, path, proofWai
   await proofButton.click();
   await page.getByRole('button', { name: /Use photo|Utiliser la photo/i }).click({ timeout: 20_000 });
   await page.getByRole('button', { name: /Use photo|Utiliser la photo/i }).click({ timeout: 20_000 });
-  await page.waitForFunction(({ analyzingSource, resultSource }) => {
+  const completion = await page.waitForFunction(({ analyzingSource, resultSource }) => {
     const text = document.body?.innerText ?? '';
-    return !new RegExp(analyzingSource, 'i').test(text) && new RegExp(resultSource, 'i').test(text);
+    if (new RegExp(analyzingSource, 'i').test(text)) return undefined;
+    const result = text.match(new RegExp(resultSource, 'i'))?.[0];
+    if (result) return { result };
+    const error = Array.from(document.querySelectorAll('[role="alert"]'))
+      .map((element) => element.textContent?.trim())
+      .find(Boolean);
+    return error ? { error } : undefined;
   }, {
     analyzingSource: analyzingPattern.source,
     resultSource: resultPattern.source,
-  }, { timeout: 90_000 });
-  const text = await page.locator('body').innerText();
-  return { outcome: text.match(resultPattern)?.[0] ?? 'completed' };
+  }, { timeout: 90_000 }).then((handle) => handle.jsonValue());
+  if (completion.error) throw new Error(`Synthetic proof rejected: ${completion.error}`);
+  return { outcome: completion.result ?? 'completed' };
 };

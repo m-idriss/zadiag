@@ -6,6 +6,7 @@ const command = process.argv[2] || 'status';
 const profileDir = process.env.ZADIAG_MONITOR_PROFILE_DIR
   || '/home/idriss/dev/zadiag/.pi-monitor/chromium';
 const appUrl = process.env.ZADIAG_MONITOR_APP_URL || 'https://www.zadiag.com';
+const appCheckDebugToken = process.env.ZADIAG_MONITOR_APP_CHECK_DEBUG_TOKEN?.trim();
 
 const context = await chromium.launchPersistentContext(profileDir, {
   executablePath: process.env.ZADIAG_MONITOR_CHROMIUM || '/usr/bin/chromium',
@@ -21,6 +22,12 @@ const context = await chromium.launchPersistentContext(profileDir, {
   ],
 });
 
+if (appCheckDebugToken) {
+  await context.addInitScript((token) => {
+    globalThis.FIREBASE_APPCHECK_DEBUG_TOKEN = token;
+  }, appCheckDebugToken);
+}
+
 await context.grantPermissions(['notifications', 'camera'], { origin: new URL(appUrl).origin });
 const page = context.pages()[0] || await context.newPage();
 const diagnostics = [];
@@ -29,7 +36,7 @@ page.on('console', (message) => {
 });
 page.on('pageerror', (error) => diagnostics.push(`pageerror:${error.message}`.slice(0, 500)));
 page.on('requestfailed', (request) => diagnostics.push(`requestfailed:${request.url()}:${request.failure()?.errorText}`.slice(0, 500)));
-if (!page.url().startsWith(appUrl)) await page.goto(appUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+await page.goto(appUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
 await page.waitForTimeout(4_000);
 
 const readUid = () => page.evaluate(async () => {

@@ -18,5 +18,6 @@ xvfb-run -a node ops/pi-synthetic-monitor/browser-control.mjs activate
 xvfb-run -a node ops/pi-synthetic-monitor/browser-control.mjs answer-check
 set -a; source .pi-monitor/env; set +a
 node ops/pi-synthetic-monitor/sync-runtime.mjs
+node ops/pi-synthetic-monitor/configure-app-check.mjs
 node ops/pi-synthetic-monitor/send-probe.mjs
 ```
