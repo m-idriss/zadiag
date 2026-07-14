@@ -14,6 +14,7 @@ import { browserRouteContext, isLocalDemoEnvironment, notificationLaunchIntent, 
 import { runWhenStartupIsIdle } from './services/appUpdate';
 import { InstallScreen } from './screens/InstallScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
+import { ContactEmailScreen, SuspendedScreen } from './screens/ContactEmailScreen';
 import { ChildDashboard } from './screens/ChildDashboard';
 import { canRetakeCapture } from './domain/adherence';
 import { profileColorFor } from './domain/profileColor';
@@ -113,6 +114,10 @@ export function App() {
   useEffect(() => {
     document.documentElement.lang = documentLanguageForLocale(state.locale);
   }, [state.locale]);
+
+  useEffect(() => {
+    if (state.accessStatus === 'suspended') setRoute('suspended');
+  }, [state.accessStatus]);
 
   useEffect(() => {
     writeUiStorageString(DASHBOARD_SUMMARY_RANGE_KEY, dashboardSummaryRange);
@@ -243,6 +248,12 @@ export function App() {
     sync();
     setRoute('link');
   };
+  const registerContactEmail = async (email: string) => {
+    if (!repository.registerContactEmail) return;
+    await repository.registerContactEmail(email);
+    sync();
+    setRoute('welcome');
+  };
 
   const submit = async (capturedAt: Date, imageDataUrl: string) => {
     const session = selectedSessionId
@@ -343,6 +354,10 @@ export function App() {
         t={t}
       />
     );
+  } else if (route === 'contact') {
+    content = <ContactEmailScreen locale={state.locale} setLocale={(locale) => { void syncLocale(locale); }} submit={registerContactEmail} t={t} />;
+  } else if (route === 'suspended') {
+    content = <SuspendedScreen t={t} />;
   } else if (route === 'welcome') {
     content = (
       <WelcomeScreen

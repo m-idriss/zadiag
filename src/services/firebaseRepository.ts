@@ -127,6 +127,7 @@ export class FirebaseRepository implements AppRepository {
   private state = initialRemoteState();
   private listeners = new Set<() => void>();
   private remoteSubscriptions: Unsubscribe[] = [];
+  private accessSubscription?: Unsubscribe;
   private inFlightCallables = new Map<string, Promise<unknown>>();
   private user?: User;
   private legacyFamilyId?: string;
@@ -151,12 +152,32 @@ export class FirebaseRepository implements AppRepository {
       }, reject);
     });
     await this.restoreProfile();
+    this.accessSubscription?.();
+    this.accessSubscription = onSnapshot(doc(this.services.db, 'userAccess', this.user.uid), (snapshot) => {
+      const access = snapshot.data() as { contactEmail?: string; status?: string } | undefined;
+      this.state.contactEmail = access?.contactEmail?.trim() || undefined;
+      this.state.accessStatus = access?.status === 'suspended' ? 'suspended' : 'active';
+      if (this.state.accessStatus === 'suspended') {
+        this.remoteSubscriptions.splice(0).forEach((unsubscribe) => unsubscribe());
+      }
+      this.emit();
+    });
   }
 
   async selectRole(role: Role) {
     this.state.role = role;
     this.persistPreferences();
     this.emit();
+  }
+
+  async registerContactEmail(email: string) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const register = httpsCallable<{ email: string }, { email: string }>(this.services.functions, 'registerContactEmail');
+    const result = await register({ email: normalizedEmail });
+    this.state.contactEmail = result.data.email;
+    this.state.accessStatus = 'active';
+    this.emit();
+    return result.data.email;
   }
 
   async selectActiveParticipant(participantId: string) {
@@ -546,6 +567,8 @@ export class FirebaseRepository implements AppRepository {
 
   private async resetOnce() {
     this.remoteSubscriptions.splice(0).forEach((unsubscribe) => unsubscribe());
+    this.accessSubscription?.();
+    this.accessSubscription = undefined;
     if (this.state.family.linked) {
       const deleteAccountData = httpsCallable<void, void>(this.services.functions, 'deleteAccountData');
       try {
@@ -568,9 +591,19 @@ export class FirebaseRepository implements AppRepository {
 
   private async restoreProfile() {
     if (!this.user) return;
-    const profile = await getDoc(doc(this.services.db, 'users', this.user.uid));
+    const [profile, accessDocument] = await Promise.all([
+      getDoc(doc(this.services.db, 'users', this.user.uid)),
+      getDoc(doc(this.services.db, 'userAccess', this.user.uid)),
+    ]);
     const data = profile.exists() ? profile.data() as UserProfile : undefined;
+    const accessData = accessDocument.exists() ? accessDocument.data() as { contactEmail?: string; status?: string } : undefined;
     this.state.accountDisplayName = data?.displayName?.trim() || undefined;
+    this.state.contactEmail = accessData?.contactEmail?.trim() || undefined;
+    this.state.accessStatus = accessData?.status === 'suspended' ? 'suspended' : 'active';
+    if (this.state.accessStatus === 'suspended') {
+      this.emit();
+      return;
+    }
     try { await this.loadParticipantAccess(); }
     catch (error) { console.error('Unable to load participant relationships', error); }
     if (!data) {
@@ -606,9 +639,15 @@ export class FirebaseRepository implements AppRepository {
 
   private async loadAccountProfile() {
     if (!this.user) return;
-    const profile = await getDoc(doc(this.services.db, 'users', this.user.uid));
+    const [profile, accessDocument] = await Promise.all([
+      getDoc(doc(this.services.db, 'users', this.user.uid)),
+      getDoc(doc(this.services.db, 'userAccess', this.user.uid)),
+    ]);
     const data = profile.exists() ? profile.data() as UserProfile : undefined;
+    const accessData = accessDocument.exists() ? accessDocument.data() as { contactEmail?: string; status?: string } : undefined;
     this.state.accountDisplayName = data?.displayName?.trim() || undefined;
+    this.state.contactEmail = accessData?.contactEmail?.trim() || undefined;
+    this.state.accessStatus = accessData?.status === 'suspended' ? 'suspended' : 'active';
   }
 
   private async loadParticipantAccess() {

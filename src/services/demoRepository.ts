@@ -162,6 +162,8 @@ function initialState(): AppState {
   const hydrationRoutine = routineFromCatalog(HYDRATION_ROUTINE_ID);
   return {
     locale: browserLocale(),
+    contactEmail: 'demo@zadiag.com',
+    accessStatus: 'active',
     accountDisplayName: 'Responsable démo',
     notificationsEnabled: false,
     pushHealth: { permission: 'default', endpointPresent: false },

@@ -25,7 +25,7 @@ beforeEach(async () => {
     const db = context.firestore();
     await setDoc(doc(db, 'families/family-1'), {
       childName: 'Maya',
-      members: { parent: 'parent', child: 'child' },
+      members: { parent: 'parent', child: 'child', 'suspended-account': 'parent' },
     });
     await setDoc(doc(db, 'families/family-1/checks/check-1'), {
       routineId: 'orthodontic-elastics',
@@ -40,6 +40,8 @@ beforeEach(async () => {
       assignedAt: new Date().toISOString(),
     });
     await setDoc(doc(db, 'users/parent'), { familyId: 'family-1', role: 'parent' });
+    await setDoc(doc(db, 'users/suspended-account'), { familyId: 'family-1', role: 'parent' });
+    await setDoc(doc(db, 'userAccess/suspended-account'), { contactEmail: 'blocked@example.com', status: 'suspended' });
     await setDoc(doc(db, 'linkCodes/private-hash'), { familyId: 'family-1' });
     await setDoc(doc(db, 'participants/participant-1'), { displayName: 'Maya', status: 'active' });
     await setDoc(doc(db, 'participants/participant-1/memberships/parent'), {
@@ -132,6 +134,12 @@ describe('family isolation', () => {
     await assertFails(getDoc(doc(outsiderDb, 'families/family-1/routineAssignments/orthodontic-elastics')));
     await assertFails(getDocs(collection(outsiderDb, 'families/family-1/checks')));
     await assertFails(getDoc(doc(parentDb, 'linkCodes/private-hash')));
+  });
+
+  test('lets a suspended account see only its own suspension profile', async () => {
+    const suspendedDb = environment.authenticatedContext('suspended-account').firestore();
+    await assertSucceeds(getDoc(doc(suspendedDb, 'userAccess/suspended-account')));
+    await assertFails(getDoc(doc(suspendedDb, 'families/family-1')));
   });
 });
 

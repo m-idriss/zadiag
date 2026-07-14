@@ -4,6 +4,7 @@ export interface AppRepository {
   initialize(): Promise<void>;
   snapshot(): AppState;
   subscribe(listener: () => void): () => void;
+  registerContactEmail?(email: string): Promise<string>;
   selectRole(role: Role): Promise<void>;
   selectActiveParticipant?(participantId: string): Promise<void>;
   updateAccountProfile?(displayName: string): Promise<string>;

@@ -23,6 +23,7 @@ export const initialRemoteState = (): AppState => {
   const preferences = readStoredPreferences();
   return {
     locale: preferences.locale ?? browserLocale(),
+    accessStatus: 'active',
     notificationsEnabled: false,
     pushHealth: { permission: 'Notification' in window ? Notification.permission : 'unsupported', endpointPresent: false },
     role: preferences.role,
