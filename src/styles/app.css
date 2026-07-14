@@ -1533,6 +1533,21 @@ button:disabled { cursor: not-allowed; }
 .settings-account-section > h2 { margin-bottom: -3px; }
 .trust-center-list .settings-row { align-items: flex-start; }
 .settings-account-delete-detail { color: var(--color-text-muted); font-size: 11px; line-height: 1.4; text-align: center; }
+.settings-health-online { color: var(--color-primary); }
+.settings-health-offline { background: var(--color-warning-soft); color: var(--color-warning-strong); }
+.settings-health-badge { flex: 0 0 auto; padding: 5px 8px; border-radius: 999px; font-size: 10px; font-weight: 900; }
+.settings-health-badge.online { background: var(--color-primary-soft); color: var(--color-primary); }
+.settings-health-badge.offline { background: var(--color-warning-soft); color: var(--color-warning-strong); }
+.settings-help-center { border-bottom: 1px solid var(--color-border); }
+.settings-help-center > summary { min-height: 62px; display: flex; align-items: center; gap: 11px; padding: var(--row-padding-y) var(--row-padding-x); cursor: pointer; list-style: none; }
+.settings-help-center > summary::-webkit-details-marker { display: none; }
+.settings-help-center > summary:focus-visible { outline: 3px solid color-mix(in srgb, var(--color-primary) 35%, transparent); outline-offset: -3px; }
+.settings-help-chevron { flex: 0 0 auto; color: var(--color-text-muted); transition: transform .2s ease; }
+.settings-help-center[open] .settings-help-chevron { transform: rotate(180deg); }
+.settings-help-content { display: grid; gap: 12px; padding: 0 var(--row-padding-x) 14px 54px; }
+.settings-help-content div { padding-top: 10px; border-top: 1px solid var(--color-border); }
+.settings-help-content strong { font-size: 12px; }
+.settings-help-content p { margin: 3px 0 0; color: var(--color-text-muted); font-size: 11px; line-height: 1.45; }
 .settings-diagnostics-list { display: grid; grid-template-columns: 1fr; gap: 8px; margin: 10px 0 0; }
 .settings-diagnostics-list div { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding-top: 8px; border-top: 1px solid rgba(13,146,125,.12); }
 .settings-diagnostics-list dt { color: var(--color-text-muted); font-size: 11px; font-weight: 900; text-transform: uppercase; }

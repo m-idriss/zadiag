@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import {
   chevronDownOutline,
+  cloudDoneOutline,
+  cloudOfflineOutline,
   downloadOutline,
   imagesOutline,
   informationCircleOutline,
@@ -107,6 +109,7 @@ export function SettingsScreen({
   const [localPushDispatchAt, setLocalPushDispatchAt] = useState<string>();
   const [resettingAccount, setResettingAccount] = useState(false);
   const [resetError, setResetError] = useState(false);
+  const [online, setOnline] = useState(() => navigator.onLine);
 
   useEffect(() => {
     let cancelled = false;
@@ -126,6 +129,16 @@ export function SettingsScreen({
     void refreshLocalPushEndpoint();
     return () => { cancelled = true; };
   }, [notificationsEnabled, diagnosticsOpen, testPushStatus]);
+
+  useEffect(() => {
+    const updateConnection = () => setOnline(navigator.onLine);
+    window.addEventListener('online', updateConnection);
+    window.addEventListener('offline', updateConnection);
+    return () => {
+      window.removeEventListener('online', updateConnection);
+      window.removeEventListener('offline', updateConnection);
+    };
+  }, []);
 
   const hasLocalPushEvidence = localPushEndpointPresent || testPushStatus === 'success' || Boolean(localPushDispatchAt);
   const effectivePushHealth: PushSubscriptionHealth | undefined = pushHealth || hasLocalPushEvidence
@@ -309,6 +322,15 @@ export function SettingsScreen({
               />
             )}
           />
+          <ListRow
+            icon={<SvgIcon icon={online ? cloudDoneOutline : cloudOfflineOutline} />}
+            iconClassName={online ? 'settings-health-online' : 'settings-health-offline'}
+            title={t('settingsConnectionTitle')}
+            detail={online
+              ? `${t('settingsConnectionOnline')} · ${t('settingsDiagnosticsLastSync')} ${formattedLastSync}`
+              : t('settingsConnectionOffline')}
+            trailing={<span className={`settings-health-badge ${online ? 'online' : 'offline'}`}>{t(online ? 'settingsConnectionReady' : 'settingsConnectionWaiting')}</span>}
+          />
           {role === 'child' ? (
             <ListRow
               icon={<SvgIcon icon={timeOutline} />}
@@ -360,6 +382,19 @@ export function SettingsScreen({
       <section className="settings-section" aria-labelledby="settings-support-heading">
         <h2 id="settings-support-heading">{t('settingsSupportSection')}</h2>
         <div className="card settings-list">
+          <details className="settings-help-center">
+            <summary>
+              <span className="settings-row-icon" aria-hidden="true"><SvgIcon icon={informationCircleOutline} /></span>
+              <span className="settings-row-copy"><strong>{t('settingsHelpTitle')}</strong><small>{t('settingsHelpDetail')}</small></span>
+              <SvgIcon className="settings-help-chevron" icon={chevronDownOutline} />
+            </summary>
+            <div className="settings-help-content">
+              <div><strong>{t('settingsHelpInstallQuestion')}</strong><p>{t('settingsHelpInstallAnswer')}</p></div>
+              <div><strong>{t('settingsHelpNotificationQuestion')}</strong><p>{t('settingsHelpNotificationAnswer')}</p></div>
+              <div><strong>{t('settingsHelpAnalysisQuestion')}</strong><p>{t('settingsHelpAnalysisAnswer')}</p></div>
+              <div><strong>{t('settingsHelpUncertainQuestion')}</strong><p>{t('settingsHelpUncertainAnswer')}</p></div>
+            </div>
+          </details>
           <ListRow
             icon={<SvgIcon icon={informationCircleOutline} />}
             title={(

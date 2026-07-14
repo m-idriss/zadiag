@@ -102,6 +102,50 @@ describe('SettingsScreen recovery diagnostics', () => {
   });
 });
 
+describe('SettingsScreen help and reliability', () => {
+  it('keeps connection health visible without opening diagnostics', () => {
+    const { container, root } = renderSettings();
+
+    expect(container.textContent).toContain('Connection & sync');
+    expect(container.textContent).toContain('Online · Last sync');
+    expect(container.querySelector('.settings-health-badge')?.textContent).toBe('Ready');
+
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  it('updates connection health when the device goes offline', () => {
+    const originalOnline = navigator.onLine;
+    const { container, root } = renderSettings();
+    Object.defineProperty(navigator, 'onLine', { configurable: true, value: false });
+
+    act(() => window.dispatchEvent(new Event('offline')));
+
+    expect(container.textContent).toContain('Offline. Zadiag will refresh when the connection returns.');
+    expect(container.querySelector('.settings-health-badge')?.textContent).toBe('Waiting');
+
+    Object.defineProperty(navigator, 'onLine', { configurable: true, value: originalOnline });
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  it('opens contextual help for the core product questions', () => {
+    const { container, root } = renderSettings();
+    const help = container.querySelector<HTMLDetailsElement>('.settings-help-center');
+
+    expect(help?.open).toBe(false);
+    act(() => help?.querySelector('summary')?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(help?.open).toBe(true);
+    expect(help?.textContent).toContain('How do I install Zadiag?');
+    expect(help?.textContent).toContain('Why am I not receiving notifications?');
+    expect(help?.textContent).toContain('How does automatic analysis work?');
+    expect(help?.textContent).toContain('What happens when a result is uncertain?');
+
+    act(() => root.unmount());
+    container.remove();
+  });
+});
+
 describe('SettingsScreen privacy and data', () => {
   it('explains retention and access and exposes data actions', () => {
     const { container, root } = renderSettings();
