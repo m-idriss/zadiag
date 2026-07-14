@@ -3,6 +3,7 @@ import type { Locale } from '../domain/models';
 const messages = {
   en: {
     tagline: 'Intelligent support for your treatment routine',
+    brandPromise: 'Shared routines, clearer days',
     setupProgressLabel: 'Setup progress', setupInstallShort: 'Install', setupLinkShort: 'Link', setupNotifyShort: 'Alerts',
     parentSetupCreateShort: 'Create', parentSetupLinkShort: 'Link', parentSetupRoutineShort: 'Routine',
     parentSetupStepOne: 'Step 1 of 3', parentSetupEyebrow: 'Getting started', parentSetupTitle: 'Finish setting up Zadiag',
@@ -332,6 +333,7 @@ const messages = {
   },
   fr: {
     tagline: 'Le suivi intelligent de votre traitement',
+    brandPromise: 'Des routines partagées, des journées plus sereines',
     setupProgressLabel: 'Progression de l’installation', setupInstallShort: 'Installer', setupLinkShort: 'Lier', setupNotifyShort: 'Alertes',
     parentSetupCreateShort: 'Créer', parentSetupLinkShort: 'Lier', parentSetupRoutineShort: 'Routine',
     parentSetupStepOne: 'Étape 1 sur 3', parentSetupEyebrow: 'Premiers pas', parentSetupTitle: 'Terminez la configuration de Zadiag',
