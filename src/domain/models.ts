@@ -195,6 +195,8 @@ export const normalizeAppPreferences = (preferences?: Partial<AppPreferences>): 
 export interface AppState {
   role?: Role;
   accountDisplayName?: string;
+  contactEmail?: string;
+  accessStatus?: 'active' | 'suspended';
   locale: Locale;
   notificationsEnabled: boolean;
   pushHealth?: PushSubscriptionHealth;

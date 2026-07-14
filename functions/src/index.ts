@@ -5,6 +5,7 @@ import { HttpsError, onCall, onRequest } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import { GoogleAuth } from 'google-auth-library';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { randomBytes } from 'node:crypto';
 import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, createRecoveryCode, createRelationshipInvitationCode, hashLinkCode, isFirestoreDocumentId, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, isRelationshipInvitationCode, normalizeLinkCode, sensitiveCodeAttemptState } from './helpers.js';
 import { analyzeWithGemini, parseImageDataUrl, routeAnalysisStatusForReview, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
@@ -27,6 +28,9 @@ const bucket = getStorage().bucket();
 const region = 'europe-west1';
 const vapidPrivateKey = defineSecret('WEB_PUSH_VAPID_PRIVATE_KEY');
 const vapidPublicKey = defineSecret('WEB_PUSH_VAPID_PUBLIC_KEY');
+const resendApiKey = defineSecret('RESEND_API_KEY');
+const moderationEmail = defineSecret('USER_MODERATION_EMAIL');
+const moderationFromEmail = defineSecret('USER_MODERATION_FROM_EMAIL');
 const geminiAuth = new GoogleAuth({
   scopes: ['https://www.googleapis.com/auth/generative-language'],
 });
@@ -135,9 +139,51 @@ const getRoutineAnalysisContext = (
   };
 };
 
-const requireUid = (auth: { uid: string } | undefined) => {
+const requireAuthenticatedUid = (auth: { uid: string } | undefined) => {
   if (!auth) throw new HttpsError('unauthenticated', 'Authentication is required.');
   return auth.uid;
+};
+
+const requireUid = async (auth: { uid: string } | undefined) => {
+  const uid = requireAuthenticatedUid(auth);
+  const access = await db.collection('userAccess').doc(uid).get();
+  if (access.data()?.status === 'suspended') {
+    throw new HttpsError('permission-denied', 'This account has been suspended.');
+  }
+  return uid;
+};
+
+const contactEmailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const normalizeContactEmail = (value: unknown) => {
+  const email = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (email.length > 254 || !contactEmailPattern.test(email)) {
+    throw new HttpsError('invalid-argument', 'A valid contact email is required.');
+  }
+  return email;
+};
+
+const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (character) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
+}[character] ?? character));
+
+const moderationUrl = (token: string) => {
+  const projectId = process.env.GCLOUD_PROJECT;
+  if (!projectId) throw new Error('GCLOUD_PROJECT is required to build the moderation link.');
+  return `https://${region}-${projectId}.cloudfunctions.net/moderateUserAccess?token=${encodeURIComponent(token)}`;
+};
+
+const sendNewUserEmail = async (uid: string, email: string, token: string) => {
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${resendApiKey.value()}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: moderationFromEmail.value(),
+      to: [moderationEmail.value()],
+      subject: 'Nouvel utilisateur Zadiag',
+      html: `<h1>Nouvel utilisateur Zadiag</h1><p><strong>${escapeHtml(email)}</strong></p><p>Identifiant appareil : ${escapeHtml(uid)}</p><p>L’accès est actif.</p><p><a href="${moderationUrl(token)}">Désapprouver cet utilisateur</a></p>`,
+    }),
+  });
+  if (!response.ok) throw new Error(`Moderation email failed with status ${response.status}.`);
 };
 
 const requireDocumentId = (value: unknown, label: string) => {
@@ -539,8 +585,81 @@ const getRoutineNotificationNames = (
   };
 };
 
+export const registerContactEmail = onCall({
+  region,
+  cors,
+  enforceAppCheck: true,
+  secrets: [resendApiKey, moderationEmail, moderationFromEmail],
+}, async (request) => {
+  const uid = requireAuthenticatedUid(request.auth);
+  const email = normalizeContactEmail(request.data?.email);
+  const accessRef = db.collection('userAccess').doc(uid);
+  const existing = await accessRef.get();
+  if (existing.data()?.status === 'suspended') {
+    throw new HttpsError('permission-denied', 'This account has been suspended.');
+  }
+  const existingEmail = typeof existing.data()?.contactEmail === 'string' ? existing.data()!.contactEmail : '';
+  if (existingEmail && existing.data()?.moderationNotifiedAt) return { email: existingEmail };
+  const registeredEmail = existingEmail || email;
+
+  const token = randomBytes(32).toString('base64url');
+  const tokenHash = hashLinkCode(token);
+  const now = new Date().toISOString();
+  const effectiveEmail = await db.runTransaction(async (transaction) => {
+    const current = await transaction.get(accessRef);
+    if (current.data()?.status === 'suspended') throw new HttpsError('permission-denied', 'This account has been suspended.');
+    const transactionEmail = typeof current.data()?.contactEmail === 'string' ? current.data()!.contactEmail : registeredEmail;
+    transaction.set(accessRef, { contactEmail: transactionEmail, status: 'active', contactEmailCreatedAt: current.data()?.contactEmailCreatedAt ?? now, updatedAt: now }, { merge: true });
+    transaction.create(db.collection('userModerationTokens').doc(tokenHash), { uid, email: transactionEmail, createdAt: now, usedAt: null });
+    return transactionEmail;
+  });
+  await sendNewUserEmail(uid, effectiveEmail, token);
+  await accessRef.set({ moderationNotifiedAt: new Date().toISOString() }, { merge: true });
+  await recordAuditEvent(db, { action: 'register_contact_email', actorUid: uid });
+  return { email: effectiveEmail };
+});
+
+export const moderateUserAccess = onRequest({ region }, async (request, response) => {
+  response.set('Cache-Control', 'no-store');
+  const token = typeof request.query.token === 'string' ? request.query.token : '';
+  if (token.length < 32 || token.length > 256) {
+    response.status(400).send('<h1>Lien invalide</h1>');
+    return;
+  }
+  const tokenRef = db.collection('userModerationTokens').doc(hashLinkCode(token));
+  const tokenDocument = await tokenRef.get();
+  const tokenData = tokenDocument.data();
+  if (!tokenDocument.exists || tokenData?.usedAt) {
+    response.status(410).send('<h1>Lien expiré ou déjà utilisé</h1>');
+    return;
+  }
+  const moderation = tokenData!;
+  if (request.method === 'GET') {
+    response.status(200).send(`<!doctype html><html lang="fr"><meta name="viewport" content="width=device-width"><title>Désapprouver Zadiag</title><body><main><h1>Désapprouver cet utilisateur ?</h1><p>${escapeHtml(String(moderation.email ?? 'Utilisateur inconnu'))}</p><form method="post"><button type="submit">Confirmer la désapprobation</button></form></main></body></html>`);
+    return;
+  }
+  if (request.method !== 'POST') {
+    response.status(405).send('Method not allowed');
+    return;
+  }
+  const uid = String(moderation.uid ?? '');
+  if (!isFirestoreDocumentId(uid)) {
+    response.status(400).send('<h1>Lien invalide</h1>');
+    return;
+  }
+  await db.runTransaction(async (transaction) => {
+    const currentToken = await transaction.get(tokenRef);
+    if (currentToken.data()?.usedAt) throw new Error('moderation_token_used');
+    const now = new Date().toISOString();
+    transaction.set(db.collection('userAccess').doc(uid), { status: 'suspended', suspendedAt: now, updatedAt: now }, { merge: true });
+    transaction.update(tokenRef, { usedAt: now });
+  });
+  await recordAuditEvent(db, { action: 'suspend_user_access', actorUid: 'moderation-email', metadata: { suspendedUid: uid } });
+  response.status(200).send('<h1>Accès suspendu</h1><p>Cet appareil ne peut plus utiliser Zadiag.</p>');
+});
+
 export const createParticipant = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   let displayName: string;
   try { displayName = assertChildName(request.data?.displayName); }
   catch { throw new HttpsError('invalid-argument', 'A valid participant name is required.'); }
@@ -593,7 +712,7 @@ export const createParticipant = onCall({ region, cors, enforceAppCheck: true },
 });
 
 export const updateAccountProfile = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   let displayName: string;
   try { displayName = assertChildName(request.data?.displayName); }
   catch { throw new HttpsError('invalid-argument', 'A valid account name is required.'); }
@@ -628,7 +747,7 @@ export const updateAccountProfile = onCall({ region, cors, enforceAppCheck: true
 });
 
 export const updateParticipantColor = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
   const profileColor = request.data?.profileColor;
   if (!isProfileColorKey(profileColor)) throw new HttpsError('invalid-argument', 'The profile color is invalid.');
@@ -660,7 +779,7 @@ export const updateParticipantColor = onCall({ region, cors, enforceAppCheck: tr
 });
 
 export const createRelationshipInvitation = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
   const intendedRole = String(request.data?.role ?? '') as MembershipRole;
   if (!membershipRoles.includes(intendedRole)) {
@@ -693,7 +812,7 @@ export const createRelationshipInvitation = onCall({ region, cors, enforceAppChe
 });
 
 export const acceptRelationshipInvitation = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   const code = normalizeLinkCode(String(request.data?.code ?? ''));
   if (!isRelationshipInvitationCode(code)) throw new HttpsError('invalid-argument', 'The invitation code is invalid.');
   await recordSensitiveCodeAttempt(uid);
@@ -780,7 +899,7 @@ export const acceptRelationshipInvitation = onCall({ region, cors, enforceAppChe
 });
 
 export const removeParticipantMembership = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
   const targetUid = requireDocumentId(request.data?.targetUid ?? uid, 'Member ID');
   const participantRef = db.collection('participants').doc(participantId);
@@ -832,7 +951,7 @@ export const removeParticipantMembership = onCall({ region, cors, enforceAppChec
 });
 
 export const deleteParticipantProfile = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
   const participantRef = db.collection('participants').doc(participantId);
   const [participant, actor, memberships, invitations, recoveryCodes] = await Promise.all([
@@ -881,7 +1000,7 @@ export const deleteParticipantProfile = onCall({ region, cors, enforceAppCheck: 
 });
 
 export const createRelationshipRecovery = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
   const membershipRef = db.collection('participants').doc(participantId).collection('memberships').doc(uid);
   const code = createRecoveryCode();
@@ -916,7 +1035,7 @@ export const createRelationshipRecovery = onCall({ region, cors, enforceAppCheck
 });
 
 export const recoverRelationship = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   const code = normalizeLinkCode(String(request.data?.code ?? ''));
   if (!isRecoveryCode(code)) throw new HttpsError('invalid-argument', 'The recovery code is invalid.');
   await recordSensitiveCodeAttempt(uid);
@@ -1019,7 +1138,7 @@ export const recoverRelationship = onCall({ region, cors, enforceAppCheck: true 
 });
 
 export const createFamily = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   let childName: string;
   try { childName = assertChildName(request.data?.childName); }
   catch { throw new HttpsError('invalid-argument', 'A valid child name is required.'); }
@@ -1072,7 +1191,7 @@ export const createFamily = onCall({ region, cors, enforceAppCheck: true }, asyn
 });
 
 export const migrateFamilyRoutines = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const familyRef = db.collection('families').doc(familyId);
   const [family, profile] = await Promise.all([
@@ -1091,7 +1210,7 @@ export const migrateFamilyRoutines = onCall({ region, cors, enforceAppCheck: tru
 });
 
 export const migrateFamilyRelationships = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const familyRef = db.collection('families').doc(familyId);
   const profileRef = db.collection('users').doc(uid);
@@ -1159,7 +1278,7 @@ export const migrateFamilyRelationships = onCall({ region, cors, enforceAppCheck
 });
 
 export const migrateFamilyContent = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const familyRef = db.collection('families').doc(familyId);
   const participantRef = db.collection('participants').doc(familyId);
@@ -1211,7 +1330,7 @@ export const migrateFamilyContent = onCall({ region, cors, enforceAppCheck: true
 });
 
 export const recoverParent = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   const code = normalizeLinkCode(String(request.data?.code ?? ''));
   if (!isRecoveryCode(code) && !isLegacyRecoveryCode(code)) throw new HttpsError('invalid-argument', 'The recovery code is invalid.');
   await recordSensitiveCodeAttempt(uid);
@@ -1276,7 +1395,7 @@ export const recoverParent = onCall({ region, cors, enforceAppCheck: true }, asy
 });
 
 export const ensureParentRecoveryCode = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const familyRef = db.collection('families').doc(familyId);
   const profileRef = db.collection('users').doc(uid);
@@ -1345,7 +1464,7 @@ export const ensureParentRecoveryCode = onCall({ region, cors, enforceAppCheck: 
 });
 
 export const joinFamily = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   const code = normalizeLinkCode(String(request.data?.code ?? ''));
   if (!/^ZD-\d{6}$/.test(code)) throw new HttpsError('invalid-argument', 'The linking code is invalid.');
   const linkRef = db.collection('linkCodes').doc(hashLinkCode(code));
@@ -1391,7 +1510,7 @@ export const joinFamily = onCall({ region, cors, enforceAppCheck: true }, async 
 });
 
 export const savePushSubscription = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const subscription = normalizePushSubscription(request.data?.subscription);
   const locale = request.data?.locale === 'fr' ? 'fr' : 'en';
@@ -1424,7 +1543,7 @@ export const sendTestPushNotification = onCall({
   enforceAppCheck: true,
   secrets: [vapidPrivateKey, vapidPublicKey],
 }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const aggregateRef = await requireAggregatePermission(uid, familyId, 'view');
   const role = await pushRoleForAggregate(uid, aggregateRef);
@@ -1577,7 +1696,7 @@ export const recordSyntheticPushReceipt = onRequest({ region }, async (request, 
 });
 
 export const regenerateLinkCode = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const userRef = db.collection('users').doc(uid);
   const familyRef = db.collection('families').doc(familyId);
@@ -1648,7 +1767,7 @@ export const requestCheckNow = onCall({
     requestedBy?: string;
   };
   type RequestCheckResult = { check: RequestedCheck; resend: boolean };
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const routineId = requireDocumentId(request.data?.routineId ?? DEFAULT_ROUTINE_ID, 'Routine ID');
   const familyRef = await requireAggregatePermission(uid, familyId, 'requestChecks');
@@ -1729,7 +1848,7 @@ export const assignRoutine = onCall({
   cors,
   enforceAppCheck: true,
 }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const routineId = requireDocumentId(request.data?.routineId, 'Routine ID');
   const routine = routineFromCatalog(routineId);
@@ -1765,7 +1884,7 @@ export const deleteRoutine = onCall({
   cors,
   enforceAppCheck: true,
 }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const routineId = requireDocumentId(request.data?.routineId, 'Routine ID');
 
@@ -1814,7 +1933,7 @@ export const updateRoutineAssignment = onCall({
   enforceAppCheck: true,
 }, async (request) => {
   try {
-    const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
     const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
     const routineId = requireDocumentId(request.data?.routineId ?? DEFAULT_ROUTINE_ID, 'Routine ID');
     const plan = request.data?.plan;
@@ -2057,7 +2176,7 @@ export const dispatchPlannedChecks = onSchedule({
 });
 
 export const updatePlan = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const routineId = requireDocumentId(request.data?.routineId ?? DEFAULT_ROUTINE_ID, 'Routine ID');
   const parsedPlan = monitoringPlanSchema.safeParse(request.data?.plan);
@@ -2077,7 +2196,7 @@ export const analyzeCheck = onCall({
   secrets: [vapidPrivateKey, vapidPublicKey],
 }, async (request) => {
   const requestStartedAt = Date.now();
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const checkId = requireDocumentId(request.data?.checkId, 'Check ID');
   const capturedAt = String(request.data?.capturedAt ?? '');
@@ -2268,7 +2387,7 @@ export const analyzeCheck = onCall({
 });
 
 export const getProofImageUrl = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const checkId = requireDocumentId(request.data?.checkId, 'Check ID');
   const aggregateRef = await requireFamilyMember(uid, familyId);
@@ -2331,7 +2450,7 @@ export const getProofImageUrl = onCall({ region, cors, enforceAppCheck: true }, 
 });
 
 export const reviewCheck = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const checkId = requireDocumentId(request.data?.checkId, 'Check ID');
   const decision = String(request.data?.decision ?? '');
@@ -2488,13 +2607,24 @@ export const cleanupStaleOperationalData = onSchedule({
 });
 
 export const deleteAccountData = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
-  const uid = requireUid(request.auth);
+  const uid = await requireUid(request.auth);
   const userRef = db.collection('users').doc(uid);
   const [profile, participantRefs] = await Promise.all([
     userRef.get(),
     userRef.collection('participantRefs').get(),
   ]);
-  if (!profile.exists) return;
+  const deleteAccessRecords = async (userIds: string[]) => {
+    const tokens = await Promise.all(userIds.map((userId) => db.collection('userModerationTokens').where('uid', '==', userId).get()));
+    const batch = db.batch();
+    userIds.forEach((userId) => batch.delete(db.collection('userAccess').doc(userId)));
+    tokens.flatMap((snapshot) => snapshot.docs).forEach((token) => batch.delete(token.ref));
+    await batch.commit();
+  };
+  if (!profile.exists) {
+    await deleteAccessRecords([uid]);
+    await recordAuditEvent(db, { action: 'reset_account', actorUid: uid, metadata: { scope: 'contact' } });
+    return;
+  }
   if (!participantRefs.empty) {
     const relationships = await Promise.all(participantRefs.docs.map(async (participantIndex) => {
       const participantRef = db.collection('participants').doc(participantIndex.id);
@@ -2538,6 +2668,7 @@ export const deleteAccountData = onCall({ region, cors, enforceAppCheck: true },
     });
     batch.delete(userRef);
     await batch.commit();
+    await deleteAccessRecords([uid]);
     await recordAuditEvent(db, {
       action: 'reset_account',
       actorUid: uid,
@@ -2554,6 +2685,7 @@ export const deleteAccountData = onCall({ region, cors, enforceAppCheck: true },
       familyRef.collection('pushSubscriptions').doc(uid).delete(),
       userRef.delete(),
     ]);
+    await deleteAccessRecords([uid]);
     await recordAuditEvent(db, {
       action: 'reset_account',
       actorUid: uid,
@@ -2571,6 +2703,7 @@ export const deleteAccountData = onCall({ region, cors, enforceAppCheck: true },
   memberIds.forEach((memberId) => batch.delete(db.collection('users').doc(memberId)));
   links.docs.forEach((link) => batch.delete(link.ref));
   await batch.commit();
+  await deleteAccessRecords(memberIds);
   await bucket.deleteFiles({ prefix: `families/${familyId}/` }).catch((error) => {
     reportOperationalAlert({
       kind: 'storage_cleanup_failed',

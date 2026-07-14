@@ -21,7 +21,9 @@ type AuditAction =
   | 'create_relationship_recovery'
   | 'recover_relationship'
   | 'assign_routine'
-  | 'delete_routine';
+  | 'delete_routine'
+  | 'register_contact_email'
+  | 'suspend_user_access';
 
 type AuditMetadataValue = string | number | boolean | null | undefined;
 

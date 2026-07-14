@@ -1,6 +1,6 @@
 import type { AppState } from './models';
 
-export type AppRoute = 'install' | 'welcome' | 'link' | 'notifications' | 'app' | 'camera' | 'result' | 'routine-edit';
+export type AppRoute = 'install' | 'contact' | 'suspended' | 'welcome' | 'link' | 'notifications' | 'app' | 'camera' | 'result' | 'routine-edit';
 
 export interface RouteContext {
   setupPreview?: Extract<AppRoute, 'install' | 'notifications'> | null;
@@ -11,6 +11,8 @@ export interface RouteContext {
 export const routeForState = (state: AppState, context: RouteContext = {}): AppRoute => {
   if (context.setupPreview) return context.setupPreview;
   if (context.requiresInstall) return 'install';
+  if (state.accessStatus === 'suspended') return 'suspended';
+  if (!context.useLocalDemo && !state.contactEmail) return 'contact';
   if (!state.role) return 'welcome';
   if (!state.family.linked) return 'link';
   if (context.useLocalDemo && state.role === 'child' && !state.notificationsEnabled) return 'app';

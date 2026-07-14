@@ -4,6 +4,8 @@ import { routeForState } from './appRouting';
 
 const state = (overrides: Partial<AppState> = {}): AppState => ({
   locale: 'en',
+  contactEmail: 'user@example.com',
+  accessStatus: 'active',
   notificationsEnabled: false,
   family: {
     linked: false,
@@ -19,6 +21,10 @@ const state = (overrides: Partial<AppState> = {}): AppState => ({
 });
 
 describe('app routing', () => {
+  it('collects contact details before setup and stops suspended accounts', () => {
+    expect(routeForState(state({ contactEmail: undefined }))).toBe('contact');
+    expect(routeForState(state({ accessStatus: 'suspended' }))).toBe('suspended');
+  });
   it('prioritizes setup preview and install requirements before account state', () => {
     expect(routeForState(state({ role: 'parent' }), { setupPreview: 'notifications' })).toBe('notifications');
     expect(routeForState(state({ role: 'parent' }), { requiresInstall: true })).toBe('install');

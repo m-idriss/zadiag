@@ -32,6 +32,19 @@ The `preview` branch is disposable and must never be merged back into `main`. Th
 
 ## Release to production
 
+The launch access notification requires three Firebase Functions secrets before
+deploying the backend:
+
+```sh
+firebase functions:secrets:set RESEND_API_KEY
+firebase functions:secrets:set USER_MODERATION_EMAIL
+firebase functions:secrets:set USER_MODERATION_FROM_EMAIL
+```
+
+`USER_MODERATION_EMAIL` receives each new-user notification.
+`USER_MODERATION_FROM_EMAIL` must be a sender accepted by the configured Resend
+account. The moderation link opens a confirmation page before suspending access.
+
 Before opening the delivery pull request:
 
 1. Group the related changes into one branch.

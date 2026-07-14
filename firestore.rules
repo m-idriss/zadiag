@@ -5,8 +5,21 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function familyMember(familyId) {
+    // Legacy accounts without userAccess remain active during the launch rollout.
+    // Remove the missing-field branch once every deployed profile has been registered.
+    function notSuspended() {
       return signedIn()
+        && (!exists(/databases/$(database)/documents/userAccess/$(request.auth.uid))
+          || get(/databases/$(database)/documents/userAccess/$(request.auth.uid)).data.status != 'suspended');
+    }
+
+    match /userAccess/{userId} {
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    function familyMember(familyId) {
+      return notSuspended()
         && get(/databases/$(database)/documents/families/$(familyId)).data.members[request.auth.uid] in ['parent', 'child'];
     }
 
@@ -15,28 +28,28 @@ service cloud.firestore {
     }
 
     function canViewParticipant(participantId) {
-      return signedIn()
+      return notSuspended()
         && participantMembership(participantId).data.status == 'active'
         && participantMembership(participantId).data.permissions.view == true;
     }
 
     match /users/{userId} {
-      allow read: if signedIn() && (request.auth.uid == userId || isChildInFamily(userId));
+      allow read: if (signedIn() && request.auth.uid == userId) || (notSuspended() && isChildInFamily(userId));
       allow write: if false;
 
       match /participantRefs/{participantId} {
-        allow read: if signedIn() && request.auth.uid == userId;
+        allow read: if notSuspended() && request.auth.uid == userId;
         allow write: if false;
       }
     }
 
     function isChildInFamily(userId) {
-      return signedIn()
+      return notSuspended()
         && get(/databases/$(database)/documents/families/$(get(/databases/$(database)/documents/users/$(userId)).data.familyId)).data.members[request.auth.uid] == 'child';
     }
 
     match /families/{familyId} {
-      allow read: if signedIn() && resource.data.members[request.auth.uid] in ['parent', 'child'];
+      allow read: if notSuspended() && resource.data.members[request.auth.uid] in ['parent', 'child'];
       allow write: if false;
 
       match /checks/{checkId} {
