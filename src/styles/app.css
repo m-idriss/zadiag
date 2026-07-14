@@ -353,6 +353,12 @@ button:disabled { cursor: not-allowed; }
 .parent-onboarding-heading p { margin: 0; color: var(--color-text-muted); font-size: 12px; line-height: 1.4; }
 .parent-onboarding-heading .eyebrow { display: inline-flex; background: var(--color-primary-soft); color: var(--color-primary); }
 .parent-onboarding-card .setup-progress { margin: 18px 0 2px; }
+.dashboard-status-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; padding: 9px 4px; }
+.dashboard-status-summary div { min-width: 0; display: grid; justify-items: center; gap: 1px; padding: 2px 8px; border-right: 1px solid var(--color-border); text-align: center; }
+.dashboard-status-summary div:last-child { border-right: 0; }
+.dashboard-status-summary strong { color: var(--color-text-strong); font-size: 19px; line-height: 1.15; }
+.dashboard-status-summary span { max-width: 100%; overflow: hidden; color: var(--color-text-muted); font-size: 10px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.dashboard-status-summary .attention strong { color: var(--color-warning-strong); }
 .link-version { align-self: center; color: var(--color-text-muted); margin-top: 4px; }
 
 .routine-list { display: grid; gap: 14px; }

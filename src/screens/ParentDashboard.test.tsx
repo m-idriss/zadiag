@@ -482,6 +482,10 @@ describe('ParentDashboard', () => {
     });
 
     expect(container.textContent).toContain('Checks to verify');
+    expect(Array.from(container.querySelectorAll('.dashboard-status-summary strong')).map((item) => item.textContent)).toEqual(['0', '1', '1']);
+    const reviewSection = container.querySelector('.parent-review-section');
+    const upcomingSection = container.querySelector('.upcoming-checks-section');
+    expect(Boolean(reviewSection && upcomingSection && (reviewSection.compareDocumentPosition(upcomingSection) & Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
     expect(container.textContent).toContain('Expected proof: Mouth photo');
     expect(container.textContent).toContain('Source: AI');
     expect(container.textContent).toContain('AI result: Not detected');

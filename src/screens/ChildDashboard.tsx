@@ -14,6 +14,7 @@ import { canRetakeCapture, resolvedEventStatus, withResolvedEventStatuses } from
 import { presentedUpcomingRoutineChecks } from '../domain/dashboardChecks';
 import { ProfileContextCard } from '../components/ProfileContextCard';
 import { profileColorFor } from '../domain/profileColor';
+import { DashboardStatusSummary } from '../components/DashboardStatusSummary';
 
 const isToday = (value: string, now = new Date()) => {
   const date = new Date(value);
@@ -220,9 +221,17 @@ export function ChildDashboard({
           />
         </div>
       </div>
+      <DashboardStatusSummary
+        label={t('dashboardStatusSummary')}
+        items={[
+          { label: t('dashboardToDo'), value: actionableCount },
+          { label: t('dashboardRetry'), value: attentionCompleted.length, tone: 'attention' },
+          { label: t('dashboardNext'), value: upcomingChecks.length },
+        ]}
+      />
       {pendingSection}
-      <UpcomingChecksSection checks={upcomingChecks} now={nowDate} locale={locale} titleId="upcoming-checks-title" t={t} />
       {attentionSection}
+      <UpcomingChecksSection checks={upcomingChecks} now={nowDate} locale={locale} titleId="upcoming-checks-title" t={t} />
       {historySection}
       <Disclaimer t={t} />
     </div>
