@@ -41,6 +41,11 @@ describe('ParentDashboard', () => {
     act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
 
     expect(container.textContent).toContain('Active checks');
+    expect(container.textContent).toContain('Finish setting up Zadiag');
+    const setupSteps = Array.from(container.querySelectorAll('.parent-onboarding-card .setup-progress li'));
+    expect(setupSteps.map((step) => step.textContent?.replace(/\d/g, ''))).toEqual(['Create', 'Link', 'Routine']);
+    expect(setupSteps[0]?.classList.contains('complete')).toBe(true);
+    expect(setupSteps[1]?.classList.contains('active')).toBe(true);
     expect(container.textContent).toContain('Participant phone not linked');
     expect(container.textContent).toContain('Participant linking code');
     expect(container.textContent).toContain('Recent history');
@@ -64,6 +69,7 @@ describe('ParentDashboard', () => {
     act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
 
     expect(container.textContent).toContain('Upcoming checks');
+    expect(container.textContent).not.toContain('Finish setting up Zadiag');
     expect(container.textContent).toContain('Orthodontic Elastics');
     expect(container.textContent).not.toContain('Active checks');
     expect(container.textContent).not.toContain('No active check yet');

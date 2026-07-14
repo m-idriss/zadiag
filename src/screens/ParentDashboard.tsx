@@ -14,6 +14,7 @@ import { activePendingEvents as activePendingChecks, presentedUpcomingRoutineChe
 import { ParticipantSelector } from '../components/ParticipantSelector';
 import { languageTag } from '../services/locale';
 import { ProofLightbox } from '../components/ProofLightbox';
+import { SetupProgress } from '../components/SetupProgress';
 
 export function ParentDashboard({
   state,
@@ -84,6 +85,7 @@ export function ParentDashboard({
       : !state.events.length && !upcomingChecks.length
           ? { icon: 'notifications' as const, title: t('responsibleEmptyNoCheckTitle'), hint: t('responsibleEmptyNoCheckHint') }
           : undefined;
+  const setupStep = !state.family.childLinked ? 2 : !state.routineAssignments.length ? 3 : undefined;
   const formatDateTime = (value: string) => dateTimeFormatter.format(new Date(value));
   const routineNameFor = (event: VerificationEvent) =>
     routinePresentationsById.get(event.routineId)?.name ?? t('routine');
@@ -205,6 +207,17 @@ export function ParentDashboard({
         onSelect={onSelectParticipant}
       />
       </div>
+
+      {setupStep ? (
+        <section className="card parent-onboarding-card" aria-labelledby="parent-onboarding-title">
+          <div className="parent-onboarding-heading">
+            <span className="eyebrow">{t('parentSetupEyebrow')}</span>
+            <h2 id="parent-onboarding-title">{t('parentSetupTitle')}</h2>
+            <p>{t(setupStep === 2 ? 'parentSetupLinkHint' : 'parentSetupRoutineHint')}</p>
+          </div>
+          <SetupProgress current={setupStep} role="parent" t={t} />
+        </section>
+      ) : null}
 
       {(responsibleEmptyState || activePendingEvents.length || (!state.family.childLinked && state.family.linkingCode) || (!state.routineAssignments.length && onCreateRoutine)) ? (
         <section className="settings-section parent-setup-section" aria-labelledby="parent-setup-title">

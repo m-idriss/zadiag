@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ComponentType } from 'react';
 import { normalizeAppPreferences, type AppState, type Locale, type Role, type VerificationEvent } from './domain/models';
 import { routeForState, type AppRoute } from './domain/appRouting';
 import { createRepository } from './services/repositoryFactory';
@@ -87,6 +87,8 @@ export function App() {
   const [result, setResult] = useState<VerificationEvent>();
   const [submitError, setSubmitError] = useState<string>();
   const [resetNoticeKey, setResetNoticeKey] = useState<MessageKey>();
+  const [setupNoticeKey, setSetupNoticeKey] = useState<MessageKey>();
+  const setupCompleteRef = useRef<boolean | undefined>(undefined);
   const [savingRoutineId, setSavingRoutineId] = useState<string>();
   const [selectedSessionId, setSelectedSessionId] = useState<string>();
   const [focusedHistoryEventId, setFocusedHistoryEventId] = useState<string>();
@@ -122,6 +124,17 @@ export function App() {
   useEffect(() => {
     writeUiStorageString(DASHBOARD_SUMMARY_RANGE_KEY, dashboardSummaryRange);
   }, [dashboardSummaryRange]);
+
+  useEffect(() => {
+    if (!ready || !state.role) return;
+    const setupComplete = state.role === 'parent'
+      ? state.family.linked && state.family.childLinked && state.routineAssignments.length > 0
+      : state.family.linked && state.notificationsEnabled;
+    if (setupCompleteRef.current === false && setupComplete) {
+      setSetupNoticeKey(state.role === 'parent' ? 'parentSetupComplete' : 'participantSetupComplete');
+    }
+    setupCompleteRef.current = setupComplete;
+  }, [ready, state.family.childLinked, state.family.linked, state.notificationsEnabled, state.role, state.routineAssignments.length]);
 
   useEffect(() => {
     if (!ready || !firebaseEnabled || !state.family.id || !state.role) return;
@@ -542,6 +555,13 @@ export function App() {
           message={t(resetNoticeKey)}
           closeLabel={t('close')}
           onClose={() => setResetNoticeKey(undefined)}
+        />
+      ) : null}
+      {setupNoticeKey ? (
+        <Snackbar
+          message={t(setupNoticeKey)}
+          closeLabel={t('close')}
+          onClose={() => setSetupNoticeKey(undefined)}
         />
       ) : null}
     </>

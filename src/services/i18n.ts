@@ -4,6 +4,10 @@ const messages = {
   en: {
     tagline: 'Intelligent support for your treatment routine',
     setupProgressLabel: 'Setup progress', setupInstallShort: 'Install', setupLinkShort: 'Link', setupNotifyShort: 'Alerts',
+    parentSetupCreateShort: 'Create', parentSetupLinkShort: 'Link', parentSetupRoutineShort: 'Routine',
+    parentSetupStepOne: 'Step 1 of 3', parentSetupEyebrow: 'Getting started', parentSetupTitle: 'Finish setting up Zadiag',
+    parentSetupLinkHint: 'Share the private code below to link the participant phone.', parentSetupRoutineHint: 'The participant is linked. Add the first routine to finish setup.',
+    parentSetupComplete: 'Zadiag is ready. The participant is linked and the first routine is active.', participantSetupComplete: 'Zadiag is ready. You will receive the next check notification on this phone.',
     setupStepOne: 'Step 1 of 3', setupStepTwo: 'Step 2 of 3', setupStepThree: 'Step 3 of 3',
     setupInstallTitle: 'Install Zadiag on this iPhone',
     setupInstallIntro: 'Installation is required so Zadiag can work like an app and receive check notifications.',
@@ -318,6 +322,10 @@ const messages = {
   fr: {
     tagline: 'Le suivi intelligent de votre traitement',
     setupProgressLabel: 'Progression de l’installation', setupInstallShort: 'Installer', setupLinkShort: 'Lier', setupNotifyShort: 'Alertes',
+    parentSetupCreateShort: 'Créer', parentSetupLinkShort: 'Lier', parentSetupRoutineShort: 'Routine',
+    parentSetupStepOne: 'Étape 1 sur 3', parentSetupEyebrow: 'Premiers pas', parentSetupTitle: 'Terminez la configuration de Zadiag',
+    parentSetupLinkHint: 'Partagez le code privé ci-dessous pour associer le téléphone du participant.', parentSetupRoutineHint: 'Le participant est associé. Ajoutez la première routine pour terminer.',
+    parentSetupComplete: 'Zadiag est prêt. Le participant est associé et la première routine est active.', participantSetupComplete: 'Zadiag est prêt. Vous recevrez la prochaine demande de contrôle sur ce téléphone.',
     setupStepOne: 'Étape 1 sur 3', setupStepTwo: 'Étape 2 sur 3', setupStepThree: 'Étape 3 sur 3',
     setupInstallTitle: 'Installe Zadiag sur cet iPhone',
     setupInstallIntro: 'L’installation est indispensable pour que Zadiag fonctionne comme une app et reçoive les demandes de contrôle.',

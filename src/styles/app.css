@@ -349,6 +349,11 @@ button:disabled { cursor: not-allowed; }
 .setup-error { color: var(--color-danger) !important; font-size: 13px; font-weight: 800; text-align: center; }
 .required-note { display: block; margin-top: 9px; color: var(--color-text-muted); font-size: 11px; text-align: center; }
 .link-page .setup-progress { margin-top: -30px; margin-left: 54px; }
+.parent-onboarding-card { margin-top: 14px; padding: var(--block-padding-lg); }
+.parent-onboarding-heading h2 { margin: 9px 0 3px; font-size: 18px; }
+.parent-onboarding-heading p { margin: 0; color: var(--color-text-muted); font-size: 12px; line-height: 1.4; }
+.parent-onboarding-heading .eyebrow { display: inline-flex; background: var(--color-primary-soft); color: var(--color-primary); }
+.parent-onboarding-card .setup-progress { margin: 18px 0 2px; }
 .link-version { align-self: center; color: var(--color-text-muted); margin-top: 4px; }
 
 .routine-list { display: grid; gap: 14px; }

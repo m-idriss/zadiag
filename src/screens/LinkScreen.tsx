@@ -54,9 +54,9 @@ export function LinkScreen({
   return (
     <main className="page link-page">
       <button type="button" className="back-button" onClick={back} aria-label={t('back')}><AppIcon name="chevron-back" /></button>
-      {!parent ? <SetupProgress current={2} t={t} /> : null}
+      <SetupProgress current={parent ? 1 : 2} role={role} t={t} />
       <div className="section-icon" aria-hidden="true"><AppIcon name={parent ? 'home' : 'link'} /></div>
-      {!parent ? <p className="setup-eyebrow">{t('setupStepTwo')}</p> : null}
+      <p className="setup-eyebrow">{t(parent ? 'parentSetupStepOne' : 'setupStepTwo')}</p>
       <h1>{parent ? t('createLink') : t('joinFamily')}</h1>
       <p>{parent ? (mode === 'recover' ? t('parentRecoverHint') : t('parentLinkHint')) : t('childLinkHint')}</p>
       <section className="card link-card">
