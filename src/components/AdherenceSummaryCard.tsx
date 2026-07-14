@@ -1,36 +1,22 @@
 import { useMemo } from 'react';
-import { adherenceSummary } from '../domain/adherence';
-import type { VerificationEvent, VerificationStatus } from '../domain/models';
+import { adherencePeriodReport, eventsInSummaryRange, isSummaryRange, type SummaryRange } from '../domain/reporting';
+import type { Locale, RoutineAssignment, VerificationEvent, VerificationStatus } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
+import { presentRoutine } from '../domain/routinePresentation';
 
-export type SummaryRange = 'day' | 'twoDays' | 'week' | 'month' | 'quarter';
-
-const summaryRangeIds: SummaryRange[] = ['day', 'twoDays', 'week', 'month', 'quarter'];
-
-export const isSummaryRange = (value: unknown): value is SummaryRange =>
-  typeof value === 'string' && summaryRangeIds.includes(value as SummaryRange);
+export { isSummaryRange, type SummaryRange } from '../domain/reporting';
 
 const ranges: Array<{
   id: SummaryRange;
-  days: number;
   labelKey: MessageKey;
   titleKey: MessageKey;
 }> = [
-  { id: 'day', days: 1, labelKey: 'range1Day', titleKey: 'summary1Day' },
-  { id: 'twoDays', days: 2, labelKey: 'range2Days', titleKey: 'summary2Days' },
-  { id: 'week', days: 7, labelKey: 'range1Week', titleKey: 'summary1Week' },
-  { id: 'month', days: 30, labelKey: 'range1Month', titleKey: 'summary1Month' },
-  { id: 'quarter', days: 90, labelKey: 'range3Months', titleKey: 'summary3Months' },
+  { id: 'day', labelKey: 'range1Day', titleKey: 'summary1Day' },
+  { id: 'twoDays', labelKey: 'range2Days', titleKey: 'summary2Days' },
+  { id: 'week', labelKey: 'range1Week', titleKey: 'summary1Week' },
+  { id: 'month', labelKey: 'range1Month', titleKey: 'summary1Month' },
+  { id: 'quarter', labelKey: 'range3Months', titleKey: 'summary3Months' },
 ];
-
-const eventTimestamp = (event: VerificationEvent) =>
-  Date.parse(event.capturedAt ?? event.requestedAt);
-
-const startOfToday = (now: number) => {
-  const date = new Date(now);
-  date.setHours(0, 0, 0, 0);
-  return date.getTime();
-};
 
 const ringSegments: Array<{ status: VerificationStatus; color: string }> = [
   { status: 'detected', color: 'var(--color-primary)' },
@@ -54,28 +40,37 @@ const summaryRing = (statusCounts: Record<string, number>, total: number) => {
 };
 
 export const filterEventsBySummaryRange = (events: VerificationEvent[], range: SummaryRange, now = Date.now()) => {
-  const selectedRange = ranges.find((item) => item.id === range) ?? ranges[0];
-  const cutoff = range === 'day'
-    ? startOfToday(now)
-    : now - selectedRange.days * 24 * 60 * 60 * 1000;
-  return events.filter((event) => eventTimestamp(event) >= cutoff);
+  return eventsInSummaryRange(events, range, now);
 };
 
 export function AdherenceSummaryCard({
   events,
+  assignments,
+  locale,
   range,
   onRangeChange,
   t,
 }: {
   events: VerificationEvent[];
+  assignments: RoutineAssignment[];
+  locale: Locale;
   range: SummaryRange;
   onRangeChange: (range: SummaryRange) => void;
   t: (key: MessageKey) => string;
 }) {
   const selectedRange = ranges.find((item) => item.id === range) ?? ranges[0];
-  const summaryEvents = useMemo(() => filterEventsBySummaryRange(events, range), [events, range]);
-  const summary = adherenceSummary(summaryEvents);
+  const report = useMemo(() => adherencePeriodReport(events, range), [events, range]);
+  const summary = report.current;
   const ring = summaryRing(summary.statusCounts, summary.completed);
+  const routineNames = useMemo(() => new Map(assignments.map((assignment) => [
+    assignment.routineId,
+    presentRoutine(assignment.routine, locale).name,
+  ])), [assignments, locale]);
+  const comparison = report.rateDelta === undefined
+    ? t('summaryNoPreviousBaseline')
+    : report.rateDelta === 0
+      ? t('summaryComparedStable')
+      : `${t(report.rateDelta > 0 ? 'summaryComparedUp' : 'summaryComparedDown')} ${Math.abs(Math.round(report.rateDelta * 100))} ${t('summaryPoints')}`;
 
   return (
     <section className="card summary-card adherence-summary-card">
@@ -87,8 +82,22 @@ export function AdherenceSummaryCard({
           <h2>{t(selectedRange.titleKey)}</h2>
           <p>{summary.successful} {t('clearChecks')} {summary.completed}</p>
           <strong>{t('progressEncouragement')}</strong>
+          <small className="summary-comparison">{comparison}</small>
         </div>
       </div>
+      {report.byRoutine.length ? (
+        <details className="routine-reporting">
+          <summary>{t('summaryByRoutine')}</summary>
+          <div>
+            {report.byRoutine.map((routine) => (
+              <p key={routine.routineId}>
+                <strong>{routineNames.get(routine.routineId) ?? t('routine')}</strong>
+                <span>{routine.successful}/{routine.completed} · {Math.round(routine.rate * 100)}%</span>
+              </p>
+            ))}
+          </div>
+        </details>
+      ) : null}
       <div className="summary-range-toggle" role="group" aria-label={t('summaryRange')}>
         {ranges.map((item) => (
           <button
