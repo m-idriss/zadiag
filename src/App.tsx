@@ -483,7 +483,7 @@ export function App() {
             setLocale={syncLocale}
             updateInfo={appUpdateInfo}
             forceAppUpdate={forceAppUpdate}
-            reset={() => { void reset(); }}
+            reset={reset}
             role={role}
             t={t}
           />

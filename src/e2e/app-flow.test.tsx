@@ -290,10 +290,10 @@ describe('Zadiag smoke flow', () => {
     const settingsButton = Array.from(document.querySelectorAll('button'))
       .find((button) => button.textContent?.includes('Settings')) as HTMLButtonElement | undefined;
     settingsButton?.click();
-    await waitForText('Reset account data');
+    await waitForText('Delete account data');
 
     const resetButton = Array.from(document.querySelectorAll('button'))
-      .find((button) => button.textContent?.includes('Reset account data')) as HTMLButtonElement | undefined;
+      .find((button) => button.textContent?.includes('Delete account data')) as HTMLButtonElement | undefined;
     resetButton?.click();
 
     await waitForText('Continue as');
@@ -325,10 +325,10 @@ describe('Zadiag smoke flow', () => {
     const settingsButton = Array.from(document.querySelectorAll('button'))
       .find((button) => button.textContent?.includes('Settings')) as HTMLButtonElement | undefined;
     settingsButton?.click();
-    await waitForText('Reset account data');
+    await waitForText('Delete account data');
 
     const resetButton = Array.from(document.querySelectorAll('button'))
-      .find((button) => button.textContent?.includes('Reset account data')) as HTMLButtonElement | undefined;
+      .find((button) => button.textContent?.includes('Delete account data')) as HTMLButtonElement | undefined;
     resetButton?.click();
 
     await waitForText('Continue as');

@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
 import {
   chevronDownOutline,
+  downloadOutline,
+  imagesOutline,
   informationCircleOutline,
   languageOutline,
   mailOutline,
   notificationsOutline,
+  peopleOutline,
+  shieldCheckmarkOutline,
   timeOutline,
   trashOutline,
 } from 'ionicons/icons';
@@ -61,7 +65,7 @@ export function SettingsScreen({
   setLocale: (locale: Locale) => Promise<void>;
   updateInfo: AppUpdateInfo;
   forceAppUpdate: () => Promise<boolean>;
-  reset: () => void;
+  reset: () => Promise<void>;
   role: Role;
   notificationsEnabled: boolean;
   pushHealth?: PushSubscriptionHealth;
@@ -92,6 +96,7 @@ export function SettingsScreen({
   recoverRelationship?: (code: string) => Promise<{ participantId: string; recoveryCode?: string; expiresAt?: string }>;
 }) {
   const [contactMailError, setContactMailError] = useState(false);
+  const [dataCopyMailError, setDataCopyMailError] = useState(false);
   const [updatingApp, setUpdatingApp] = useState(false);
   const [updateError, setUpdateError] = useState(false);
   const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
@@ -100,6 +105,8 @@ export function SettingsScreen({
   const [testPushStatus, setTestPushStatus] = useState<'idle' | 'success' | 'error' | 'enableError'>('idle');
   const [localPushEndpointPresent, setLocalPushEndpointPresent] = useState(false);
   const [localPushDispatchAt, setLocalPushDispatchAt] = useState<string>();
+  const [resettingAccount, setResettingAccount] = useState(false);
+  const [resetError, setResetError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -131,14 +138,24 @@ export function SettingsScreen({
     }
     : pushHealth;
 
-  const confirmReset = () => {
-    if (window.confirm(t('resetConfirm'))) reset();
+  const confirmReset = async () => {
+    if (!window.confirm(t('resetConfirm'))) return;
+    setResetError(false);
+    setResettingAccount(true);
+    try {
+      await reset();
+    } catch (error) {
+      console.error(error);
+      setResetError(true);
+    } finally {
+      setResettingAccount(false);
+    }
   };
-  const contactSupport = () => {
-    setContactMailError(false);
+  const openSupportEmail = (subjectPrefix: string, prompt: string, includeDiagnostics: boolean, setError: (error: boolean) => void) => {
+    setError(false);
     try {
       const correlationId = createCorrelationId();
-      const subject = `Zadiag contact [${correlationId}]`;
+      const subject = `${subjectPrefix} [${correlationId}]`;
       const diagnostics = buildDiagnosticsEmailBody({
         correlationId,
         locale,
@@ -151,14 +168,16 @@ export function SettingsScreen({
         totalChecks,
         events,
       });
-      const body = `${t('settingsContactEmailPrompt')}\n\n\n${diagnostics}`;
+      const body = `${prompt}${includeDiagnostics ? `\n\n\n${diagnostics}` : ''}`;
       const mailto = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
       window.location.href = mailto;
     } catch (error) {
       console.error(error);
-      setContactMailError(true);
+      setError(true);
     }
   };
+  const contactSupport = () => openSupportEmail('Zadiag contact', t('settingsContactEmailPrompt'), true, setContactMailError);
+  const requestDataCopy = () => openSupportEmail('Zadiag data copy', t('trustDataCopyEmailPrompt'), false, setDataCopyMailError);
   const forceUpdate = async () => {
     setUpdateError(false);
     setUpdatingApp(true);
@@ -406,16 +425,42 @@ export function SettingsScreen({
           </ListRow>
         </div>
       </section>
+      <section className="settings-section" aria-labelledby="settings-trust-heading">
+        <h2 id="settings-trust-heading">{t('trustCenterSection')}</h2>
+        <div className="card settings-list trust-center-list">
+          <ListRow
+            icon={<SvgIcon icon={imagesOutline} />}
+            title={t('trustProofTitle')}
+            detail={t('trustProofDetail')}
+          />
+          <ListRow
+            icon={<SvgIcon icon={peopleOutline} />}
+            title={t('trustAccessTitle')}
+            detail={t('trustAccessDetail')}
+          />
+          <ListRow
+            icon={<SvgIcon icon={shieldCheckmarkOutline} />}
+            title={t('trustDiagnosticsTitle')}
+            detail={t('trustDiagnosticsDetail')}
+          />
+          <ListRow
+            icon={<SvgIcon icon={downloadOutline} />}
+            title={t('trustDataCopyTitle')}
+            detail={t('trustDataCopyDetail')}
+            trailing={<button type="button" className="settings-inline-action settings-inline-action-contained" onClick={requestDataCopy}>{t('trustDataCopyAction')}</button>}
+          />
+        </div>
+        {dataCopyMailError ? <small className="settings-action-error">{t('settingsContactError')}</small> : null}
+      </section>
       <section className="settings-section settings-account-section" aria-labelledby="settings-account-heading">
         <h2 id="settings-account-heading">{t('settingsAccountSection')}</h2>
       <Disclaimer t={t} />
-      <section className="card privacy-card">
-        <ul><li>{t('noFaceRecognition')}</li><li>{t('noModelTraining')}</li><li>{t('noPhotoUpload')}</li><li>{t('immediateDeletion')}</li></ul>
-      </section>
-      <ActionButton className="settings-reset-button" tone="danger" onClick={confirmReset}>
+      <ActionButton className="settings-reset-button" tone="danger" disabled={resettingAccount} aria-busy={resettingAccount} onClick={() => { void confirmReset(); }}>
         <SvgIcon icon={trashOutline} />
-        {t('resetDemo')}
+        {resettingAccount ? t('resettingAccount') : t('resetDemo')}
       </ActionButton>
+      <small className="settings-account-delete-detail">{t('resetAccountDetail')}</small>
+      {resetError ? <small className="settings-action-error" role="alert">{t('resetAccountError')}</small> : null}
       </section>
     </div>
   );
