@@ -76,6 +76,9 @@ export const syncStatusFor = (online: boolean, pendingOperations: number, failed
   return failed ? 'failed' : 'synced';
 };
 
+export const syncStatusIsVisible = (status: SyncStatus, recentSuccess: boolean) =>
+  status !== 'synced' || recentSuccess;
+
 export const setupCompletionTransition = (
   previous: boolean | undefined,
   state: Pick<AppState, 'role' | 'family' | 'notificationsEnabled' | 'routineAssignments' | 'routinesLoaded'>,
@@ -125,6 +128,8 @@ export function App() {
   const [online, setOnline] = useState(() => navigator.onLine);
   const [pendingSyncOperations, setPendingSyncOperations] = useState(0);
   const [syncFailed, setSyncFailed] = useState(false);
+  const [syncConfirmationSequence, setSyncConfirmationSequence] = useState(0);
+  const [syncConfirmationVisible, setSyncConfirmationVisible] = useState(false);
   const [dashboardSummaryRange, setDashboardSummaryRange] = useState<SummaryRange>(readDashboardSummaryRange);
   const [serviceWorkerStatus, setServiceWorkerStatus] = useState<'unsupported' | 'registered' | 'notRegistered'>(
     () => ('serviceWorker' in navigator ? 'notRegistered' : 'unsupported'),
@@ -158,6 +163,13 @@ export function App() {
       window.removeEventListener('offline', updateConnection);
     };
   }, []);
+
+  useEffect(() => {
+    if (!syncConfirmationSequence) return;
+    setSyncConfirmationVisible(true);
+    const timeout = window.setTimeout(() => setSyncConfirmationVisible(false), 2_000);
+    return () => window.clearTimeout(timeout);
+  }, [syncConfirmationSequence]);
 
   useEffect(() => {
     if (state.accessStatus === 'suspended') setRoute('suspended');
@@ -283,6 +295,7 @@ export function App() {
       const result = await action.apply(repository, args);
       sync();
       setLastSyncAt(new Date().toISOString());
+      setSyncConfirmationSequence((sequence) => sequence + 1);
       return result;
     } catch (error) {
       setSyncFailed(true);
@@ -574,13 +587,15 @@ export function App() {
         t={t}
       >
         {screen}
-        <div className={`global-sync-status ${syncStatus}`} role="status" aria-live="polite">
-          <span aria-hidden="true" />
-          <strong>{t(syncStatusMessageKeys[syncStatus])}</strong>
-          {(syncStatus === 'failed' || syncStatus === 'offline') && retrySync ? (
-            <button type="button" disabled={!online} onClick={() => { void retrySync(); }}>{t('retryNow')}</button>
-          ) : null}
-        </div>
+        {syncStatusIsVisible(syncStatus, syncConfirmationVisible) ? (
+          <div className={`global-sync-status ${syncStatus}`} role="status" aria-live="polite">
+            <span aria-hidden="true" />
+            <strong>{t(syncStatusMessageKeys[syncStatus])}</strong>
+            {(syncStatus === 'failed' || syncStatus === 'offline') && retrySync ? (
+              <button type="button" disabled={!online} onClick={() => { void retrySync(); }}>{t('retryNow')}</button>
+            ) : null}
+          </div>
+        ) : null}
         <BottomNav
           tab={tab}
           role={role}

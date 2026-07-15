@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_ROUTINE_ID, type AppState, type VerificationEvent } from './domain/models';
-import { appBadgeCountForState, documentLanguageForLocale, isParticipantInvitationCode, participantIdForNotificationLaunch, resetNoticeMessageKey, setupCompletionTransition, syncStatusFor } from './App';
+import { appBadgeCountForState, documentLanguageForLocale, isParticipantInvitationCode, participantIdForNotificationLaunch, resetNoticeMessageKey, setupCompletionTransition, syncStatusFor, syncStatusIsVisible } from './App';
 
 const activePendingEvent = (expiresAt: string): VerificationEvent => ({
   id: 'check-1',
@@ -47,6 +47,14 @@ describe('syncStatusFor', () => {
     expect(syncStatusFor(true, 1, true)).toBe('syncing');
     expect(syncStatusFor(true, 0, true)).toBe('failed');
     expect(syncStatusFor(true, 0, false)).toBe('synced');
+  });
+
+  it('hides the idle state after confirmation but keeps actionable states visible', () => {
+    expect(syncStatusIsVisible('synced', false)).toBe(false);
+    expect(syncStatusIsVisible('synced', true)).toBe(true);
+    expect(syncStatusIsVisible('syncing', false)).toBe(true);
+    expect(syncStatusIsVisible('offline', false)).toBe(true);
+    expect(syncStatusIsVisible('failed', false)).toBe(true);
   });
 });
 
