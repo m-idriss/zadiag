@@ -1921,6 +1921,7 @@ button:disabled { cursor: not-allowed; }
 .mouth-guide span { position: absolute; top: 24px; font-size: 13px; }
 .mouth-oval { width: min(75%, 280px); aspect-ratio: 1.7; border: 3px solid var(--color-surface-solid); border-radius: 50%; box-shadow: 0 0 0 999px rgba(5,18,29,.25); }
 .camera-hints { display: flex; justify-content: space-around; padding: 13px 0; color: rgba(255,255,255,.72); font-size: 11px; }
+.camera-privacy-note { margin: 0 0 13px; color: var(--color-surface-solid); font-size: 11px; line-height: 1.4; opacity: .72; text-align: center; }
 .shutter { display: block; width: 72px; height: 72px; border: 3px solid var(--color-surface-solid); border-radius: 50%; margin: 6px auto; background: transparent; padding: 5px; }
 .shutter span { display: block; width: 100%; height: 100%; border-radius: 50%; background: var(--color-surface-solid); }
 .camera-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }

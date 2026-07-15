@@ -13,6 +13,7 @@ const event = (status: VerificationEvent['status']): VerificationEvent => ({
   expiresAt: '2026-07-04T10:20:00.000Z',
   capturedAt: '2026-07-04T10:03:00.000Z',
   status,
+  proofImagePath: status === 'uncertain' ? 'participants/profile/checks/check-1/proof.jpg' : undefined,
 });
 
 describe('ResultScreen', () => {
@@ -58,5 +59,12 @@ describe('ResultScreen', () => {
     expect(container.textContent).toContain('Back to today');
     expect(container.textContent).not.toContain('Send as is');
     expect(container.textContent).not.toContain('expected proof is clearly visible');
+  });
+
+  it('explains temporary proof access when a responsible review is required', () => {
+    act(() => root.render(<ResultScreen event={event('uncertain')} retake={() => undefined} done={() => undefined} t={(key) => translate('en', key)} />));
+
+    expect(container.textContent).toContain('temporarily available to authorized responsible people');
+    expect(container.textContent).toContain('deleted after their decision');
   });
 });

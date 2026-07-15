@@ -14,7 +14,7 @@ import { createDefaultRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTIN
 import { buildCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription, type SyntheticReceiptPayload } from './notifications.js';
 import { isCheckRequestRateLimited } from './reminders.js';
 import { recordAuditEvent } from './audit.js';
-import { expiredPendingCheckCleanupUpdate, staleCleanupCutoffs } from './cleanup.js';
+import { expiredPendingCheckCleanupUpdate, shouldDeleteProofAfterReview, staleCleanupCutoffs } from './cleanup.js';
 import { reportOperationalAlert, reportOperationalEvent } from './observability.js';
 import { shouldRecoverSyntheticPush } from './syntheticMonitor.js';
 import { canLeaveMembership, canRemoveMembership, createMembership, hasParticipantPermission, isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, isProfileColorKey, membershipRoles, migrateLegacyFamilyRelationships, scheduledAggregatePaths, type MembershipRole } from './relationships.js';
@@ -2478,7 +2478,7 @@ export const reviewCheck = onCall({ region, cors, enforceAppCheck: true }, async
     return { id: check.id, ...checkData, ...update };
   });
   const proofImagePath = reviewedCheck.proofImagePath;
-  if (decision === 'detected' && typeof proofImagePath === 'string' && proofImagePath) {
+  if (shouldDeleteProofAfterReview(decision) && typeof proofImagePath === 'string' && proofImagePath) {
     try {
       await bucket.file(proofImagePath).delete({ ignoreNotFound: true });
       await checkRef.update({
