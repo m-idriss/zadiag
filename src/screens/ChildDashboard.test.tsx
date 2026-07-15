@@ -197,7 +197,7 @@ describe('participant Today screen', () => {
     yesterday.setDate(yesterday.getDate() - 1);
     const submittedToday = {
       ...event('submitted-today', 'detected', yesterday.toISOString(), atToday(12)),
-      capturedAt: atToday(14),
+      capturedAt: atToday(10),
     };
     const state: AppState = {
       role: 'child',
