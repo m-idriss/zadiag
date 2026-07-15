@@ -21,6 +21,8 @@ describe('ResultScreen', () => {
 
   beforeEach(() => {
     (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-04T10:05:00.000Z'));
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
@@ -29,6 +31,7 @@ describe('ResultScreen', () => {
   afterEach(() => {
     act(() => root.unmount());
     container.remove();
+    vi.useRealTimers();
   });
 
   it('offers to retake proof when a non-positive result can be retried', () => {
@@ -43,7 +46,7 @@ describe('ResultScreen', () => {
 
     const sendAsIsButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Send as is');
     expect(sendAsIsButton).not.toBeUndefined();
-    expect(container.textContent).toContain('send it as is for responsible review');
+    expect(container.textContent).toContain('expected proof is clearly visible');
     act(() => sendAsIsButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(done).toHaveBeenCalled();
   });
@@ -54,6 +57,6 @@ describe('ResultScreen', () => {
     expect(container.textContent).not.toContain('Retake proof');
     expect(container.textContent).toContain('Back to today');
     expect(container.textContent).not.toContain('Send as is');
-    expect(container.textContent).not.toContain('send it as is for responsible review');
+    expect(container.textContent).not.toContain('expected proof is clearly visible');
   });
 });

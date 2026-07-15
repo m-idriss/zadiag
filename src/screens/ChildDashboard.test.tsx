@@ -162,6 +162,7 @@ describe('participant Today screen', () => {
     expect(Array.from(container.querySelectorAll('.dashboard-status-summary strong')).map((item) => item.textContent)).toEqual(['0', '1', '1']);
     const retrySection = container.querySelector('.participant-review-section');
     expect(retrySection).not.toBeNull();
+    expect(retrySection?.textContent).toContain('expected proof is clearly visible');
     expect(container.querySelector('.upcoming-checks-section')).toBeNull();
     act(() => todayButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(retake).toHaveBeenCalledWith(failed);
