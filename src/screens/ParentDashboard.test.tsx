@@ -54,17 +54,13 @@ describe('ParentDashboard', () => {
     expect(container.textContent).not.toContain('StatusAll');
     expect(container.textContent).not.toContain('Monitoring plan');
     expect(container.textContent).not.toContain('Needs attention');
-    const print = vi.spyOn(window, 'print').mockImplementation(() => undefined);
     const detailedReport = container.querySelector<HTMLDetailsElement>('.detailed-reporting');
     expect(detailedReport?.open).toBe(false);
     expect(detailedReport?.querySelector('summary')?.textContent).toBe('Detailed report');
-    const reportButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Print or save report'));
+    const reportButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Download PDF'));
     expect(detailedReport?.contains(reportButton ?? null)).toBe(true);
     expect(reportButton?.disabled).toBe(false);
-    expect(container.querySelector('.printable-report')?.textContent).toContain('Participant: Maya');
-    expect(container.querySelector('.printable-report img')).toBeNull();
-    act(() => reportButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
-    expect(print).toHaveBeenCalledOnce();
+    expect(container.querySelector('.printable-report')).toBeNull();
   });
 
   it('shows upcoming checks when no responsible check is active', () => {
@@ -85,7 +81,7 @@ describe('ParentDashboard', () => {
     expect(container.textContent).toContain('Orthodontic Elastics');
     expect(container.textContent).not.toContain('Active checks');
     expect(container.textContent).not.toContain('No active check yet');
-    const reportButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Print or save report'));
+    const reportButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Download PDF'));
     expect(reportButton?.disabled).toBe(true);
     expect(container.textContent).toContain('Complete a check in this period to create a report.');
     expect(container.querySelector('.printable-report')).toBeNull();

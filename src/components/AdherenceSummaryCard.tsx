@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { adherencePeriodReport, eventsInSummaryRange, isSummaryRange, type SummaryRange } from '../domain/reporting';
 import type { Locale, RoutineAssignment, VerificationEvent, VerificationStatus } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
@@ -83,6 +83,50 @@ export function AdherenceSummaryCard({
     : report.rateDelta === 0
       ? t('summaryComparedStable')
       : `${t(report.rateDelta > 0 ? 'summaryComparedUp' : 'summaryComparedDown')} ${Math.abs(Math.round(report.rateDelta * 100))} ${t('summaryPoints')}`;
+  const [reportDownloadState, setReportDownloadState] = useState<'idle' | 'busy' | 'error'>('idle');
+  const downloadReport = async () => {
+    if (reportDownloadState === 'busy' || !summary.completed) return;
+    setReportDownloadState('busy');
+    try {
+      const {
+        adherenceReportFilename,
+        createAdherenceReportPdf,
+        deliverAdherenceReportPdf,
+      } = await import('../services/reportPdf');
+      const title = t('adherenceReport');
+      const blob = createAdherenceReportPdf({
+        title,
+        subject: `${t('reportParticipant')}: ${subjectName}`,
+        period: `${t('reportPeriod')}: ${t(selectedRange.titleKey)}`,
+        generatedOn: `${t('reportGeneratedOn')}: ${dateTimeFormatter.format(new Date())}`,
+        summary: [
+          { label: t('reportAdherenceRate'), value: `${Math.round(summary.rate * 100)}%` },
+          { label: t('successful'), value: `${summary.successful}/${summary.completed}` },
+          { label: t('reportEvolution'), value: comparison },
+        ],
+        routineHeading: t('summaryByRoutine'),
+        routineColumns: [t('routine'), t('successful'), t('reportAdherenceRate')],
+        routines: report.byRoutine.map((routine) => [
+          routineNames.get(routine.routineId) ?? t('routine'),
+          `${routine.successful}/${routine.completed}`,
+          `${Math.round(routine.rate * 100)}%`,
+        ]),
+        historyHeading: t('reportCheckHistory'),
+        historyColumns: [t('reportDate'), t('routine'), t('reportStatus')],
+        history: completedEvents.map((event) => [
+          dateTimeFormatter.format(new Date(event.capturedAt ?? event.requestedAt)),
+          routineNames.get(event.routineId) ?? t('routine'),
+          t(statusMessageKey(event.status)),
+        ]),
+        privacyNote: t('reportPrivacyNote'),
+      });
+      await deliverAdherenceReportPdf(blob, adherenceReportFilename(subjectName), title);
+      setReportDownloadState('idle');
+    } catch (error) {
+      console.error(error);
+      setReportDownloadState('error');
+    }
+  };
 
   return (
     <section className="card summary-card adherence-summary-card">
@@ -129,58 +173,16 @@ export function AdherenceSummaryCard({
           <button
             type="button"
             className="action-button fill-outline report-print-action"
-            disabled={!summary.completed}
-            onClick={() => window.print()}
+            disabled={!summary.completed || reportDownloadState === 'busy'}
+            onClick={() => { void downloadReport(); }}
           >
             <AppIcon name="download" />
-            {t('printReport')}
+            {t(reportDownloadState === 'busy' ? 'generatingReport' : 'downloadReport')}
           </button>
           {!summary.completed ? <small className="report-unavailable-hint">{t('reportUnavailable')}</small> : null}
+          {reportDownloadState === 'error' ? <small className="request-feedback error">{t('reportDownloadError')}</small> : null}
         </div>
       </details>
-      {summary.completed ? <article className="printable-report" aria-hidden="true">
-        <header>
-          <strong>Zadiag</strong>
-          <h1>{t('adherenceReport')}</h1>
-          <p>{t('reportParticipant')}: {subjectName}</p>
-          <p>{t('reportPeriod')}: {t(selectedRange.titleKey)}</p>
-          <p>{t('reportGeneratedOn')}: {dateTimeFormatter.format(new Date())}</p>
-        </header>
-        <section className="printable-report-summary">
-          <div><span>{t('reportAdherenceRate')}</span><strong>{Math.round(summary.rate * 100)}%</strong></div>
-          <div><span>{t('successful')}</span><strong>{summary.successful}/{summary.completed}</strong></div>
-          <div><span>{t('reportEvolution')}</span><strong>{comparison}</strong></div>
-        </section>
-        {report.byRoutine.length ? (
-          <section>
-            <h2>{t('summaryByRoutine')}</h2>
-            <table>
-              <thead><tr><th>{t('routine')}</th><th>{t('successful')}</th><th>{t('reportAdherenceRate')}</th></tr></thead>
-              <tbody>{report.byRoutine.map((routine) => (
-                <tr key={routine.routineId}>
-                  <td>{routineNames.get(routine.routineId) ?? t('routine')}</td>
-                  <td>{routine.successful}/{routine.completed}</td>
-                  <td>{Math.round(routine.rate * 100)}%</td>
-                </tr>
-              ))}</tbody>
-            </table>
-          </section>
-        ) : null}
-        <section>
-          <h2>{t('reportCheckHistory')}</h2>
-          <table>
-            <thead><tr><th>{t('reportDate')}</th><th>{t('routine')}</th><th>{t('reportStatus')}</th></tr></thead>
-            <tbody>{completedEvents.map((event) => (
-              <tr key={event.id}>
-                <td>{dateTimeFormatter.format(new Date(event.capturedAt ?? event.requestedAt))}</td>
-                <td>{routineNames.get(event.routineId) ?? t('routine')}</td>
-                <td>{t(statusMessageKey(event.status))}</td>
-              </tr>
-            ))}</tbody>
-          </table>
-        </section>
-        <footer>{t('reportPrivacyNote')}</footer>
-      </article> : null}
     </section>
   );
 }
