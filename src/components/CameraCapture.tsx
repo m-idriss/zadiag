@@ -231,6 +231,8 @@ export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureP
         <span>◎ {t('stayStill')}</span>
       </div>
 
+      <p className="camera-privacy-note">{t('cameraProofPrivacy')}</p>
+
       {error && <p className="form-error" role="alert">{error}</p>}
 
       {!streamRef.current && !preview && (

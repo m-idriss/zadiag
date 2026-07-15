@@ -40,6 +40,7 @@ export function ResultScreen({
         </div>
       ) : null}
       {quality != null && quality <= 60 ? <p className="result-reason">{t('analysisQualityHint')}</p> : null}
+      {event.status === 'uncertain' && event.proofImagePath ? <p className="result-reason">{t('proofPendingReviewPrivacy')}</p> : null}
       <Disclaimer t={t} />
       {retake ? <p className="result-choice-hint">{t(retakeGuidanceMessageKey(event))}</p> : null}
       {retake ? <ActionButton onClick={retake}>{t('retakeProof')}</ActionButton> : null}

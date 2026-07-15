@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { expiredPendingCheckCleanupUpdate, staleCleanupCutoffs } from './cleanup.js';
+import { expiredPendingCheckCleanupUpdate, shouldDeleteProofAfterReview, staleCleanupCutoffs } from './cleanup.js';
 
 test('computes conservative stale cleanup cutoffs', () => {
   const cutoffs = staleCleanupCutoffs(new Date('2026-07-10T12:00:00.000Z'));
@@ -17,4 +17,10 @@ test('marks stale pending checks as missed without deleting history', () => {
     missedReason: 'expired_pending_cleanup',
     updatedAt: '2026-07-10T12:00:00.000Z',
   });
+});
+
+test('deletes proof images after every completed responsible review', () => {
+  assert.equal(shouldDeleteProofAfterReview('detected'), true);
+  assert.equal(shouldDeleteProofAfterReview('not_detected'), true);
+  assert.equal(shouldDeleteProofAfterReview('uncertain'), false);
 });

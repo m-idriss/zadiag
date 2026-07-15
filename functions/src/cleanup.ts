@@ -20,3 +20,6 @@ export const expiredPendingCheckCleanupUpdate = (now = new Date()) => ({
   missedReason: 'expired_pending_cleanup',
   updatedAt: now.toISOString(),
 });
+
+export const shouldDeleteProofAfterReview = (decision: string) =>
+  decision === 'detected' || decision === 'not_detected';
