@@ -19,8 +19,7 @@ describe('NotificationCenter', () => {
     act(() => root.render(
       <NotificationCenter
         role="child"
-        events={[]}
-        assignments={[]}
+        sources={[]}
         locale="en"
         contextId="maya"
         onOpenEvent={vi.fn()}
@@ -53,8 +52,12 @@ describe('NotificationCenter', () => {
     act(() => root.render(
       <NotificationCenter
         role="child"
-        events={[ready]}
-        assignments={[createDefaultRoutineAssignment()]}
+        sources={[{
+          participant: { id: 'maya', displayName: 'Maya' },
+          role: 'child',
+          events: [ready],
+          assignments: [createDefaultRoutineAssignment()],
+        }]}
         locale="en"
         contextId="maya"
         onOpenEvent={onOpenEvent}
@@ -68,11 +71,53 @@ describe('NotificationCenter', () => {
     act(() => trigger?.click());
     expect(container.textContent).toContain('Check ready');
     expect(container.querySelector('.notification-center-trigger')?.textContent).toBe('');
-    expect(localStorage.getItem('zadiag.notificationCenter.read.child.maya')).toBe('["check_ready:ready"]');
+    expect(localStorage.getItem('zadiag.notificationCenter.read.child.maya')).toBe('["maya:check_ready:ready"]');
     const notification = container.querySelector<HTMLButtonElement>('.notification-center-list > button');
     act(() => notification?.click());
 
-    expect(onOpenEvent).toHaveBeenCalledWith(ready);
+    expect(onOpenEvent).toHaveBeenCalledWith('maya', ready);
+
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  it('shows notifications from every profile and identifies their participant', () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const now = Date.now();
+    const eventFor = (id: string): VerificationEvent => ({
+      id,
+      routineId: 'orthodontic-elastics',
+      sessionId: `session-${id}`,
+      requestedAt: new Date(now - 60_000).toISOString(),
+      expiresAt: new Date(now + 60 * 60_000).toISOString(),
+      status: 'pending',
+    });
+    const mayaEvent = eventFor('maya-ready');
+    const leoEvent = eventFor('leo-ready');
+    const onOpenEvent = vi.fn();
+
+    act(() => root.render(
+      <NotificationCenter
+        role="child"
+        sources={[
+          { participant: { id: 'maya', displayName: 'Maya' }, role: 'child', events: [mayaEvent], assignments: [createDefaultRoutineAssignment()] },
+          { participant: { id: 'leo', displayName: 'Léo Martin' }, role: 'child', events: [leoEvent], assignments: [createDefaultRoutineAssignment()] },
+        ]}
+        locale="fr"
+        contextId="account"
+        onOpenEvent={onOpenEvent}
+        t={(key) => translate('fr', key)}
+      />,
+    ));
+
+    act(() => container.querySelector<HTMLButtonElement>('.notification-center-trigger')?.click());
+    expect(Array.from(container.querySelectorAll('.notification-center-profile')).map((item) => item.textContent)).toEqual(['MA', 'LM']);
+    expect(container.textContent).toContain('Maya');
+    expect(container.textContent).toContain('Léo Martin');
+    act(() => container.querySelectorAll<HTMLButtonElement>('.notification-center-list > button')[1]?.click());
+    expect(onOpenEvent).toHaveBeenCalledWith('leo', leoEvent);
 
     act(() => root.unmount());
     container.remove();

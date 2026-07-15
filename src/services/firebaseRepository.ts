@@ -25,6 +25,7 @@ import {
   type MembershipRole,
   type ParticipantAccess,
   type ParticipantMember,
+  type ParticipantNotificationSource,
   type ProfileColorKey,
   type Role,
   type RoutineAssignment,
@@ -127,6 +128,7 @@ export class FirebaseRepository implements AppRepository {
   private state = initialRemoteState();
   private listeners = new Set<() => void>();
   private remoteSubscriptions: Unsubscribe[] = [];
+  private notificationSubscriptions: Unsubscribe[] = [];
   private accessSubscription?: Unsubscribe;
   private inFlightCallables = new Map<string, Promise<unknown>>();
   private user?: User;
@@ -159,6 +161,7 @@ export class FirebaseRepository implements AppRepository {
       this.state.accessStatus = access?.status === 'suspended' ? 'suspended' : 'active';
       if (this.state.accessStatus === 'suspended') {
         this.remoteSubscriptions.splice(0).forEach((unsubscribe) => unsubscribe());
+        this.notificationSubscriptions.splice(0).forEach((unsubscribe) => unsubscribe());
       }
       this.emit();
     });
@@ -567,6 +570,7 @@ export class FirebaseRepository implements AppRepository {
 
   private async resetOnce() {
     this.remoteSubscriptions.splice(0).forEach((unsubscribe) => unsubscribe());
+    this.notificationSubscriptions.splice(0).forEach((unsubscribe) => unsubscribe());
     this.accessSubscription?.();
     this.accessSubscription = undefined;
     if (this.state.family.linked) {
@@ -689,6 +693,7 @@ export class FirebaseRepository implements AppRepository {
     this.state.participantAccess = access.sort((left, right) => (
       left.participant.displayName.localeCompare(right.participant.displayName, this.state.locale)
     ));
+    this.subscribeToParticipantNotifications();
     const storageKey = `${ACTIVE_PARTICIPANT_KEY_PREFIX}${this.user.uid}`;
     this.state.activeParticipantId = preferredParticipantId(
       this.state.participantAccess,
@@ -697,6 +702,35 @@ export class FirebaseRepository implements AppRepository {
     );
     if (this.state.activeParticipantId) writeUiStorageString(storageKey, this.state.activeParticipantId);
     else removeUiStorageItem(storageKey);
+  }
+
+  private subscribeToParticipantNotifications() {
+    this.notificationSubscriptions.splice(0).forEach((unsubscribe) => unsubscribe());
+    const access = this.state.participantAccess ?? [];
+    this.state.notificationSources = access.map((entry): ParticipantNotificationSource => ({
+      participant: { ...entry.participant },
+      role: entry.membership.role === 'participant' ? 'child' : 'parent',
+      assignments: [],
+      events: [],
+    }));
+    const updateSource = (participantId: string, update: Partial<Pick<ParticipantNotificationSource, 'assignments' | 'events'>>) => {
+      const source = this.state.notificationSources?.find((item) => item.participant.id === participantId);
+      if (!source) return;
+      Object.assign(source, update);
+      this.emit();
+    };
+    access.forEach((entry) => {
+      const participantId = entry.participant.id;
+      const participantRef = doc(this.services.db, 'participants', participantId);
+      const assignments = query(collection(participantRef, 'routineAssignments'), orderBy('assignedAt', 'asc'));
+      const checks = query(collection(participantRef, 'checks'), orderBy('requestedAt', 'desc'));
+      this.notificationSubscriptions.push(onSnapshot(assignments, (snapshot) => {
+        updateSource(participantId, { assignments: snapshot.docs.map((item) => asRoutineAssignment(item.id, item.data())) });
+      }, (error) => console.error('Unable to load notification routine assignments', error)));
+      this.notificationSubscriptions.push(onSnapshot(checks, (snapshot) => {
+        updateSource(participantId, { events: snapshot.docs.map((item) => asEvent(item.id, item.data())) });
+      }, (error) => console.error('Unable to load notification checks', error)));
+    });
   }
 
   private async attachParticipant(participantId: string, membershipRole: MembershipRole) {

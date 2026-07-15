@@ -168,6 +168,13 @@ export interface ParticipantAccess {
   members?: ParticipantMember[];
 }
 
+export interface ParticipantNotificationSource {
+  participant: ParticipantSummary;
+  role: Role;
+  assignments: RoutineAssignment[];
+  events: VerificationEvent[];
+}
+
 export interface PushSubscriptionHealth {
   permission: NotificationPermission | 'unsupported';
   endpointPresent: boolean;
@@ -203,6 +210,7 @@ export interface AppState {
   preferences?: AppPreferences;
   family: FamilyState;
   participantAccess?: ParticipantAccess[];
+  notificationSources?: ParticipantNotificationSource[];
   activeParticipantId?: string;
   routineAssignments: RoutineAssignment[];
   routinesLoaded?: boolean;

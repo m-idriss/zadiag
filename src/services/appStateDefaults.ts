@@ -30,6 +30,7 @@ export const initialRemoteState = (): AppState => {
     preferences: normalizeAppPreferences(preferences),
     family: { linked: false, childLinked: false, childName: '', linkingCode: '', parentRecoveryCode: '', consented: false },
     participantAccess: [],
+    notificationSources: [],
     routineAssignments: [],
     routinesLoaded: false,
     routinesError: false,

@@ -453,6 +453,7 @@ button:disabled { cursor: not-allowed; }
 .notification-center-list > button { width: 100%; min-height: 62px; display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 9px; border: 1px solid var(--color-border); border-radius: 14px; background: var(--color-surface-solid); color: var(--color-text); text-align: left; }
 .notification-center-list > button.unread { background: var(--color-primary-soft); }
 .notification-center-kind { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 11px; background: var(--color-control-surface); color: var(--color-primary); }
+.notification-center-profile { background: color-mix(in srgb, var(--profile-color) 14%, var(--color-surface-solid)); color: var(--profile-color); font-size: 11px; font-weight: 950; letter-spacing: .02em; }
 .notification-center-list > button > span:nth-child(2) { min-width: 0; display: grid; gap: 3px; }
 .notification-center-list strong { font-size: 12px; }
 .notification-center-list small { overflow: hidden; color: var(--color-text-muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }

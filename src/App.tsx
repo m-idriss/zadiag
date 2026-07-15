@@ -368,6 +368,20 @@ export function App() {
     setFocusedHistoryEventId(event.id);
     setTab('routines');
   };
+  const openNotificationEvent = async (participantId: string, event: VerificationEvent) => {
+    if (participantId !== state.activeParticipantId) {
+      if (!selectActiveParticipant) return;
+      await selectActiveParticipant(participantId);
+    }
+    const selectedState = repository.snapshot();
+    if (selectedState.role === 'child' && event.status === 'pending' && Date.parse(event.expiresAt) > Date.now()) {
+      startCapture(event);
+      return;
+    }
+    setFocusedHistoryEventId(event.id);
+    setTab('routines');
+    setRoute('app');
+  };
 
   const reset = async () => {
     const previousRole = state.role;
@@ -601,6 +615,7 @@ export function App() {
               onSummaryRangeChange={setDashboardSummaryRange}
               onSelectParticipant={selectActiveParticipant}
               onOpenHistoryEvent={openHistoryEvent}
+              onOpenNotificationEvent={(participantId, event) => { void openNotificationEvent(participantId, event); }}
               t={t}
             />
           : <ChildDashboard
@@ -611,6 +626,7 @@ export function App() {
               summaryRange={dashboardSummaryRange}
               onSummaryRangeChange={setDashboardSummaryRange}
               onOpenHistoryEvent={openHistoryEvent}
+              onOpenNotificationEvent={(participantId, event) => { void openNotificationEvent(participantId, event); }}
               t={t}
             />;
     content = (

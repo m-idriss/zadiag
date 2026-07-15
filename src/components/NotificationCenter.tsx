@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
-import type { Locale, Role, RoutineAssignment, VerificationEvent } from '../domain/models';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import type { Locale, ParticipantNotificationSource, Role, VerificationEvent } from '../domain/models';
 import { notificationsForEvents, type AppNotificationKind } from '../domain/notificationCenter';
 import { presentRoutine } from '../domain/routinePresentation';
 import { useModalFocus } from '../hooks/useModalFocus';
 import type { MessageKey } from '../services/i18n';
 import { languageTag } from '../services/locale';
+import { profileColorFor } from '../domain/profileColor';
 import { readUiStorageJson, writeUiStorageString } from '../services/uiStorage';
 import { AppIcon } from './Icon';
 
@@ -25,23 +26,25 @@ const readNotificationIds = (storageKey: string, notificationIds: string[]) => {
 
 export function NotificationCenter({
   role,
-  events,
-  assignments,
+  sources,
   locale,
   contextId,
   onOpenEvent,
   t,
 }: {
   role: Role;
-  events: VerificationEvent[];
-  assignments: RoutineAssignment[];
+  sources: ParticipantNotificationSource[];
   locale: Locale;
   contextId: string;
-  onOpenEvent: (event: VerificationEvent) => void;
+  onOpenEvent: (participantId: string, event: VerificationEvent) => void;
   t: (key: MessageKey) => string;
 }) {
   const [open, setOpen] = useState(false);
-  const notifications = notificationsForEvents(role, events);
+  const notifications = sources.flatMap((source) => notificationsForEvents(source.role ?? role, source.events).map((notification) => ({
+    ...notification,
+    id: `${source.participant.id}:${notification.id}`,
+    source,
+  }))).sort((left, right) => Date.parse(right.timestamp) - Date.parse(left.timestamp)).slice(0, 50);
   const notificationIds = notifications.map((notification) => notification.id);
   const notificationIdSignature = notificationIds.join('|');
   const storageKey = `zadiag.notificationCenter.read.${role}.${contextId}`;
@@ -50,10 +53,10 @@ export function NotificationCenter({
     ids: readNotificationIds(storageKey, notificationIds),
   }));
   const dialogRef = useModalFocus<HTMLDivElement>(open, () => setOpen(false));
-  const routineNames = useMemo(() => new Map(assignments.map((assignment) => [
-    assignment.routineId,
+  const routineNames = useMemo(() => new Map(sources.flatMap((source) => source.assignments.map((assignment) => [
+    `${source.participant.id}:${assignment.routineId}`,
     presentRoutine(assignment.routine, locale).name,
-  ])), [assignments, locale]);
+  ] as const))), [sources, locale]);
   const dateFormatter = useMemo(() => new Intl.DateTimeFormat(languageTag(locale), {
     dateStyle: 'short',
     timeStyle: 'short',
@@ -77,10 +80,14 @@ export function NotificationCenter({
     if (unreadCount) saveReadIds(notificationIds);
     setOpen(true);
   };
-  const openNotification = (notificationId: string, event: VerificationEvent) => {
+  const openNotification = (notificationId: string, participantId: string, event: VerificationEvent) => {
     if (!readSet.has(notificationId)) saveReadIds([...readIds, notificationId]);
     setOpen(false);
-    onOpenEvent(event);
+    onOpenEvent(participantId, event);
+  };
+  const participantInitials = (name: string) => {
+    const words = name.trim().split(/\s+/).filter(Boolean);
+    return (words.length > 1 ? words.slice(0, 2).map((word) => word[0]).join('') : words[0]?.slice(0, 2) ?? '?').toUpperCase();
   };
 
   return (
@@ -113,12 +120,12 @@ export function NotificationCenter({
                       type="button"
                       className={readSet.has(notification.id) ? 'read' : 'unread'}
                       key={notification.id}
-                      onClick={() => openNotification(notification.id, notification.event)}
+                      onClick={() => openNotification(notification.id, notification.source.participant.id, notification.event)}
                     >
-                      <span className="notification-center-kind" aria-hidden="true"><AppIcon name={notification.kind === 'check_ready' ? 'camera' : notification.kind === 'review' ? 'check' : 'info'} /></span>
+                      <span className="notification-center-kind notification-center-profile" style={{ '--profile-color': profileColorFor(notification.source.participant) } as CSSProperties} aria-hidden="true">{participantInitials(notification.source.participant.displayName)}</span>
                       <span>
                         <strong>{t(titleKeys[notification.kind])}</strong>
-                        <small>{routineNames.get(notification.event.routineId) ?? t('routine')} · {dateFormatter.format(new Date(notification.timestamp))}</small>
+                        <small>{notification.source.participant.displayName} · {routineNames.get(`${notification.source.participant.id}:${notification.event.routineId}`) ?? t('routine')} · {dateFormatter.format(new Date(notification.timestamp))}</small>
                       </span>
                       {!readSet.has(notification.id) ? <i>{t('notificationCenterUnread')}</i> : null}
                     </button>
