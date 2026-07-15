@@ -467,15 +467,13 @@ button:disabled { cursor: not-allowed; }
 .page-context-top > .participant-switcher { position: static; }
 .page-context-top > .participant-switcher .participant-switcher-menu { top: calc(100% + 8px); right: 0; left: 0; width: 100%; box-sizing: border-box; }
 .page-context-top .profile-context-icon,
-.routines-top .profile-context-icon { background: linear-gradient(145deg, var(--color-text-strong), #31516b); box-shadow: 0 8px 18px rgba(21,50,75,.2); }
+.routines-top .profile-context-icon { background: #e8eef2; color: var(--color-text-strong); box-shadow: none; }
+.page-context-top .profile-context-card.has-profile-color .profile-context-icon,
+.routines-top .profile-context-card.has-profile-color .profile-context-icon { background: color-mix(in srgb, var(--profile-color) 12%, var(--color-surface-solid)); color: var(--profile-color); }
 .page-context-top .profile-context-action,
-.routines-top .profile-context-action { background: #e8eef2; color: var(--color-text-strong); }
+.routines-top .profile-context-action { background: linear-gradient(145deg, var(--color-text-strong), #31516b); color: var(--color-surface-solid); box-shadow: 0 8px 18px rgba(21,50,75,.2); }
 .page-context-top .profile-context-action.expanded,
-.routines-top .profile-context-action.expanded { background: #dbe5eb; }
-.page-context-top .profile-context-card.has-profile-color .profile-context-action,
-.routines-top .profile-context-card.has-profile-color .profile-context-action { background: color-mix(in srgb, var(--profile-color) 12%, var(--color-surface-solid)); color: var(--profile-color); }
-.page-context-top .profile-context-card.has-profile-color .profile-context-action.expanded,
-.routines-top .profile-context-card.has-profile-color .profile-context-action.expanded { background: color-mix(in srgb, var(--profile-color) 19%, var(--color-surface-solid)); }
+.routines-top .profile-context-action.expanded { background: linear-gradient(145deg, var(--color-text-strong), #31516b); }
 .parent-context-top .participant-switcher-label { color: #657681; }
 .parent-context-top .participant-switcher-option-avatar { background: #eef2f5; color: var(--profile-color, var(--color-text-strong)); }
 .parent-context-top .participant-switcher-menu button.active { background: #e8eef2; color: var(--color-text-strong); }
