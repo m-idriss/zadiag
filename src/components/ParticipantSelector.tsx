@@ -1,5 +1,5 @@
 import { useRef, type CSSProperties } from 'react';
-import { checkmarkOutline, personCircleOutline } from 'ionicons/icons';
+import { checkmarkOutline, peopleOutline, personCircleOutline } from 'ionicons/icons';
 import type { ParticipantAccess } from '../domain/models';
 import { ProfileContextCard } from './ProfileContextCard';
 import { SvgIcon } from './SvgIcon';
@@ -34,7 +34,8 @@ export function ParticipantSelector({ access, activeParticipantId, label, title,
         className="card"
         title={displayTitle}
         subtitle={subtitle}
-        actionIcon={personCircleOutline}
+        leadingIcon={personCircleOutline}
+        actionIcon={peopleOutline}
         actionLabel={`${actionLabel ?? label} : ${selected.participant.displayName}`}
         profileColor={profileColorFor(selected.participant)}
       />

@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
-import { settingsOutline } from 'ionicons/icons';
+import { peopleOutline, settingsOutline } from 'ionicons/icons';
 import type { MembershipRole, ParticipantAccess, ParticipantMember, ProfileColorKey } from '../domain/models';
 import { formatMessage, type MessageKey } from '../services/i18n';
 import { ProfileContextCard } from './ProfileContextCard';
@@ -133,7 +133,8 @@ export function RelationshipManager({ access, activeParticipantId, accountDispla
           className="relationship-manager-toggle"
           title={selectedAccess?.participant.displayName ?? t('relationshipManagerTitle')}
           profileColor={selectedAccess ? profileColorFor(selectedAccess.participant) : undefined}
-          actionIcon={settingsOutline}
+          leadingIcon={settingsOutline}
+          actionIcon={peopleOutline}
           actionLabel={t('relationshipManageAction')}
           expanded={open}
           onClick={() => { setError(undefined); setOpen((current) => !current); }}
