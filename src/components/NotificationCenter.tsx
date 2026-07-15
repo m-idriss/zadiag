@@ -92,7 +92,7 @@ export function NotificationCenter({
         onClick={openCenter}
       >
         <AppIcon name="notifications" />
-        {unreadCount ? <span>{unreadCount > 99 ? '99+' : unreadCount}</span> : null}
+        {unreadCount ? <span className="notification-center-badge">{unreadCount > 99 ? '99+' : unreadCount}</span> : null}
       </button>
       {open ? (
         <div className="notification-center-backdrop" onClick={() => setOpen(false)}>

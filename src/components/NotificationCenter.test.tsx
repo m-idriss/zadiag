@@ -11,6 +11,30 @@ describe('NotificationCenter', () => {
     vi.restoreAllMocks();
   });
 
+  it('shows the bell without a badge when there are no notifications', () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    act(() => root.render(
+      <NotificationCenter
+        role="child"
+        events={[]}
+        assignments={[]}
+        locale="en"
+        contextId="maya"
+        onOpenEvent={vi.fn()}
+        t={(key) => translate('en', key)}
+      />,
+    ));
+
+    expect(container.querySelector('.notification-center-trigger > .app-icon')).not.toBeNull();
+    expect(container.querySelector('.notification-center-badge')).toBeNull();
+
+    act(() => root.unmount());
+    container.remove();
+  });
+
   it('clears the unread badge when the notification center is opened', () => {
     const container = document.createElement('div');
     document.body.appendChild(container);
@@ -40,6 +64,7 @@ describe('NotificationCenter', () => {
 
     const trigger = container.querySelector<HTMLButtonElement>('.notification-center-trigger');
     expect(trigger?.textContent).toBe('1');
+    expect(trigger?.querySelector('.notification-center-badge')?.textContent).toBe('1');
     act(() => trigger?.click());
     expect(container.textContent).toContain('Check ready');
     expect(container.querySelector('.notification-center-trigger')?.textContent).toBe('');
