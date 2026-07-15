@@ -348,6 +348,15 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
                 <img src={proofUrls[selectedHistoryEvent.id]} alt={t('responsibleReviewImageAlt')} />
               </div>
             ) : null}
+            {reviewCheck && isReviewableVerification(selectedHistoryEvent) ? (
+              <div className="history-detail-review-actions">
+                {reviewErrorEventId === selectedHistoryEvent.id ? <p className="request-feedback error" role="alert">{t('responsibleReviewError')}</p> : null}
+                <div>
+                  <button type="button" className="parent-review-button reject" aria-label={t('responsibleReviewReject')} disabled={reviewingEventId === selectedHistoryEvent.id} onClick={() => { void decide(selectedHistoryEvent.id, 'not_detected'); }}><AppIcon name="close" /></button>
+                  <button type="button" className="parent-review-button approve" aria-label={t('responsibleReviewApprove')} disabled={reviewingEventId === selectedHistoryEvent.id} onClick={() => { void decide(selectedHistoryEvent.id, 'detected'); }}><AppIcon name="check" /></button>
+                </div>
+              </div>
+            ) : null}
             <dl>
               <div><dt>{t('historyRequestedAt')}</dt><dd>{formatDateTime(selectedHistoryEvent.requestedAt)}</dd></div>
               {selectedHistoryEvent.capturedAt ? <div><dt>{t('historyCapturedAt')}</dt><dd>{formatDateTime(selectedHistoryEvent.capturedAt)}</dd></div> : null}
@@ -360,15 +369,6 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
               {selectedHistoryEvent.reviewedAt ? <div><dt>{t('historyReviewedAt')}</dt><dd>{formatDateTime(selectedHistoryEvent.reviewedAt)}</dd></div> : null}
               {selectedHistoryEvent.reviewReason ? <div className="wide"><dt>{t('historyReviewComment')}</dt><dd>{selectedHistoryEvent.reviewReason}</dd></div> : null}
             </dl>
-            {reviewCheck && isReviewableVerification(selectedHistoryEvent) ? (
-              <div className="history-detail-review-actions">
-                {reviewErrorEventId === selectedHistoryEvent.id ? <p className="request-feedback error" role="alert">{t('responsibleReviewError')}</p> : null}
-                <div>
-                  <button type="button" className="parent-review-button reject" aria-label={t('responsibleReviewReject')} disabled={reviewingEventId === selectedHistoryEvent.id} onClick={() => { void decide(selectedHistoryEvent.id, 'not_detected'); }}><AppIcon name="close" /></button>
-                  <button type="button" className="parent-review-button approve" aria-label={t('responsibleReviewApprove')} disabled={reviewingEventId === selectedHistoryEvent.id} onClick={() => { void decide(selectedHistoryEvent.id, 'detected'); }}><AppIcon name="check" /></button>
-                </div>
-              </div>
-            ) : null}
           </div>
         </div>
       ) : null}

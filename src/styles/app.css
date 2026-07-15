@@ -1374,8 +1374,8 @@ button:disabled { cursor: not-allowed; }
 .history-detail-backdrop { position: fixed; z-index: 70; inset: 0; display: grid; align-items: end; padding: 12px; background: rgba(8,26,40,.48); backdrop-filter: blur(5px); }
 .history-detail-dialog { width: min(100%, 520px); height: min(90dvh, 760px); display: grid; grid-template-rows: auto minmax(150px, 34%) minmax(0, 1fr); gap: 10px; margin: 0 auto; padding: 15px; overflow: hidden; border-radius: 24px; background: var(--color-surface-solid); box-shadow: 0 24px 70px rgba(8,26,40,.28); }
 .history-detail-dialog.no-proof { grid-template-rows: auto minmax(0, 1fr); }
-.history-detail-dialog.has-actions { grid-template-rows: auto minmax(150px, 34%) minmax(0, 1fr) auto; }
-.history-detail-dialog.no-proof.has-actions { grid-template-rows: auto minmax(0, 1fr) auto; }
+.history-detail-dialog.has-actions { grid-template-rows: auto minmax(150px, 34%) auto minmax(0, 1fr); }
+.history-detail-dialog.no-proof.has-actions { grid-template-rows: auto auto minmax(0, 1fr); }
 .history-detail-dialog > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .history-detail-dialog > header small { color: var(--color-text-muted); font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
 .history-detail-dialog > header h2 { margin-top: 3px; font-size: 18px; }

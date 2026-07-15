@@ -226,6 +226,7 @@ describe('participant routines navigation', () => {
       expiresAt: '2026-07-02T11:00:00.000Z',
       status: 'uncertain' as const,
       reviewStatus: 'pending' as const,
+      proofImagePath: 'families/family/checks/history-review/proof.jpg',
     };
     const state: AppState = {
       role: 'parent', locale: 'en', notificationsEnabled: true,
@@ -233,14 +234,18 @@ describe('participant routines navigation', () => {
       routineAssignments: [assignment], events: [historyEvent], routinesLoaded: true, routinesError: false,
     };
     const reviewCheck = vi.fn().mockResolvedValue(undefined);
+    const getProofImageUrl = vi.fn().mockResolvedValue('data:image/png;base64,PROOF');
 
     await act(async () => {
-      root.render(<RoutinesScreen state={state} edit focusedEventId={historyEvent.id} reviewCheck={reviewCheck} t={(key) => translate('en', key)} />);
+      root.render(<RoutinesScreen state={state} edit focusedEventId={historyEvent.id} getProofImageUrl={getProofImageUrl} reviewCheck={reviewCheck} t={(key) => translate('en', key)} />);
       await new Promise((resolve) => window.setTimeout(resolve, 100));
     });
 
     const dialog = container.querySelector('.history-detail-dialog');
-    expect(dialog?.querySelector('button[aria-label="Validate"]')).not.toBeNull();
+    const proof = dialog?.querySelector('.history-detail-proof');
+    const actions = dialog?.querySelector('.history-detail-review-actions');
+    expect(proof?.nextElementSibling).toBe(actions);
+    expect(actions?.querySelector('button[aria-label="Validate"]')).not.toBeNull();
     expect(dialog?.querySelector('button[aria-label="Reject"]')).not.toBeNull();
 
     await act(async () => {
