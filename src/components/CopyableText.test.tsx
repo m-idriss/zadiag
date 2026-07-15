@@ -28,7 +28,8 @@ describe('CopyableText', () => {
     await act(async () => button.click());
 
     expect(writeText).toHaveBeenCalledWith('ZI-862051');
-    expect(button.textContent).toContain('Copied');
+    expect(button.getAttribute('aria-label')).toBe('Copied');
+    expect(button.textContent).toBe('');
     expect(container.querySelector('strong')?.textContent).toBe('ZI-862051');
   });
 });
