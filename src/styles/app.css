@@ -1619,6 +1619,11 @@ button:disabled { cursor: not-allowed; }
 .settings-help-content strong { font-size: 12px; }
 .settings-help-content p { margin: 3px 0 0; color: var(--color-text-muted); font-size: 11px; line-height: 1.45; }
 .settings-diagnostics-list { display: grid; grid-template-columns: 1fr; gap: 8px; margin: 10px 0 0; }
+.settings-diagnostics-row .settings-row-copy { grid-column: 2 / -1; grid-template-columns: minmax(0, 1fr) var(--height-action); column-gap: 12px; }
+.settings-diagnostics-row .settings-row-copy > strong,
+.settings-diagnostics-row .settings-row-copy > small { grid-column: 1; }
+.settings-diagnostics-row .settings-diagnostics-list { grid-column: 1 / -1; }
+.settings-diagnostics-row > .settings-diagnostics-toggle { z-index: 1; grid-column: 3; grid-row: 1; }
 .settings-diagnostics-list div { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding-top: 8px; border-top: 1px solid rgba(13,146,125,.12); }
 .settings-diagnostics-list dt { color: var(--color-text-muted); font-size: 11px; font-weight: 900; text-transform: uppercase; }
 .settings-diagnostics-list dd { margin: 0; max-width: 58%; overflow-wrap: anywhere; color: var(--color-text); font-size: 12px; font-weight: 900; text-align: right; }

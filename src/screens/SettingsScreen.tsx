@@ -393,6 +393,7 @@ export function SettingsScreen({
             </div>
           </details>
           <ListRow
+            className="settings-diagnostics-row"
             icon={<SvgIcon icon={informationCircleOutline} />}
             title={t('settingsRecoveryDiagnosticsTitle')}
             detail={t('settingsRecoveryDiagnosticsDetail')}
