@@ -16,6 +16,7 @@ import { languageTag } from '../services/locale';
 import { ProofLightbox } from '../components/ProofLightbox';
 import { SetupProgress } from '../components/SetupProgress';
 import { DashboardStatusSummary } from '../components/DashboardStatusSummary';
+import { NotificationCenter } from '../components/NotificationCenter';
 
 export function ParentDashboard({
   state,
@@ -201,6 +202,18 @@ export function ParentDashboard({
       <div className="page-context-top parent-context-top">
         <header className="screen-header page-context-heading">
           <div><h1>{t('activity')}</h1></div>
+          <NotificationCenter
+            role="parent"
+            events={displayEvents}
+            assignments={state.routineAssignments}
+            locale={state.locale}
+            contextId={state.activeParticipantId ?? state.family.id ?? state.family.childName}
+            onOpenEvent={(event) => {
+              if (event.status === 'uncertain') document.getElementById(`review-${event.id}`)?.scrollIntoView({ block: 'center' });
+              else onOpenHistoryEvent?.(event);
+            }}
+            t={t}
+          />
         </header>
       <ParticipantSelector
         access={state.participantAccess}
@@ -353,6 +366,7 @@ export function ParentDashboard({
                 : <div role="status">{proofErrors[event.id] ? t('responsibleReviewImageError') : t('loadingProofImage')}</div>;
               return (
                 <article
+                  id={`review-${event.id}`}
                   className="card parent-review-card"
                   key={event.id}
                   onMouseDown={(mouseEvent) => handleMouseDown(mouseEvent, event.id)}

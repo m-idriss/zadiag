@@ -15,6 +15,7 @@ import { presentedUpcomingRoutineChecks } from '../domain/dashboardChecks';
 import { ProfileContextCard } from '../components/ProfileContextCard';
 import { profileColorFor } from '../domain/profileColor';
 import { DashboardStatusSummary } from '../components/DashboardStatusSummary';
+import { NotificationCenter } from '../components/NotificationCenter';
 
 const isToday = (value: string, now = new Date()) => {
   const date = new Date(value);
@@ -213,7 +214,18 @@ export function ChildDashboard({
   return (
     <div className="content-screen child-home">
       <div className="page-context-top participant-context-top">
-        <header className="screen-header page-context-heading"><div><h1>{t('activity')}</h1></div></header>
+        <header className="screen-header page-context-heading">
+          <div><h1>{t('activity')}</h1></div>
+          <NotificationCenter
+            role="child"
+            events={state.events}
+            assignments={state.routineAssignments}
+            locale={state.locale}
+            contextId={state.activeParticipantId ?? state.family.id ?? state.family.childName}
+            onOpenEvent={(event) => event.status === 'pending' ? start(event) : onOpenHistoryEvent?.(event)}
+            t={t}
+          />
+        </header>
         <div className="card relationship-manager-card participant-switcher-static">
           <ProfileContextCard
             as="div"
