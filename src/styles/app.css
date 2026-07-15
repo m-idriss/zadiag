@@ -1615,7 +1615,7 @@ button:disabled { cursor: not-allowed; }
 .settings-help-center > summary { min-height: 62px; display: flex; align-items: center; gap: 11px; padding: var(--row-padding-y) var(--row-padding-x); cursor: pointer; list-style: none; }
 .settings-help-center > summary::-webkit-details-marker { display: none; }
 .settings-help-center > summary:focus-visible { outline: 3px solid color-mix(in srgb, var(--color-primary) 35%, transparent); outline-offset: -3px; }
-.settings-help-chevron { flex: 0 0 auto; color: var(--color-text-muted); transition: transform .2s ease; }
+.settings-help-chevron { width: var(--height-action); height: var(--height-action); box-sizing: border-box; flex: 0 0 auto; margin-left: auto; padding: 10px; border-radius: 12px; background: var(--color-subtle-action); color: var(--color-primary); transition: transform .2s ease; }
 .settings-help-center[open] .settings-help-chevron { transform: rotate(180deg); }
 .settings-help-content { display: grid; gap: 12px; padding: 0 var(--row-padding-x) 14px 54px; }
 .settings-help-content div { padding-top: 10px; border-top: 1px solid var(--color-border); }
