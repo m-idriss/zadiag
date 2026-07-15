@@ -37,6 +37,7 @@ describe('reporting periods', () => {
     expect(report.current.rate).toBe(1);
     expect(report.previous.rate).toBe(.5);
     expect(report.rateDelta).toBe(.5);
+    expect(report.completedEvents.map((item) => item.id)).toEqual(['current-ok-a', 'current-ok-b']);
     expect(report.byRoutine).toEqual([
       expect.objectContaining({ routineId: 'routine-a', completed: 1, successful: 1 }),
       expect.objectContaining({ routineId: 'routine-b', completed: 1, successful: 1 }),

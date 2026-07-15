@@ -1,4 +1,4 @@
-import { adherenceSummary } from './adherence';
+import { adherenceSummary, isCompletedVerification } from './adherence';
 import type { VerificationEvent } from './models';
 
 export type SummaryRange = 'day' | 'twoDays' | 'week' | 'month' | 'quarter';
@@ -54,6 +54,7 @@ export const adherencePeriodReport = (events: VerificationEvent[], range: Summar
   const periods = eventsForReportingPeriods(events, range, now);
   const current = adherenceSummary(periods.current);
   const previous = adherenceSummary(periods.previous);
+  const completedEvents = periods.current.filter(isCompletedVerification);
   const rateDelta = current.completed > 0 && previous.completed > 0 ? current.rate - previous.rate : undefined;
   const byRoutine = Array.from(
     periods.current.reduce((groups, event) => {
@@ -68,5 +69,5 @@ export const adherencePeriodReport = (events: VerificationEvent[], range: Summar
       ...adherenceSummary(routineEvents),
     }))
     .filter((routine) => routine.completed > 0);
-  return { current, previous, rateDelta, byRoutine };
+  return { current, previous, rateDelta, byRoutine, completedEvents };
 };

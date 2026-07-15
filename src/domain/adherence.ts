@@ -9,8 +9,10 @@ const finalStatuses = new Set([
 ]);
 const retakeWindowMs = 15 * 60_000;
 
+export const isCompletedVerification = (event: VerificationEvent) => finalStatuses.has(event.status);
+
 export function adherenceSummary(events: VerificationEvent[]) {
-  const completed = events.filter((event) => finalStatuses.has(event.status));
+  const completed = events.filter(isCompletedVerification);
   const successful = completed.filter((event) => event.status === 'detected');
   const attention = completed.filter((event) => event.status !== 'detected');
   const statusCounts = completed.reduce<Record<string, number>>((counts, event) => ({

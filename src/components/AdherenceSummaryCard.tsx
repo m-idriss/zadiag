@@ -3,6 +3,9 @@ import { adherencePeriodReport, eventsInSummaryRange, isSummaryRange, type Summa
 import type { Locale, RoutineAssignment, VerificationEvent, VerificationStatus } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { presentRoutine } from '../domain/routinePresentation';
+import { languageTag } from '../services/locale';
+import { AppIcon } from './Icon';
+import { statusMessageKey } from './StatusPill';
 
 export { isSummaryRange, type SummaryRange } from '../domain/reporting';
 
@@ -47,6 +50,7 @@ export function AdherenceSummaryCard({
   events,
   assignments,
   locale,
+  subjectName,
   range,
   onRangeChange,
   t,
@@ -54,6 +58,7 @@ export function AdherenceSummaryCard({
   events: VerificationEvent[];
   assignments: RoutineAssignment[];
   locale: Locale;
+  subjectName: string;
   range: SummaryRange;
   onRangeChange: (range: SummaryRange) => void;
   t: (key: MessageKey) => string;
@@ -66,6 +71,13 @@ export function AdherenceSummaryCard({
     assignment.routineId,
     presentRoutine(assignment.routine, locale).name,
   ])), [assignments, locale]);
+  const dateTimeFormatter = useMemo(() => new Intl.DateTimeFormat(languageTag(locale), {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }), [locale]);
+  const completedEvents = useMemo(() => [...report.completedEvents].sort((a, b) => (
+    Date.parse(b.capturedAt ?? b.requestedAt) - Date.parse(a.capturedAt ?? a.requestedAt)
+  )), [report.completedEvents]);
   const comparison = report.rateDelta === undefined
     ? t('summaryNoPreviousBaseline')
     : report.rateDelta === 0
@@ -111,6 +123,59 @@ export function AdherenceSummaryCard({
           </button>
         ))}
       </div>
+      <button
+        type="button"
+        className="action-button fill-outline report-print-action"
+        disabled={!summary.completed}
+        onClick={() => window.print()}
+      >
+        <AppIcon name="download" />
+        {t('printReport')}
+      </button>
+      {!summary.completed ? <small className="report-unavailable-hint">{t('reportUnavailable')}</small> : null}
+      {summary.completed ? <article className="printable-report" aria-hidden="true">
+        <header>
+          <strong>Zadiag</strong>
+          <h1>{t('adherenceReport')}</h1>
+          <p>{t('reportParticipant')}: {subjectName}</p>
+          <p>{t('reportPeriod')}: {t(selectedRange.titleKey)}</p>
+          <p>{t('reportGeneratedOn')}: {dateTimeFormatter.format(new Date())}</p>
+        </header>
+        <section className="printable-report-summary">
+          <div><span>{t('reportAdherenceRate')}</span><strong>{Math.round(summary.rate * 100)}%</strong></div>
+          <div><span>{t('successful')}</span><strong>{summary.successful}/{summary.completed}</strong></div>
+          <div><span>{t('reportEvolution')}</span><strong>{comparison}</strong></div>
+        </section>
+        {report.byRoutine.length ? (
+          <section>
+            <h2>{t('summaryByRoutine')}</h2>
+            <table>
+              <thead><tr><th>{t('routine')}</th><th>{t('successful')}</th><th>{t('reportAdherenceRate')}</th></tr></thead>
+              <tbody>{report.byRoutine.map((routine) => (
+                <tr key={routine.routineId}>
+                  <td>{routineNames.get(routine.routineId) ?? t('routine')}</td>
+                  <td>{routine.successful}/{routine.completed}</td>
+                  <td>{Math.round(routine.rate * 100)}%</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </section>
+        ) : null}
+        <section>
+          <h2>{t('reportCheckHistory')}</h2>
+          <table>
+            <thead><tr><th>{t('reportDate')}</th><th>{t('routine')}</th><th>{t('reportStatus')}</th></tr></thead>
+            <tbody>{completedEvents.map((event) => (
+              <tr key={event.id}>
+                <td>{dateTimeFormatter.format(new Date(event.capturedAt ?? event.requestedAt))}</td>
+                <td>{routineNames.get(event.routineId) ?? t('routine')}</td>
+                <td>{t(statusMessageKey(event.status))}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </section>
+        <footer>{t('reportPrivacyNote')}</footer>
+      </article> : null}
     </section>
   );
 }

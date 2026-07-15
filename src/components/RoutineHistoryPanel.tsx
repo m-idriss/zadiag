@@ -3,7 +3,7 @@ import type { Locale, RoutineAssignment, VerificationEvent, VerificationStatus }
 import type { MessageKey } from '../services/i18n';
 import { presentRoutine } from '../domain/routinePresentation';
 import { AppIcon, routineIconName } from './Icon';
-import { StatusPill } from './StatusPill';
+import { StatusPill, statusMessageKey } from './StatusPill';
 import { canRetakeCapture, stalePendingCheckReason, withResolvedEventStatuses } from '../domain/adherence';
 import { coalesceActivePendingEventsByRoutine } from '../domain/dashboardChecks';
 import { EmptyState, ListRow } from './ui';
@@ -35,16 +35,6 @@ const analysisTag = (event: VerificationEvent, locale: Locale) => {
   if (event.analysisSource === 'ai') return locale === 'fr' ? 'IA' : 'AI';
   if (event.analysisSource === 'self' || event.reason === 'self_validated') return 'Auto';
   return undefined;
-};
-
-const statusLabelKey = (status: VerificationStatus): MessageKey => {
-  if (status === 'detected') return 'validated';
-  if (status === 'not_detected') return 'notDetected';
-  if (status === 'uncertain') return 'uncertain';
-  if (status === 'missed') return 'missed';
-  if (status === 'pending') return 'pending';
-  if (status === 'analyzing') return 'analyzing';
-  return 'expired';
 };
 
 export function RoutineHistoryPanel({
@@ -169,7 +159,7 @@ export function RoutineHistoryPanel({
               <div className="filter-chips">
                 {statuses.map((status) => {
                   const active = !excludedStatuses.includes(status);
-                  return <button type="button" key={status} aria-pressed={active} className={`filter-status-${status} ${active ? 'active' : ''}`} onClick={() => toggleStatusFilter(status)}>{t(statusLabelKey(status))}</button>;
+                  return <button type="button" key={status} aria-pressed={active} className={`filter-status-${status} ${active ? 'active' : ''}`} onClick={() => toggleStatusFilter(status)}>{t(statusMessageKey(status))}</button>;
                 })}
               </div>
             </div>

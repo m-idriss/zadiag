@@ -49,6 +49,7 @@ export function ChildDashboard({
   const nowDate = useMemo(() => new Date(now), [now]);
   const activeParticipantAccess = state.participantAccess?.find((entry) => entry.participant.id === state.activeParticipantId)
     ?? state.participantAccess?.find((entry) => entry.membership.status === 'active');
+  const reportSubjectName = activeParticipantAccess?.participant.displayName ?? state.family.childName;
   const today = state.events.filter((event) => isToday(event.requestedAt));
   const pending = today.filter((event) => (
     event.status === 'analyzing'
@@ -205,7 +206,7 @@ export function ChildDashboard({
   const historySection = (
     <section className="today-section participant-history-section dashboard-summary-section" aria-labelledby="participant-summary-title">
       <h2 id="participant-summary-title">{t('overview')}</h2>
-      <AdherenceSummaryCard events={historyEvents} assignments={state.routineAssignments} locale={state.locale} range={summaryRange} onRangeChange={setSummaryRange} t={t} />
+      <AdherenceSummaryCard events={historyEvents} assignments={state.routineAssignments} locale={state.locale} subjectName={reportSubjectName} range={summaryRange} onRangeChange={setSummaryRange} t={t} />
       <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedHistoryEvents} retryEvents={state.events} locale={state.locale} titleId="participant-history-title" onRetake={retake} onOpenEvent={onOpenHistoryEvent} t={t} />
     </section>
   );

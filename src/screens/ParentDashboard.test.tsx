@@ -21,6 +21,7 @@ describe('ParentDashboard', () => {
   afterEach(() => {
     act(() => root.unmount());
     container.remove();
+    vi.restoreAllMocks();
   });
 
   it('keeps the parent overview blocks and replaces needs attention with filterable history', () => {
@@ -53,6 +54,13 @@ describe('ParentDashboard', () => {
     expect(container.textContent).not.toContain('StatusAll');
     expect(container.textContent).not.toContain('Monitoring plan');
     expect(container.textContent).not.toContain('Needs attention');
+    const print = vi.spyOn(window, 'print').mockImplementation(() => undefined);
+    const reportButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Print or save report'));
+    expect(reportButton?.disabled).toBe(false);
+    expect(container.querySelector('.printable-report')?.textContent).toContain('Participant: Maya');
+    expect(container.querySelector('.printable-report img')).toBeNull();
+    act(() => reportButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(print).toHaveBeenCalledOnce();
   });
 
   it('shows upcoming checks when no responsible check is active', () => {
@@ -73,6 +81,10 @@ describe('ParentDashboard', () => {
     expect(container.textContent).toContain('Orthodontic Elastics');
     expect(container.textContent).not.toContain('Active checks');
     expect(container.textContent).not.toContain('No active check yet');
+    const reportButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Print or save report'));
+    expect(reportButton?.disabled).toBe(true);
+    expect(container.textContent).toContain('Complete a check in this period to create a report.');
+    expect(container.querySelector('.printable-report')).toBeNull();
   });
 
   it('combines routine and status filter push buttons without all buttons', () => {
