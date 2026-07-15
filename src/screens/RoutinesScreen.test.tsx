@@ -214,6 +214,43 @@ describe('participant routines navigation', () => {
     expect(consumed).toHaveBeenCalledOnce();
   });
 
+  it('lets a responsible validate an uncertain check from its detail dialog', async () => {
+    await import('./RoutineDetailScreen');
+    const assignment = createDefaultRoutineAssignment('2026-07-02T08:00:00.000Z');
+    const historyEvent = {
+      id: 'history-review',
+      routineId: assignment.routineId,
+      sessionId: 'history-session',
+      requestedAt: '2026-07-02T10:00:00.000Z',
+      capturedAt: '2026-07-02T10:10:00.000Z',
+      expiresAt: '2026-07-02T11:00:00.000Z',
+      status: 'uncertain' as const,
+      reviewStatus: 'pending' as const,
+    };
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      routineAssignments: [assignment], events: [historyEvent], routinesLoaded: true, routinesError: false,
+    };
+    const reviewCheck = vi.fn().mockResolvedValue(undefined);
+
+    await act(async () => {
+      root.render(<RoutinesScreen state={state} edit focusedEventId={historyEvent.id} reviewCheck={reviewCheck} t={(key) => translate('en', key)} />);
+      await new Promise((resolve) => window.setTimeout(resolve, 100));
+    });
+
+    const dialog = container.querySelector('.history-detail-dialog');
+    expect(dialog?.querySelector('button[aria-label="Validate"]')).not.toBeNull();
+    expect(dialog?.querySelector('button[aria-label="Reject"]')).not.toBeNull();
+
+    await act(async () => {
+      dialog?.querySelector<HTMLButtonElement>('button[aria-label="Validate"]')?.click();
+      await Promise.resolve();
+    });
+
+    expect(reviewCheck).toHaveBeenCalledWith(historyEvent.id, 'detected');
+  });
+
   it('keeps participant routine management read-only even when edit callbacks are provided', async () => {
     await import('./RoutineDetailScreen');
     const assignment = createDefaultRoutineAssignment();

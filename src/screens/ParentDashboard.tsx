@@ -8,7 +8,7 @@ import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } f
 import { UpcomingChecksSection } from '../components/UpcomingChecksSection';
 import { presentRoutine } from '../domain/routinePresentation';
 import { eventWindowLabel } from '../domain/taskTimeLabel';
-import { withResolvedEventStatuses } from '../domain/adherence';
+import { isReviewableVerification, withResolvedEventStatuses } from '../domain/adherence';
 import { EmptyState } from '../components/ui';
 import { activePendingEvents as activePendingChecks, presentedAwaitingRoutineChecks, presentedUpcomingRoutineChecks } from '../domain/dashboardChecks';
 import { ParticipantSelector } from '../components/ParticipantSelector';
@@ -71,7 +71,7 @@ export function ParentDashboard({
   const rangedEvents = filterEventsBySummaryRange(displayEvents, summaryRange, now);
   const rangedRawEvents = filterEventsBySummaryRange(state.events, summaryRange, now);
   const reviewEvents = useMemo(() => state.events
-    .filter((event) => event.status === 'uncertain' && !['approved', 'rejected'].includes(event.reviewStatus ?? ''))
+    .filter(isReviewableVerification)
     .sort((a, b) => Date.parse(b.capturedAt ?? b.requestedAt) - Date.parse(a.capturedAt ?? a.requestedAt)),
   [state.events]);
   const locale = languageTag(state.locale);
@@ -226,7 +226,7 @@ export function ParentDashboard({
     const event = state.events.find((item) => item.id === notificationEventId);
     if (!event) return;
     handledNotificationEventIdRef.current = notificationEventId;
-    const needsReview = event.status === 'uncertain' && !['approved', 'rejected'].includes(event.reviewStatus ?? '');
+    const needsReview = isReviewableVerification(event);
     const active = event.status === 'pending' && Date.parse(event.expiresAt) > now;
     const targetId = needsReview ? `review-${event.id}` : active ? `active-${event.id}` : 'responsible-history-title';
     if (needsReview) setExpandedStatus('review');

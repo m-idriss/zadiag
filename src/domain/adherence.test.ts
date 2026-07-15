@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adherenceSummary, canRetakeCapture, isFreshCapture, resolvedEventStatus, stalePendingCheckReason } from './adherence';
+import { adherenceSummary, canRetakeCapture, isFreshCapture, isReviewableVerification, resolvedEventStatus, stalePendingCheckReason } from './adherence';
 import type { VerificationEvent } from './models';
 
 const event = (status: VerificationEvent['status']): VerificationEvent => ({
@@ -25,6 +25,16 @@ describe('resolvedEventStatus', () => {
   it('treats expired pending checks as missed for display', () => {
     expect(resolvedEventStatus(event('pending'), Date.parse('2026-06-30T12:21:00.000Z'))).toBe('missed');
     expect(resolvedEventStatus(event('pending'), Date.parse('2026-06-30T12:19:00.000Z'))).toBe('pending');
+  });
+});
+
+describe('isReviewableVerification', () => {
+  it('only exposes uncertain checks without a final responsible decision', () => {
+    expect(isReviewableVerification(event('uncertain'))).toBe(true);
+    expect(isReviewableVerification({ ...event('uncertain'), reviewStatus: 'pending' })).toBe(true);
+    expect(isReviewableVerification({ ...event('uncertain'), reviewStatus: 'approved' })).toBe(false);
+    expect(isReviewableVerification({ ...event('uncertain'), reviewStatus: 'rejected' })).toBe(false);
+    expect(isReviewableVerification(event('detected'))).toBe(false);
   });
 });
 

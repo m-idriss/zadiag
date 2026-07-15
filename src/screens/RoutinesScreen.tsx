@@ -113,6 +113,7 @@ export function RoutinesScreen({
   edit,
   requestCheck,
   getProofImageUrl,
+  reviewCheck,
   onAssignRoutine,
   onDeleteRoutine,
   onRetryRoutines,
@@ -128,6 +129,7 @@ export function RoutinesScreen({
   edit?: boolean;
   requestCheck?: (routineId: string) => Promise<void>;
   getProofImageUrl?: (eventId: string) => Promise<string>;
+  reviewCheck?: (eventId: string, decision: 'detected' | 'not_detected') => Promise<void>;
   onAssignRoutine?: (routineId: string) => Promise<void>;
   onDeleteRoutine?: (routineId: string) => Promise<void>;
   onRetryRoutines?: () => Promise<void>;
@@ -202,7 +204,7 @@ export function RoutinesScreen({
     writeUiStorageString(ROUTINES_EXPANDED_SCHEDULES_KEY, JSON.stringify([...expandedScheduleIds]));
   }, [expandedScheduleIds]);
 
-  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={backToList} start={start} edit={canManageRoutines} initialTab={detailInitialTab} initialEventId={focusedEventId} onInitialEventConsumed={onFocusedEventConsumed} getProofImageUrl={getProofImageUrl} onSaveMonitoringPlan={canManageRoutines && onSaveMonitoringPlan ? (plan, validationMode) => onSaveMonitoringPlan(selected.routineId, plan, validationMode) : undefined} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
+  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={backToList} start={start} edit={canManageRoutines} initialTab={detailInitialTab} initialEventId={focusedEventId} onInitialEventConsumed={onFocusedEventConsumed} getProofImageUrl={getProofImageUrl} reviewCheck={canManageRoutines ? reviewCheck : undefined} onSaveMonitoringPlan={canManageRoutines && onSaveMonitoringPlan ? (plan, validationMode) => onSaveMonitoringPlan(selected.routineId, plan, validationMode) : undefined} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
 
   const setRequestStatus = (routineId: string, status: RequestStatus) => {
     setRequestStatuses((current) => ({ ...current, [routineId]: status }));

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { cameraOutline, chevronBackOutline, chevronForwardOutline, ellipsisHorizontal, peopleOutline, sendOutline, timeOutline } from 'ionicons/icons';
-import { adherenceSummary, withResolvedEventStatuses } from '../domain/adherence';
+import { adherenceSummary, isReviewableVerification, withResolvedEventStatuses } from '../domain/adherence';
 import { presentRoutine } from '../domain/routinePresentation';
 import type { AppState, RoutineAssignment, RoutineValidationMode, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
@@ -152,12 +152,13 @@ const renderRoutineStepIcon = (icon: string) => {
   return icon;
 };
 
-export function RoutineDetailScreen({ assignment, state, back, start, getProofImageUrl, t, edit, initialTab, initialEventId, onInitialEventConsumed, onSaveMonitoringPlan, routinePlanBusy }: {
+export function RoutineDetailScreen({ assignment, state, back, start, getProofImageUrl, reviewCheck, t, edit, initialTab, initialEventId, onInitialEventConsumed, onSaveMonitoringPlan, routinePlanBusy }: {
   assignment: RoutineAssignment;
   state: AppState;
   back: () => void;
   start?: () => void;
   getProofImageUrl?: (eventId: string) => Promise<string>;
+  reviewCheck?: (eventId: string, decision: 'detected' | 'not_detected') => Promise<void>;
   t: (key: MessageKey) => string;
   edit?: boolean;
   initialTab?: DetailInitialTab;
@@ -171,6 +172,8 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   const [proofErrors, setProofErrors] = useState<Record<string, boolean>>({});
   const [enlargedProofUrl, setEnlargedProofUrl] = useState<string>();
   const [selectedHistoryEventId, setSelectedHistoryEventId] = useState<string | undefined>(initialEventId);
+  const [reviewingEventId, setReviewingEventId] = useState<string>();
+  const [reviewErrorEventId, setReviewErrorEventId] = useState<string>();
   const historyDialogRef = useModalFocus<HTMLDivElement>(Boolean(selectedHistoryEventId), () => setSelectedHistoryEventId(undefined));
   const todayHeatmapRef = useRef<HTMLSpanElement | null>(null);
   const now = Date.now();
@@ -189,6 +192,19 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   const tabs: DetailTab[] = edit ? ['plan', 'details', 'tracking'] : ['details', 'tracking'];
   const analysisSourceLabel = (source?: VerificationEvent['analysisSource']) => source ? t(source === 'ai' ? 'analysisSourceAi' : source === 'fallback' ? 'analysisSourceFallback' : 'analysisSourceSelf') : undefined;
   const reviewStatusLabel = (status?: VerificationEvent['reviewStatus']) => status ? t(status === 'approved' ? 'historyReviewApproved' : status === 'rejected' ? 'historyReviewRejected' : 'historyReviewPending') : undefined;
+  const decide = async (eventId: string, decision: 'detected' | 'not_detected') => {
+    if (!reviewCheck) return;
+    setReviewingEventId(eventId);
+    setReviewErrorEventId(undefined);
+    try {
+      await reviewCheck(eventId, decision);
+    } catch (error) {
+      console.error(error);
+      setReviewErrorEventId(eventId);
+    } finally {
+      setReviewingEventId(undefined);
+    }
+  };
 
   useEffect(() => {
     if (initialEventId) onInitialEventConsumed?.();
@@ -322,7 +338,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
 
       {selectedHistoryEvent ? (
         <div className="history-detail-backdrop" onClick={() => setSelectedHistoryEventId(undefined)}>
-          <div ref={historyDialogRef} className={`history-detail-dialog${proofUrls[selectedHistoryEvent.id] ? '' : ' no-proof'}`} role="dialog" aria-modal="true" aria-labelledby="history-detail-title" tabIndex={-1} onClick={(event) => event.stopPropagation()}>
+          <div ref={historyDialogRef} className={`history-detail-dialog${proofUrls[selectedHistoryEvent.id] ? '' : ' no-proof'}${reviewCheck && isReviewableVerification(selectedHistoryEvent) ? ' has-actions' : ''}`} role="dialog" aria-modal="true" aria-labelledby="history-detail-title" tabIndex={-1} onClick={(event) => event.stopPropagation()}>
             <header>
               <div className="history-detail-heading"><small>{t('historyDetailTitle')}</small><h2 id="history-detail-title">{formatDateTime(selectedHistoryEvent.requestedAt)}</h2><StatusPill status={selectedHistoryEvent.status} t={t} /></div>
               <button type="button" data-autofocus aria-label={t('close')} onClick={() => setSelectedHistoryEventId(undefined)}><AppIcon name="close" /></button>
@@ -344,6 +360,15 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
               {selectedHistoryEvent.reviewedAt ? <div><dt>{t('historyReviewedAt')}</dt><dd>{formatDateTime(selectedHistoryEvent.reviewedAt)}</dd></div> : null}
               {selectedHistoryEvent.reviewReason ? <div className="wide"><dt>{t('historyReviewComment')}</dt><dd>{selectedHistoryEvent.reviewReason}</dd></div> : null}
             </dl>
+            {reviewCheck && isReviewableVerification(selectedHistoryEvent) ? (
+              <div className="history-detail-review-actions">
+                {reviewErrorEventId === selectedHistoryEvent.id ? <p className="request-feedback error" role="alert">{t('responsibleReviewError')}</p> : null}
+                <div>
+                  <button type="button" className="parent-review-button reject" aria-label={t('responsibleReviewReject')} disabled={reviewingEventId === selectedHistoryEvent.id} onClick={() => { void decide(selectedHistoryEvent.id, 'not_detected'); }}><AppIcon name="close" /></button>
+                  <button type="button" className="parent-review-button approve" aria-label={t('responsibleReviewApprove')} disabled={reviewingEventId === selectedHistoryEvent.id} onClick={() => { void decide(selectedHistoryEvent.id, 'detected'); }}><AppIcon name="check" /></button>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

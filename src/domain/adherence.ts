@@ -11,6 +11,9 @@ const retakeWindowMs = 15 * 60_000;
 
 export const isCompletedVerification = (event: VerificationEvent) => finalStatuses.has(event.status);
 
+export const isReviewableVerification = (event: VerificationEvent) =>
+  event.status === 'uncertain' && !['approved', 'rejected'].includes(event.reviewStatus ?? '');
+
 export function adherenceSummary(events: VerificationEvent[]) {
   const completed = events.filter(isCompletedVerification);
   const successful = completed.filter((event) => event.status === 'detected');
