@@ -4,8 +4,47 @@ import type { MembershipRole, ParticipantAccess, ParticipantMember, ProfileColor
 import { formatMessage, type MessageKey } from '../services/i18n';
 import { ProfileContextCard } from './ProfileContextCard';
 import { profileColorFor, profileColorHex, profileColorKeyFor, profileColorPalette } from '../domain/profileColor';
+import { relationshipInvitationUrl } from '../services/browserEnvironment';
+import { AppIcon } from './Icon';
 
 type InviteRole = MembershipRole;
+
+function InvitationOutput({ code, t }: { code: string; t: (key: MessageKey) => string }) {
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
+  const url = relationshipInvitationUrl(code);
+  const copy = async () => {
+    try {
+      if (!navigator.clipboard) throw new Error('clipboard_unavailable');
+      await navigator.clipboard.writeText(url);
+      setCopyStatus('copied');
+    } catch {
+      setCopyStatus('error');
+    }
+  };
+  const share = async () => {
+    if (!navigator.share) {
+      await copy();
+      return;
+    }
+    try {
+      await navigator.share({ title: t('relationshipInvitationShareTitle'), text: t('relationshipInvitationShareText'), url });
+    } catch (error) {
+      if ((error as { name?: string }).name !== 'AbortError') setCopyStatus('error');
+    }
+  };
+
+  return (
+    <output className="relationship-invitation-code">
+      {t('relationshipInvitationCode')}: <strong>{code}</strong>
+      <small>{t('relationshipInvitationLinkHint')}</small>
+      <span className="relationship-invitation-actions">
+        <button type="button" onClick={() => { void share(); }}><AppIcon name="share" />{t('relationshipInvitationShareAction')}</button>
+        <button type="button" onClick={() => { void copy(); }}><AppIcon name="link" />{t(copyStatus === 'copied' ? 'relationshipInvitationCopied' : 'relationshipInvitationCopyAction')}</button>
+      </span>
+      {copyStatus === 'error' ? <small className="settings-action-error" role="alert">{t('relationshipInvitationCopyError')}</small> : null}
+    </output>
+  );
+}
 
 export function RelationshipManager({ access, activeParticipantId, accountDisplayName, onUpdateAccountDisplayName, onUpdateParticipantColor, onSelect, onCreate, onInvite, onAccept, onLeave, onRemoveMember, onDeleteParticipant, onCreateRecovery, onRecover, hideHeading = false, t }: {
   access: ParticipantAccess[] | undefined;
@@ -204,7 +243,7 @@ export function RelationshipManager({ access, activeParticipantId, accountDispla
               const invitation = await onInvite(selectedParticipantId, inviteRole);
               setInvitationCode(invitation.code);
             }); }}>{busy === 'invite' ? <span className="button-spinner" aria-hidden="true" /> : null}{busy === 'invite' ? t('relationshipWorking') : t('relationshipInviteAction')}</button>
-            {invitationCode ? <output className="relationship-invitation-code">{t('relationshipInvitationCode')}: <strong>{invitationCode}</strong><small>{t('relationshipInvitationNextStep')}</small></output> : null}
+            {invitationCode ? <InvitationOutput code={invitationCode} t={t} /> : null}
           </div>
           </details>
         ) : null}
@@ -286,7 +325,7 @@ export function RelationshipManager({ access, activeParticipantId, accountDispla
           })}
         </div> : null}
 
-        {invitationCode && !selectedParticipantId ? <output className="relationship-invitation-code">{t('relationshipInvitationCode')}: <strong>{invitationCode}</strong><small>{t('relationshipInvitationNextStep')}</small></output> : null}
+        {invitationCode && !selectedParticipantId ? <InvitationOutput code={invitationCode} t={t} /> : null}
 
         {onCreate ? (
           <details className="relationship-tool relationship-create-tool">

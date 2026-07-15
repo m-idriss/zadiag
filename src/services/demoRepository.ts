@@ -302,7 +302,12 @@ export class DemoRepository implements AppRepository {
       ];
     }
     this.state.activeParticipantId = participantId;
+    this.state.role = 'parent';
+    this.state.family.id = participantId;
+    this.state.family.linked = true;
+    this.state.family.childLinked = true;
     this.state.family.childName = 'Invited participant';
+    this.state.family.consented = true;
     this.persist();
     return participantId;
   }

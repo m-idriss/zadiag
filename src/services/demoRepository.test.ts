@@ -171,6 +171,11 @@ describe('DemoRepository compatibility', () => {
     expect(repository.snapshot().participantAccess?.find((entry) => entry.participant.id === selfManagedId)?.participant.profileColor).toBe('violet');
     await expect(repository.acceptParticipantInvitation('invalid')).rejects.toThrow('invalid_code');
     await expect(repository.acceptParticipantInvitation('ZI-123456')).resolves.toBe('demo-invited');
+    expect(repository.snapshot()).toMatchObject({
+      role: 'parent',
+      activeParticipantId: 'demo-invited',
+      family: { id: 'demo-invited', linked: true, childLinked: true },
+    });
     expect(repository.snapshot().activeParticipantId).toBe('demo-invited');
   });
 });

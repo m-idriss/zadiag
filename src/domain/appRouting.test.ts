@@ -35,6 +35,11 @@ describe('app routing', () => {
     expect(routeForState(state({ role: 'parent' }))).toBe('link');
   });
 
+  it('resumes a relationship invitation after contact registration', () => {
+    expect(routeForState(state(), { invitationCode: 'ZI-123456' })).toBe('invitation');
+    expect(routeForState(state({ contactEmail: undefined }), { invitationCode: 'ZI-123456' })).toBe('contact');
+  });
+
   it('only requires notifications for linked child devices outside local demo', () => {
     const linkedChild = state({ role: 'child', family: { ...state().family, linked: true } });
 

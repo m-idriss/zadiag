@@ -1,6 +1,7 @@
 import type { AppRoute, RouteContext } from '../domain/appRouting';
 
 const LOCALHOST_PATTERN = /^(localhost|127\.0\.0\.1|::1)$/;
+const RELATIONSHIP_INVITATION_STORAGE_KEY = 'zadiag.relationshipInvitationCode';
 
 const useFirebase = import.meta.env.VITE_USE_FIREBASE === 'true';
 export const routineCentricUiEnabled = import.meta.env.VITE_ROUTINE_CENTRIC_UI !== 'false';
@@ -15,6 +16,35 @@ export const notificationLaunchIntent = (search = window.location.search): Notif
   const participantId = parameters.get('participant')?.trim();
   if (parameters.get('open') !== 'review' || !participantId) return undefined;
   return { kind: 'review', participantId };
+};
+
+export const relationshipInvitationCode = (hash = window.location.hash, storage = window.localStorage): string | undefined => {
+  const hashCode = new URLSearchParams(hash.replace(/^#/, '')).get('invite')?.trim().toUpperCase();
+  if (hashCode && /^ZI-\d{6}$/.test(hashCode)) return hashCode;
+  const storedCode = storage.getItem(RELATIONSHIP_INVITATION_STORAGE_KEY)?.trim().toUpperCase();
+  return storedCode && /^ZI-\d{6}$/.test(storedCode) ? storedCode : undefined;
+};
+
+export const captureRelationshipInvitationCode = (hash = window.location.hash, storage = window.localStorage) => {
+  const code = relationshipInvitationCode(hash, storage);
+  if (code) storage.setItem(RELATIONSHIP_INVITATION_STORAGE_KEY, code);
+  return code;
+};
+
+export const relationshipInvitationUrl = (
+  code: string,
+  baseUrl = new URL(import.meta.env.BASE_URL, window.location.origin).toString(),
+) => {
+  const url = new URL(baseUrl);
+  url.hash = new URLSearchParams({ invite: code.trim().toUpperCase() }).toString();
+  return url.toString();
+};
+
+export const clearRelationshipInvitationUrl = () => {
+  const url = new URL(window.location.href);
+  url.hash = '';
+  window.history.replaceState(window.history.state, '', url);
+  window.localStorage.removeItem(RELATIONSHIP_INVITATION_STORAGE_KEY);
 };
 
 const isLocalhostHostname = (hostname = window.location.hostname) => LOCALHOST_PATTERN.test(hostname);
@@ -36,4 +66,5 @@ export const browserRouteContext = (): RouteContext => ({
   setupPreview: setupPreviewRoute(),
   requiresInstall: isIos() && !isStandalone(),
   useLocalDemo: isLocalDemoEnvironment(),
+  invitationCode: relationshipInvitationCode(),
 });
