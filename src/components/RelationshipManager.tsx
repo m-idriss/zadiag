@@ -6,6 +6,8 @@ import { ProfileContextCard } from './ProfileContextCard';
 import { profileColorFor, profileColorHex, profileColorKeyFor, profileColorPalette } from '../domain/profileColor';
 import { relationshipInvitationUrl } from '../services/browserEnvironment';
 import { AppIcon } from './Icon';
+import { CopyableText } from './CopyableText';
+import { copyTextToClipboard } from '../services/clipboard';
 
 type InviteRole = MembershipRole;
 
@@ -14,8 +16,7 @@ function InvitationOutput({ code, t }: { code: string; t: (key: MessageKey) => s
   const url = relationshipInvitationUrl(code);
   const copy = async () => {
     try {
-      if (!navigator.clipboard) throw new Error('clipboard_unavailable');
-      await navigator.clipboard.writeText(url);
+      await copyTextToClipboard(url);
       setCopyStatus('copied');
     } catch {
       setCopyStatus('error');
@@ -35,7 +36,8 @@ function InvitationOutput({ code, t }: { code: string; t: (key: MessageKey) => s
 
   return (
     <output className="relationship-invitation-code">
-      {t('relationshipInvitationCode')}: <strong>{code}</strong>
+      <span className="relationship-invitation-label">{t('relationshipInvitationCode')}</span>
+      <CopyableText value={code} t={t} />
       <small>{t('relationshipInvitationLinkHint')}</small>
       <span className="relationship-invitation-actions">
         <button type="button" onClick={() => { void share(); }}><AppIcon name="share" />{t('relationshipInvitationShareAction')}</button>
@@ -267,7 +269,7 @@ export function RelationshipManager({ access, activeParticipantId, accountDispla
               const recovery = await onCreateRecovery(selectedParticipantId);
               setRecoveryCode(recovery.recoveryCode);
             }); }}>{busy === 'recovery' ? <span className="button-spinner" aria-hidden="true" /> : null}{t('relationshipRecoveryCreate')}</button>
-            {recoveryCode ? <output className="relationship-invitation-code">{t('relationshipRecoveryCode')}: <strong>{recoveryCode}</strong></output> : null}
+            {recoveryCode ? <output className="relationship-invitation-code"><span className="relationship-invitation-label">{t('relationshipRecoveryCode')}</span><CopyableText value={recoveryCode} t={t} /></output> : null}
           </div>
         ) : null}
         {onRecover ? (
