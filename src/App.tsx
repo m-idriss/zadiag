@@ -612,7 +612,6 @@ export function App() {
               summaryRange={dashboardSummaryRange}
               onSummaryRangeChange={setDashboardSummaryRange}
               onSelectParticipant={selectActiveParticipant}
-              onOpenHistoryEvent={openHistoryEvent}
               onOpenNotificationEvent={(participantId, event) => { void openNotificationEvent(participantId, event); }}
               notificationEventId={focusedDashboardEventId}
               onNotificationEventConsumed={() => setFocusedDashboardEventId(undefined)}
