@@ -44,7 +44,7 @@ export function ChildDashboard({
   t: (key: MessageKey) => string;
 }) {
   const [localSummaryRange, setLocalSummaryRange] = useState<SummaryRange>('day');
-  const [expandedStatus, setExpandedStatus] = useState<'todo' | 'retry' | 'next'>();
+  const [expandedStatus, setExpandedStatus] = useState<'todo' | 'retry' | 'next' | undefined>('todo');
   const summaryRange = controlledSummaryRange ?? localSummaryRange;
   const setSummaryRange = onSummaryRangeChange ?? setLocalSummaryRange;
   const now = Date.now();
@@ -52,7 +52,7 @@ export function ChildDashboard({
   const activeParticipantAccess = state.participantAccess?.find((entry) => entry.participant.id === state.activeParticipantId)
     ?? state.participantAccess?.find((entry) => entry.membership.status === 'active');
   const reportSubjectName = activeParticipantAccess?.participant.displayName ?? state.family.childName;
-  useEffect(() => setExpandedStatus(undefined), [state.activeParticipantId]);
+  useEffect(() => setExpandedStatus('todo'), [state.activeParticipantId]);
   const today = state.events.filter((event) => isToday(event.requestedAt));
   const pending = today.filter((event) => (
     event.status === 'analyzing'
