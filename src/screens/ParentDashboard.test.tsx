@@ -73,6 +73,27 @@ describe('ParentDashboard', () => {
     expect(container.querySelector('.printable-report')).toBeNull();
   });
 
+  it('opens history details over the dashboard without navigating to routines', () => {
+    const requestedAt = new Date().toISOString();
+    const assignment = createDefaultRoutineAssignment(requestedAt);
+    const state: AppState = {
+      role: 'parent',
+      locale: 'en',
+      notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      routineAssignments: [assignment],
+      events: [{ id: 'dashboard-detail', routineId: assignment.routineId, sessionId: 'one', requestedAt, expiresAt: new Date(Date.now() + 60 * 60_000).toISOString(), status: 'detected', reason: 'Visible from dashboard' }],
+    };
+
+    act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
+    const openDetails = container.querySelector<HTMLButtonElement>('.history-row-open-button');
+    act(() => openDetails?.click());
+
+    expect(container.querySelector('.history-detail-dialog')?.textContent).toContain('Visible from dashboard');
+    expect(container.querySelector('.parent-overview-screen')).not.toBeNull();
+    expect(container.querySelector('.screen-header h1')?.textContent).toBe('Activity');
+  });
+
   it('shows upcoming checks when no responsible check is active', () => {
     const assignment = createDefaultRoutineAssignment();
     const state: AppState = {

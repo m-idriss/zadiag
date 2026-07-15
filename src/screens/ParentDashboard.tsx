@@ -19,6 +19,7 @@ import { DashboardStatusSummary } from '../components/DashboardStatusSummary';
 import { NotificationCenter } from '../components/NotificationCenter';
 import { AwaitingCheckCards } from '../components/AwaitingCheckCards';
 import { useCurrentTime } from '../hooks/useCurrentTime';
+import { VerificationEventDetailDialog } from '../components/VerificationEventDetailDialog';
 
 export function ParentDashboard({
   state,
@@ -30,7 +31,6 @@ export function ParentDashboard({
   summaryRange: controlledSummaryRange,
   onSummaryRangeChange,
   onSelectParticipant,
-  onOpenHistoryEvent,
   onOpenNotificationEvent,
   notificationEventId,
   onNotificationEventConsumed,
@@ -45,7 +45,6 @@ export function ParentDashboard({
   summaryRange?: SummaryRange;
   onSummaryRangeChange?: (range: SummaryRange) => void;
   onSelectParticipant?: (participantId: string) => void;
-  onOpenHistoryEvent?: (event: VerificationEvent) => void;
   onOpenNotificationEvent?: (participantId: string, event: VerificationEvent) => void;
   notificationEventId?: string;
   onNotificationEventConsumed?: () => void;
@@ -62,12 +61,14 @@ export function ParentDashboard({
   const [requestingActiveReminder, setRequestingActiveReminder] = useState(false);
   const [activeReminderStatus, setActiveReminderStatus] = useState<'sent' | 'error'>();
   const [enlargedProofUrl, setEnlargedProofUrl] = useState<string>();
+  const [detailEventId, setDetailEventId] = useState<string>();
   const swipeStartRef = useRef<{ eventId: string; x: number; y: number } | undefined>(undefined);
   const handledNotificationEventIdRef = useRef<string | undefined>(undefined);
   const summaryRange = controlledSummaryRange ?? localSummaryRange;
   const setSummaryRange = onSummaryRangeChange ?? setLocalSummaryRange;
   const now = useCurrentTime();
   const displayEvents = useMemo(() => withResolvedEventStatuses(state.events, now), [now, state.events]);
+  const detailEvent = displayEvents.find((event) => event.id === detailEventId);
   const rangedEvents = filterEventsBySummaryRange(displayEvents, summaryRange, now);
   const rangedRawEvents = filterEventsBySummaryRange(state.events, summaryRange, now);
   const reviewEvents = useMemo(() => state.events
@@ -246,7 +247,7 @@ export function ParentDashboard({
             contextId="account"
             onOpenEvent={(participantId, event) => {
               if (onOpenNotificationEvent) onOpenNotificationEvent(participantId, event);
-              else onOpenHistoryEvent?.(event);
+              else setDetailEventId(event.id);
             }}
             t={t}
           />
@@ -486,8 +487,9 @@ export function ParentDashboard({
       <section className="today-section participant-history-section parent-history-section dashboard-summary-section" aria-labelledby="responsible-summary-title">
         <h2 id="responsible-summary-title">{t('overview')}</h2>
         <AdherenceSummaryCard events={displayEvents} assignments={state.routineAssignments} locale={state.locale} subjectName={reportSubjectName} range={summaryRange} onRangeChange={setSummaryRange} t={t} />
-        <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedRawEvents} locale={state.locale} titleId="responsible-history-title" onRequestCheck={requestCheck} onOpenEvent={onOpenHistoryEvent} t={t} />
+        <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedRawEvents} locale={state.locale} titleId="responsible-history-title" onRequestCheck={requestCheck} onOpenEvent={(event) => setDetailEventId(event.id)} t={t} />
       </section>
+      {detailEvent ? <VerificationEventDetailDialog event={detailEvent} locale={state.locale} proofUrl={proofUrls[detailEvent.id]} getProofImageUrl={getProofImageUrl} reviewCheck={reviewCheck} onClose={() => setDetailEventId(undefined)} t={t} /> : null}
     </div>
   );
 }
