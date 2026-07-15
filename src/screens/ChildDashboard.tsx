@@ -18,6 +18,7 @@ import { DashboardStatusSummary } from '../components/DashboardStatusSummary';
 import { NotificationCenter } from '../components/NotificationCenter';
 import { AwaitingCheckCards } from '../components/AwaitingCheckCards';
 import { useCurrentTime } from '../hooks/useCurrentTime';
+import { retakeGuidanceMessageKey } from '../services/retakeGuidance';
 
 const isToday = (value: string, now = new Date()) => {
   const date = new Date(value);
@@ -229,7 +230,7 @@ export function ChildDashboard({
                   <div className="parent-review-analysis">
                     <span>{t('analysisVerdict')}: {statusLabel}</span>
                   </div>
-                  <p>{t('participantReviewHint')}</p>
+                  <p>{t(retakeGuidanceMessageKey(event, now))}</p>
                 </div>
                 <div className="parent-review-actions participant-review-actions">
                   <button type="button" className="primary-action-button participant-retake-button today-retake-button" onClick={() => retake?.(event)}>

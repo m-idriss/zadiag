@@ -4,6 +4,7 @@ import { Disclaimer } from '../components/Disclaimer';
 import { StatusPill } from '../components/StatusPill';
 import { ActionButton } from '../components/ui';
 import { AppIcon } from '../components/Icon';
+import { retakeGuidanceMessageKey } from '../services/retakeGuidance';
 
 export function ResultScreen({
   event,
@@ -40,7 +41,7 @@ export function ResultScreen({
       ) : null}
       {quality != null && quality <= 60 ? <p className="result-reason">{t('analysisQualityHint')}</p> : null}
       <Disclaimer t={t} />
-      {retake ? <p className="result-choice-hint">{t('sendAsIsHint')}</p> : null}
+      {retake ? <p className="result-choice-hint">{t(retakeGuidanceMessageKey(event))}</p> : null}
       {retake ? <ActionButton onClick={retake}>{t('retakeProof')}</ActionButton> : null}
       <ActionButton fill={retake ? 'outline' : 'solid'} onClick={done}>{t(retake ? 'sendAsIs' : 'backToday')}</ActionButton>
     </main>
