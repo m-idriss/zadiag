@@ -33,7 +33,6 @@ export function CopyableText({ value, t, compact = false }: {
       <strong>{value}</strong>
       <button type="button" className={state} aria-label={label} title={label} onClick={() => { void copy(); }}>
         <SvgIcon icon={state === 'copied' ? checkmarkOutline : copyOutline} />
-        {!compact ? <span>{label}</span> : null}
       </button>
     </span>
   );

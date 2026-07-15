@@ -86,7 +86,6 @@ export function CodeBox({
           onClick={() => { void handleCopy(); }}
         >
           <SvgIcon icon={copyState === 'copied' ? checkmarkOutline : copyOutline} />
-          <span className="copy-code-label">{copyLabel}</span>
         </button>
       </div>
       <span>{hint}</span>

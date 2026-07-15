@@ -303,7 +303,7 @@ button:disabled { cursor: not-allowed; }
 .toggle-code-visibility span:first-child { font-size: 13px; line-height: 1; }
 .code-box span, .code-box small { font-size: 12px; color: var(--color-text-muted); }
 .code-box-actions { display: grid; gap: 8px; }
-.copy-code-button { min-height: var(--height-action); display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border: 1px solid rgba(29, 138, 122, .16); border-radius: 13px; background: rgba(255,255,255,.94); color: var(--color-primary); font-weight: 900; font-size: 12px; white-space: nowrap; box-shadow: 0 6px 14px rgba(21, 50, 75, .05); transition: transform .12s ease, box-shadow .12s ease, background .12s ease; }
+.copy-code-button { width: 44px; min-height: var(--height-action); display: inline-flex; align-items: center; justify-content: center; padding: 8px; border: 1px solid rgba(29, 138, 122, .16); border-radius: 13px; background: rgba(255,255,255,.94); color: var(--color-primary); font-weight: 900; font-size: 12px; white-space: nowrap; box-shadow: 0 6px 14px rgba(21, 50, 75, .05); transition: transform .12s ease, box-shadow .12s ease, background .12s ease; }
 .copy-code-button span:first-child { font-size: 14px; line-height: 1; }
 .copy-code-button:hover { box-shadow: 0 8px 18px rgba(21, 50, 75, .07); }
 .copy-code-button:active { transform: translateY(1px); box-shadow: 0 4px 10px rgba(21, 50, 75, .04); }
@@ -864,7 +864,7 @@ button:disabled { cursor: not-allowed; }
 .relationship-invitation-label { color: var(--color-text-muted); font-size: 10px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
 .copyable-text { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 10px 9px 12px; border: 1px solid var(--color-border); border-radius: 11px; background: var(--color-surface-solid); }
 .copyable-text > strong { min-width: 0; overflow-wrap: anywhere; color: var(--color-text-strong); font-size: 17px; letter-spacing: .05em; line-height: 1.3; user-select: text; -webkit-user-select: text; }
-.copyable-text > button { min-height: var(--height-action); display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 6px; padding: 7px 9px; border: 0; border-radius: 9px; background: var(--color-control-surface); color: var(--color-primary); font-size: 10px; font-weight: 900; }
+.copyable-text > button { width: 40px; min-height: var(--height-action); display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; padding: 7px; border: 0; border-radius: 9px; background: var(--color-control-surface); color: var(--color-primary); font-size: 10px; font-weight: 900; }
 .copyable-text > button .svg-icon { font-size: 16px; }
 .copyable-text > button.copied { background: var(--color-primary-soft); }
 .copyable-text > button.error { background: var(--color-danger-soft); color: var(--color-danger); }
@@ -1902,7 +1902,6 @@ button:disabled { cursor: not-allowed; }
   .code-box-header { gap: 10px; }
   .code-box strong { font-size: 21px; letter-spacing: 1.25px; }
   .copy-code-button { min-width: 44px; min-height: 44px; padding: 0 10px; justify-content: center; }
-  .copy-code-label { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
