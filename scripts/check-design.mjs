@@ -27,9 +27,20 @@ const tokens = await readFile(tokensPath, 'utf8');
 const appCss = await readFile(appCssPath, 'utf8');
 const allCss = `${tokens}\n${appCss}`;
 const normalizeColor = (value) => value.toLowerCase().replace(/\s+/g, '');
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const cssRuleHasDeclaration = (selector, declaration) => {
+  const rule = appCss.match(new RegExp(`${escapeRegExp(selector)}\\s*\\{([^}]*)\\}`));
+  return Boolean(rule?.[1] && declaration.test(rule[1]));
+};
 
 if (!/^:root\s*\{/m.test(tokens)) errors.push(`${relativePath(tokensPath)}: missing :root token scope`);
 if (/:root\s*\{/.test(appCss)) errors.push(`${relativePath(appCssPath)}: foundational tokens must live in src/styles/tokens.css`);
+
+for (const selector of ['.settings-row', '.settings-help-center > summary']) {
+  if (!cssRuleHasDeclaration(selector, /align-items\s*:\s*flex-start\s*;/)) {
+    errors.push(`${relativePath(appCssPath)}: ${selector} must keep row icons and actions aligned to the top`);
+  }
+}
 
 const legacyTokens = ['navy', 'teal', 'mint', 'cream', 'coral', 'muted', 'line', 'surface', 'surface-solid'];
 for (const token of legacyTokens) {
