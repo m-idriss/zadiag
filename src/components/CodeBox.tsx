@@ -2,25 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { checkmarkOutline, copyOutline, eyeOffOutline, eyeOutline } from 'ionicons/icons';
 import type { MessageKey } from '../services/i18n';
+import { copyTextToClipboard } from '../services/clipboard';
 import { SvgIcon } from './SvgIcon';
-
-async function copyToClipboard(value: string) {
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(value);
-    return;
-  }
-
-  const textarea = document.createElement('textarea');
-  textarea.value = value;
-  textarea.setAttribute('readonly', 'true');
-  textarea.style.position = 'absolute';
-  textarea.style.left = '-9999px';
-  document.body.appendChild(textarea);
-  textarea.select();
-  const copied = document.execCommand('copy');
-  document.body.removeChild(textarea);
-  if (!copied) throw new Error('copy_failed');
-}
 
 export function CodeBox({
   label,
@@ -51,7 +34,7 @@ export function CodeBox({
 
   const handleCopy = async () => {
     try {
-      await copyToClipboard(value);
+      await copyTextToClipboard(value);
       setCopyState('copied');
     } catch {
       setCopyState('error');

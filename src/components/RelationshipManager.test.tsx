@@ -93,6 +93,7 @@ describe('RelationshipManager', () => {
     expect(container.textContent).toContain('ZI-654321');
     expect(container.textContent).toContain('Share link');
     expect(container.textContent).toContain('Copy link');
+    expect(container.querySelector('.relationship-invitation-code .copyable-text')).not.toBeNull();
   });
 
   it('targets the visible participant when a stale legacy id is still active', async () => {
