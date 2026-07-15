@@ -4,6 +4,7 @@ import { act } from 'react';
 import { defaultAppPreferences, type PushSubscriptionHealth, type VerificationEvent } from '../domain/models';
 import { translate } from '../services/i18n';
 import { SettingsScreen } from './SettingsScreen';
+import type { SyncStatus } from '../services/contracts';
 
 const renderSettings = ({
   notificationsEnabled = false,
@@ -16,11 +17,13 @@ const renderSettings = ({
   },
   sendTestPushNotification = async () => undefined,
   reset = async () => undefined,
+  syncStatus = 'synced',
 }: {
   notificationsEnabled?: boolean;
   pushHealth?: PushSubscriptionHealth;
   sendTestPushNotification?: () => Promise<void>;
   reset?: () => Promise<void>;
+  syncStatus?: SyncStatus;
 } = {}) => {
   const container = document.createElement('div');
   document.body.appendChild(container);
@@ -48,6 +51,7 @@ const renderSettings = ({
         totalChecks={0}
         serviceWorkerStatus="registered"
         lastSyncAt="2026-07-07T19:45:00.000Z"
+        syncStatus={syncStatus}
         participantAccess={[
           { participant: { id: 'maya', displayName: 'Maya' }, membership: { role: 'caregiver', status: 'active' } },
           { participant: { id: 'leo', displayName: 'Leo' }, membership: { role: 'owner', status: 'active' } },
@@ -114,17 +118,12 @@ describe('SettingsScreen help and reliability', () => {
     container.remove();
   });
 
-  it('updates connection health when the device goes offline', () => {
-    const originalOnline = navigator.onLine;
-    const { container, root } = renderSettings();
-    Object.defineProperty(navigator, 'onLine', { configurable: true, value: false });
-
-    act(() => window.dispatchEvent(new Event('offline')));
+  it('shows connection health when the app reports the device offline', () => {
+    const { container, root } = renderSettings({ syncStatus: 'offline' });
 
     expect(container.textContent).toContain('Offline. Zadiag will refresh when the connection returns.');
     expect(container.querySelector('.settings-health-badge')?.textContent).toBe('Waiting');
 
-    Object.defineProperty(navigator, 'onLine', { configurable: true, value: originalOnline });
     act(() => root.unmount());
     container.remove();
   });

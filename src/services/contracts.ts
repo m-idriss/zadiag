@@ -1,5 +1,7 @@
 import type { AppPreferences, AppState, Locale, MembershipRole, MonitoringPlan, ParticipantMember, ProfileColorKey, Role, RoutineValidationMode, VerificationEvent } from '../domain/models';
 
+export type SyncStatus = 'synced' | 'syncing' | 'offline' | 'failed';
+
 export interface AppRepository {
   initialize(): Promise<void>;
   snapshot(): AppState;

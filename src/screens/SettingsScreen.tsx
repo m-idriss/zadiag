@@ -23,6 +23,7 @@ import { ActionButton, ListRow, SegmentedControl } from '../components/ui';
 import { SvgIcon } from '../components/SvgIcon';
 import { RelationshipManager } from '../components/RelationshipManager';
 import { languageTag } from '../services/locale';
+import type { SyncStatus } from '../services/contracts';
 
 const SUPPORT_EMAIL = 'contact@3dime.com';
 
@@ -47,6 +48,8 @@ export function SettingsScreen({
   totalChecks,
   serviceWorkerStatus,
   lastSyncAt,
+  syncStatus,
+  retrySync,
   participantAccess,
   activeParticipantId,
   accountDisplayName,
@@ -82,6 +85,8 @@ export function SettingsScreen({
   totalChecks: number;
   serviceWorkerStatus: 'unsupported' | 'registered' | 'notRegistered';
   lastSyncAt?: string;
+  syncStatus: SyncStatus;
+  retrySync?: () => Promise<unknown>;
   participantAccess?: ParticipantAccess[];
   activeParticipantId?: string;
   accountDisplayName?: string;
@@ -109,7 +114,6 @@ export function SettingsScreen({
   const [localPushDispatchAt, setLocalPushDispatchAt] = useState<string>();
   const [resettingAccount, setResettingAccount] = useState(false);
   const [resetError, setResetError] = useState(false);
-  const [online, setOnline] = useState(() => navigator.onLine);
 
   useEffect(() => {
     let cancelled = false;
@@ -129,16 +133,6 @@ export function SettingsScreen({
     void refreshLocalPushEndpoint();
     return () => { cancelled = true; };
   }, [notificationsEnabled, diagnosticsOpen, testPushStatus]);
-
-  useEffect(() => {
-    const updateConnection = () => setOnline(navigator.onLine);
-    window.addEventListener('online', updateConnection);
-    window.addEventListener('offline', updateConnection);
-    return () => {
-      window.removeEventListener('online', updateConnection);
-      window.removeEventListener('offline', updateConnection);
-    };
-  }, []);
 
   const hasLocalPushEvidence = localPushEndpointPresent || testPushStatus === 'success' || Boolean(localPushDispatchAt);
   const effectivePushHealth: PushSubscriptionHealth | undefined = pushHealth || hasLocalPushEvidence
@@ -323,13 +317,15 @@ export function SettingsScreen({
             )}
           />
           <ListRow
-            icon={<SvgIcon icon={online ? cloudDoneOutline : cloudOfflineOutline} />}
-            iconClassName={online ? 'settings-health-online' : 'settings-health-offline'}
+            icon={<SvgIcon icon={syncStatus === 'offline' || syncStatus === 'failed' ? cloudOfflineOutline : cloudDoneOutline} />}
+            iconClassName={syncStatus === 'synced' ? 'settings-health-online' : 'settings-health-offline'}
             title={t('settingsConnectionTitle')}
-            detail={online
+            detail={syncStatus === 'synced'
               ? `${t('settingsConnectionOnline')} · ${t('settingsDiagnosticsLastSync')} ${formattedLastSync}`
-              : t('settingsConnectionOffline')}
-            trailing={<span className={`settings-health-badge ${online ? 'online' : 'offline'}`}>{t(online ? 'settingsConnectionReady' : 'settingsConnectionWaiting')}</span>}
+              : t(syncStatus === 'offline' ? 'settingsConnectionOffline' : syncStatus === 'failed' ? 'syncStatusFailedDetail' : 'syncStatusSyncingDetail')}
+            trailing={syncStatus === 'failed' && retrySync
+              ? <button type="button" className="settings-inline-action" onClick={() => { void retrySync(); }}>{t('retryNow')}</button>
+              : <span className={`settings-health-badge ${syncStatus === 'synced' ? 'online' : 'offline'}`}>{t(syncStatus === 'synced' ? 'settingsConnectionReady' : 'settingsConnectionWaiting')}</span>}
           />
           {role === 'child' ? (
             <ListRow

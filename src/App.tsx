@@ -21,6 +21,7 @@ import { profileColorFor } from './domain/profileColor';
 import { cleanupClientAfterReset } from './services/resetCleanup';
 import { readUiStorageString, writeUiStorageString } from './services/uiStorage';
 import { useAppUpdateController } from './hooks/useAppUpdateController';
+import type { SyncStatus } from './services/contracts';
 
 const lazyScreen = <TProps extends object>(
   load: () => Promise<Record<string, ComponentType<TProps>>>,
@@ -42,6 +43,12 @@ const appBadgeApi = navigator as Navigator & {
 };
 
 const DASHBOARD_SUMMARY_RANGE_KEY = 'zadiag.dashboard.summaryRange';
+const syncStatusMessageKeys: Record<SyncStatus, MessageKey> = {
+  synced: 'syncStatusSynced',
+  syncing: 'syncStatusSyncing',
+  offline: 'syncStatusOffline',
+  failed: 'syncStatusFailed',
+};
 
 const readDashboardSummaryRange = (): SummaryRange => {
   const stored = readUiStorageString(DASHBOARD_SUMMARY_RANGE_KEY);
@@ -62,6 +69,12 @@ export const resetNoticeMessageKey = (role: Role | undefined): MessageKey =>
 export const isParticipantInvitationCode = (code: string) => /^ZI-\d{6}$/.test(code.trim().toUpperCase());
 
 export const documentLanguageForLocale = (locale: Locale) => documentLanguage(locale);
+
+export const syncStatusFor = (online: boolean, pendingOperations: number, failed: boolean): SyncStatus => {
+  if (!online) return 'offline';
+  if (pendingOperations > 0) return 'syncing';
+  return failed ? 'failed' : 'synced';
+};
 
 export const setupCompletionTransition = (
   previous: boolean | undefined,
@@ -109,6 +122,9 @@ export function App() {
   const [selectedSessionId, setSelectedSessionId] = useState<string>();
   const [focusedHistoryEventId, setFocusedHistoryEventId] = useState<string>();
   const [lastSyncAt, setLastSyncAt] = useState<string>();
+  const [online, setOnline] = useState(() => navigator.onLine);
+  const [pendingSyncOperations, setPendingSyncOperations] = useState(0);
+  const [syncFailed, setSyncFailed] = useState(false);
   const [dashboardSummaryRange, setDashboardSummaryRange] = useState<SummaryRange>(readDashboardSummaryRange);
   const [serviceWorkerStatus, setServiceWorkerStatus] = useState<'unsupported' | 'registered' | 'notRegistered'>(
     () => ('serviceWorker' in navigator ? 'notRegistered' : 'unsupported'),
@@ -132,6 +148,16 @@ export function App() {
   useEffect(() => {
     document.documentElement.lang = documentLanguageForLocale(state.locale);
   }, [state.locale]);
+
+  useEffect(() => {
+    const updateConnection = () => setOnline(navigator.onLine);
+    window.addEventListener('online', updateConnection);
+    window.addEventListener('offline', updateConnection);
+    return () => {
+      window.removeEventListener('online', updateConnection);
+      window.removeEventListener('offline', updateConnection);
+    };
+  }, []);
 
   useEffect(() => {
     if (state.accessStatus === 'suspended') setRoute('suspended');
@@ -247,25 +273,38 @@ export function App() {
   }, [state.events, state.role]);
 
   const sync = () => setState(repository.snapshot());
+  const runRepositoryAction = async <TArgs extends unknown[], TResult>(
+    action: (...args: TArgs) => Promise<TResult>,
+    args: TArgs,
+  ): Promise<TResult> => {
+    setPendingSyncOperations((count) => count + 1);
+    setSyncFailed(false);
+    try {
+      const result = await action.apply(repository, args);
+      sync();
+      setLastSyncAt(new Date().toISOString());
+      return result;
+    } catch (error) {
+      setSyncFailed(true);
+      throw error;
+    } finally {
+      setPendingSyncOperations((count) => Math.max(0, count - 1));
+    }
+  };
   const withRepositorySync = <TArgs extends unknown[], TResult>(
     action: (...args: TArgs) => Promise<TResult>,
-  ) => async (...args: TArgs): Promise<TResult> => {
-    const result = await action.apply(repository, args);
-    sync();
-    return result;
-  };
+  ) => (...args: TArgs): Promise<TResult> => runRepositoryAction(action, args);
   const withOptionalRepositorySync = <TArgs extends unknown[], TResult>(
     action: ((...args: TArgs) => Promise<TResult>) | undefined,
   ) => action ? withRepositorySync(action) : undefined;
   const withRepositorySyncVoid = <TArgs extends unknown[]>(
     action: (...args: TArgs) => Promise<unknown>,
   ) => async (...args: TArgs): Promise<void> => {
-    await action.apply(repository, args);
-    sync();
+    await runRepositoryAction(action, args);
   };
   const bindOptionalRepository = <TArgs extends unknown[], TResult>(
     action: ((...args: TArgs) => Promise<TResult>) | undefined,
-  ) => action ? (...args: TArgs) => action.apply(repository, args) : undefined;
+  ) => action ? withRepositorySync(action) : undefined;
   const syncLocale = withRepositorySync(repository.setLocale);
   const selectActiveParticipant = withOptionalRepositorySync(repository.selectActiveParticipant);
   const selectRole = async (role: Role) => {
@@ -288,8 +327,7 @@ export function App() {
     setSubmitError(undefined);
     setBusy(true);
     try {
-      const event = await repository.submitCapture(session.sessionId, capturedAt, imageDataUrl);
-      sync();
+      const event = await runRepositoryAction(repository.submitCapture, [session.sessionId, capturedAt, imageDataUrl]);
       setResult(event);
       setSelectedSessionId(undefined);
       setRoute('result');
@@ -428,6 +466,10 @@ export function App() {
     content = <ResultScreen event={result} retake={canRetake ? () => retryCapture(result) : undefined} done={() => { setResult(undefined); setRoute('app'); }} t={t} />;
   } else {
     const role = state.role ?? 'child';
+    const syncStatus = syncStatusFor(online, pendingSyncOperations, syncFailed);
+    const retrySync = repository.retryRemoteSync
+      ? () => runRepositoryAction(repository.retryRemoteSync!, [])
+      : undefined;
     const activeParticipant = state.participantAccess?.find((entry) => entry.participant.id === state.activeParticipantId)?.participant
       ?? state.participantAccess?.find((entry) => entry.membership.status === 'active')?.participant;
     const activeProfileColor = activeParticipant ? profileColorFor(activeParticipant) : undefined;
@@ -477,6 +519,8 @@ export function App() {
             totalChecks={state.events.length}
             serviceWorkerStatus={serviceWorkerStatus}
             lastSyncAt={lastSyncAt}
+            syncStatus={syncStatus}
+            retrySync={retrySync}
             participantAccess={state.participantAccess}
             activeParticipantId={state.activeParticipantId}
             accountDisplayName={state.accountDisplayName}
@@ -530,6 +574,13 @@ export function App() {
         t={t}
       >
         {screen}
+        <div className={`global-sync-status ${syncStatus}`} role="status" aria-live="polite">
+          <span aria-hidden="true" />
+          <strong>{t(syncStatusMessageKeys[syncStatus])}</strong>
+          {(syncStatus === 'failed' || syncStatus === 'offline') && retrySync ? (
+            <button type="button" disabled={!online} onClick={() => { void retrySync(); }}>{t('retryNow')}</button>
+          ) : null}
+        </div>
         <BottomNav
           tab={tab}
           role={role}

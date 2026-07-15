@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_ROUTINE_ID, type AppState, type VerificationEvent } from './domain/models';
-import { appBadgeCountForState, documentLanguageForLocale, isParticipantInvitationCode, participantIdForNotificationLaunch, resetNoticeMessageKey, setupCompletionTransition } from './App';
+import { appBadgeCountForState, documentLanguageForLocale, isParticipantInvitationCode, participantIdForNotificationLaunch, resetNoticeMessageKey, setupCompletionTransition, syncStatusFor } from './App';
 
 const activePendingEvent = (expiresAt: string): VerificationEvent => ({
   id: 'check-1',
@@ -38,6 +38,15 @@ describe('appBadgeCountForState', () => {
       ],
       Date.parse('2026-07-06T09:00:00.000Z'),
     )).toBe(0);
+  });
+});
+
+describe('syncStatusFor', () => {
+  it('prioritizes offline and active synchronization before failures', () => {
+    expect(syncStatusFor(false, 1, true)).toBe('offline');
+    expect(syncStatusFor(true, 1, true)).toBe('syncing');
+    expect(syncStatusFor(true, 0, true)).toBe('failed');
+    expect(syncStatusFor(true, 0, false)).toBe('synced');
   });
 });
 
