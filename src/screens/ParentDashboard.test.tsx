@@ -55,7 +55,11 @@ describe('ParentDashboard', () => {
     expect(container.textContent).not.toContain('Monitoring plan');
     expect(container.textContent).not.toContain('Needs attention');
     const print = vi.spyOn(window, 'print').mockImplementation(() => undefined);
+    const detailedReport = container.querySelector<HTMLDetailsElement>('.detailed-reporting');
+    expect(detailedReport?.open).toBe(false);
+    expect(detailedReport?.querySelector('summary')?.textContent).toBe('Detailed report');
     const reportButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Print or save report'));
+    expect(detailedReport?.contains(reportButton ?? null)).toBe(true);
     expect(reportButton?.disabled).toBe(false);
     expect(container.querySelector('.printable-report')?.textContent).toContain('Participant: Maya');
     expect(container.querySelector('.printable-report img')).toBeNull();

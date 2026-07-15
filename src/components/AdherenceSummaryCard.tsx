@@ -94,22 +94,8 @@ export function AdherenceSummaryCard({
           <h2>{t(selectedRange.titleKey)}</h2>
           <p>{summary.successful} {t('clearChecks')} {summary.completed}</p>
           <strong>{t('progressEncouragement')}</strong>
-          <small className="summary-comparison">{comparison}</small>
         </div>
       </div>
-      {report.byRoutine.length ? (
-        <details className="routine-reporting">
-          <summary>{t('summaryByRoutine')}</summary>
-          <div>
-            {report.byRoutine.map((routine) => (
-              <p key={routine.routineId}>
-                <strong>{routineNames.get(routine.routineId) ?? t('routine')}</strong>
-                <span>{routine.successful}/{routine.completed} · {Math.round(routine.rate * 100)}%</span>
-              </p>
-            ))}
-          </div>
-        </details>
-      ) : null}
       <div className="summary-range-toggle" role="group" aria-label={t('summaryRange')}>
         {ranges.map((item) => (
           <button
@@ -123,16 +109,35 @@ export function AdherenceSummaryCard({
           </button>
         ))}
       </div>
-      <button
-        type="button"
-        className="action-button fill-outline report-print-action"
-        disabled={!summary.completed}
-        onClick={() => window.print()}
-      >
-        <AppIcon name="download" />
-        {t('printReport')}
-      </button>
-      {!summary.completed ? <small className="report-unavailable-hint">{t('reportUnavailable')}</small> : null}
+      <details className="detailed-reporting">
+        <summary>{t('summaryDetailedReport')}</summary>
+        <div className="detailed-reporting-content">
+          <small className="summary-comparison">{comparison}</small>
+          {report.byRoutine.length ? (
+            <section className="routine-reporting" aria-labelledby="routine-reporting-title">
+              <strong id="routine-reporting-title">{t('summaryByRoutine')}</strong>
+              <div>
+                {report.byRoutine.map((routine) => (
+                  <p key={routine.routineId}>
+                    <strong>{routineNames.get(routine.routineId) ?? t('routine')}</strong>
+                    <span>{routine.successful}/{routine.completed} · {Math.round(routine.rate * 100)}%</span>
+                  </p>
+                ))}
+              </div>
+            </section>
+          ) : null}
+          <button
+            type="button"
+            className="action-button fill-outline report-print-action"
+            disabled={!summary.completed}
+            onClick={() => window.print()}
+          >
+            <AppIcon name="download" />
+            {t('printReport')}
+          </button>
+          {!summary.completed ? <small className="report-unavailable-hint">{t('reportUnavailable')}</small> : null}
+        </div>
+      </details>
       {summary.completed ? <article className="printable-report" aria-hidden="true">
         <header>
           <strong>Zadiag</strong>
