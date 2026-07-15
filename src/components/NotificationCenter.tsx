@@ -15,6 +15,14 @@ const titleKeys: Record<AppNotificationKind, MessageKey> = {
   review: 'notificationCenterReview',
 };
 
+const readNotificationIds = (storageKey: string, notificationIds: string[]) => {
+  const stored = readUiStorageJson<string[]>(storageKey, [], (value) => (
+    Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
+  ));
+  const currentIds = new Set(notificationIds);
+  return stored.filter((id) => currentIds.has(id));
+};
+
 export function NotificationCenter({
   role,
   events,
@@ -33,11 +41,14 @@ export function NotificationCenter({
   t: (key: MessageKey) => string;
 }) {
   const [open, setOpen] = useState(false);
-  const [readIds, setReadIds] = useState<string[]>([]);
   const notifications = notificationsForEvents(role, events);
   const notificationIds = notifications.map((notification) => notification.id);
   const notificationIdSignature = notificationIds.join('|');
   const storageKey = `zadiag.notificationCenter.read.${role}.${contextId}`;
+  const [readState, setReadState] = useState(() => ({
+    storageKey,
+    ids: readNotificationIds(storageKey, notificationIds),
+  }));
   const dialogRef = useModalFocus<HTMLDivElement>(open, () => setOpen(false));
   const routineNames = useMemo(() => new Map(assignments.map((assignment) => [
     assignment.routineId,
@@ -49,20 +60,22 @@ export function NotificationCenter({
   }), [locale]);
 
   useEffect(() => {
-    const stored = readUiStorageJson<string[]>(storageKey, [], (value) => (
-      Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
-    ));
-    const currentIds = new Set(notificationIds);
-    const validIds = stored.filter((id) => currentIds.has(id));
-    setReadIds(validIds);
-    if (validIds.length !== stored.length) writeUiStorageString(storageKey, JSON.stringify(validIds));
+    const validIds = readNotificationIds(storageKey, notificationIds);
+    setReadState({ storageKey, ids: validIds });
   }, [notificationIdSignature, storageKey]);
 
+  const readIds = readState.storageKey === storageKey
+    ? readState.ids
+    : readNotificationIds(storageKey, notificationIds);
   const readSet = new Set(readIds);
   const unreadCount = notifications.filter((notification) => !readSet.has(notification.id)).length;
   const saveReadIds = (ids: string[]) => {
-    setReadIds(ids);
+    setReadState({ storageKey, ids });
     writeUiStorageString(storageKey, JSON.stringify(ids));
+  };
+  const openCenter = () => {
+    if (unreadCount) saveReadIds(notificationIds);
+    setOpen(true);
   };
   const openNotification = (notificationId: string, event: VerificationEvent) => {
     if (!readSet.has(notificationId)) saveReadIds([...readIds, notificationId]);
@@ -76,7 +89,7 @@ export function NotificationCenter({
         type="button"
         className="notification-center-trigger"
         aria-label={unreadCount ? `${t('notificationCenterTitle')} · ${unreadCount}` : t('notificationCenterTitle')}
-        onClick={() => setOpen(true)}
+        onClick={openCenter}
       >
         <AppIcon name="notifications" />
         {unreadCount ? <span>{unreadCount > 99 ? '99+' : unreadCount}</span> : null}
