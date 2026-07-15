@@ -1619,7 +1619,7 @@ button:disabled { cursor: not-allowed; }
 .settings-help-content strong { font-size: 12px; }
 .settings-help-content p { margin: 3px 0 0; color: var(--color-text-muted); font-size: 11px; line-height: 1.45; }
 .settings-diagnostics-list { display: grid; grid-template-columns: 1fr; gap: 8px; margin: 10px 0 0; }
-.settings-diagnostics-row .settings-row-copy { grid-column: 2 / -1; grid-template-columns: minmax(0, 1fr) var(--height-action); column-gap: 12px; }
+.settings-diagnostics-row .settings-row-copy { grid-column: 2 / -1; grid-row: 1; grid-template-columns: minmax(0, 1fr) var(--height-action); column-gap: 12px; }
 .settings-diagnostics-row .settings-row-copy > strong,
 .settings-diagnostics-row .settings-row-copy > small { grid-column: 1; }
 .settings-diagnostics-row .settings-diagnostics-list { width: 95%; grid-column: 1 / -1; justify-self: start; }
