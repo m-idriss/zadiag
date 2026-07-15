@@ -24,6 +24,12 @@ describe('ParentDashboard', () => {
     vi.restoreAllMocks();
   });
 
+  const selectDashboardStatus = (label: string) => {
+    const button = Array.from(container.querySelectorAll<HTMLButtonElement>('.dashboard-status-summary button'))
+      .find((item) => item.textContent?.includes(label));
+    act(() => button?.click());
+  };
+
   it('keeps the parent overview blocks and replaces needs attention with filterable history', () => {
     const requestedAt = new Date().toISOString();
     const expiresAt = new Date(Date.now() + 60 * 60_000).toISOString();
@@ -79,6 +85,8 @@ describe('ParentDashboard', () => {
 
     act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
 
+    expect(container.textContent).not.toContain('Upcoming checks');
+    selectDashboardStatus('Next');
     expect(container.textContent).toContain('Upcoming checks');
     expect(container.textContent).not.toContain('Finish setting up Zadiag');
     expect(container.textContent).toContain('Orthodontic Elastics');
@@ -220,6 +228,8 @@ describe('ParentDashboard', () => {
 
     act(() => root.render(<ParentDashboard state={baseState} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
 
+    expect(container.textContent).not.toContain('Upcoming checks');
+    selectDashboardStatus('Next');
     expect(container.textContent).toContain('Upcoming checks');
     expect(container.textContent).not.toContain('Active checks');
 
@@ -242,6 +252,7 @@ describe('ParentDashboard', () => {
       />,
     ));
 
+    selectDashboardStatus('Active');
     expect(container.textContent).toContain('1 check to complete');
     expect(container.textContent).toContain('Orthodontic Elastics');
     expect(container.textContent).toContain('Expected proof: Mouth photo');
@@ -270,6 +281,7 @@ describe('ParentDashboard', () => {
 
     act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} requestCheck={requestCheck} t={(key) => translate('en', key)} />));
 
+    selectDashboardStatus('Active');
     const resend = Array.from(container.querySelectorAll('button')).find((button) => button.getAttribute('aria-label') === 'Resend reminder');
     expect(resend).toBeTruthy();
     expect(resend?.textContent).toContain('Remind');
@@ -313,6 +325,7 @@ describe('ParentDashboard', () => {
 
     act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} requestCheck={vi.fn()} t={(key) => translate('en', key)} />));
 
+    selectDashboardStatus('Active');
     expect(container.textContent).toContain('1 check to complete');
     expect(container.querySelectorAll('.parent-active-check-card')).toHaveLength(1);
     expect(container.querySelectorAll('.parent-history-row')).toHaveLength(1);
@@ -496,11 +509,12 @@ describe('ParentDashboard', () => {
       await Promise.resolve();
     });
 
+    selectDashboardStatus('To review');
     expect(container.textContent).toContain('Checks to verify');
     expect(Array.from(container.querySelectorAll('.dashboard-status-summary strong')).map((item) => item.textContent)).toEqual(['0', '1', '1']);
     const reviewSection = container.querySelector('.parent-review-section');
-    const upcomingSection = container.querySelector('.upcoming-checks-section');
-    expect(Boolean(reviewSection && upcomingSection && (reviewSection.compareDocumentPosition(upcomingSection) & Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
+    expect(reviewSection).not.toBeNull();
+    expect(container.querySelector('.upcoming-checks-section')).toBeNull();
     expect(container.textContent).toContain('Expected proof: Mouth photo');
     expect(container.textContent).toContain('Source: AI');
     expect(container.textContent).toContain('AI result: Not detected');
@@ -552,6 +566,7 @@ describe('ParentDashboard', () => {
       await Promise.resolve();
     });
 
+    selectDashboardStatus('To review');
     expect(container.textContent).toContain('Checks to verify');
     expect(getProofImageUrl).toHaveBeenCalledWith('legacy-review');
     const reject = Array.from(container.querySelectorAll('button')).find((button) => button.getAttribute('aria-label') === 'Reject');
@@ -607,6 +622,7 @@ describe('ParentDashboard', () => {
       );
     });
 
+    selectDashboardStatus('To review');
     const cards = Array.from(container.querySelectorAll<HTMLElement>('.parent-review-card'));
     await act(async () => {
       cards[0].dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 20, clientY: 24 }));

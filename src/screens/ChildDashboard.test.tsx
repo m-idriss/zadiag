@@ -51,6 +51,12 @@ describe('participant Today screen', () => {
     container.remove();
   });
 
+  const selectDashboardStatus = (label: string) => {
+    const button = Array.from(container.querySelectorAll<HTMLButtonElement>('.dashboard-status-summary button'))
+      .find((item) => item.textContent?.includes(label));
+    act(() => button?.click());
+  };
+
   it('shows today pending tasks with an action for the active task', () => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
@@ -67,6 +73,8 @@ describe('participant Today screen', () => {
 
     act(() => root.render(<ChildDashboard state={state} active={pending} start={start} t={(key) => translate('en', key)} />));
 
+    expect(container.querySelector('.today-task')).toBeNull();
+    selectDashboardStatus('To do');
     expect(container.textContent).toContain('1 check to complete');
     expect(Array.from(container.querySelectorAll('.dashboard-status-summary strong')).map((item) => item.textContent)).toEqual(['1', '0', '1']);
     expect(container.textContent).not.toContain('Completed today');
@@ -96,6 +104,7 @@ describe('participant Today screen', () => {
 
     act(() => root.render(<ChildDashboard state={state} active={elasticsPending} start={start} t={(key) => translate('en', key)} />));
 
+    selectDashboardStatus('To do');
     const actions = Array.from(container.querySelectorAll('button')).filter((button) => button.textContent?.includes('Proof'));
     expect(actions).toHaveLength(2);
     act(() => actions[1]?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
@@ -121,12 +130,14 @@ describe('participant Today screen', () => {
 
     act(() => root.render(<ChildDashboard state={state} start={() => undefined} retake={retake} t={(key) => translate('en', key)} />));
 
+    expect(container.querySelector('.participant-review-section')).toBeNull();
+    selectDashboardStatus('To retry');
     const todayButton = container.querySelector<HTMLButtonElement>('.today-retake-button');
     expect(todayButton).toBeTruthy();
     expect(Array.from(container.querySelectorAll('.dashboard-status-summary strong')).map((item) => item.textContent)).toEqual(['0', '1', '1']);
     const retrySection = container.querySelector('.participant-review-section');
-    const upcomingSection = container.querySelector('.upcoming-checks-section');
-    expect(Boolean(retrySection && upcomingSection && (retrySection.compareDocumentPosition(upcomingSection) & Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
+    expect(retrySection).not.toBeNull();
+    expect(container.querySelector('.upcoming-checks-section')).toBeNull();
     act(() => todayButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(retake).toHaveBeenCalledWith(failed);
   });
@@ -140,6 +151,7 @@ describe('participant Today screen', () => {
     };
 
     act(() => root.render(<ChildDashboard state={base} active={pending} start={() => undefined} t={(key) => translate('en', key)} />));
+    selectDashboardStatus('To do');
     expect(container.textContent).toContain('1 check to complete');
 
     const analyzing = { ...pending, status: 'analyzing' as const };
@@ -184,6 +196,7 @@ describe('participant Today screen', () => {
 
     act(() => root.render(<ChildDashboard state={state} start={() => undefined} t={(key) => translate('fr', key)} />));
 
+    selectDashboardStatus('À faire');
     expect(container.textContent).toContain('0 contrôles à réaliser');
     expect(container.textContent).toContain('On garde le cap.');
     expect(container.textContent).toContain('2 contrôles manqués');
@@ -227,7 +240,8 @@ describe('participant Today screen', () => {
 
     act(() => root.render(<ChildDashboard state={state} start={() => undefined} t={(key) => translate('en', key)} />));
 
-    expect(container.textContent).toContain('0 checks to complete');
+    expect(container.textContent).not.toContain('Upcoming checks');
+    selectDashboardStatus('Next');
     expect(container.textContent).toContain('Upcoming checks');
     expect(container.textContent).toContain('Orthodontic Elastics');
     expect(container.textContent).not.toContain('Before');
@@ -250,6 +264,7 @@ describe('participant Today screen', () => {
 
     act(() => root.render(<ChildDashboard state={state} active={pending} start={() => undefined} t={(key) => translate('en', key)} />));
 
+    selectDashboardStatus('To do');
     expect(container.textContent).toContain('This morning');
     expect(container.textContent).not.toContain('This evening');
     vi.useRealTimers();
@@ -269,6 +284,7 @@ describe('participant Today screen', () => {
     const openHistoryEvent = vi.fn();
     act(() => root.render(<ChildDashboard state={state} start={() => undefined} onOpenHistoryEvent={openHistoryEvent} t={(key) => translate('en', key)} />));
 
+    selectDashboardStatus('To do');
     const content = container.textContent ?? '';
     expect(content).toContain('0 checks to complete');
     expect(content).not.toContain('Completed today');

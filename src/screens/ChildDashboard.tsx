@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { AppState, VerificationEvent } from '../domain/models';
 import { formatMessage, type MessageKey } from '../services/i18n';
 import { languageTag } from '../services/locale';
@@ -44,6 +44,7 @@ export function ChildDashboard({
   t: (key: MessageKey) => string;
 }) {
   const [localSummaryRange, setLocalSummaryRange] = useState<SummaryRange>('day');
+  const [expandedStatus, setExpandedStatus] = useState<'todo' | 'retry' | 'next'>();
   const summaryRange = controlledSummaryRange ?? localSummaryRange;
   const setSummaryRange = onSummaryRangeChange ?? setLocalSummaryRange;
   const now = Date.now();
@@ -51,6 +52,7 @@ export function ChildDashboard({
   const activeParticipantAccess = state.participantAccess?.find((entry) => entry.participant.id === state.activeParticipantId)
     ?? state.participantAccess?.find((entry) => entry.membership.status === 'active');
   const reportSubjectName = activeParticipantAccess?.participant.displayName ?? state.family.childName;
+  useEffect(() => setExpandedStatus(undefined), [state.activeParticipantId]);
   const today = state.events.filter((event) => isToday(event.requestedAt));
   const pending = today.filter((event) => (
     event.status === 'analyzing'
@@ -237,14 +239,16 @@ export function ChildDashboard({
       <DashboardStatusSummary
         label={t('dashboardStatusSummary')}
         items={[
-          { label: t('dashboardToDo'), value: actionableCount },
-          { label: t('dashboardRetry'), value: attentionCompleted.length, tone: 'attention' },
-          { label: t('dashboardNext'), value: upcomingChecks.length },
+          { id: 'todo', label: t('dashboardToDo'), value: actionableCount },
+          { id: 'retry', label: t('dashboardRetry'), value: attentionCompleted.length, tone: 'attention' },
+          { id: 'next', label: t('dashboardNext'), value: upcomingChecks.length },
         ]}
+        selectedId={expandedStatus}
+        onSelect={(id) => setExpandedStatus((current) => current === id ? undefined : id as typeof current)}
       />
-      {pendingSection}
-      {attentionSection}
-      <UpcomingChecksSection checks={upcomingChecks} now={nowDate} locale={locale} titleId="upcoming-checks-title" t={t} />
+      {expandedStatus === 'todo' ? pendingSection : null}
+      {expandedStatus === 'retry' ? attentionSection : null}
+      {expandedStatus === 'next' ? <UpcomingChecksSection checks={upcomingChecks} now={nowDate} locale={locale} titleId="upcoming-checks-title" t={t} /> : null}
       {historySection}
       <Disclaimer t={t} />
     </div>
