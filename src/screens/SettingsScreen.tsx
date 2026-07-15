@@ -394,21 +394,19 @@ export function SettingsScreen({
           </details>
           <ListRow
             icon={<SvgIcon icon={informationCircleOutline} />}
-            title={(
-              <span className="settings-diagnostics-header">
-                <span>{t('settingsRecoveryDiagnosticsTitle')}</span>
-                <button
-                  type="button"
-                  className="settings-diagnostics-toggle"
-                  aria-expanded={diagnosticsOpen}
-                  aria-label={t('settingsRecoveryDiagnosticsTitle')}
-                  onClick={() => setDiagnosticsOpen((open) => !open)}
-                >
-                  <SvgIcon className={diagnosticsOpen ? 'expanded' : undefined} icon={chevronDownOutline} />
-                </button>
-              </span>
-            )}
+            title={t('settingsRecoveryDiagnosticsTitle')}
             detail={t('settingsRecoveryDiagnosticsDetail')}
+            trailing={(
+              <button
+                type="button"
+                className="settings-diagnostics-toggle"
+                aria-expanded={diagnosticsOpen}
+                aria-label={t('settingsRecoveryDiagnosticsTitle')}
+                onClick={() => setDiagnosticsOpen((open) => !open)}
+              >
+                <SvgIcon className={diagnosticsOpen ? 'expanded' : undefined} icon={chevronDownOutline} />
+              </button>
+            )}
           >
             <dl className="settings-diagnostics-list">
               {diagnosticsOpen ? (
