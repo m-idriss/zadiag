@@ -46,6 +46,7 @@ export function ParentDashboard({
   const [regenerating, setRegenerating] = useState(false);
   const [codeError, setCodeError] = useState(false);
   const [localSummaryRange, setLocalSummaryRange] = useState<SummaryRange>('day');
+  const [expandedStatus, setExpandedStatus] = useState<'active' | 'review' | 'next'>();
   const [proofUrls, setProofUrls] = useState<Record<string, string>>({});
   const [proofErrors, setProofErrors] = useState<Record<string, boolean>>({});
   const [reviewingId, setReviewingId] = useState<string>();
@@ -197,6 +198,7 @@ export function ParentDashboard({
   const handleMouseUp = (event: MouseEvent<HTMLElement>, eventId: string) => completeSwipe(eventId, event.clientX, event.clientY);
   const activeParticipantAccess = state.participantAccess?.find((entry) => entry.participant.id === state.activeParticipantId)
     ?? state.participantAccess?.find((entry) => entry.membership.status === 'active');
+  useEffect(() => setExpandedStatus(undefined), [state.activeParticipantId]);
   return (
     <div className="content-screen child-home parent-overview-screen">
       <div className="page-context-top parent-context-top">
@@ -209,7 +211,10 @@ export function ParentDashboard({
             locale={state.locale}
             contextId={state.activeParticipantId ?? state.family.id ?? state.family.childName}
             onOpenEvent={(event) => {
-              if (event.status === 'uncertain') document.getElementById(`review-${event.id}`)?.scrollIntoView({ block: 'center' });
+              if (event.status === 'uncertain') {
+                setExpandedStatus('review');
+                window.requestAnimationFrame(() => document.getElementById(`review-${event.id}`)?.scrollIntoView({ block: 'center' }));
+              }
               else onOpenHistoryEvent?.(event);
             }}
             t={t}
@@ -240,19 +245,21 @@ export function ParentDashboard({
         <DashboardStatusSummary
           label={t('dashboardStatusSummary')}
           items={[
-            { label: t('dashboardActive'), value: activePendingEvents.length },
-            { label: t('dashboardReview'), value: reviewEvents.length, tone: 'attention' },
-            { label: t('dashboardNext'), value: upcomingChecks.length },
+            { id: 'active', label: t('dashboardActive'), value: activePendingEvents.length },
+            { id: 'review', label: t('dashboardReview'), value: reviewEvents.length, tone: 'attention' },
+            { id: 'next', label: t('dashboardNext'), value: upcomingChecks.length },
           ]}
+          selectedId={expandedStatus}
+          onSelect={(id) => setExpandedStatus((current) => current === id ? undefined : id as typeof current)}
         />
       ) : null}
 
-      {(responsibleEmptyState || activePendingEvents.length || (!state.family.childLinked && state.family.linkingCode) || (!state.routineAssignments.length && onCreateRoutine)) ? (
+      {(responsibleEmptyState || (expandedStatus === 'active' && activePendingEvents.length) || (!state.family.childLinked && state.family.linkingCode) || (!state.routineAssignments.length && onCreateRoutine)) ? (
         <section className="settings-section parent-setup-section" aria-labelledby="parent-setup-title">
           <h2 id="parent-setup-title">{activePendingEvents.length ? `${activePendingEvents.length} ${t(activePendingEvents.length === 1 ? 'checkToComplete' : 'checksToComplete')}` : t('responsibleCurrentChecksTitle')}</h2>
 
           <div className="today-task-list">
-            {activePendingEvents.length ? (
+            {expandedStatus === 'active' && activePendingEvents.length ? (
               <>
                 {activePendingEvents
                   .slice()
@@ -347,7 +354,7 @@ export function ParentDashboard({
         </section>
       ) : null}
 
-      {reviewEvents.length ? (
+      {expandedStatus === 'review' && reviewEvents.length ? (
         <section className="settings-section parent-review-section" aria-labelledby="parent-review-title">
           <div className="section-heading parent-review-heading">
             <h2 id="parent-review-title">{t('responsibleReviewTitle')}</h2>
@@ -436,7 +443,7 @@ export function ParentDashboard({
         </section>
       ) : null}
 
-      {!activePendingEvents.length && state.family.childLinked && state.routineAssignments.length && upcomingChecks.length ? (
+      {expandedStatus === 'next' && state.family.childLinked && state.routineAssignments.length && upcomingChecks.length ? (
         <UpcomingChecksSection checks={upcomingChecks} now={nowDate} locale={locale} titleId="responsible-upcoming-checks-title" t={t} />
       ) : null}
 
