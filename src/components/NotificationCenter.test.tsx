@@ -11,7 +11,7 @@ describe('NotificationCenter', () => {
     vi.restoreAllMocks();
   });
 
-  it('persists read state per profile after opening the relevant event', () => {
+  it('clears the unread badge when the notification center is opened', () => {
     const container = document.createElement('div');
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -42,12 +42,12 @@ describe('NotificationCenter', () => {
     expect(trigger?.textContent).toBe('1');
     act(() => trigger?.click());
     expect(container.textContent).toContain('Check ready');
+    expect(container.querySelector('.notification-center-trigger')?.textContent).toBe('');
+    expect(localStorage.getItem('zadiag.notificationCenter.read.child.maya')).toBe('["check_ready:ready"]');
     const notification = container.querySelector<HTMLButtonElement>('.notification-center-list > button');
     act(() => notification?.click());
 
     expect(onOpenEvent).toHaveBeenCalledWith(ready);
-    expect(container.querySelector('.notification-center-trigger')?.textContent).toBe('');
-    expect(localStorage.getItem('zadiag.notificationCenter.read.child.maya')).toBe('["check_ready:ready"]');
 
     act(() => root.unmount());
     container.remove();
