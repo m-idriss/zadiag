@@ -996,6 +996,14 @@ button:disabled { cursor: not-allowed; }
 .bottom-nav button.active .app-icon { color: var(--profile-color, var(--color-primary)); }
 .bottom-nav button:active { transform: scale(.95); }
 .bottom-nav button:focus-visible { outline: 3px solid color-mix(in srgb, var(--color-text) 34%, transparent); outline-offset: 2px; border-radius: 10px; }
+.global-sync-status { position: fixed; z-index: 11; bottom: calc(var(--bottom-nav-offset) + var(--bottom-nav-block-size) + 9px); left: 50%; min-height: 30px; display: inline-flex; align-items: center; gap: 7px; padding: 6px 10px; border: 1px solid var(--color-border); border-radius: 999px; background: var(--color-surface-solid); color: var(--color-text-muted); box-shadow: var(--shadow-sm); transform: translateX(-50%); font-size: 10px; white-space: nowrap; }
+.global-sync-status > span { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: var(--color-primary); }
+.global-sync-status.syncing > span { animation: sync-status-pulse 1.2s ease-in-out infinite; }
+.global-sync-status.offline > span,
+.global-sync-status.failed > span { background: var(--color-warning-strong); }
+.global-sync-status button { min-height: 26px; padding: 3px 7px; border: 0; border-radius: 999px; background: var(--color-text); color: var(--color-surface-solid); font-size: 9px; font-weight: 900; }
+.global-sync-status button:disabled { display: none; }
+@keyframes sync-status-pulse { 50% { opacity: .35; transform: scale(.78); } }
 .routines-state { display: grid; place-items: center; text-align: center; }
 .routines-state p { max-width: 30ch; }
 
