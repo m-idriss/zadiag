@@ -10,7 +10,7 @@ import { Snackbar } from './components/Snackbar';
 import { PullToUpdate } from './components/PullToUpdate';
 import { isSummaryRange, type SummaryRange } from './components/AdherenceSummaryCard';
 import { firebaseEnabled } from './services/firebaseConfig';
-import { browserRouteContext, isLocalDemoEnvironment, notificationLaunchIntent, routineCentricUiEnabled } from './services/browserEnvironment';
+import { browserRouteContext, captureRelationshipInvitationCode, clearRelationshipInvitationUrl, isLocalDemoEnvironment, notificationLaunchIntent, routineCentricUiEnabled } from './services/browserEnvironment';
 import { runWhenStartupIsIdle } from './services/appUpdate';
 import { InstallScreen } from './screens/InstallScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
@@ -36,6 +36,7 @@ const HistoryScreen = lazyScreen(() => import('./screens/HistoryScreen'), 'Histo
 const SettingsScreen = lazyScreen(() => import('./screens/SettingsScreen'), 'SettingsScreen');
 const ParentDashboard = lazyScreen(() => import('./screens/ParentDashboard'), 'ParentDashboard');
 const RoutinesScreen = lazyScreen(() => import('./screens/RoutinesScreen'), 'RoutinesScreen');
+const InvitationScreen = lazyScreen(() => import('./screens/InvitationScreen'), 'InvitationScreen');
 
 const appBadgeApi = navigator as Navigator & {
   setAppBadge?: (contents?: number) => Promise<void>;
@@ -130,6 +131,8 @@ export function App() {
   const [syncFailed, setSyncFailed] = useState(false);
   const [syncConfirmationSequence, setSyncConfirmationSequence] = useState(0);
   const [syncConfirmationVisible, setSyncConfirmationVisible] = useState(false);
+  const [invitationNeedsAccountName, setInvitationNeedsAccountName] = useState(false);
+  const [pendingInvitationCode, setPendingInvitationCode] = useState(captureRelationshipInvitationCode);
   const [dashboardSummaryRange, setDashboardSummaryRange] = useState<SummaryRange>(readDashboardSummaryRange);
   const [serviceWorkerStatus, setServiceWorkerStatus] = useState<'unsupported' | 'registered' | 'notRegistered'>(
     () => ('serviceWorker' in navigator ? 'notRegistered' : 'unsupported'),
@@ -329,7 +332,7 @@ export function App() {
     if (!repository.registerContactEmail) return;
     await repository.registerContactEmail(email);
     sync();
-    setRoute('welcome');
+    setRoute(routeForState(repository.snapshot(), browserRouteContext()));
   };
 
   const submit = async (capturedAt: Date, imageDataUrl: string) => {
@@ -400,6 +403,13 @@ export function App() {
     : appUpdateInfo.severity === 'minor'
       ? t('snackbarUpdateMinorAvailable')
       : t('snackbarUpdateAvailable');
+  const completeRelationshipInvitation = () => {
+    const restored = repository.snapshot();
+    clearRelationshipInvitationUrl();
+    setPendingInvitationCode(undefined);
+    setInvitationNeedsAccountName(false);
+    setRoute(restored.role === 'child' && !restored.notificationsEnabled && !useLocalDemo ? 'notifications' : 'app');
+  };
 
   if (startupError) {
     return (
@@ -434,6 +444,29 @@ export function App() {
     content = <ContactEmailScreen locale={state.locale} setLocale={(locale) => { void syncLocale(locale); }} submit={registerContactEmail} t={t} />;
   } else if (route === 'suspended') {
     content = <SuspendedScreen t={t} />;
+  } else if (route === 'invitation' && pendingInvitationCode) {
+    content = <InvitationScreen
+      code={pendingInvitationCode}
+      accountNameRequired={invitationNeedsAccountName}
+      accept={async () => {
+        if (!repository.acceptParticipantInvitation) throw new Error('participant_invitation_unavailable');
+        await runRepositoryAction(repository.acceptParticipantInvitation, [pendingInvitationCode]);
+        if (!repository.snapshot().accountDisplayName && repository.updateAccountProfile) setInvitationNeedsAccountName(true);
+        else completeRelationshipInvitation();
+      }}
+      saveAccountName={async (name) => {
+        if (!repository.updateAccountProfile) throw new Error('account_profile_unavailable');
+        await runRepositoryAction(repository.updateAccountProfile, [name]);
+        completeRelationshipInvitation();
+      }}
+      cancel={() => {
+        clearRelationshipInvitationUrl();
+        setPendingInvitationCode(undefined);
+        setInvitationNeedsAccountName(false);
+        setRoute(routeForState(repository.snapshot(), browserRouteContext()));
+      }}
+      t={t}
+    />;
   } else if (route === 'welcome') {
     content = (
       <WelcomeScreen

@@ -91,6 +91,8 @@ describe('RelationshipManager', () => {
     await act(async () => button.click());
     expect(invite).toHaveBeenCalledWith('alex', 'caregiver');
     expect(container.textContent).toContain('ZI-654321');
+    expect(container.textContent).toContain('Share link');
+    expect(container.textContent).toContain('Copy link');
   });
 
   it('targets the visible participant when a stale legacy id is still active', async () => {
