@@ -1916,7 +1916,7 @@ button:disabled { cursor: not-allowed; }
 .camera-page h1 { font-size: 21px; margin: 0; color: var(--color-surface-solid); }
 .camera-flow { max-width: 600px; margin: auto; }
 .camera-viewport { width: 100%; height: min(58dvh, 560px); position: relative; overflow: hidden; background: #0d2335; border: 1px solid rgba(255,255,255,.2); border-radius: 28px; }
-.camera-video, .camera-preview { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+.camera-video, .camera-preview { width: 100%; height: 100%; object-fit: cover; object-position: center; transform: scaleX(-1); }
 .mouth-guide { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
 .mouth-guide span { position: absolute; top: 24px; font-size: 13px; }
 .mouth-oval { width: min(75%, 280px); aspect-ratio: 1.7; border: 3px solid var(--color-surface-solid); border-radius: 50%; box-shadow: 0 0 0 999px rgba(5,18,29,.25); }

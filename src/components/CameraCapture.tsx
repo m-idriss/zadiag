@@ -3,6 +3,7 @@ import { camera, checkmark, refresh } from 'ionicons/icons';
 import type { MessageKey } from '../services/i18n';
 import { SvgIcon } from './SvgIcon';
 import { ActionButton } from './ui';
+import { cameraFrameGeometry } from '../domain/cameraFrame';
 
 interface CameraCaptureProps {
   t: (key: MessageKey) => string;
@@ -93,12 +94,28 @@ export function CameraCapture({ t, busy, submitError, onSubmit }: CameraCaptureP
 
   const capture = () => {
     const video = videoRef.current;
-    if (!video || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
+    if (!video || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA || video.videoWidth <= 0 || video.videoHeight <= 0) return;
     const canvas = document.createElement('canvas');
-    const scale = Math.min(1, captureMaxSide / Math.max(video.videoWidth, video.videoHeight));
-    canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
-    canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
-    canvas.getContext('2d')?.drawImage(video, 0, 0);
+    const frame = cameraFrameGeometry(
+      video.videoWidth,
+      video.videoHeight,
+      video.clientWidth,
+      video.clientHeight,
+      captureMaxSide,
+    );
+    canvas.width = frame.outputWidth;
+    canvas.height = frame.outputHeight;
+    canvas.getContext('2d')?.drawImage(
+      video,
+      frame.sourceX,
+      frame.sourceY,
+      frame.sourceWidth,
+      frame.sourceHeight,
+      0,
+      0,
+      frame.outputWidth,
+      frame.outputHeight,
+    );
     const timestamp = new Date();
     setCapturedAt(timestamp);
     setLocalCheckError(undefined);
