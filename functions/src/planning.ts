@@ -14,6 +14,8 @@ export interface MonitoringPlan {
   timeZone: string;
 }
 
+export const plannedCheckDispatchSchedule = 'every 1 minutes';
+
 const timePattern = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 const minutesForTime = (value: string) => {
   const [hours, minutes] = value.split(':').map(Number);
