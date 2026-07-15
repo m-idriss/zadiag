@@ -120,7 +120,29 @@ export function AdherenceSummaryCard({
       } = await import('../services/reportExport');
       const blob = format === 'pdf'
         ? (await import('../services/reportPdf')).createAdherenceReportPdf(reportExportInput)
-        : (await import('../services/reportCsv')).createAdherenceReportCsv(reportExportInput, locale === 'fr' ? ';' : ',');
+        : (await import('../services/reportCsv')).createAdherenceReportCsv({
+          participant: subjectName,
+          period: range,
+          exportedAt: new Date().toISOString(),
+          events: completedEvents.map((event) => ({
+            eventId: event.id,
+            sessionId: event.sessionId,
+            routineId: event.routineId,
+            routineName: routineNames.get(event.routineId) ?? t('routine'),
+            requestedAt: event.requestedAt,
+            expiresAt: event.expiresAt,
+            capturedAt: event.capturedAt,
+            status: event.status,
+            analysisSource: event.analysisSource,
+            automatedStatus: event.automatedStatus,
+            confidence: event.confidence,
+            imageQuality: event.imageQuality,
+            reason: event.reason,
+            reviewStatus: event.reviewStatus,
+            reviewedAt: event.reviewedAt,
+            reviewReason: event.reviewReason,
+          })),
+        });
       await deliverReportFile(blob, adherenceReportFilename(subjectName, format), reportExportInput.title);
       setReportDownloadState('idle');
     } catch (error) {

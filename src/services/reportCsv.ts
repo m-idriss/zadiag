@@ -1,27 +1,79 @@
-import type { AdherenceReportExportInput } from './reportExport';
+export interface AdherenceReportCsvInput {
+  participant: string;
+  period: string;
+  exportedAt: string;
+  events: Array<{
+    eventId: string;
+    sessionId: string;
+    routineId: string;
+    routineName: string;
+    requestedAt: string;
+    expiresAt: string;
+    capturedAt?: string;
+    status: string;
+    analysisSource?: string;
+    automatedStatus?: string;
+    confidence?: number;
+    imageQuality?: number;
+    reason?: string;
+    reviewStatus?: string;
+    reviewedAt?: string;
+    reviewReason?: string;
+  }>;
+}
 
-const csvCell = (value: string, delimiter: string) => {
-  if (!value.includes(delimiter) && !/["\r\n]/.test(value)) return value;
-  return `"${value.replace(/"/g, '""')}"`;
+const columns = [
+  'participant',
+  'period',
+  'exported_at',
+  'event_id',
+  'session_id',
+  'routine_id',
+  'routine_name',
+  'requested_at',
+  'expires_at',
+  'captured_at',
+  'status',
+  'analysis_source',
+  'automated_status',
+  'confidence',
+  'image_quality',
+  'reason',
+  'review_status',
+  'reviewed_at',
+  'review_reason',
+] as const;
+
+const csvCell = (value: string) => {
+  const safeValue = /^[=+\-@]/.test(value) ? `'${value}` : value;
+  if (!/[,"\r\n]/.test(safeValue)) return safeValue;
+  return `"${safeValue.replace(/"/g, '""')}"`;
 };
 
-export const createAdherenceReportCsv = (
-  input: AdherenceReportExportInput,
-  delimiter: ',' | ';',
-) => {
-  const rows: string[][] = [
-    [input.title],
-    [input.subject],
-    [input.period],
-    [input.generatedOn],
-    [],
-    ...input.summary.map(({ label, value }) => [label, value]),
-    [],
-  ];
-  if (input.routines.length) {
-    rows.push([input.routineHeading], input.routineColumns, ...input.routines, []);
-  }
-  rows.push([input.historyHeading], input.historyColumns, ...input.history, [], [input.privacyNote]);
-  const content = rows.map((row) => row.map((cell) => csvCell(cell, delimiter)).join(delimiter)).join('\r\n');
+export const createAdherenceReportCsv = (input: AdherenceReportCsvInput) => {
+  const rows = input.events.map((event) => [
+    input.participant,
+    input.period,
+    input.exportedAt,
+    event.eventId,
+    event.sessionId,
+    event.routineId,
+    event.routineName,
+    event.requestedAt,
+    event.expiresAt,
+    event.capturedAt ?? '',
+    event.status,
+    event.analysisSource ?? '',
+    event.automatedStatus ?? '',
+    event.confidence?.toString() ?? '',
+    event.imageQuality?.toString() ?? '',
+    event.reason ?? '',
+    event.reviewStatus ?? '',
+    event.reviewedAt ?? '',
+    event.reviewReason ?? '',
+  ]);
+  const content = [columns, ...rows]
+    .map((row) => row.map((cell) => csvCell(cell)).join(','))
+    .join('\r\n');
   return new Blob([`\uFEFF${content}`], { type: 'text/csv;charset=utf-8' });
 };
