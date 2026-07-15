@@ -32,6 +32,7 @@ export function ChildDashboard({
   summaryRange: controlledSummaryRange,
   onSummaryRangeChange,
   onOpenHistoryEvent,
+  onOpenNotificationEvent,
   t,
 }: {
   state: AppState;
@@ -41,6 +42,7 @@ export function ChildDashboard({
   summaryRange?: SummaryRange;
   onSummaryRangeChange?: (range: SummaryRange) => void;
   onOpenHistoryEvent?: (event: VerificationEvent) => void;
+  onOpenNotificationEvent?: (participantId: string, event: VerificationEvent) => void;
   t: (key: MessageKey) => string;
 }) {
   const [localSummaryRange, setLocalSummaryRange] = useState<SummaryRange>('day');
@@ -52,6 +54,12 @@ export function ChildDashboard({
   const activeParticipantAccess = state.participantAccess?.find((entry) => entry.participant.id === state.activeParticipantId)
     ?? state.participantAccess?.find((entry) => entry.membership.status === 'active');
   const reportSubjectName = activeParticipantAccess?.participant.displayName ?? state.family.childName;
+  const notificationSources = state.notificationSources?.length ? state.notificationSources : activeParticipantAccess ? [{
+    participant: activeParticipantAccess.participant,
+    role: 'child' as const,
+    assignments: state.routineAssignments,
+    events: state.events,
+  }] : [];
   useEffect(() => setExpandedStatus('todo'), [state.activeParticipantId]);
   const today = state.events.filter((event) => isToday(event.requestedAt));
   const pending = today.filter((event) => (
@@ -220,11 +228,14 @@ export function ChildDashboard({
           <div><h1>{t('activity')}</h1></div>
           <NotificationCenter
             role="child"
-            events={state.events}
-            assignments={state.routineAssignments}
+            sources={notificationSources}
             locale={state.locale}
-            contextId={state.activeParticipantId ?? state.family.id ?? state.family.childName}
-            onOpenEvent={(event) => event.status === 'pending' ? start(event) : onOpenHistoryEvent?.(event)}
+            contextId="account"
+            onOpenEvent={(participantId, event) => {
+              if (participantId === state.activeParticipantId && event.status === 'pending') start(event);
+              else if (onOpenNotificationEvent) onOpenNotificationEvent(participantId, event);
+              else onOpenHistoryEvent?.(event);
+            }}
             t={t}
           />
         </header>

@@ -29,6 +29,7 @@ export function ParentDashboard({
   onSummaryRangeChange,
   onSelectParticipant,
   onOpenHistoryEvent,
+  onOpenNotificationEvent,
   t,
 }: {
   state: AppState;
@@ -41,6 +42,7 @@ export function ParentDashboard({
   onSummaryRangeChange?: (range: SummaryRange) => void;
   onSelectParticipant?: (participantId: string) => void;
   onOpenHistoryEvent?: (event: VerificationEvent) => void;
+  onOpenNotificationEvent?: (participantId: string, event: VerificationEvent) => void;
   t: (key: MessageKey) => string;
 }) {
   const [regenerating, setRegenerating] = useState(false);
@@ -198,6 +200,12 @@ export function ParentDashboard({
   const handleMouseUp = (event: MouseEvent<HTMLElement>, eventId: string) => completeSwipe(eventId, event.clientX, event.clientY);
   const activeParticipantAccess = state.participantAccess?.find((entry) => entry.participant.id === state.activeParticipantId)
     ?? state.participantAccess?.find((entry) => entry.membership.status === 'active');
+  const notificationSources = state.notificationSources?.length ? state.notificationSources : activeParticipantAccess ? [{
+    participant: activeParticipantAccess.participant,
+    role: 'parent' as const,
+    assignments: state.routineAssignments,
+    events: displayEvents,
+  }] : [];
   useEffect(() => setExpandedStatus(undefined), [state.activeParticipantId]);
   return (
     <div className="content-screen child-home parent-overview-screen">
@@ -206,15 +214,15 @@ export function ParentDashboard({
           <div><h1>{t('activity')}</h1></div>
           <NotificationCenter
             role="parent"
-            events={displayEvents}
-            assignments={state.routineAssignments}
+            sources={notificationSources}
             locale={state.locale}
-            contextId={state.activeParticipantId ?? state.family.id ?? state.family.childName}
-            onOpenEvent={(event) => {
-              if (event.status === 'uncertain') {
+            contextId="account"
+            onOpenEvent={(participantId, event) => {
+              if (participantId === state.activeParticipantId && event.status === 'uncertain') {
                 setExpandedStatus('review');
                 window.requestAnimationFrame(() => document.getElementById(`review-${event.id}`)?.scrollIntoView({ block: 'center' }));
               }
+              else if (onOpenNotificationEvent) onOpenNotificationEvent(participantId, event);
               else onOpenHistoryEvent?.(event);
             }}
             t={t}
