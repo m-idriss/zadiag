@@ -11,11 +11,13 @@ import { UpcomingChecksSection } from '../components/UpcomingChecksSection';
 import { presentRoutine } from '../domain/routinePresentation';
 import { eventWindowLabel } from '../domain/taskTimeLabel';
 import { canRetakeCapture, resolvedEventStatus, withResolvedEventStatuses } from '../domain/adherence';
-import { presentedUpcomingRoutineChecks } from '../domain/dashboardChecks';
+import { presentedAwaitingRoutineChecks, presentedUpcomingRoutineChecks } from '../domain/dashboardChecks';
 import { ProfileContextCard } from '../components/ProfileContextCard';
 import { profileColorFor } from '../domain/profileColor';
 import { DashboardStatusSummary } from '../components/DashboardStatusSummary';
 import { NotificationCenter } from '../components/NotificationCenter';
+import { AwaitingCheckCards } from '../components/AwaitingCheckCards';
+import { useCurrentTime } from '../hooks/useCurrentTime';
 
 const isToday = (value: string, now = new Date()) => {
   const date = new Date(value);
@@ -54,7 +56,7 @@ export function ChildDashboard({
   const handledNotificationEventIdRef = useRef<string | undefined>(undefined);
   const summaryRange = controlledSummaryRange ?? localSummaryRange;
   const setSummaryRange = onSummaryRangeChange ?? setLocalSummaryRange;
-  const now = Date.now();
+  const now = useCurrentTime();
   const nowDate = useMemo(() => new Date(now), [now]);
   const activeParticipantAccess = state.participantAccess?.find((entry) => entry.participant.id === state.activeParticipantId)
     ?? state.participantAccess?.find((entry) => entry.membership.status === 'active');
@@ -71,7 +73,9 @@ export function ChildDashboard({
     event.status === 'analyzing'
     || (event.status === 'pending' && Date.parse(event.expiresAt) > now)
   ));
-  const actionableCount = pending.length;
+  const awaitingChecks = useMemo(() => presentedAwaitingRoutineChecks(state.routineAssignments, state.events, state.locale, nowDate),
+  [nowDate, state.events, state.locale, state.routineAssignments]);
+  const actionableCount = pending.length + awaitingChecks.length;
   const completed = state.events.filter((event) => (
     event.capturedAt !== undefined
     && isToday(event.capturedAt)
@@ -186,7 +190,8 @@ export function ChildDashboard({
             </article>
           );
         })}
-        {!pending.length && (
+        <AwaitingCheckCards checks={awaitingChecks} now={nowDate} locale={locale} t={t} />
+        {!pending.length && !awaitingChecks.length && (
           <section className={`check-card today-empty${hasAttentionToday ? ' has-attention' : ''}`}>
             <div className="today-empty-status-row">
               <span className="eyebrow">{t('allDone')}</span>

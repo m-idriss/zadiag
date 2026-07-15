@@ -146,7 +146,7 @@ export const nextPlannedWindow = (
   return candidates.sort((a, b) => a.start.getTime() - b.start.getTime())[0];
 };
 
-const currentPlannedWindow = (
+export const currentPlannedWindow = (
   plan: Pick<MonitoringPlan, 'weekdays' | 'windows' | 'scheduleGroups'>,
   now = new Date(),
 ): PlannedWindow | undefined => {

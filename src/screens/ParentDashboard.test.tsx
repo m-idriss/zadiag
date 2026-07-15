@@ -21,6 +21,7 @@ describe('ParentDashboard', () => {
   afterEach(() => {
     act(() => root.unmount());
     container.remove();
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -469,6 +470,8 @@ describe('ParentDashboard', () => {
   });
 
   it('lets the responsible person review an uncertain proof', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 6, 15, 15, 0));
     const assignment = createDefaultRoutineAssignment();
     const getProofImageUrl = vi.fn().mockResolvedValue('data:image/png;base64,TEST');
     const reviewCheck = vi.fn().mockResolvedValue(undefined);
@@ -525,6 +528,7 @@ describe('ParentDashboard', () => {
     expect(container.textContent).toContain('Confidence 67%');
     expect(container.textContent).toContain('Estimated quality 82%');
     expect(getProofImageUrl).toHaveBeenCalledWith('review');
+    vi.useRealTimers();
     const validate = Array.from(container.querySelectorAll('button')).find((button) => button.getAttribute('aria-label') === 'Validate');
 
     await act(async () => {

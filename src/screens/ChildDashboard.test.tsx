@@ -3,6 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDefaultRoutineAssignment, createRoutineAssignment, type AppState, type VerificationEvent } from '../domain/models';
 import { routineFromCatalog } from '../domain/routineCatalog';
+import { buildMonitoringPlanFromGroups } from '../domain/monitoringPlan';
 import { translate } from '../services/i18n';
 import { ChildDashboard } from './ChildDashboard';
 
@@ -38,8 +39,9 @@ describe('participant Today screen', () => {
   let root: Root;
 
   beforeEach(() => {
+    (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-07-04T12:00:00.000Z'));
+    vi.setSystemTime(new Date(2026, 6, 4, 15, 0));
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
@@ -84,6 +86,30 @@ describe('participant Today screen', () => {
     act(() => complete?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(start).toHaveBeenCalledOnce();
     expect(start).toHaveBeenCalledWith(pending);
+  });
+
+  it('shows a preparing status while a started routine waits for server dispatch', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 6, 9, 16, 59, 45));
+    const assignment = createDefaultRoutineAssignment();
+    assignment.plan = buildMonitoringPlanFromGroups({}, [{
+      id: 'evening',
+      weekdays: [4],
+      windows: [{ id: 'w1', start: '17:00', end: '18:00' }],
+    }]);
+    const state: AppState = {
+      role: 'child', locale: 'en', notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: false },
+      routineAssignments: [assignment], events: [],
+    };
+
+    act(() => root.render(<ChildDashboard state={state} start={vi.fn()} t={(key) => translate('en', key)} />));
+
+    expect(container.textContent).not.toContain('Preparing the check…');
+    act(() => vi.advanceTimersByTime(30_000));
+    expect(container.textContent).toContain('1 check to complete');
+    expect(container.textContent).toContain('Preparing the check…');
+    expect(container.textContent).not.toContain('Proof');
   });
 
   it('lets the participant send proof for any currently available routine', () => {
@@ -263,7 +289,6 @@ describe('participant Today screen', () => {
 
     expect(container.textContent).toContain('This morning');
     expect(container.textContent).not.toContain('This evening');
-    vi.useRealTimers();
   });
 
   it('shows settled and missed checks in recent history when no action is available', () => {
