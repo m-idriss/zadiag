@@ -540,6 +540,7 @@ export function App() {
             edit={canManageRoutines}
             requestCheck={canManageRoutines ? withRepositorySync(repository.requestCheckNow) : undefined}
             getProofImageUrl={(eventId) => repository.getProofImageUrl(eventId)}
+            reviewCheck={canManageRoutines ? withRepositorySyncVoid(repository.reviewCheck) : undefined}
             onAssignRoutine={canManageRoutines ? withRepositorySync(repository.assignRoutine) : undefined}
             onDeleteRoutine={canManageRoutines ? withRepositorySync(repository.deleteRoutine) : undefined}
             onRetryRoutines={withOptionalRepositorySync(repository.retryRemoteSync)}
