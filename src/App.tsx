@@ -125,6 +125,7 @@ export function App() {
   const [savingRoutineId, setSavingRoutineId] = useState<string>();
   const [selectedSessionId, setSelectedSessionId] = useState<string>();
   const [focusedHistoryEventId, setFocusedHistoryEventId] = useState<string>();
+  const [focusedDashboardEventId, setFocusedDashboardEventId] = useState<string>();
   const [lastSyncAt, setLastSyncAt] = useState<string>();
   const [online, setOnline] = useState(() => navigator.onLine);
   const [pendingSyncOperations, setPendingSyncOperations] = useState(0);
@@ -373,13 +374,8 @@ export function App() {
       if (!selectActiveParticipant) return;
       await selectActiveParticipant(participantId);
     }
-    const selectedState = repository.snapshot();
-    if (selectedState.role === 'child' && event.status === 'pending' && Date.parse(event.expiresAt) > Date.now()) {
-      startCapture(event);
-      return;
-    }
-    setFocusedHistoryEventId(event.id);
-    setTab('routines');
+    setFocusedDashboardEventId(event.id);
+    setTab('home');
     setRoute('app');
   };
 
@@ -392,6 +388,7 @@ export function App() {
     setSubmitError(undefined);
     setSelectedSessionId(undefined);
     setFocusedHistoryEventId(undefined);
+    setFocusedDashboardEventId(undefined);
     setSavingRoutineId(undefined);
     resetDismissedUpdate();
     setResetNoticeKey(resetNoticeMessageKey(previousRole));
@@ -616,6 +613,8 @@ export function App() {
               onSelectParticipant={selectActiveParticipant}
               onOpenHistoryEvent={openHistoryEvent}
               onOpenNotificationEvent={(participantId, event) => { void openNotificationEvent(participantId, event); }}
+              notificationEventId={focusedDashboardEventId}
+              onNotificationEventConsumed={() => setFocusedDashboardEventId(undefined)}
               t={t}
             />
           : <ChildDashboard
@@ -627,6 +626,8 @@ export function App() {
               onSummaryRangeChange={setDashboardSummaryRange}
               onOpenHistoryEvent={openHistoryEvent}
               onOpenNotificationEvent={(participantId, event) => { void openNotificationEvent(participantId, event); }}
+              notificationEventId={focusedDashboardEventId}
+              onNotificationEventConsumed={() => setFocusedDashboardEventId(undefined)}
               t={t}
             />;
     content = (

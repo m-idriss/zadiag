@@ -125,11 +125,12 @@ describe('participant Today screen', () => {
       events: [failed],
     };
     const retake = vi.fn();
+    const notificationConsumed = vi.fn();
 
-    act(() => root.render(<ChildDashboard state={state} start={() => undefined} retake={retake} t={(key) => translate('en', key)} />));
+    act(() => root.render(<ChildDashboard state={state} start={() => undefined} retake={retake} notificationEventId={failed.id} onNotificationEventConsumed={notificationConsumed} t={(key) => translate('en', key)} />));
 
-    expect(container.querySelector('.participant-review-section')).toBeNull();
-    selectDashboardStatus('To retry');
+    expect(container.querySelector('.dashboard-status-summary button[aria-pressed="true"]')?.textContent).toContain('To retry');
+    expect(notificationConsumed).toHaveBeenCalledOnce();
     const todayButton = container.querySelector<HTMLButtonElement>('.today-retake-button');
     expect(todayButton).toBeTruthy();
     expect(Array.from(container.querySelectorAll('.dashboard-status-summary strong')).map((item) => item.textContent)).toEqual(['0', '1', '1']);

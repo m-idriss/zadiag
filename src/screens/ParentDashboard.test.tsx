@@ -472,6 +472,7 @@ describe('ParentDashboard', () => {
     const assignment = createDefaultRoutineAssignment();
     const getProofImageUrl = vi.fn().mockResolvedValue('data:image/png;base64,TEST');
     const reviewCheck = vi.fn().mockResolvedValue(undefined);
+    const notificationConsumed = vi.fn();
     const state: AppState = {
       role: 'parent',
       locale: 'en',
@@ -503,13 +504,16 @@ describe('ParentDashboard', () => {
           regenerateCode={vi.fn()}
           getProofImageUrl={getProofImageUrl}
           reviewCheck={reviewCheck}
+          notificationEventId="review"
+          onNotificationEventConsumed={notificationConsumed}
           t={(key) => translate('en', key)}
         />,
       );
       await Promise.resolve();
     });
 
-    selectDashboardStatus('To review');
+    expect(container.querySelector('.dashboard-status-summary button[aria-pressed="true"]')?.textContent).toContain('To review');
+    expect(notificationConsumed).toHaveBeenCalledOnce();
     expect(container.textContent).toContain('Checks to verify');
     expect(Array.from(container.querySelectorAll('.dashboard-status-summary strong')).map((item) => item.textContent)).toEqual(['0', '1', '1']);
     const reviewSection = container.querySelector('.parent-review-section');
