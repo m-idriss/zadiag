@@ -1625,6 +1625,8 @@ button:disabled { cursor: not-allowed; }
 .settings-diagnostics-list div { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding-top: 8px; border-top: 1px solid rgba(13,146,125,.12); }
 .settings-diagnostics-list dt { color: var(--color-text-muted); font-size: 11px; font-weight: 900; text-transform: uppercase; }
 .settings-diagnostics-list dd { margin: 0; max-width: 58%; overflow-wrap: anywhere; color: var(--color-text); font-size: 12px; font-weight: 900; text-align: right; }
+.settings-diagnostics-list .settings-diagnostics-family-id dd { width: 67%; max-width: 67%; }
+.settings-diagnostics-family-id .copyable-text { width: 100%; box-sizing: border-box; }
 .settings-diagnostics-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .settings-diagnostics-header > span { min-width: 0; }
 .settings-diagnostics-toggle { width: var(--height-action); height: var(--height-action); display: grid; place-items: center; flex: 0 0 auto; padding: 0; border: 0; border-radius: 12px; background: var(--color-subtle-action); color: var(--color-primary); }

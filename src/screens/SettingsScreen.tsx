@@ -413,7 +413,7 @@ export function SettingsScreen({
             <dl className="settings-diagnostics-list">
               {diagnosticsOpen ? (
                 <>
-                  <div><dt>{t('settingsDiagnosticsFamilyId')}</dt><dd>{familyId ? <CopyableText value={familyId} compact t={t} /> : t('settingsDiagnosticsMissing')}</dd></div>
+                  <div className="settings-diagnostics-family-id"><dt>{t('settingsDiagnosticsFamilyId')}</dt><dd>{familyId ? <CopyableText value={familyId} compact t={t} /> : t('settingsDiagnosticsMissing')}</dd></div>
                   <div><dt>{t('settingsDiagnosticsNotifications')}</dt><dd>{notificationsEnabled ? t('settingsNotificationsStatusEnabled') : t('settingsNotificationsStatusDisabled')}</dd></div>
                   <div><dt>{t('settingsDiagnosticsPushPermission')}</dt><dd>{effectivePushHealth?.permission ?? t('settingsDiagnosticsMissing')}</dd></div>
                   <div><dt>{t('settingsDiagnosticsPushEndpoint')}</dt><dd>{effectivePushHealth?.endpointPresent ? t('yes') : t('no')}</dd></div>
