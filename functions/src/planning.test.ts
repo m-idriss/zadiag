@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { checkExpiresAt, monitoringPlanSchema, shouldAutoDispatchCheck } from './planning.js';
+import { checkExpiresAt, monitoringPlanSchema, plannedCheckDispatchSchedule, shouldAutoDispatchCheck } from './planning.js';
 
 const plan = {
   checksPerDay: 3,
@@ -13,6 +13,10 @@ const plan = {
   expiryMinutes: 20,
   timeZone: 'Europe/Paris',
 };
+
+test('dispatches planned checks every minute so a started routine appears promptly', () => {
+  assert.equal(plannedCheckDispatchSchedule, 'every 1 minutes');
+});
 
 test('validates monitoring plans at the callable boundary', () => {
   assert.equal(monitoringPlanSchema.safeParse(plan).success, true);
