@@ -10,13 +10,15 @@ import { presentRoutine } from '../domain/routinePresentation';
 import { eventWindowLabel } from '../domain/taskTimeLabel';
 import { withResolvedEventStatuses } from '../domain/adherence';
 import { EmptyState } from '../components/ui';
-import { activePendingEvents as activePendingChecks, presentedUpcomingRoutineChecks } from '../domain/dashboardChecks';
+import { activePendingEvents as activePendingChecks, presentedAwaitingRoutineChecks, presentedUpcomingRoutineChecks } from '../domain/dashboardChecks';
 import { ParticipantSelector } from '../components/ParticipantSelector';
 import { languageTag } from '../services/locale';
 import { ProofLightbox } from '../components/ProofLightbox';
 import { SetupProgress } from '../components/SetupProgress';
 import { DashboardStatusSummary } from '../components/DashboardStatusSummary';
 import { NotificationCenter } from '../components/NotificationCenter';
+import { AwaitingCheckCards } from '../components/AwaitingCheckCards';
+import { useCurrentTime } from '../hooks/useCurrentTime';
 
 export function ParentDashboard({
   state,
@@ -64,7 +66,7 @@ export function ParentDashboard({
   const handledNotificationEventIdRef = useRef<string | undefined>(undefined);
   const summaryRange = controlledSummaryRange ?? localSummaryRange;
   const setSummaryRange = onSummaryRangeChange ?? setLocalSummaryRange;
-  const now = Date.now();
+  const now = useCurrentTime();
   const displayEvents = useMemo(() => withResolvedEventStatuses(state.events, now), [now, state.events]);
   const rangedEvents = filterEventsBySummaryRange(displayEvents, summaryRange, now);
   const rangedRawEvents = filterEventsBySummaryRange(state.events, summaryRange, now);
@@ -86,6 +88,9 @@ export function ParentDashboard({
     () => activePendingChecks(state.events, now),
     [now, state.events],
   );
+  const awaitingChecks = useMemo(() => presentedAwaitingRoutineChecks(state.routineAssignments, state.events, state.locale, nowDate),
+  [nowDate, state.events, state.locale, state.routineAssignments]);
+  const currentCheckCount = activePendingEvents.length + awaitingChecks.length;
   const reportSubjectName = state.participantAccess?.find((entry) => entry.participant.id === state.activeParticipantId)?.participant.displayName
     ?? state.participantAccess?.find((entry) => entry.membership.status === 'active')?.participant.displayName
     ?? state.family.childName;
@@ -271,7 +276,7 @@ export function ParentDashboard({
         <DashboardStatusSummary
           label={t('dashboardStatusSummary')}
           items={[
-            { id: 'active', label: t('dashboardActive'), value: activePendingEvents.length },
+            { id: 'active', label: t('dashboardActive'), value: currentCheckCount },
             { id: 'review', label: t('dashboardReview'), value: reviewEvents.length, tone: 'attention' },
             { id: 'next', label: t('dashboardNext'), value: upcomingChecks.length },
           ]}
@@ -280,9 +285,9 @@ export function ParentDashboard({
         />
       ) : null}
 
-      {(responsibleEmptyState || (expandedStatus === 'active' && activePendingEvents.length) || (!state.family.childLinked && state.family.linkingCode) || (!state.routineAssignments.length && onCreateRoutine)) ? (
+      {(responsibleEmptyState || (expandedStatus === 'active' && currentCheckCount) || (!state.family.childLinked && state.family.linkingCode) || (!state.routineAssignments.length && onCreateRoutine)) ? (
         <section className="settings-section parent-setup-section" aria-labelledby="parent-setup-title">
-          <h2 id="parent-setup-title">{activePendingEvents.length ? `${activePendingEvents.length} ${t(activePendingEvents.length === 1 ? 'checkToComplete' : 'checksToComplete')}` : t('responsibleCurrentChecksTitle')}</h2>
+          <h2 id="parent-setup-title">{currentCheckCount ? `${currentCheckCount} ${t(currentCheckCount === 1 ? 'checkToComplete' : 'checksToComplete')}` : t('responsibleCurrentChecksTitle')}</h2>
 
           <div className="today-task-list">
             {expandedStatus === 'active' && activePendingEvents.length ? (
@@ -327,6 +332,7 @@ export function ParentDashboard({
                 {activeReminderStatus === 'error' ? <span className="request-feedback error">{t('requestCheckError')}</span> : null}
               </>
             ) : null}
+            {expandedStatus === 'active' ? <AwaitingCheckCards checks={awaitingChecks} now={nowDate} locale={locale} t={t} /> : null}
 
             {responsibleEmptyState ? (
               <EmptyState

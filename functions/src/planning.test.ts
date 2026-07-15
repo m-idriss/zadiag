@@ -14,8 +14,8 @@ const plan = {
   timeZone: 'Europe/Paris',
 };
 
-test('dispatches planned checks every minute so a started routine appears promptly', () => {
-  assert.equal(plannedCheckDispatchSchedule, 'every 1 minutes');
+test('dispatches planned checks every five minutes to balance promptness and cost', () => {
+  assert.equal(plannedCheckDispatchSchedule, 'every 5 minutes');
 });
 
 test('validates monitoring plans at the callable boundary', () => {

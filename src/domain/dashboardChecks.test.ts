@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildMonitoringPlanFromGroups } from './monitoringPlan';
 import { createDefaultRoutineAssignment, createRoutineAssignment, type VerificationEvent } from './models';
 import { routineFromCatalog } from './routineCatalog';
-import { activePendingEvents, coalesceActivePendingEventsByRoutine, upcomingRoutineChecks } from './dashboardChecks';
+import { activePendingEvents, awaitingRoutineChecks, coalesceActivePendingEventsByRoutine, upcomingRoutineChecks } from './dashboardChecks';
 
 const event = (
   id: string,
@@ -81,5 +81,24 @@ describe('dashboard check helpers', () => {
     expect(checks).toHaveLength(1);
     expect(checks[0].routineId).toBe(morning.routineId);
     expect(checks[0].planned.start.getHours()).toBe(8);
+  });
+
+  it('shows a started window until its server event arrives', () => {
+    const assignment = createDefaultRoutineAssignment();
+    assignment.plan = buildMonitoringPlanFromGroups({}, [{
+      id: 'evening',
+      weekdays: [4],
+      windows: [{ id: 'w1', start: '17:00', end: '18:00' }],
+    }]);
+    const now = new Date(2026, 6, 9, 17, 1);
+
+    expect(awaitingRoutineChecks([assignment], [], now)).toHaveLength(1);
+    expect(awaitingRoutineChecks([assignment], [event(
+      'dispatched',
+      'pending',
+      new Date(2026, 6, 9, 18, 0).toISOString(),
+      assignment.routineId,
+      new Date(2026, 6, 9, 17, 1).toISOString(),
+    )], now)).toHaveLength(0);
   });
 });

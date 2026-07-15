@@ -1,5 +1,5 @@
 import type { RoutineAssignment, VerificationEvent } from './models';
-import { nextPlannedWindow } from './monitoringPlan';
+import { currentPlannedWindow, nextPlannedWindow } from './monitoringPlan';
 import { presentRoutine } from './routinePresentation';
 
 interface UpcomingRoutineCheck {
@@ -60,11 +60,37 @@ export const upcomingRoutineChecks = (
     .sort((a, b) => a.planned.start.getTime() - b.planned.start.getTime())
     .slice(0, limit);
 
+export const awaitingRoutineChecks = (
+  assignments: RoutineAssignment[],
+  events: VerificationEvent[],
+  now = new Date(),
+): UpcomingRoutineCheck[] => assignments.flatMap((assignment) => {
+  if (assignment.status !== 'active') return [];
+  const planned = currentPlannedWindow(assignment.plan, now);
+  if (!planned) return [];
+  const alreadyDispatched = events.some((event) => (
+    event.routineId === assignment.routineId
+    && Date.parse(event.requestedAt) >= planned.start.getTime()
+    && Date.parse(event.requestedAt) < planned.end.getTime()
+  ));
+  return alreadyDispatched ? [] : [{ id: assignment.id, routineId: assignment.routineId, assignment, planned }];
+});
+
 export const presentedUpcomingRoutineChecks = (
   assignments: RoutineAssignment[],
   locale: Parameters<typeof presentRoutine>[1],
   now = new Date(),
 ) => upcomingRoutineChecks(assignments, now).map((item) => ({
+  ...item,
+  presentation: presentRoutine(item.assignment.routine, locale),
+}));
+
+export const presentedAwaitingRoutineChecks = (
+  assignments: RoutineAssignment[],
+  events: VerificationEvent[],
+  locale: Parameters<typeof presentRoutine>[1],
+  now = new Date(),
+) => awaitingRoutineChecks(assignments, events, now).map((item) => ({
   ...item,
   presentation: presentRoutine(item.assignment.routine, locale),
 }));
