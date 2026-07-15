@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AppState, VerificationEvent } from '../domain/models';
 import { formatMessage, type MessageKey } from '../services/i18n';
 import { languageTag } from '../services/locale';
@@ -33,6 +33,8 @@ export function ChildDashboard({
   onSummaryRangeChange,
   onOpenHistoryEvent,
   onOpenNotificationEvent,
+  notificationEventId,
+  onNotificationEventConsumed,
   t,
 }: {
   state: AppState;
@@ -43,10 +45,13 @@ export function ChildDashboard({
   onSummaryRangeChange?: (range: SummaryRange) => void;
   onOpenHistoryEvent?: (event: VerificationEvent) => void;
   onOpenNotificationEvent?: (participantId: string, event: VerificationEvent) => void;
+  notificationEventId?: string;
+  onNotificationEventConsumed?: () => void;
   t: (key: MessageKey) => string;
 }) {
   const [localSummaryRange, setLocalSummaryRange] = useState<SummaryRange>('day');
   const [expandedStatus, setExpandedStatus] = useState<'todo' | 'retry' | 'next' | undefined>('todo');
+  const handledNotificationEventIdRef = useRef<string | undefined>(undefined);
   const summaryRange = controlledSummaryRange ?? localSummaryRange;
   const setSummaryRange = onSummaryRangeChange ?? setLocalSummaryRange;
   const now = Date.now();
@@ -122,6 +127,26 @@ export function ChildDashboard({
     : undefined;
   const upcomingChecks = useMemo(() => presentedUpcomingRoutineChecks(state.routineAssignments, state.locale, nowDate),
   [nowDate, state.locale, state.routineAssignments]);
+  useEffect(() => {
+    if (!notificationEventId) {
+      handledNotificationEventIdRef.current = undefined;
+      return;
+    }
+    if (handledNotificationEventIdRef.current === notificationEventId) return;
+    const event = state.events.find((item) => item.id === notificationEventId);
+    if (!event) return;
+    handledNotificationEventIdRef.current = notificationEventId;
+    const retryable = attentionCompleted.some((entry) => entry.event.id === event.id);
+    const targetId = event.status === 'pending' || event.status === 'analyzing'
+      ? 'pending-tasks-title'
+      : retryable
+        ? 'participant-review-title'
+        : 'participant-history-title';
+    if (retryable) setExpandedStatus('retry');
+    else if (event.status === 'pending' || event.status === 'analyzing') setExpandedStatus('todo');
+    window.requestAnimationFrame(() => document.getElementById(targetId)?.scrollIntoView?.({ block: 'center' }));
+    onNotificationEventConsumed?.();
+  }, [attentionCompleted, notificationEventId, onNotificationEventConsumed, state.events]);
   const pendingSection = (
     <section className="today-section" aria-labelledby="pending-tasks-title">
       <div className="today-pending-panel">
@@ -232,8 +257,8 @@ export function ChildDashboard({
             locale={state.locale}
             contextId="account"
             onOpenEvent={(participantId, event) => {
-              if (participantId === state.activeParticipantId && event.status === 'pending') start(event);
-              else if (onOpenNotificationEvent) onOpenNotificationEvent(participantId, event);
+              if (onOpenNotificationEvent) onOpenNotificationEvent(participantId, event);
+              else if (participantId === state.activeParticipantId && event.status === 'pending') start(event);
               else onOpenHistoryEvent?.(event);
             }}
             t={t}

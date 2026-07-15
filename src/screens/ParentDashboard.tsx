@@ -30,6 +30,8 @@ export function ParentDashboard({
   onSelectParticipant,
   onOpenHistoryEvent,
   onOpenNotificationEvent,
+  notificationEventId,
+  onNotificationEventConsumed,
   t,
 }: {
   state: AppState;
@@ -43,6 +45,8 @@ export function ParentDashboard({
   onSelectParticipant?: (participantId: string) => void;
   onOpenHistoryEvent?: (event: VerificationEvent) => void;
   onOpenNotificationEvent?: (participantId: string, event: VerificationEvent) => void;
+  notificationEventId?: string;
+  onNotificationEventConsumed?: () => void;
   t: (key: MessageKey) => string;
 }) {
   const [regenerating, setRegenerating] = useState(false);
@@ -57,6 +61,7 @@ export function ParentDashboard({
   const [activeReminderStatus, setActiveReminderStatus] = useState<'sent' | 'error'>();
   const [enlargedProofUrl, setEnlargedProofUrl] = useState<string>();
   const swipeStartRef = useRef<{ eventId: string; x: number; y: number } | undefined>(undefined);
+  const handledNotificationEventIdRef = useRef<string | undefined>(undefined);
   const summaryRange = controlledSummaryRange ?? localSummaryRange;
   const setSummaryRange = onSummaryRangeChange ?? setLocalSummaryRange;
   const now = Date.now();
@@ -207,6 +212,23 @@ export function ParentDashboard({
     events: displayEvents,
   }] : [];
   useEffect(() => setExpandedStatus(undefined), [state.activeParticipantId]);
+  useEffect(() => {
+    if (!notificationEventId) {
+      handledNotificationEventIdRef.current = undefined;
+      return;
+    }
+    if (handledNotificationEventIdRef.current === notificationEventId) return;
+    const event = state.events.find((item) => item.id === notificationEventId);
+    if (!event) return;
+    handledNotificationEventIdRef.current = notificationEventId;
+    const needsReview = event.status === 'uncertain' && !['approved', 'rejected'].includes(event.reviewStatus ?? '');
+    const active = event.status === 'pending' && Date.parse(event.expiresAt) > now;
+    const targetId = needsReview ? `review-${event.id}` : active ? `active-${event.id}` : 'responsible-history-title';
+    if (needsReview) setExpandedStatus('review');
+    else if (active) setExpandedStatus('active');
+    window.requestAnimationFrame(() => document.getElementById(targetId)?.scrollIntoView?.({ block: 'center' }));
+    onNotificationEventConsumed?.();
+  }, [notificationEventId, now, onNotificationEventConsumed, state.events]);
   return (
     <div className="content-screen child-home parent-overview-screen">
       <div className="page-context-top parent-context-top">
@@ -218,11 +240,7 @@ export function ParentDashboard({
             locale={state.locale}
             contextId="account"
             onOpenEvent={(participantId, event) => {
-              if (participantId === state.activeParticipantId && event.status === 'uncertain') {
-                setExpandedStatus('review');
-                window.requestAnimationFrame(() => document.getElementById(`review-${event.id}`)?.scrollIntoView({ block: 'center' }));
-              }
-              else if (onOpenNotificationEvent) onOpenNotificationEvent(participantId, event);
+              if (onOpenNotificationEvent) onOpenNotificationEvent(participantId, event);
               else onOpenHistoryEvent?.(event);
             }}
             t={t}
@@ -276,7 +294,7 @@ export function ParentDashboard({
                     const presentation = routinePresentationFor(event);
                     const proofExample = routineProofExampleFor(event);
                     return (
-                      <article className="today-task today-routine-card parent-active-check-card actionable" style={presentation.style} key={event.id}>
+                      <article id={`active-${event.id}`} className="today-task today-routine-card parent-active-check-card actionable" style={presentation.style} key={event.id}>
                         <div className="today-routine-main">
                           <div className="today-routine-primary">
                             <div className="today-task-copy">
