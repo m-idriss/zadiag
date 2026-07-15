@@ -83,44 +83,45 @@ export function AdherenceSummaryCard({
     : report.rateDelta === 0
       ? t('summaryComparedStable')
       : `${t(report.rateDelta > 0 ? 'summaryComparedUp' : 'summaryComparedDown')} ${Math.abs(Math.round(report.rateDelta * 100))} ${t('summaryPoints')}`;
-  const [reportDownloadState, setReportDownloadState] = useState<'idle' | 'busy' | 'error'>('idle');
-  const downloadReport = async () => {
-    if (reportDownloadState === 'busy' || !summary.completed) return;
-    setReportDownloadState('busy');
+  const reportExportInput = {
+    title: t('adherenceReport'),
+    subject: `${t('reportParticipant')}: ${subjectName}`,
+    period: `${t('reportPeriod')}: ${t(selectedRange.titleKey)}`,
+    generatedOn: `${t('reportGeneratedOn')}: ${dateTimeFormatter.format(new Date())}`,
+    summary: [
+      { label: t('reportAdherenceRate'), value: `${Math.round(summary.rate * 100)}%` },
+      { label: t('successful'), value: `${summary.successful}/${summary.completed}` },
+      { label: t('reportEvolution'), value: comparison },
+    ],
+    routineHeading: t('summaryByRoutine'),
+    routineColumns: [t('routine'), t('successful'), t('reportAdherenceRate')] as [string, string, string],
+    routines: report.byRoutine.map((routine) => [
+      routineNames.get(routine.routineId) ?? t('routine'),
+      `${routine.successful}/${routine.completed}`,
+      `${Math.round(routine.rate * 100)}%`,
+    ] as [string, string, string]),
+    historyHeading: t('reportCheckHistory'),
+    historyColumns: [t('reportDate'), t('routine'), t('reportStatus')] as [string, string, string],
+    history: completedEvents.map((event) => [
+      dateTimeFormatter.format(new Date(event.capturedAt ?? event.requestedAt)),
+      routineNames.get(event.routineId) ?? t('routine'),
+      t(statusMessageKey(event.status)),
+    ] as [string, string, string]),
+    privacyNote: t('reportPrivacyNote'),
+  };
+  const [reportDownloadState, setReportDownloadState] = useState<'idle' | 'pdf' | 'csv' | 'error'>('idle');
+  const downloadReport = async (format: 'pdf' | 'csv') => {
+    if (['pdf', 'csv'].includes(reportDownloadState) || !summary.completed) return;
+    setReportDownloadState(format);
     try {
       const {
         adherenceReportFilename,
-        createAdherenceReportPdf,
-        deliverAdherenceReportPdf,
-      } = await import('../services/reportPdf');
-      const title = t('adherenceReport');
-      const blob = createAdherenceReportPdf({
-        title,
-        subject: `${t('reportParticipant')}: ${subjectName}`,
-        period: `${t('reportPeriod')}: ${t(selectedRange.titleKey)}`,
-        generatedOn: `${t('reportGeneratedOn')}: ${dateTimeFormatter.format(new Date())}`,
-        summary: [
-          { label: t('reportAdherenceRate'), value: `${Math.round(summary.rate * 100)}%` },
-          { label: t('successful'), value: `${summary.successful}/${summary.completed}` },
-          { label: t('reportEvolution'), value: comparison },
-        ],
-        routineHeading: t('summaryByRoutine'),
-        routineColumns: [t('routine'), t('successful'), t('reportAdherenceRate')],
-        routines: report.byRoutine.map((routine) => [
-          routineNames.get(routine.routineId) ?? t('routine'),
-          `${routine.successful}/${routine.completed}`,
-          `${Math.round(routine.rate * 100)}%`,
-        ]),
-        historyHeading: t('reportCheckHistory'),
-        historyColumns: [t('reportDate'), t('routine'), t('reportStatus')],
-        history: completedEvents.map((event) => [
-          dateTimeFormatter.format(new Date(event.capturedAt ?? event.requestedAt)),
-          routineNames.get(event.routineId) ?? t('routine'),
-          t(statusMessageKey(event.status)),
-        ]),
-        privacyNote: t('reportPrivacyNote'),
-      });
-      await deliverAdherenceReportPdf(blob, adherenceReportFilename(subjectName), title);
+        deliverReportFile,
+      } = await import('../services/reportExport');
+      const blob = format === 'pdf'
+        ? (await import('../services/reportPdf')).createAdherenceReportPdf(reportExportInput)
+        : (await import('../services/reportCsv')).createAdherenceReportCsv(reportExportInput, locale === 'fr' ? ';' : ',');
+      await deliverReportFile(blob, adherenceReportFilename(subjectName, format), reportExportInput.title);
       setReportDownloadState('idle');
     } catch (error) {
       console.error(error);
@@ -170,15 +171,26 @@ export function AdherenceSummaryCard({
               </div>
             </section>
           ) : null}
-          <button
-            type="button"
-            className="action-button fill-outline report-print-action"
-            disabled={!summary.completed || reportDownloadState === 'busy'}
-            onClick={() => { void downloadReport(); }}
-          >
-            <AppIcon name="download" />
-            {t(reportDownloadState === 'busy' ? 'generatingReport' : 'downloadReport')}
-          </button>
+          <div className="report-download-actions">
+            <button
+              type="button"
+              className="action-button fill-outline report-print-action"
+              disabled={!summary.completed || ['pdf', 'csv'].includes(reportDownloadState)}
+              onClick={() => { void downloadReport('pdf'); }}
+            >
+              <AppIcon name="download" />
+              {t(reportDownloadState === 'pdf' ? 'generatingReport' : 'downloadReport')}
+            </button>
+            <button
+              type="button"
+              className="action-button fill-outline report-print-action"
+              disabled={!summary.completed || ['pdf', 'csv'].includes(reportDownloadState)}
+              onClick={() => { void downloadReport('csv'); }}
+            >
+              <AppIcon name="download" />
+              {t(reportDownloadState === 'csv' ? 'generatingCsvReport' : 'downloadCsvReport')}
+            </button>
+          </div>
           {!summary.completed ? <small className="report-unavailable-hint">{t('reportUnavailable')}</small> : null}
           {reportDownloadState === 'error' ? <small className="request-feedback error">{t('reportDownloadError')}</small> : null}
         </div>

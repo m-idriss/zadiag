@@ -1,9 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
-  adherenceReportFilename,
   createAdherenceReportPdf,
-  deliverAdherenceReportPdf,
 } from './reportPdf';
+import { adherenceReportFilename, deliverReportFile } from './reportExport';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -28,7 +27,7 @@ describe('adherence report PDF', () => {
 
     expect(blob.type).toBe('application/pdf');
     expect(blob.size).toBeGreaterThan(500);
-    expect(adherenceReportFilename('Maïa Dupont')).toBe('zadiag-bilan-maia-dupont.pdf');
+    expect(adherenceReportFilename('Maïa Dupont', 'pdf')).toBe('zadiag-bilan-maia-dupont.pdf');
   });
 
   it('uses the mobile share sheet when PDF file sharing is supported', async () => {
@@ -38,7 +37,7 @@ describe('adherence report PDF', () => {
       canShare: vi.fn().mockReturnValue(true),
     });
 
-    await deliverAdherenceReportPdf(new Blob(['pdf'], { type: 'application/pdf' }), 'bilan.pdf', 'Bilan');
+    await deliverReportFile(new Blob(['pdf'], { type: 'application/pdf' }), 'bilan.pdf', 'Bilan');
 
     expect(share).toHaveBeenCalledOnce();
     expect(share.mock.calls[0]?.[0].files[0]).toMatchObject({ name: 'bilan.pdf', type: 'application/pdf' });

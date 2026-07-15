@@ -58,8 +58,11 @@ describe('ParentDashboard', () => {
     expect(detailedReport?.open).toBe(false);
     expect(detailedReport?.querySelector('summary')?.textContent).toBe('Detailed report');
     const reportButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Download PDF'));
+    const csvReportButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Download CSV'));
     expect(detailedReport?.contains(reportButton ?? null)).toBe(true);
+    expect(detailedReport?.contains(csvReportButton ?? null)).toBe(true);
     expect(reportButton?.disabled).toBe(false);
+    expect(csvReportButton?.disabled).toBe(false);
     expect(container.querySelector('.printable-report')).toBeNull();
   });
 

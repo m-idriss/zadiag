@@ -1,17 +1,4 @@
-export interface AdherenceReportPdfInput {
-  title: string;
-  subject: string;
-  period: string;
-  generatedOn: string;
-  summary: Array<{ label: string; value: string }>;
-  routineHeading: string;
-  routineColumns: [string, string, string];
-  routines: Array<[string, string, string]>;
-  historyHeading: string;
-  historyColumns: [string, string, string];
-  history: Array<[string, string, string]>;
-  privacyNote: string;
-}
+import type { AdherenceReportExportInput } from './reportExport';
 
 interface PdfLine {
   text: string;
@@ -19,16 +6,6 @@ interface PdfLine {
   bold?: boolean;
   gapAfter?: number;
 }
-
-const safeFilenamePart = (value: string) => value
-  .normalize('NFD')
-  .replace(/[\u0300-\u036f]/g, '')
-  .replace(/[^a-zA-Z0-9]+/g, '-')
-  .replace(/^-|-$/g, '')
-  .toLowerCase();
-
-export const adherenceReportFilename = (subject: string) =>
-  `zadiag-bilan-${safeFilenamePart(subject) || 'suivi'}.pdf`;
 
 const windows1252: Record<string, number> = {
   '€': 128, '‚': 130, 'ƒ': 131, '„': 132, '…': 133, '†': 134, '‡': 135,
@@ -62,7 +39,7 @@ const wrapText = (text: string, maxCharacters: number) => {
   return lines.length ? lines : [''];
 };
 
-const reportLines = (input: AdherenceReportPdfInput): PdfLine[] => {
+const reportLines = (input: AdherenceReportExportInput): PdfLine[] => {
   const lines: PdfLine[] = [
     { text: 'Zadiag', size: 16, bold: true, gapAfter: 5 },
     { text: input.title, size: 22, bold: true, gapAfter: 8 },
@@ -141,26 +118,5 @@ const assemblePdf = (streams: string[]) => {
   return pdf;
 };
 
-export const createAdherenceReportPdf = (input: AdherenceReportPdfInput) =>
+export const createAdherenceReportPdf = (input: AdherenceReportExportInput) =>
   new Blob([assemblePdf(pageStreams(reportLines(input)))], { type: 'application/pdf' });
-
-export const deliverAdherenceReportPdf = async (blob: Blob, filename: string, title: string) => {
-  const file = new File([blob], filename, { type: 'application/pdf' });
-  if (navigator.share && navigator.canShare?.({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], title });
-      return;
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') return;
-    }
-  }
-
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  link.target = '_blank';
-  link.rel = 'noopener';
-  link.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
-};
