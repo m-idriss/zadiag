@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_ROUTINE_ID, type AppState, type VerificationEvent } from './domain/models';
-import { appBadgeCountForState, documentLanguageForLocale, eventIdForNotificationLaunch, isParticipantInvitationCode, participantIdForNotificationLaunch, resetNoticeMessageKey, setupCompletionTransition, syncStatusFor, syncStatusIsVisible } from './App';
+import { appBadgeCountForState, documentLanguageForLocale, eventIdForNotificationLaunch, isParticipantInvitationCode, participantEventIdForNotificationLaunch, participantIdForNotificationLaunch, resetNoticeMessageKey, setupCompletionTransition, syncStatusFor, syncStatusIsVisible } from './App';
 
 const activePendingEvent = (expiresAt: string): VerificationEvent => ({
   id: 'check-1',
@@ -118,6 +118,23 @@ describe('eventIdForNotificationLaunch', () => {
   it('falls back safely for legacy links and events no longer available', () => {
     expect(eventIdForNotificationLaunch(state, { kind: 'review', participantId: 'alex' })).toBeUndefined();
     expect(eventIdForNotificationLaunch(state, { kind: 'review', participantId: 'alex', eventId: 'deleted' })).toBeUndefined();
+  });
+});
+
+describe('participantEventIdForNotificationLaunch', () => {
+  const activeEvent = { id: 'check-42', sessionId: 'session-42', status: 'pending', expiresAt: '2026-07-16T12:30:00.000Z' };
+  const state = { role: 'child', events: [activeEvent] } as AppState;
+
+  it('targets the active check carried by the participant notification', () => {
+    expect(participantEventIdForNotificationLaunch(state, { kind: 'verification', sessionId: 'session-42' }, Date.parse('2026-07-16T12:00:00.000Z'))).toBe('check-42');
+  });
+
+  it('does not target expired, completed, missing, or responsible checks', () => {
+    const intent = { kind: 'verification' as const, sessionId: 'session-42' };
+    expect(participantEventIdForNotificationLaunch(state, intent, Date.parse('2026-07-16T12:31:00.000Z'))).toBeUndefined();
+    expect(participantEventIdForNotificationLaunch({ ...state, events: [{ ...activeEvent, status: 'detected' }] } as AppState, intent, Date.parse('2026-07-16T12:00:00.000Z'))).toBeUndefined();
+    expect(participantEventIdForNotificationLaunch(state, { kind: 'verification', sessionId: 'missing' }, Date.parse('2026-07-16T12:00:00.000Z'))).toBeUndefined();
+    expect(participantEventIdForNotificationLaunch({ ...state, role: 'parent' }, intent, Date.parse('2026-07-16T12:00:00.000Z'))).toBeUndefined();
   });
 });
 

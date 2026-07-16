@@ -137,7 +137,7 @@ export const buildCheckNotificationPayload = (input: CheckNotificationInput): Ch
     body: input.resend
       ? (locale === 'fr' ? 'Contrôle attendu.' : 'Check waiting.')
       : (locale === 'fr' ? 'Envoie ta preuve.' : 'Send your proof.'),
-    path: '/?open=verification',
+    path: `/?open=verification&session=${encodeURIComponent(input.sessionId)}`,
   };
 };
 

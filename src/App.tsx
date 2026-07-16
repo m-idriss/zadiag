@@ -100,6 +100,7 @@ export const participantIdForNotificationLaunch = (
   state: AppState,
   intent = notificationLaunchIntent(),
 ) => intent
+  && intent.kind === 'review'
   && state.role === 'parent'
   && state.participantAccess?.some((entry) => (
     entry.participant.id === intent.participantId && entry.membership.status === 'active'
@@ -110,12 +111,23 @@ export const participantIdForNotificationLaunch = (
 export const eventIdForNotificationLaunch = (
   state: AppState,
   intent: NotificationLaunchIntent | undefined,
-) => intent?.eventId
+) => intent?.kind === 'review'
+  && intent.eventId
   && state.role === 'parent'
   && state.activeParticipantId === intent.participantId
   && state.events.some((event) => event.id === intent.eventId)
   ? intent.eventId
   : undefined;
+
+export const participantEventIdForNotificationLaunch = (
+  state: AppState,
+  intent: NotificationLaunchIntent | undefined,
+  now = Date.now(),
+) => {
+  if (intent?.kind !== 'verification' || state.role !== 'child') return undefined;
+  const event = state.events.find((candidate) => candidate.sessionId === intent.sessionId);
+  return event?.status === 'pending' && Date.parse(event.expiresAt) > now ? event.id : undefined;
+};
 
 export function App() {
   const repository = useMemo(createRepository, []);
@@ -205,6 +217,22 @@ export function App() {
     if (!ready) return;
     const intent = notificationLaunchIntentRef.current;
     if (!intent) return;
+    if (intent.kind === 'verification') {
+      if (state.role !== 'child') {
+        notificationLaunchIntentRef.current = undefined;
+        return;
+      }
+      const eventId = participantEventIdForNotificationLaunch(state, intent);
+      if (!eventId) {
+        if (state.events.some((event) => event.sessionId === intent.sessionId)) notificationLaunchIntentRef.current = undefined;
+        return;
+      }
+      setFocusedDashboardEventId(eventId);
+      setTab('home');
+      setRoute('app');
+      notificationLaunchIntentRef.current = undefined;
+      return;
+    }
     const participantId = participantIdForNotificationLaunch(state, intent);
     if (!participantId) {
       notificationLaunchIntentRef.current = undefined;

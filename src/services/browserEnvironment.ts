@@ -6,14 +6,21 @@ const RELATIONSHIP_INVITATION_STORAGE_KEY = 'zadiag.relationshipInvitationCode';
 const useFirebase = import.meta.env.VITE_USE_FIREBASE === 'true';
 export const routineCentricUiEnabled = import.meta.env.VITE_ROUTINE_CENTRIC_UI !== 'false';
 
-export interface NotificationLaunchIntent {
+export type NotificationLaunchIntent = {
   kind: 'review';
   participantId: string;
   eventId?: string;
-}
+} | {
+  kind: 'verification';
+  sessionId: string;
+};
 
 export const notificationLaunchIntent = (search = window.location.search): NotificationLaunchIntent | undefined => {
   const parameters = new URLSearchParams(search);
+  if (parameters.get('open') === 'verification') {
+    const sessionId = parameters.get('session')?.trim();
+    return sessionId ? { kind: 'verification', sessionId } : undefined;
+  }
   const participantId = parameters.get('participant')?.trim();
   if (parameters.get('open') !== 'review' || !participantId) return undefined;
   const eventId = parameters.get('event')?.trim();
@@ -25,6 +32,7 @@ export const clearNotificationLaunchUrl = () => {
   url.searchParams.delete('open');
   url.searchParams.delete('participant');
   url.searchParams.delete('event');
+  url.searchParams.delete('session');
   window.history.replaceState(window.history.state, '', url);
 };
 
