@@ -229,10 +229,9 @@ export function ParentDashboard({
     handledNotificationEventIdRef.current = notificationEventId;
     const needsReview = isReviewableVerification(event);
     const active = event.status === 'pending' && Date.parse(event.expiresAt) > now;
-    const targetId = needsReview ? `review-${event.id}` : active ? `active-${event.id}` : 'responsible-history-title';
     if (needsReview) setExpandedStatus('review');
     else if (active) setExpandedStatus('active');
-    window.requestAnimationFrame(() => document.getElementById(targetId)?.scrollIntoView?.({ block: 'center' }));
+    setDetailEventId(event.id);
     onNotificationEventConsumed?.();
   }, [notificationEventId, now, onNotificationEventConsumed, state.events]);
   return (
