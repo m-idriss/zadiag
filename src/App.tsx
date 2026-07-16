@@ -16,7 +16,7 @@ import { InstallScreen } from './screens/InstallScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
 import { ContactEmailScreen, SuspendedScreen } from './screens/ContactEmailScreen';
 import { ChildDashboard } from './screens/ChildDashboard';
-import { canRetakeCapture } from './domain/adherence';
+import { canRetakeCapture, isReviewableVerification } from './domain/adherence';
 import { profileColorFor } from './domain/profileColor';
 import { cleanupClientAfterReset } from './services/resetCleanup';
 import { readUiStorageString, writeUiStorageString } from './services/uiStorage';
@@ -108,31 +108,39 @@ export const participantIdForNotificationLaunch = (
   ? intent.participantId
   : undefined;
 
-export const eventIdForNotificationLaunch = (
-  state: AppState,
-  intent: NotificationLaunchIntent | undefined,
-) => intent?.kind === 'review'
-  && intent.eventId
-  && state.role === 'parent'
-  && state.activeParticipantId === intent.participantId
-  && state.events.some((event) => event.id === intent.eventId)
-  ? intent.eventId
-  : undefined;
+export type NotificationLaunchResolution =
+  | { status: 'waiting' }
+  | { status: 'invalid' }
+  | { status: 'open'; eventId: string }
+  | { status: 'stale'; eventId: string; noticeKey: 'notificationEventAlreadyHandled' | 'notificationEventExpired' };
 
-export const participantEventIdForNotificationLaunch = (
+export const resolveNotificationLaunch = (
   state: AppState,
-  intent: NotificationLaunchIntent | undefined,
+  intent: NotificationLaunchIntent,
   now = Date.now(),
-) => {
-  if (intent?.kind !== 'verification' || state.role !== 'child') return undefined;
+): NotificationLaunchResolution => {
+  if (intent.kind === 'review') {
+    if (state.role !== 'parent' || state.activeParticipantId !== intent.participantId || !intent.eventId) return { status: 'invalid' };
+    const event = state.events.find((candidate) => candidate.id === intent.eventId);
+    if (!event) return { status: 'waiting' };
+    return isReviewableVerification(event)
+      ? { status: 'open', eventId: event.id }
+      : { status: 'stale', eventId: event.id, noticeKey: 'notificationEventAlreadyHandled' };
+  }
+  if (state.role !== 'child') return { status: 'invalid' };
   const event = state.events.find((candidate) => candidate.sessionId === intent.sessionId);
-  return event?.status === 'pending' && Date.parse(event.expiresAt) > now ? event.id : undefined;
+  if (!event) return { status: 'waiting' };
+  if (event.status === 'pending' && Date.parse(event.expiresAt) > now) return { status: 'open', eventId: event.id };
+  return event.status === 'pending' || ['missed', 'expired'].includes(event.status)
+    ? { status: 'stale', eventId: event.id, noticeKey: 'notificationEventExpired' }
+    : { status: 'stale', eventId: event.id, noticeKey: 'notificationEventAlreadyHandled' };
 };
 
 export function App() {
   const repository = useMemo(createRepository, []);
   const notificationLaunchIntentRef = useRef(notificationLaunchIntent());
   const selectingNotificationParticipantRef = useRef<string | undefined>(undefined);
+  const notificationMissingTimerRef = useRef<number | undefined>(undefined);
   const [state, setState] = useState(repository.snapshot());
   const [route, setRoute] = useState<AppRoute>(() => routeForState(state, browserRouteContext()));
   const [ready, setReady] = useState(false);
@@ -151,6 +159,7 @@ export function App() {
   const [focusedHistoryEventId, setFocusedHistoryEventId] = useState<string>();
   const [focusedDashboardEventId, setFocusedDashboardEventId] = useState<string>();
   const [notificationIntentSequence, setNotificationIntentSequence] = useState(0);
+  const [notificationNotice, setNotificationNotice] = useState<{ key: MessageKey; eventId?: string }>();
   const [lastSyncAt, setLastSyncAt] = useState<string>();
   const [online, setOnline] = useState(() => navigator.onLine);
   const [pendingSyncOperations, setPendingSyncOperations] = useState(0);
@@ -220,58 +229,71 @@ export function App() {
     const receiveNotification = (message: MessageEvent<unknown>) => {
       const intent = notificationLaunchIntentFromMessage(message.data);
       if (!intent) return;
+      if (notificationMissingTimerRef.current !== undefined) {
+        window.clearTimeout(notificationMissingTimerRef.current);
+        notificationMissingTimerRef.current = undefined;
+      }
       notificationLaunchIntentRef.current = intent;
+      setNotificationNotice(undefined);
       setNotificationIntentSequence((current) => current + 1);
     };
     navigator.serviceWorker.addEventListener('message', receiveNotification);
     return () => navigator.serviceWorker.removeEventListener('message', receiveNotification);
   }, []);
 
+  useEffect(() => () => {
+    if (notificationMissingTimerRef.current !== undefined) window.clearTimeout(notificationMissingTimerRef.current);
+  }, []);
+
   useEffect(() => {
     if (!ready) return;
     const intent = notificationLaunchIntentRef.current;
     if (!intent) return;
-    if (intent.kind === 'verification') {
-      if (state.role !== 'child') {
+    if (intent.kind === 'review') {
+      const participantId = participantIdForNotificationLaunch(state, intent);
+      if (!participantId) {
+        if (intent.eventId) setNotificationNotice({ key: 'notificationEventUnavailable' });
         notificationLaunchIntentRef.current = undefined;
         return;
       }
-      const eventId = participantEventIdForNotificationLaunch(state, intent);
-      if (!eventId) {
-        if (state.events.some((event) => event.sessionId === intent.sessionId)) notificationLaunchIntentRef.current = undefined;
-        return;
-      }
-      setFocusedDashboardEventId(eventId);
-      setTab('home');
-      setRoute('app');
-      notificationLaunchIntentRef.current = undefined;
-      return;
-    }
-    const participantId = participantIdForNotificationLaunch(state, intent);
-    if (!participantId) {
-      notificationLaunchIntentRef.current = undefined;
-      return;
-    }
-    if (state.activeParticipantId !== participantId) {
-      if (repository.selectActiveParticipant && selectingNotificationParticipantRef.current !== participantId) {
-        selectingNotificationParticipantRef.current = participantId;
-        void repository.selectActiveParticipant(participantId)
+      if (state.activeParticipantId !== participantId) {
+        if (repository.selectActiveParticipant && selectingNotificationParticipantRef.current !== participantId) {
+          selectingNotificationParticipantRef.current = participantId;
+          void repository.selectActiveParticipant(participantId)
           .then(() => setState(repository.snapshot()))
           .catch((error) => {
             console.error(error);
             notificationLaunchIntentRef.current = undefined;
           })
           .finally(() => { selectingNotificationParticipantRef.current = undefined; });
+        }
+        return;
+      }
+    }
+    const resolution = resolveNotificationLaunch(state, intent);
+    if (resolution.status === 'waiting') {
+      if (notificationMissingTimerRef.current === undefined) {
+        notificationMissingTimerRef.current = window.setTimeout(() => {
+          notificationMissingTimerRef.current = undefined;
+          notificationLaunchIntentRef.current = undefined;
+          setNotificationNotice({ key: 'notificationEventUnavailable' });
+          setTab('home');
+          setRoute('app');
+        }, 5_000);
       }
       return;
     }
-    if (!intent.eventId) {
+    if (notificationMissingTimerRef.current !== undefined) {
+      window.clearTimeout(notificationMissingTimerRef.current);
+      notificationMissingTimerRef.current = undefined;
+    }
+    if (resolution.status === 'invalid') {
+      if (intent.kind === 'verification' || intent.eventId) setNotificationNotice({ key: 'notificationEventUnavailable' });
       notificationLaunchIntentRef.current = undefined;
       return;
     }
-    const eventId = eventIdForNotificationLaunch(state, intent);
-    if (!eventId) return;
-    setFocusedDashboardEventId(eventId);
+    setFocusedDashboardEventId(resolution.eventId);
+    if (resolution.status === 'stale') setNotificationNotice({ key: resolution.noticeKey, eventId: resolution.eventId });
     setTab('home');
     setRoute('app');
     notificationLaunchIntentRef.current = undefined;
@@ -779,6 +801,19 @@ export function App() {
           message={t(setupNoticeKey)}
           closeLabel={t('close')}
           onClose={() => setSetupNoticeKey(undefined)}
+        />
+      ) : null}
+      {notificationNotice ? (
+        <Snackbar
+          message={t(notificationNotice.key)}
+          actionLabel={notificationNotice.eventId ? t('notificationOpenHistory') : undefined}
+          onAction={notificationNotice.eventId ? () => {
+            setFocusedDashboardEventId(notificationNotice.eventId);
+            setTab('home');
+            setRoute('app');
+          } : undefined}
+          closeLabel={t('close')}
+          onClose={() => setNotificationNotice(undefined)}
         />
       ) : null}
     </>
