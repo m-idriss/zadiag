@@ -1393,6 +1393,10 @@ button:disabled { cursor: not-allowed; }
 .history-detail-review-actions > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .history-detail-review-actions .parent-review-button { width: 100%; }
 .history-detail-review-actions .request-feedback { margin: 0; }
+.history-detail-request-actions { display: grid; gap: 8px; }
+.history-detail-request-actions > button { min-height: var(--height-action); padding: 10px 16px; border: 0; border-radius: 12px; background: var(--color-text); color: var(--color-surface-solid); font-size: 12px; font-weight: 850; }
+.history-detail-request-actions > button:disabled { opacity: .62; }
+.history-detail-request-actions .request-feedback { margin: 0; }
 .progress-summary { display: flex; align-items: center; gap: 18px; padding: var(--block-padding); }
 .progress-summary dl { flex: 1; margin: 0; }
 .progress-summary dl div { display: flex; justify-content: space-between; gap: 15px; font-size: 12px; }

@@ -152,13 +152,14 @@ const renderRoutineStepIcon = (icon: string) => {
   return icon;
 };
 
-export function RoutineDetailScreen({ assignment, state, back, start, getProofImageUrl, reviewCheck, t, edit, initialTab, initialEventId, onInitialEventConsumed, onSaveMonitoringPlan, routinePlanBusy }: {
+export function RoutineDetailScreen({ assignment, state, back, start, getProofImageUrl, reviewCheck, requestCheck, t, edit, initialTab, initialEventId, onInitialEventConsumed, onSaveMonitoringPlan, routinePlanBusy }: {
   assignment: RoutineAssignment;
   state: AppState;
   back: () => void;
   start?: () => void;
   getProofImageUrl?: (eventId: string) => Promise<string>;
   reviewCheck?: (eventId: string, decision: 'detected' | 'not_detected') => Promise<void>;
+  requestCheck?: (routineId: string) => Promise<void>;
   t: (key: MessageKey) => string;
   edit?: boolean;
   initialTab?: DetailInitialTab;
@@ -318,7 +319,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
       {tab === 'tracking' && trackingPanel}
 
       {selectedHistoryEvent ? (
-        <VerificationEventDetailDialog event={selectedHistoryEvent} locale={state.locale} proofUrl={proofUrls[selectedHistoryEvent.id]} getProofImageUrl={getProofImageUrl} reviewCheck={reviewCheck} onClose={() => setSelectedHistoryEventId(undefined)} t={t} />
+        <VerificationEventDetailDialog event={selectedHistoryEvent} locale={state.locale} proofUrl={proofUrls[selectedHistoryEvent.id]} getProofImageUrl={getProofImageUrl} reviewCheck={reviewCheck} requestCheck={requestCheck} onClose={() => setSelectedHistoryEventId(undefined)} t={t} />
       ) : null}
 
       {enlargedProofUrl ? (
