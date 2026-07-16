@@ -251,6 +251,11 @@ const requireFamilyRole = async (uid: string, familyId: string, role: 'parent' |
 
 const requireFamilyMember = (uid: string, familyId: string) => requireAggregatePermission(uid, familyId, 'view');
 
+const responsibleActorName = async (uid: string) => {
+  const profile = await db.collection('users').doc(uid).get();
+  return String(profile.data()?.displayName ?? '').trim() || 'Responsable';
+};
+
 const pushRoleForAggregate = async (uid: string, aggregateRef: FirebaseFirestore.DocumentReference): Promise<PushRecipientRole> => {
   if (aggregateRef.parent.id === 'families') {
     const profile = await db.collection('users').doc(uid).get();
@@ -1771,6 +1776,7 @@ export const requestCheckNow = onCall({
   const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const routineId = requireDocumentId(request.data?.routineId ?? DEFAULT_ROUTINE_ID, 'Routine ID');
   const familyRef = await requireAggregatePermission(uid, familyId, 'requestChecks');
+  const actorName = await responsibleActorName(uid);
   await ensureFamilyRoutineMigration(familyRef);
   const assignmentRef = familyRef.collection('routineAssignments').doc(routineId);
   const checkRef = familyRef.collection('checks').doc();
@@ -1801,13 +1807,18 @@ export const requestCheckNow = onCall({
     if (activePendingCheck) {
       const currentCheck = { id: activePendingCheck.id, ...activePendingCheck.data() } as RequestedCheck;
       const renewedExpiresAt = checkExpiresAt(plan, now);
+      const responsibleActions = [
+        ...(Array.isArray(activePendingCheck.data().responsibleActions) ? activePendingCheck.data().responsibleActions : []),
+        { type: 'reminded', at: now.toISOString(), actorUid: uid, actorName },
+      ].slice(-20);
       if (renewedExpiresAt.getTime() > Date.parse(currentCheck.expiresAt)) {
         const expiresAt = renewedExpiresAt.toISOString();
         transaction.update(assignmentRef, lockUpdate);
-        transaction.update(activePendingCheck.ref, { expiresAt });
+        transaction.update(activePendingCheck.ref, { expiresAt, responsibleActions });
         return { check: { ...currentCheck, expiresAt }, resend: true };
       }
       transaction.update(assignmentRef, lockUpdate);
+      transaction.update(activePendingCheck.ref, { responsibleActions });
       return { check: currentCheck, resend: true };
     }
 
@@ -1819,6 +1830,7 @@ export const requestCheckNow = onCall({
       expiresAt: expiresAt.toISOString(),
       status: 'pending',
       requestedBy: uid,
+      responsibleActions: [{ type: 'requested', at: now.toISOString(), actorUid: uid, actorName }],
     };
 
     transaction.update(assignmentRef, lockUpdate);
@@ -2458,6 +2470,7 @@ export const reviewCheck = onCall({ region, cors, enforceAppCheck: true }, async
     throw new HttpsError('invalid-argument', 'A valid review decision is required.');
   }
   const aggregateRef = await requireFamilyRole(uid, familyId, 'parent');
+  const actorName = await responsibleActorName(uid);
   const checkRef = aggregateRef.collection('checks').doc(checkId);
   const reviewedAt = new Date().toISOString();
   const reviewedCheck = await db.runTransaction<ReviewedCheckPayload>(async (transaction) => {
@@ -2473,6 +2486,10 @@ export const reviewCheck = onCall({ region, cors, enforceAppCheck: true }, async
       reviewedAt,
       reviewedBy: uid,
       reviewReason: 'responsible_review',
+      responsibleActions: [
+        ...(Array.isArray(checkData.responsibleActions) ? checkData.responsibleActions : []),
+        { type: decision === 'detected' ? 'approved' : 'rejected', at: reviewedAt, actorUid: uid, actorName },
+      ].slice(-20),
     };
     transaction.update(checkRef, update);
     return { id: check.id, ...checkData, ...update };
