@@ -2,8 +2,8 @@
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
 import {
   clearBadgeAndCheckNotifications,
-  notificationClickPath,
   notificationOptionsForPayload,
+  openNotificationClient,
   reportSyntheticPushReceipt,
   type PushPayload,
 } from './services/serviceWorkerNotifications';
@@ -43,6 +43,6 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
   const payload = event.notification.data as PushPayload | undefined;
   event.waitUntil(Promise.allSettled([
     reportSyntheticPushReceipt(payload, 'opened'),
-    self.clients.openWindow(notificationClickPath(event.notification)),
+    openNotificationClient(event.notification, self.clients),
   ]));
 });

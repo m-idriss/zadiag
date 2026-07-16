@@ -27,6 +27,20 @@ export const notificationLaunchIntent = (search = window.location.search): Notif
   return { kind: 'review', participantId, ...(eventId ? { eventId } : {}) };
 };
 
+export const notificationLaunchIntentFromMessage = (
+  data: unknown,
+  origin = window.location.origin,
+): NotificationLaunchIntent | undefined => {
+  const message = data as { type?: unknown; path?: unknown } | undefined;
+  if (message?.type !== 'OPEN_NOTIFICATION' || typeof message.path !== 'string') return undefined;
+  try {
+    const url = new URL(message.path, origin);
+    return url.origin === origin ? notificationLaunchIntent(url.search) : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 export const clearNotificationLaunchUrl = () => {
   const url = new URL(window.location.href);
   url.searchParams.delete('open');

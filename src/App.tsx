@@ -10,7 +10,7 @@ import { Snackbar } from './components/Snackbar';
 import { PullToUpdate } from './components/PullToUpdate';
 import { isSummaryRange, type SummaryRange } from './components/AdherenceSummaryCard';
 import { firebaseEnabled } from './services/firebaseConfig';
-import { browserRouteContext, captureRelationshipInvitationCode, clearNotificationLaunchUrl, clearRelationshipInvitationUrl, isLocalDemoEnvironment, notificationLaunchIntent, routineCentricUiEnabled, type NotificationLaunchIntent } from './services/browserEnvironment';
+import { browserRouteContext, captureRelationshipInvitationCode, clearNotificationLaunchUrl, clearRelationshipInvitationUrl, isLocalDemoEnvironment, notificationLaunchIntent, notificationLaunchIntentFromMessage, routineCentricUiEnabled, type NotificationLaunchIntent } from './services/browserEnvironment';
 import { runWhenStartupIsIdle } from './services/appUpdate';
 import { InstallScreen } from './screens/InstallScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
@@ -132,6 +132,7 @@ export const participantEventIdForNotificationLaunch = (
 export function App() {
   const repository = useMemo(createRepository, []);
   const notificationLaunchIntentRef = useRef(notificationLaunchIntent());
+  const selectingNotificationParticipantRef = useRef<string | undefined>(undefined);
   const [state, setState] = useState(repository.snapshot());
   const [route, setRoute] = useState<AppRoute>(() => routeForState(state, browserRouteContext()));
   const [ready, setReady] = useState(false);
@@ -149,6 +150,7 @@ export function App() {
   const [selectedSessionId, setSelectedSessionId] = useState<string>();
   const [focusedHistoryEventId, setFocusedHistoryEventId] = useState<string>();
   const [focusedDashboardEventId, setFocusedDashboardEventId] = useState<string>();
+  const [notificationIntentSequence, setNotificationIntentSequence] = useState(0);
   const [lastSyncAt, setLastSyncAt] = useState<string>();
   const [online, setOnline] = useState(() => navigator.onLine);
   const [pendingSyncOperations, setPendingSyncOperations] = useState(0);
@@ -214,6 +216,18 @@ export function App() {
   }, [ready, state.family.childLinked, state.family.linked, state.notificationsEnabled, state.role, state.routineAssignments.length, state.routinesLoaded]);
 
   useEffect(() => {
+    if (!('serviceWorker' in navigator)) return undefined;
+    const receiveNotification = (message: MessageEvent<unknown>) => {
+      const intent = notificationLaunchIntentFromMessage(message.data);
+      if (!intent) return;
+      notificationLaunchIntentRef.current = intent;
+      setNotificationIntentSequence((current) => current + 1);
+    };
+    navigator.serviceWorker.addEventListener('message', receiveNotification);
+    return () => navigator.serviceWorker.removeEventListener('message', receiveNotification);
+  }, []);
+
+  useEffect(() => {
     if (!ready) return;
     const intent = notificationLaunchIntentRef.current;
     if (!intent) return;
@@ -238,7 +252,19 @@ export function App() {
       notificationLaunchIntentRef.current = undefined;
       return;
     }
-    if (state.activeParticipantId !== participantId) return;
+    if (state.activeParticipantId !== participantId) {
+      if (repository.selectActiveParticipant && selectingNotificationParticipantRef.current !== participantId) {
+        selectingNotificationParticipantRef.current = participantId;
+        void repository.selectActiveParticipant(participantId)
+          .then(() => setState(repository.snapshot()))
+          .catch((error) => {
+            console.error(error);
+            notificationLaunchIntentRef.current = undefined;
+          })
+          .finally(() => { selectingNotificationParticipantRef.current = undefined; });
+      }
+      return;
+    }
     if (!intent.eventId) {
       notificationLaunchIntentRef.current = undefined;
       return;
@@ -249,7 +275,7 @@ export function App() {
     setTab('home');
     setRoute('app');
     notificationLaunchIntentRef.current = undefined;
-  }, [ready, state]);
+  }, [notificationIntentSequence, ready, repository, state]);
 
   useEffect(() => {
     if (!ready || !firebaseEnabled || !state.family.id || !state.role) return;

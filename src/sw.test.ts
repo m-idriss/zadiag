@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { clearBadgeAndCheckNotifications, notificationClickPath, notificationOptionsForPayload } from './services/serviceWorkerNotifications';
+import { clearBadgeAndCheckNotifications, notificationClickPath, notificationOptionsForPayload, openNotificationClient } from './services/serviceWorkerNotifications';
 
 describe('service worker notification helpers', () => {
   it('builds notification options from the push payload', () => {
@@ -31,6 +31,28 @@ describe('service worker notification helpers', () => {
   it('falls back to the verification route when click data is missing', () => {
     expect(notificationClickPath({ data: { path: '/settings' } })).toBe('/settings');
     expect(notificationClickPath({ data: undefined })).toBe('/');
+  });
+
+  it('focuses an existing app window and forwards the notification without reloading', async () => {
+    const focus = vi.fn().mockResolvedValue(undefined);
+    const postMessage = vi.fn();
+    const openWindow = vi.fn();
+    await openNotificationClient({ data: { path: '/?open=review&participant=alex&event=check-1' } }, {
+      matchAll: vi.fn().mockResolvedValue([{ focused: false, visibilityState: 'visible', focus, postMessage }]),
+      openWindow,
+    });
+    expect(postMessage).toHaveBeenCalledWith({ type: 'OPEN_NOTIFICATION', path: '/?open=review&participant=alex&event=check-1' });
+    expect(focus).toHaveBeenCalledOnce();
+    expect(openWindow).not.toHaveBeenCalled();
+  });
+
+  it('opens a new app window only when no instance exists', async () => {
+    const openWindow = vi.fn().mockResolvedValue(null);
+    await openNotificationClient({ data: { path: '/?open=verification&session=session-1' } }, {
+      matchAll: vi.fn().mockResolvedValue([]),
+      openWindow,
+    });
+    expect(openWindow).toHaveBeenCalledWith('/?open=verification&session=session-1');
   });
 
   it('clears app badge and closes check notification tags', async () => {
