@@ -538,6 +538,9 @@ describe('ParentDashboard', () => {
 
     expect(container.querySelector('.dashboard-status-summary button[aria-pressed="true"]')?.textContent).toContain('To review');
     expect(notificationConsumed).toHaveBeenCalledOnce();
+    const detailDialog = container.querySelector('.history-detail-dialog');
+    expect(detailDialog).not.toBeNull();
+    expect(detailDialog?.textContent).toContain('The proof is unclear.');
     expect(container.textContent).toContain('Checks to verify');
     expect(Array.from(container.querySelectorAll('.dashboard-status-summary strong')).map((item) => item.textContent)).toEqual(['0', '1', '1']);
     const reviewSection = container.querySelector('.parent-review-section');
@@ -550,7 +553,7 @@ describe('ParentDashboard', () => {
     expect(container.textContent).toContain('Estimated quality 82%');
     expect(getProofImageUrl).toHaveBeenCalledWith('review');
     vi.useRealTimers();
-    const validate = Array.from(container.querySelectorAll('button')).find((button) => button.getAttribute('aria-label') === 'Validate');
+    const validate = detailDialog?.querySelector<HTMLButtonElement>('button[aria-label="Validate"]');
 
     await act(async () => {
       validate?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
