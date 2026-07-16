@@ -30,6 +30,13 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
   const formatDateTime = (value: string) => new Intl.DateTimeFormat(formatterLocale, { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
   const analysisSourceLabel = event.analysisSource ? t(event.analysisSource === 'ai' ? 'analysisSourceAi' : event.analysisSource === 'fallback' ? 'analysisSourceFallback' : 'analysisSourceSelf') : undefined;
   const reviewStatusLabel = event.reviewStatus ? t(event.reviewStatus === 'approved' ? 'historyReviewApproved' : event.reviewStatus === 'rejected' ? 'historyReviewRejected' : 'historyReviewPending') : undefined;
+  const actionKeys: Record<NonNullable<VerificationEvent['responsibleActions']>[number]['type'], MessageKey> = {
+    requested: 'historyActionRequested',
+    reminded: 'historyActionReminded',
+    approved: 'historyActionApproved',
+    rejected: 'historyActionRejected',
+  };
+  const actionLabel = (type: NonNullable<VerificationEvent['responsibleActions']>[number]['type']) => t(actionKeys[type]);
   const scoreLabel = (score?: number) => score === undefined ? undefined : `${Math.round(score * 100)}%`;
 
   useEffect(() => {
@@ -103,6 +110,12 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
           {reviewStatusLabel ? <div><dt>{t('historyReviewDecision')}</dt><dd>{reviewStatusLabel}</dd></div> : null}
           {event.reviewedAt ? <div><dt>{t('historyReviewedAt')}</dt><dd>{formatDateTime(event.reviewedAt)}</dd></div> : null}
           {event.reviewReason ? <div className="wide"><dt>{t('historyReviewComment')}</dt><dd>{event.reviewReason}</dd></div> : null}
+          {event.responsibleActions?.length ? (
+            <div className="wide history-responsible-actions">
+              <dt>{t('historyResponsibleActions')}</dt>
+              <dd>{event.responsibleActions.map((action) => <span key={`${action.type}-${action.at}`}>{actionLabel(action.type)} · {action.actorName} · {formatDateTime(action.at)}</span>)}</dd>
+            </div>
+          ) : null}
         </dl>
       </div>
     </div>

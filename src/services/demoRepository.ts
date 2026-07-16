@@ -459,7 +459,11 @@ export class DemoRepository implements AppRepository {
       ? this.state.routineAssignments.find((routine) => routine.routineId === routineId)
       : primaryRoutineAssignment(this.state);
     if (!assignment) throw new Error('routine_not_found');
-    if (this.activeSession(assignment.routineId)) {
+    const activeSession = this.activeSession(assignment.routineId);
+    if (activeSession) {
+      activeSession.responsibleActions = [...(activeSession.responsibleActions ?? []), {
+        type: 'reminded', at: now.toISOString(), actorUid: 'demo-current', actorName: this.state.accountDisplayName ?? 'Responsable démo',
+      }];
       this.persist();
       return;
     }
@@ -470,6 +474,7 @@ export class DemoRepository implements AppRepository {
       requestedAt: now.toISOString(),
       expiresAt: responseWindowExpiresAt(assignment.plan, now).toISOString(),
       status: 'pending',
+      responsibleActions: [{ type: 'requested', at: now.toISOString(), actorUid: 'demo-current', actorName: this.state.accountDisplayName ?? 'Responsable démo' }],
     });
     this.persist();
   }
@@ -568,12 +573,17 @@ export class DemoRepository implements AppRepository {
   async reviewCheck(eventId: string, decision: 'detected' | 'not_detected') {
     const event = this.state.events.find((item) => item.id === eventId);
     if (!event || event.status !== 'uncertain') throw new Error('check_not_reviewable');
+    const reviewedAt = new Date().toISOString();
     Object.assign(event, {
       status: decision,
       reviewStatus: decision === 'detected' ? 'approved' : 'rejected',
-      reviewedAt: new Date().toISOString(),
+      reviewedAt,
       reviewedBy: 'demo-parent',
       reviewReason: 'responsible_review',
+      responsibleActions: [...(event.responsibleActions ?? []), {
+        type: decision === 'detected' ? 'approved' : 'rejected',
+        at: reviewedAt, actorUid: 'demo-parent', actorName: this.state.accountDisplayName ?? 'Responsable démo',
+      }],
     });
     this.persist();
     return structuredClone(event);

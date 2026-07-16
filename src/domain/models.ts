@@ -11,6 +11,13 @@ export type VerificationStatus =
   | 'missed'
   | 'expired';
 
+export interface ResponsibleAction {
+  type: 'requested' | 'reminded' | 'approved' | 'rejected';
+  at: string;
+  actorUid: string;
+  actorName: string;
+}
+
 export interface TimeWindow {
   id: string;
   start: string;
@@ -127,6 +134,7 @@ export interface VerificationEvent extends RoutineTask {
   reviewedAt?: string;
   reviewedBy?: string;
   reviewReason?: string;
+  responsibleActions?: ResponsibleAction[];
 }
 
 interface FamilyState {

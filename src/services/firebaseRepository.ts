@@ -74,6 +74,23 @@ interface FamilyDocument {
 const asReviewStatus = (value: unknown): VerificationEvent['reviewStatus'] =>
   value === 'pending' || value === 'approved' || value === 'rejected' ? value : undefined;
 
+const asResponsibleActions = (value: unknown): VerificationEvent['responsibleActions'] => {
+  if (!Array.isArray(value)) return undefined;
+  const actions = value.flatMap((candidate) => {
+    if (!candidate || typeof candidate !== 'object') return [];
+    const action = candidate as Record<string, unknown>;
+    if (!['requested', 'reminded', 'approved', 'rejected'].includes(String(action.type))) return [];
+    if (![action.at, action.actorUid, action.actorName].every((field) => typeof field === 'string' && field.trim())) return [];
+    return [{
+      type: action.type as NonNullable<VerificationEvent['responsibleActions']>[number]['type'],
+      at: String(action.at),
+      actorUid: String(action.actorUid),
+      actorName: String(action.actorName),
+    }];
+  });
+  return actions.length ? actions : undefined;
+};
+
 const asEvent = (id: string, data: DocumentData): VerificationEvent => ({
   id,
   routineId: String(data.routineId ?? DEFAULT_ROUTINE_ID),
@@ -93,6 +110,7 @@ const asEvent = (id: string, data: DocumentData): VerificationEvent => ({
   reviewedAt: data.reviewedAt ? String(data.reviewedAt) : undefined,
   reviewedBy: data.reviewedBy ? String(data.reviewedBy) : undefined,
   reviewReason: data.reviewReason ? String(data.reviewReason) : undefined,
+  responsibleActions: asResponsibleActions(data.responsibleActions),
 });
 
 const asRoutineAssignment = (id: string, data: DocumentData): RoutineAssignment => {

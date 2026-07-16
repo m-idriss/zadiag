@@ -105,7 +105,12 @@ export function AdherenceSummaryCard({
     history: completedEvents.map((event) => [
       dateTimeFormatter.format(new Date(event.capturedAt ?? event.requestedAt)),
       routineNames.get(event.routineId) ?? t('routine'),
-      t(statusMessageKey(event.status)),
+      [
+        t(statusMessageKey(event.status)),
+        event.responsibleActions?.at(-1)
+          ? `${event.responsibleActions.at(-1)?.actorName} · ${dateTimeFormatter.format(new Date(event.responsibleActions.at(-1)?.at ?? ''))}`
+          : undefined,
+      ].filter(Boolean).join(' — '),
     ] as [string, string, string]),
     privacyNote: t('reportPrivacyNote'),
   };
@@ -141,6 +146,7 @@ export function AdherenceSummaryCard({
             reviewStatus: event.reviewStatus,
             reviewedAt: event.reviewedAt,
             reviewReason: event.reviewReason,
+            responsibleActions: event.responsibleActions,
           })),
         });
       await deliverReportFile(blob, adherenceReportFilename(subjectName, format), reportExportInput.title);
