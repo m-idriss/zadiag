@@ -9,13 +9,23 @@ export const routineCentricUiEnabled = import.meta.env.VITE_ROUTINE_CENTRIC_UI !
 export interface NotificationLaunchIntent {
   kind: 'review';
   participantId: string;
+  eventId?: string;
 }
 
 export const notificationLaunchIntent = (search = window.location.search): NotificationLaunchIntent | undefined => {
   const parameters = new URLSearchParams(search);
   const participantId = parameters.get('participant')?.trim();
   if (parameters.get('open') !== 'review' || !participantId) return undefined;
-  return { kind: 'review', participantId };
+  const eventId = parameters.get('event')?.trim();
+  return { kind: 'review', participantId, ...(eventId ? { eventId } : {}) };
+};
+
+export const clearNotificationLaunchUrl = () => {
+  const url = new URL(window.location.href);
+  url.searchParams.delete('open');
+  url.searchParams.delete('participant');
+  url.searchParams.delete('event');
+  window.history.replaceState(window.history.state, '', url);
 };
 
 export const relationshipInvitationCode = (hash = window.location.hash, storage = window.localStorage): string | undefined => {

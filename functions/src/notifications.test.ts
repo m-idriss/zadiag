@@ -81,7 +81,7 @@ test('builds a French review notification payload for responsible users only', (
   assert.equal(payload.title, '🦷 Élastiques orthodontiques · à vérifier');
   assert.equal(payload.body, 'Une preuve attend votre validation.');
   assert.equal(payload.tag, 'review:check-1');
-  assert.equal(payload.path, '/?open=review&participant=participant-alex');
+  assert.equal(payload.path, '/?open=review&participant=participant-alex&event=check-1');
 });
 
 test('builds a localized test notification payload', () => {
