@@ -14,6 +14,10 @@ describe('notification launch intent', () => {
     expect(notificationLaunchIntent('?open=review&participant=participant-alex')).toEqual({ kind: 'review', participantId: 'participant-alex' });
   });
 
+  it('targets the exact participant check session', () => {
+    expect(notificationLaunchIntent('?open=verification&session=session-42')).toEqual({ kind: 'verification', sessionId: 'session-42' });
+  });
+
   it('ignores incomplete and unrelated notification routes', () => {
     expect(notificationLaunchIntent('?open=review')).toBeUndefined();
     expect(notificationLaunchIntent('?open=verification&participant=participant-alex')).toBeUndefined();
