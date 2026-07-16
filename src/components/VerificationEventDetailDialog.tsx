@@ -7,12 +7,13 @@ import { useModalFocus } from '../hooks/useModalFocus';
 import { AppIcon } from './Icon';
 import { StatusPill } from './StatusPill';
 
-export function VerificationEventDetailDialog({ event, locale, proofUrl: providedProofUrl, getProofImageUrl, reviewCheck, onClose, t }: {
+export function VerificationEventDetailDialog({ event, locale, proofUrl: providedProofUrl, getProofImageUrl, reviewCheck, requestCheck, onClose, t }: {
   event: VerificationEvent;
   locale: Locale;
   proofUrl?: string;
   getProofImageUrl?: (eventId: string) => Promise<string>;
   reviewCheck?: (eventId: string, decision: 'detected' | 'not_detected') => Promise<void>;
+  requestCheck?: (routineId: string) => Promise<void>;
   onClose: () => void;
   t: (key: MessageKey) => string;
 }) {
@@ -20,8 +21,11 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
   const [loadedProofUrl, setLoadedProofUrl] = useState<string>();
   const [reviewing, setReviewing] = useState(false);
   const [reviewError, setReviewError] = useState(false);
+  const [requestStatus, setRequestStatus] = useState<'sending' | 'sent' | 'error'>();
   const proofUrl = providedProofUrl ?? loadedProofUrl;
   const canReview = Boolean(reviewCheck) && isReviewableVerification(event);
+  const isActive = event.status === 'pending' && Date.parse(event.expiresAt) > Date.now();
+  const canRequest = Boolean(requestCheck) && (isActive || ['missed', 'expired'].includes(event.status));
   const formatterLocale = languageTag(locale);
   const formatDateTime = (value: string) => new Intl.DateTimeFormat(formatterLocale, { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
   const analysisSourceLabel = event.analysisSource ? t(event.analysisSource === 'ai' ? 'analysisSourceAi' : event.analysisSource === 'fallback' ? 'analysisSourceFallback' : 'analysisSourceSelf') : undefined;
@@ -50,10 +54,21 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
       setReviewing(false);
     }
   };
+  const request = async () => {
+    if (!requestCheck) return;
+    setRequestStatus('sending');
+    try {
+      await requestCheck(event.routineId);
+      setRequestStatus('sent');
+    } catch (error) {
+      console.error(error);
+      setRequestStatus('error');
+    }
+  };
 
   return (
     <div className="history-detail-backdrop" onClick={onClose}>
-      <div ref={dialogRef} className={`history-detail-dialog${proofUrl ? '' : ' no-proof'}${canReview ? ' has-actions' : ''}`} role="dialog" aria-modal="true" aria-labelledby="history-detail-title" tabIndex={-1} onClick={(clickEvent) => clickEvent.stopPropagation()}>
+      <div ref={dialogRef} className={`history-detail-dialog${proofUrl ? '' : ' no-proof'}${canReview || canRequest ? ' has-actions' : ''}`} role="dialog" aria-modal="true" aria-labelledby="history-detail-title" tabIndex={-1} onClick={(clickEvent) => clickEvent.stopPropagation()}>
         <header>
           <div className="history-detail-heading"><small>{t('historyDetailTitle')}</small><h2 id="history-detail-title">{formatDateTime(event.requestedAt)}</h2><StatusPill status={event.status} t={t} /></div>
           <button type="button" data-autofocus aria-label={t('close')} onClick={onClose}><AppIcon name="close" /></button>
@@ -66,6 +81,15 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
               <button type="button" className="parent-review-button reject" aria-label={t('responsibleReviewReject')} disabled={reviewing} onClick={() => { void decide('not_detected'); }}><AppIcon name="close" /></button>
               <button type="button" className="parent-review-button approve" aria-label={t('responsibleReviewApprove')} disabled={reviewing} onClick={() => { void decide('detected'); }}><AppIcon name="check" /></button>
             </div>
+          </div>
+        ) : null}
+        {canRequest ? (
+          <div className="history-detail-request-actions">
+            <button type="button" disabled={requestStatus === 'sending' || requestStatus === 'sent'} onClick={() => { void request(); }}>
+              {requestStatus === 'sending' ? t('requestingCheck') : t(isActive ? 'requestCheckAgain' : 'requestCheckNow')}
+            </button>
+            {requestStatus === 'sent' ? <p className="request-feedback success" role="status">{t('requestCheckSent')}</p> : null}
+            {requestStatus === 'error' ? <p className="request-feedback error" role="alert">{t('requestCheckError')}</p> : null}
           </div>
         ) : null}
         <dl>

@@ -488,7 +488,7 @@ export function ParentDashboard({
         <AdherenceSummaryCard events={displayEvents} assignments={state.routineAssignments} locale={state.locale} subjectName={reportSubjectName} range={summaryRange} onRangeChange={setSummaryRange} t={t} />
         <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedRawEvents} locale={state.locale} titleId="responsible-history-title" onRequestCheck={requestCheck} onOpenEvent={(event) => setDetailEventId(event.id)} t={t} />
       </section>
-      {detailEvent ? <VerificationEventDetailDialog event={detailEvent} locale={state.locale} proofUrl={proofUrls[detailEvent.id]} getProofImageUrl={getProofImageUrl} reviewCheck={reviewCheck} onClose={() => setDetailEventId(undefined)} t={t} /> : null}
+      {detailEvent ? <VerificationEventDetailDialog event={detailEvent} locale={state.locale} proofUrl={proofUrls[detailEvent.id]} getProofImageUrl={getProofImageUrl} reviewCheck={reviewCheck} requestCheck={requestCheck} onClose={() => setDetailEventId(undefined)} t={t} /> : null}
     </div>
   );
 }

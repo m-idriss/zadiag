@@ -85,13 +85,49 @@ describe('ParentDashboard', () => {
       events: [{ id: 'dashboard-detail', routineId: assignment.routineId, sessionId: 'one', requestedAt, expiresAt: new Date(Date.now() + 60 * 60_000).toISOString(), status: 'detected', reason: 'Visible from dashboard' }],
     };
 
-    act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
+    act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} requestCheck={vi.fn()} t={(key) => translate('en', key)} />));
     const openDetails = container.querySelector<HTMLButtonElement>('.history-row-open-button');
     act(() => openDetails?.click());
 
     expect(container.querySelector('.history-detail-dialog')?.textContent).toContain('Visible from dashboard');
+    expect(container.querySelector('.history-detail-request-actions')).toBeNull();
     expect(container.querySelector('.parent-overview-screen')).not.toBeNull();
     expect(container.querySelector('.screen-header h1')?.textContent).toBe('Activity');
+  });
+
+  it.each([
+    { status: 'pending' as const, label: 'Resend reminder', expiresOffset: 60 * 60_000 },
+    { status: 'missed' as const, label: 'Request a check now', expiresOffset: -60 * 60_000 },
+  ])('offers the contextual $label action from notification details', async ({ status, label, expiresOffset }) => {
+    const assignment = createDefaultRoutineAssignment();
+    const requestCheck = vi.fn().mockResolvedValue(undefined);
+    const notificationConsumed = vi.fn();
+    const event = {
+      id: `notification-${status}`,
+      routineId: assignment.routineId,
+      sessionId: 'one',
+      requestedAt: new Date(Date.now() - 2 * 60 * 60_000).toISOString(),
+      expiresAt: new Date(Date.now() + expiresOffset).toISOString(),
+      status,
+    };
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      routineAssignments: [assignment], events: [event],
+    };
+
+    act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} requestCheck={requestCheck} notificationEventId={event.id} onNotificationEventConsumed={notificationConsumed} t={(key) => translate('en', key)} />));
+    const action = Array.from(container.querySelectorAll<HTMLButtonElement>('.history-detail-request-actions button')).find((button) => button.textContent === label);
+    expect(action).toBeDefined();
+
+    await act(async () => {
+      action?.click();
+      await Promise.resolve();
+    });
+
+    expect(requestCheck).toHaveBeenCalledWith(assignment.routineId);
+    expect(container.querySelector('.history-detail-request-actions')?.textContent).toContain('The check is ready on the participant’s phone.');
+    expect(notificationConsumed).toHaveBeenCalledOnce();
   });
 
   it('shows upcoming checks when no responsible check is active', () => {
