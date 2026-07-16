@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { captureRelationshipInvitationCode, clearNotificationLaunchUrl, notificationLaunchIntent, relationshipInvitationCode, relationshipInvitationUrl } from './browserEnvironment';
+import { captureRelationshipInvitationCode, clearNotificationLaunchUrl, notificationLaunchIntent, notificationLaunchIntentFromMessage, relationshipInvitationCode, relationshipInvitationUrl } from './browserEnvironment';
 
 describe('notification launch intent', () => {
   it('targets the participant carried by a review notification', () => {
@@ -21,6 +21,12 @@ describe('notification launch intent', () => {
   it('ignores incomplete and unrelated notification routes', () => {
     expect(notificationLaunchIntent('?open=review')).toBeUndefined();
     expect(notificationLaunchIntent('?open=verification&participant=participant-alex')).toBeUndefined();
+  });
+
+  it('accepts only same-origin notification messages from the service worker', () => {
+    expect(notificationLaunchIntentFromMessage({ type: 'OPEN_NOTIFICATION', path: '/?open=verification&session=session-42' }, 'https://app.zadiag.test')).toEqual({ kind: 'verification', sessionId: 'session-42' });
+    expect(notificationLaunchIntentFromMessage({ type: 'OPEN_NOTIFICATION', path: 'https://evil.test/?open=verification&session=session-42' }, 'https://app.zadiag.test')).toBeUndefined();
+    expect(notificationLaunchIntentFromMessage({ type: 'OTHER', path: '/?open=verification&session=session-42' }, 'https://app.zadiag.test')).toBeUndefined();
   });
 
   it('consumes notification parameters without removing unrelated URL state', () => {

@@ -37,6 +37,26 @@ export const notificationOptionsForPayload = (payload?: PushPayload): Notificati
 export const notificationClickPath = (notification: Pick<Notification, 'data'>) =>
   String((notification.data as { path?: string } | undefined)?.path ?? '/');
 
+type NotificationWindowClient = Pick<WindowClient, 'focus' | 'postMessage' | 'visibilityState' | 'focused'>;
+type NotificationClients = {
+  matchAll: (options: ClientQueryOptions) => Promise<readonly (Client | NotificationWindowClient)[]>;
+  openWindow: (url: string) => Promise<WindowClient | null>;
+};
+
+export const openNotificationClient = async (
+  notification: Pick<Notification, 'data'>,
+  clients: NotificationClients,
+) => {
+  const path = notificationClickPath(notification);
+  const matchedClients = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+  const windows = matchedClients.filter((client): client is NotificationWindowClient => 'focus' in client);
+  const existing = windows.sort((left, right) => Number(right.focused) - Number(left.focused)
+    || Number(right.visibilityState === 'visible') - Number(left.visibilityState === 'visible'))[0];
+  if (!existing) return clients.openWindow(path);
+  existing.postMessage({ type: 'OPEN_NOTIFICATION', path });
+  return existing.focus();
+};
+
 export const reportSyntheticPushReceipt = async (
   payload: PushPayload | undefined,
   stage: 'received' | 'opened',
