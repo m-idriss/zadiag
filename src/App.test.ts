@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_ROUTINE_ID, type AppState, type VerificationEvent } from './domain/models';
-import { appBadgeCountForState, documentLanguageForLocale, eventIdForNotificationLaunch, isParticipantInvitationCode, participantEventIdForNotificationLaunch, participantIdForNotificationLaunch, resetNoticeMessageKey, setupCompletionTransition, syncStatusFor, syncStatusIsVisible } from './App';
+import { appBadgeCountForState, documentLanguageForLocale, isParticipantInvitationCode, participantIdForNotificationLaunch, resetNoticeMessageKey, resolveNotificationLaunch, setupCompletionTransition, syncStatusFor, syncStatusIsVisible } from './App';
 
 const activePendingEvent = (expiresAt: string): VerificationEvent => ({
   id: 'check-1',
@@ -103,38 +103,27 @@ describe('participantIdForNotificationLaunch', () => {
   });
 });
 
-describe('eventIdForNotificationLaunch', () => {
-  const state = {
-    role: 'parent',
-    activeParticipantId: 'alex',
-    events: [{ id: 'check-42' }],
-  } as AppState;
+describe('resolveNotificationLaunch', () => {
+  const pending = { id: 'check-42', sessionId: 'session-42', status: 'pending', expiresAt: '2026-07-16T12:30:00.000Z' };
 
-  it('opens an existing event only after its target profile is active', () => {
-    expect(eventIdForNotificationLaunch(state, { kind: 'review', participantId: 'alex', eventId: 'check-42' })).toBe('check-42');
-    expect(eventIdForNotificationLaunch({ ...state, activeParticipantId: 'lea' }, { kind: 'review', participantId: 'alex', eventId: 'check-42' })).toBeUndefined();
-  });
-
-  it('falls back safely for legacy links and events no longer available', () => {
-    expect(eventIdForNotificationLaunch(state, { kind: 'review', participantId: 'alex' })).toBeUndefined();
-    expect(eventIdForNotificationLaunch(state, { kind: 'review', participantId: 'alex', eventId: 'deleted' })).toBeUndefined();
-  });
-});
-
-describe('participantEventIdForNotificationLaunch', () => {
-  const activeEvent = { id: 'check-42', sessionId: 'session-42', status: 'pending', expiresAt: '2026-07-16T12:30:00.000Z' };
-  const state = { role: 'child', events: [activeEvent] } as AppState;
-
-  it('targets the active check carried by the participant notification', () => {
-    expect(participantEventIdForNotificationLaunch(state, { kind: 'verification', sessionId: 'session-42' }, Date.parse('2026-07-16T12:00:00.000Z'))).toBe('check-42');
-  });
-
-  it('does not target expired, completed, missing, or responsible checks', () => {
+  it('distinguishes active, expired, handled, and unavailable participant notifications', () => {
+    const state = { role: 'child', events: [pending] } as AppState;
     const intent = { kind: 'verification' as const, sessionId: 'session-42' };
-    expect(participantEventIdForNotificationLaunch(state, intent, Date.parse('2026-07-16T12:31:00.000Z'))).toBeUndefined();
-    expect(participantEventIdForNotificationLaunch({ ...state, events: [{ ...activeEvent, status: 'detected' }] } as AppState, intent, Date.parse('2026-07-16T12:00:00.000Z'))).toBeUndefined();
-    expect(participantEventIdForNotificationLaunch(state, { kind: 'verification', sessionId: 'missing' }, Date.parse('2026-07-16T12:00:00.000Z'))).toBeUndefined();
-    expect(participantEventIdForNotificationLaunch({ ...state, role: 'parent' }, intent, Date.parse('2026-07-16T12:00:00.000Z'))).toBeUndefined();
+    expect(resolveNotificationLaunch(state, intent, Date.parse('2026-07-16T12:00:00.000Z'))).toEqual({ status: 'open', eventId: 'check-42' });
+    expect(resolveNotificationLaunch(state, intent, Date.parse('2026-07-16T12:31:00.000Z'))).toEqual({ status: 'stale', eventId: 'check-42', noticeKey: 'notificationEventExpired' });
+    expect(resolveNotificationLaunch({ ...state, events: [{ ...pending, status: 'detected' }] } as AppState, intent)).toEqual({ status: 'stale', eventId: 'check-42', noticeKey: 'notificationEventAlreadyHandled' });
+    expect(resolveNotificationLaunch({ ...state, events: [] }, intent)).toEqual({ status: 'waiting' });
+  });
+
+  it('distinguishes actionable and handled responsible reviews', () => {
+    const intent = { kind: 'review' as const, participantId: 'alex', eventId: 'review-1' };
+    const review = { id: 'review-1', status: 'uncertain', reviewStatus: 'pending' };
+    const state = { role: 'parent', activeParticipantId: 'alex', events: [review] } as AppState;
+    expect(resolveNotificationLaunch(state, intent)).toEqual({ status: 'open', eventId: 'review-1' });
+    expect(resolveNotificationLaunch({ ...state, events: [{ ...review, reviewStatus: 'approved' }] } as AppState, intent)).toEqual({ status: 'stale', eventId: 'review-1', noticeKey: 'notificationEventAlreadyHandled' });
+    expect(resolveNotificationLaunch({ ...state, events: [] }, intent)).toEqual({ status: 'waiting' });
+    expect(resolveNotificationLaunch(state, { kind: 'review', participantId: 'alex' })).toEqual({ status: 'invalid' });
+    expect(resolveNotificationLaunch({ ...state, activeParticipantId: 'lea' }, intent)).toEqual({ status: 'invalid' });
   });
 });
 
