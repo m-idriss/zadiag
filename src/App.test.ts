@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_ROUTINE_ID, type AppState, type VerificationEvent } from './domain/models';
-import { appBadgeCountForState, documentLanguageForLocale, isParticipantInvitationCode, participantIdForNotificationLaunch, resetNoticeMessageKey, setupCompletionTransition, syncStatusFor, syncStatusIsVisible } from './App';
+import { appBadgeCountForState, documentLanguageForLocale, eventIdForNotificationLaunch, isParticipantInvitationCode, participantIdForNotificationLaunch, resetNoticeMessageKey, setupCompletionTransition, syncStatusFor, syncStatusIsVisible } from './App';
 
 const activePendingEvent = (expiresAt: string): VerificationEvent => ({
   id: 'check-1',
@@ -100,6 +100,24 @@ describe('participantIdForNotificationLaunch', () => {
       { ...state, role: 'child' },
       { kind: 'review', participantId: 'alex' },
     )).toBeUndefined();
+  });
+});
+
+describe('eventIdForNotificationLaunch', () => {
+  const state = {
+    role: 'parent',
+    activeParticipantId: 'alex',
+    events: [{ id: 'check-42' }],
+  } as AppState;
+
+  it('opens an existing event only after its target profile is active', () => {
+    expect(eventIdForNotificationLaunch(state, { kind: 'review', participantId: 'alex', eventId: 'check-42' })).toBe('check-42');
+    expect(eventIdForNotificationLaunch({ ...state, activeParticipantId: 'lea' }, { kind: 'review', participantId: 'alex', eventId: 'check-42' })).toBeUndefined();
+  });
+
+  it('falls back safely for legacy links and events no longer available', () => {
+    expect(eventIdForNotificationLaunch(state, { kind: 'review', participantId: 'alex' })).toBeUndefined();
+    expect(eventIdForNotificationLaunch(state, { kind: 'review', participantId: 'alex', eventId: 'deleted' })).toBeUndefined();
   });
 });
 

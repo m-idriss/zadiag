@@ -153,7 +153,7 @@ export const buildReviewNotificationPayload = (input: ReviewNotificationInput): 
     tag: `review:${input.checkId}`,
     title: locale === 'fr' ? `${titlePrefix} · à vérifier` : `${titlePrefix} · review`,
     body: locale === 'fr' ? 'Une preuve attend votre validation.' : 'A proof needs your review.',
-    path: `/?open=review&participant=${encodeURIComponent(input.participantId)}`,
+    path: `/?open=review&participant=${encodeURIComponent(input.participantId)}&event=${encodeURIComponent(input.checkId)}`,
   };
 };
 

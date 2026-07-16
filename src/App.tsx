@@ -10,7 +10,7 @@ import { Snackbar } from './components/Snackbar';
 import { PullToUpdate } from './components/PullToUpdate';
 import { isSummaryRange, type SummaryRange } from './components/AdherenceSummaryCard';
 import { firebaseEnabled } from './services/firebaseConfig';
-import { browserRouteContext, captureRelationshipInvitationCode, clearRelationshipInvitationUrl, isLocalDemoEnvironment, notificationLaunchIntent, routineCentricUiEnabled } from './services/browserEnvironment';
+import { browserRouteContext, captureRelationshipInvitationCode, clearNotificationLaunchUrl, clearRelationshipInvitationUrl, isLocalDemoEnvironment, notificationLaunchIntent, routineCentricUiEnabled, type NotificationLaunchIntent } from './services/browserEnvironment';
 import { runWhenStartupIsIdle } from './services/appUpdate';
 import { InstallScreen } from './screens/InstallScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
@@ -107,8 +107,19 @@ export const participantIdForNotificationLaunch = (
   ? intent.participantId
   : undefined;
 
+export const eventIdForNotificationLaunch = (
+  state: AppState,
+  intent: NotificationLaunchIntent | undefined,
+) => intent?.eventId
+  && state.role === 'parent'
+  && state.activeParticipantId === intent.participantId
+  && state.events.some((event) => event.id === intent.eventId)
+  ? intent.eventId
+  : undefined;
+
 export function App() {
   const repository = useMemo(createRepository, []);
+  const notificationLaunchIntentRef = useRef(notificationLaunchIntent());
   const [state, setState] = useState(repository.snapshot());
   const [route, setRoute] = useState<AppRoute>(() => routeForState(state, browserRouteContext()));
   const [ready, setReady] = useState(false);
@@ -191,6 +202,28 @@ export function App() {
   }, [ready, state.family.childLinked, state.family.linked, state.notificationsEnabled, state.role, state.routineAssignments.length, state.routinesLoaded]);
 
   useEffect(() => {
+    if (!ready) return;
+    const intent = notificationLaunchIntentRef.current;
+    if (!intent) return;
+    const participantId = participantIdForNotificationLaunch(state, intent);
+    if (!participantId) {
+      notificationLaunchIntentRef.current = undefined;
+      return;
+    }
+    if (state.activeParticipantId !== participantId) return;
+    if (!intent.eventId) {
+      notificationLaunchIntentRef.current = undefined;
+      return;
+    }
+    const eventId = eventIdForNotificationLaunch(state, intent);
+    if (!eventId) return;
+    setFocusedDashboardEventId(eventId);
+    setTab('home');
+    setRoute('app');
+    notificationLaunchIntentRef.current = undefined;
+  }, [ready, state]);
+
+  useEffect(() => {
     if (!ready || !firebaseEnabled || !state.family.id || !state.role) return;
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
     let cancelled = false;
@@ -236,13 +269,15 @@ export function App() {
       if (!alive) return;
       window.clearInterval(startupProgressTicker);
       let restored = repository.snapshot();
-      const notificationParticipantId = participantIdForNotificationLaunch(restored);
+      const notificationIntent = notificationLaunchIntentRef.current;
+      const notificationParticipantId = participantIdForNotificationLaunch(restored, notificationIntent);
       if (notificationParticipantId && repository.selectActiveParticipant) {
         await repository.selectActiveParticipant(notificationParticipantId);
         if (!alive) return;
         restored = repository.snapshot();
         setTab('home');
       }
+      if (notificationIntent) clearNotificationLaunchUrl();
       setState(restored);
       setLastSyncAt(new Date().toISOString());
       setRoute(routeForState(restored, browserRouteContext()));
