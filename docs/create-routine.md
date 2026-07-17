@@ -18,9 +18,21 @@ The validation contract lives in `routines/schema.json`.
 
 ## Routine Shape
 
-Each file describes a reusable `RoutineTemplate.routine`. The app snapshots this routine into a family-specific `RoutineAssignment` when a parent assigns it.
+Each file contains a Routine Package V1 envelope around a reusable `RoutineTemplate.routine`. The app snapshots only the nested routine into a family-specific `RoutineAssignment` when a responsible user assigns it.
 
-Required fields:
+```json
+{
+  "schemaVersion": 1,
+  "version": 1,
+  "defaultLocale": "en",
+  "availableLocales": ["en", "fr"],
+  "routine": {}
+}
+```
+
+Package V1 is limited to 64 KiB, English plus French, and two to four instruction steps. `routines/schema.json` contains the per-field limits. Declared locales must exactly match translations, and translated step IDs and order must match the default locale.
+
+Required fields inside `routine`:
 
 ```json
 {

@@ -1,37 +1,17 @@
 import { readFile, readdir, mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { validateRoutinePackage } from './routine-package.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const routineDir = resolve(root, 'routines');
 const files = (await readdir(routineDir)).filter((file) => file.endsWith('.json') && !['schema.json', 'template.json'].includes(file)).sort();
-const requiredStrings = ['id', 'name', 'description', 'instructions', 'icon', 'accentColor', 'category', 'proofType', 'proofExample', 'recommendedValidationMode', 'responsibleName'];
-const allowedFields = new Set([...requiredStrings, 'analysis', 'instructionSteps', 'translations']);
-const analysisStrings = ['expectedEvidence', 'detectedCriteria', 'notDetectedCriteria', 'uncertaintyCriteria'];
 const fail = (file, message) => { throw new Error(`${file}: ${message}`); };
 const routines = [];
+validateRoutinePackage('template.json', JSON.parse(await readFile(resolve(routineDir, 'template.json'), 'utf8')));
 for (const file of files) {
-  const routine = JSON.parse(await readFile(resolve(routineDir, file), 'utf8'));
-  requiredStrings.forEach((field) => { if (typeof routine[field] !== 'string' || !routine[field].trim()) fail(file, `${field} is required`); });
-  Object.keys(routine).forEach((field) => { if (!allowedFields.has(field)) fail(file, `unknown field ${field}`); });
+  const routinePackage = JSON.parse(await readFile(resolve(routineDir, file), 'utf8'));
+  const routine = validateRoutinePackage(file, routinePackage);
   if (file !== `${routine.id}.json`) fail(file, 'filename must match the routine id');
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(routine.id)) fail(file, 'id must be kebab-case');
-  if (!/^#[0-9a-fA-F]{6}$/.test(routine.accentColor)) fail(file, 'accentColor must be a six-digit hex color');
-  if (!['dental', 'wellness', 'medication', 'activity', 'custom'].includes(routine.category)) fail(file, 'category is invalid');
-  if (!['ai', 'auto'].includes(routine.recommendedValidationMode)) fail(file, 'recommendedValidationMode is invalid');
-  analysisStrings.forEach((field) => { if (typeof routine.analysis?.[field] !== 'string' || routine.analysis[field].length < 20) fail(file, `analysis.${field} is invalid`); });
-  if (!Array.isArray(routine.instructionSteps) || routine.instructionSteps.length < 2 || routine.instructionSteps.length > 4) fail(file, 'instructionSteps must contain 2 to 4 steps');
-  const stepIds = new Set();
-  routine.instructionSteps.forEach((step) => {
-    if (!step?.id || !step.icon || !step.title || !step.description) fail(file, 'every instruction step must be complete');
-    if (stepIds.has(step.id)) fail(file, `duplicate instruction step ${step.id}`);
-    stepIds.add(step.id);
-  });
-  if (!routine.translations?.fr) fail(file, 'translations.fr is required');
-  ['name', 'description', 'instructions', 'proofExample'].forEach((field) => {
-    if (typeof routine.translations.fr[field] !== 'string' || !routine.translations.fr[field].trim()) fail(file, `translations.fr.${field} is required`);
-  });
-  analysisStrings.forEach((field) => { if (typeof routine.translations.fr.analysis?.[field] !== 'string') fail(file, `translations.fr.analysis.${field} is required`); });
-  if (!Array.isArray(routine.translations.fr.instructionSteps) || routine.translations.fr.instructionSteps.length !== routine.instructionSteps.length) fail(file, 'translated instruction steps must match the source steps');
   routines.push(routine);
 }
 const ids = new Set();

@@ -1,73 +1,82 @@
 {
-  "id": "your-routine-id",
-  "name": "Routine name",
-  "description": "One sentence describing what is tracked.",
-  "instructions": "Tell the participant exactly what to do when a check is requested.",
-  "icon": "star",
-  "accentColor": "#2387c9",
-  "category": "custom",
-  "proofType": "Photo",
-  "proofExample": "Describe the concrete proof shown in the photo.",
-  "recommendedValidationMode": "ai",
-  "responsibleName": "Care team",
-  "analysis": {
-    "expectedEvidence": "Describe the visible proof that should be accepted.",
-    "detectedCriteria": "The photo clearly shows the expected proof.",
-    "notDetectedCriteria": "The photo is clear but does not show the expected proof.",
-    "uncertaintyCriteria": "The proof is ambiguous, cropped, too dark, blurry, or unrelated."
-  },
-  "instructionSteps": [
-    {
-      "id": "prepare",
-      "icon": "star",
-      "title": "Prepare",
-      "description": "Prepare what is needed for the routine."
-    },
-    {
-      "id": "proof",
-      "icon": "camera",
-      "title": "Show proof",
-      "description": "Take a clear live photo of the expected proof."
-    },
-    {
-      "id": "send",
-      "icon": "send",
-      "title": "Send",
-      "description": "Submit the proof so the responsible person can review it."
-    }
+  "schemaVersion": 1,
+  "version": 1,
+  "defaultLocale": "en",
+  "availableLocales": [
+    "en",
+    "fr"
   ],
-  "translations": {
-    "fr": {
-      "name": "Nom de la routine",
-      "description": "Une phrase qui décrit ce qui est suivi.",
-      "instructions": "Explique au participant quoi faire quand un contrôle est demandé.",
-      "proofExample": "Décris la preuve concrète visible sur la photo.",
-      "analysis": {
-        "expectedEvidence": "Décris la preuve visible qui doit être acceptée.",
-        "detectedCriteria": "La photo montre clairement la preuve attendue.",
-        "notDetectedCriteria": "La photo est claire mais ne montre pas la preuve attendue.",
-        "uncertaintyCriteria": "La preuve est ambiguë, coupée, trop sombre, floue ou sans rapport."
+  "routine": {
+    "id": "your-routine-id",
+    "name": "Routine name",
+    "description": "One sentence describing what is tracked.",
+    "instructions": "Tell the participant exactly what to do when a check is requested.",
+    "icon": "star",
+    "accentColor": "#2387c9",
+    "category": "custom",
+    "proofType": "Photo",
+    "proofExample": "Describe the concrete proof shown in the photo.",
+    "recommendedValidationMode": "ai",
+    "responsibleName": "Care team",
+    "analysis": {
+      "expectedEvidence": "Describe the visible proof that should be accepted.",
+      "detectedCriteria": "The photo clearly shows the expected proof.",
+      "notDetectedCriteria": "The photo is clear but does not show the expected proof.",
+      "uncertaintyCriteria": "The proof is ambiguous, cropped, too dark, blurry, or unrelated."
+    },
+    "instructionSteps": [
+      {
+        "id": "prepare",
+        "icon": "star",
+        "title": "Prepare",
+        "description": "Prepare what is needed for the routine."
       },
-      "instructionSteps": [
-        {
-          "id": "prepare",
-          "icon": "star",
-          "title": "Prépare",
-          "description": "Prépare ce qui est nécessaire pour la routine."
+      {
+        "id": "proof",
+        "icon": "camera",
+        "title": "Show proof",
+        "description": "Take a clear live photo of the expected proof."
+      },
+      {
+        "id": "send",
+        "icon": "send",
+        "title": "Send",
+        "description": "Submit the proof so the responsible person can review it."
+      }
+    ],
+    "translations": {
+      "fr": {
+        "name": "Nom de la routine",
+        "description": "Une phrase qui décrit ce qui est suivi.",
+        "instructions": "Explique au participant quoi faire quand un contrôle est demandé.",
+        "proofExample": "Décris la preuve concrète visible sur la photo.",
+        "analysis": {
+          "expectedEvidence": "Décris la preuve visible qui doit être acceptée.",
+          "detectedCriteria": "La photo montre clairement la preuve attendue.",
+          "notDetectedCriteria": "La photo est claire mais ne montre pas la preuve attendue.",
+          "uncertaintyCriteria": "La preuve est ambiguë, coupée, trop sombre, floue ou sans rapport."
         },
-        {
-          "id": "proof",
-          "icon": "camera",
-          "title": "Montre la preuve",
-          "description": "Prends une photo claire en direct de la preuve attendue."
-        },
-        {
-          "id": "send",
-          "icon": "send",
-          "title": "Envoie",
-          "description": "Envoie la preuve pour que le responsable puisse la vérifier."
-        }
-      ]
+        "instructionSteps": [
+          {
+            "id": "prepare",
+            "icon": "star",
+            "title": "Prépare",
+            "description": "Prépare ce qui est nécessaire pour la routine."
+          },
+          {
+            "id": "proof",
+            "icon": "camera",
+            "title": "Montre la preuve",
+            "description": "Prends une photo claire en direct de la preuve attendue."
+          },
+          {
+            "id": "send",
+            "icon": "send",
+            "title": "Envoie",
+            "description": "Envoie la preuve pour que le responsable puisse la vérifier."
+          }
+        ]
+      }
     }
   }
 }
