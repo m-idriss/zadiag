@@ -33,6 +33,12 @@ service cloud.firestore {
         && participantMembership(participantId).data.permissions.view == true;
     }
 
+    function canManageParticipantRoutines(participantId) {
+      return notSuspended()
+        && participantMembership(participantId).data.status == 'active'
+        && participantMembership(participantId).data.permissions.manageRoutines == true;
+    }
+
     match /users/{userId} {
       allow read: if (signedIn() && request.auth.uid == userId) || (notSuspended() && isChildInFamily(userId));
       allow write: if false;
@@ -86,6 +92,12 @@ service cloud.firestore {
 
       match /routineAssignments/{assignmentId} {
         allow read: if canViewParticipant(participantId);
+        allow write: if false;
+      }
+
+      match /routineDrafts/{draftId} {
+        allow read: if canManageParticipantRoutines(participantId)
+          && resource.data.ownerId == request.auth.uid;
         allow write: if false;
       }
 

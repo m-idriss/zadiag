@@ -6,7 +6,7 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, setDoc, updateDoc, where } from 'firebase/firestore';
 import { afterAll, beforeAll, beforeEach, describe, test } from 'vitest';
 
 const projectId = 'zadiag-rules-test';
@@ -45,16 +45,18 @@ beforeEach(async () => {
     await setDoc(doc(db, 'linkCodes/private-hash'), { familyId: 'family-1' });
     await setDoc(doc(db, 'participants/participant-1'), { displayName: 'Maya', status: 'active' });
     await setDoc(doc(db, 'participants/participant-1/memberships/parent'), {
-      uid: 'parent', role: 'owner', status: 'active', permissions: { view: true },
+      uid: 'parent', role: 'owner', status: 'active', permissions: { view: true, manageRoutines: true },
     });
     await setDoc(doc(db, 'participants/participant-1/memberships/coparent'), {
-      uid: 'coparent', role: 'caregiver', status: 'active', permissions: { view: true },
+      uid: 'coparent', role: 'caregiver', status: 'active', permissions: { view: true, manageRoutines: true },
     });
     await setDoc(doc(db, 'participants/participant-1/memberships/suspended'), {
       uid: 'suspended', role: 'caregiver', status: 'suspended', permissions: { view: true },
     });
     await setDoc(doc(db, 'participants/participant-1/checks/check-1'), { status: 'pending' });
     await setDoc(doc(db, 'participants/participant-1/routineAssignments/routine-1'), { status: 'active' });
+    await setDoc(doc(db, 'participants/participant-1/routineDrafts/parent-draft'), { ownerId: 'parent', revision: 1 });
+    await setDoc(doc(db, 'participants/participant-1/routineDrafts/coparent-draft'), { ownerId: 'coparent', revision: 1 });
     await setDoc(doc(db, 'participants/participant-1/pushSubscriptions/parent'), { endpoint: 'parent-device' });
     await setDoc(doc(db, 'participants/participant-1/pushSubscriptions/coparent'), { endpoint: 'coparent-device' });
     await setDoc(doc(db, 'users/parent/participantRefs/participant-1'), {
@@ -103,6 +105,22 @@ describe('participant relationship isolation', () => {
     const coparentDb = environment.authenticatedContext('coparent').firestore();
     await assertSucceeds(getDoc(doc(parentDb, 'users/parent/participantRefs/participant-1')));
     await assertFails(getDoc(doc(coparentDb, 'users/parent/participantRefs/participant-1')));
+  });
+
+  test('exposes routine drafts only to their active owner and keeps writes server-only', async () => {
+    const parentDb = environment.authenticatedContext('parent').firestore();
+    const coparentDb = environment.authenticatedContext('coparent').firestore();
+    const suspendedDb = environment.authenticatedContext('suspended').firestore();
+    const drafts = collection(parentDb, 'participants/participant-1/routineDrafts');
+
+    await assertSucceeds(getDoc(doc(drafts, 'parent-draft')));
+    await assertSucceeds(getDocs(query(drafts, where('ownerId', '==', 'parent'))));
+    await assertSucceeds(getDoc(doc(coparentDb, 'participants/participant-1/routineDrafts/coparent-draft')));
+    await assertFails(getDocs(drafts));
+    await assertFails(getDoc(doc(coparentDb, 'participants/participant-1/routineDrafts/parent-draft')));
+    await assertFails(getDoc(doc(suspendedDb, 'participants/participant-1/routineDrafts/parent-draft')));
+    await assertFails(updateDoc(doc(drafts, 'parent-draft'), { revision: 2 }));
+    await assertFails(deleteDoc(doc(drafts, 'parent-draft')));
   });
 
   test('denies all direct relationship writes and invitation reads', async () => {

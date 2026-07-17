@@ -18,6 +18,7 @@ import { expiredPendingCheckCleanupUpdate, shouldDeleteProofAfterReview, staleCl
 import { reportOperationalAlert, reportOperationalEvent } from './observability.js';
 import { shouldRecoverSyntheticPush } from './syntheticMonitor.js';
 import { canLeaveMembership, canRemoveMembership, createMembership, hasParticipantPermission, isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, isProfileColorKey, membershipRoles, migrateLegacyFamilyRelationships, scheduledAggregatePaths, type MembershipRole } from './relationships.js';
+import { assertRoutineDraftRevision, createRoutineDraftDocument, RoutineDraftConflictError, RoutineDraftInputError, updateRoutineDraftDocument, type RoutineDraftDocument } from './routineDrafts.js';
 
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
   ?? (process.env.GCLOUD_PROJECT ? `${process.env.GCLOUD_PROJECT}.firebasestorage.app` : undefined);
@@ -251,6 +252,43 @@ const requireFamilyRole = async (uid: string, familyId: string, role: 'parent' |
 };
 
 const requireFamilyMember = (uid: string, familyId: string) => requireAggregatePermission(uid, familyId, 'view');
+
+const requireParticipantRoutineDraftAccess = async (uid: string, participantId: string) => {
+  const participantRef = db.collection('participants').doc(participantId);
+  const [participant, membership] = await Promise.all([
+    participantRef.get(),
+    participantRef.collection('memberships').doc(uid).get(),
+  ]);
+  if (!participant.exists || !hasParticipantPermission(membership.data(), 'manageRoutines')) {
+    throw new HttpsError('permission-denied', 'This account cannot manage routine drafts for the followed person.');
+  }
+  return participantRef;
+};
+
+const requireParticipantRoutineDraftTransactionAccess = async (
+  transaction: FirebaseFirestore.Transaction,
+  participantRef: FirebaseFirestore.DocumentReference,
+  uid: string,
+) => {
+  const [participant, membership] = await Promise.all([
+    transaction.get(participantRef),
+    transaction.get(participantRef.collection('memberships').doc(uid)),
+  ]);
+  if (!participant.exists || !hasParticipantPermission(membership.data(), 'manageRoutines')) {
+    throw new HttpsError('permission-denied', 'This account cannot manage routine drafts for the followed person.');
+  }
+};
+
+const requireDraftRevision = (value: unknown) => {
+  if (!Number.isSafeInteger(value) || Number(value) < 1) throw new HttpsError('invalid-argument', 'A valid draft revision is required.');
+  return Number(value);
+};
+
+const routineDraftInputError = (error: unknown) => {
+  if (error instanceof RoutineDraftInputError) throw new HttpsError('invalid-argument', error.message);
+  if (error instanceof RoutineDraftConflictError) throw new HttpsError('aborted', 'The routine draft changed on another device. Reload and try again.');
+  throw error;
+};
 
 const responsibleActorName = async (uid: string) => {
   const profile = await db.collection('users').doc(uid).get();
@@ -1914,6 +1952,96 @@ export const requestCheckNow = onCall({
     },
   });
   return check;
+});
+
+export const createRoutineDraft = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
+  const participantRef = await requireParticipantRoutineDraftAccess(uid, participantId);
+  const draftRef = participantRef.collection('routineDrafts').doc();
+  let document: RoutineDraftDocument;
+  try {
+    document = createRoutineDraftDocument(uid, request.data?.package);
+  } catch (error) {
+    return routineDraftInputError(error);
+  }
+  await db.runTransaction(async (transaction) => {
+    await requireParticipantRoutineDraftTransactionAccess(transaction, participantRef, uid);
+    transaction.create(draftRef, document);
+  });
+  await recordAuditEvent(db, {
+    action: 'create_routine_draft', actorUid: uid, participantId, metadata: { draftId: draftRef.id, revision: document.revision },
+  });
+  return { id: draftRef.id, ...document };
+});
+
+export const listRoutineDrafts = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
+  const participantRef = await requireParticipantRoutineDraftAccess(uid, participantId);
+  const drafts = await participantRef.collection('routineDrafts').where('ownerId', '==', uid).get();
+  return {
+    drafts: drafts.docs
+      .map((document) => ({ id: document.id, ...document.data() } as { id: string } & RoutineDraftDocument))
+      .sort((left, right) => String(right.updatedAt).localeCompare(String(left.updatedAt))),
+  };
+});
+
+export const updateRoutineDraft = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
+  const draftId = requireDocumentId(request.data?.draftId, 'Draft ID');
+  const expectedRevision = requireDraftRevision(request.data?.expectedRevision);
+  const participantRef = await requireParticipantRoutineDraftAccess(uid, participantId);
+  const draftRef = participantRef.collection('routineDrafts').doc(draftId);
+  let updated: RoutineDraftDocument | undefined;
+  try {
+    await db.runTransaction(async (transaction) => {
+      const [, draft] = await Promise.all([
+        requireParticipantRoutineDraftTransactionAccess(transaction, participantRef, uid),
+        transaction.get(draftRef),
+      ]);
+      if (!draft.exists || draft.data()?.ownerId !== uid) throw new HttpsError('not-found', 'The routine draft could not be found.');
+      const current = draft.data() as RoutineDraftDocument;
+      assertRoutineDraftRevision(current.revision, expectedRevision);
+      if (current.state !== 'active') throw new HttpsError('failed-precondition', 'An archived routine draft cannot be edited.');
+      updated = updateRoutineDraftDocument(current, request.data?.package);
+      transaction.set(draftRef, updated);
+    });
+  } catch (error) {
+    routineDraftInputError(error);
+  }
+  if (!updated) throw new HttpsError('internal', 'The routine draft could not be updated.');
+  await recordAuditEvent(db, {
+    action: 'update_routine_draft', actorUid: uid, participantId, metadata: { draftId, revision: updated.revision },
+  });
+  return { id: draftId, ...updated };
+});
+
+export const deleteRoutineDraft = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
+  const draftId = requireDocumentId(request.data?.draftId, 'Draft ID');
+  const expectedRevision = requireDraftRevision(request.data?.expectedRevision);
+  const participantRef = await requireParticipantRoutineDraftAccess(uid, participantId);
+  const draftRef = participantRef.collection('routineDrafts').doc(draftId);
+  await db.runTransaction(async (transaction) => {
+    const [, draft] = await Promise.all([
+      requireParticipantRoutineDraftTransactionAccess(transaction, participantRef, uid),
+      transaction.get(draftRef),
+    ]);
+    if (!draft.exists || draft.data()?.ownerId !== uid) throw new HttpsError('not-found', 'The routine draft could not be found.');
+    try {
+      assertRoutineDraftRevision(Number(draft.data()?.revision), expectedRevision);
+    } catch (error) {
+      routineDraftInputError(error);
+    }
+    transaction.delete(draftRef);
+  });
+  await recordAuditEvent(db, {
+    action: 'delete_routine_draft', actorUid: uid, participantId, metadata: { draftId, revision: expectedRevision },
+  });
+  return { success: true };
 });
 
 export const assignRoutine = onCall({
