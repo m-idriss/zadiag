@@ -52,6 +52,7 @@ device and does not diagnose, prescribe, or replace professional care.
 
 [**Try the live experience**](https://www.zadiag.com) ·
 [Product brief](docs/product-brief.md) ·
+[Pilot cohort](docs/pilot-cohort-runbook.md) ·
 [Security](SECURITY.md)
 
 ## Quick start

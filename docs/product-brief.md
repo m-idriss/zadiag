@@ -71,7 +71,10 @@ first instrumented cohort, then recorded alongside cohort size and timeframe.
    prematurely building for every possible market.
 
 The operating procedure for milestone 2 is defined in the
-[pilot support and incident playbook](pilot-support-incident-playbook.md).
+[pilot support and incident playbook](pilot-support-incident-playbook.md). The
+[cohort runbook](pilot-cohort-runbook.md) and
+[before-and-after survey](pilot-survey-template.md) cover launch, observation,
+weekly review, stopping rules, and closure.
 
 ## Principal risks
 
