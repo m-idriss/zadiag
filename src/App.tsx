@@ -671,6 +671,9 @@ export function App() {
             onAssignRoutine={canManageRoutines ? withRepositorySync(repository.assignRoutine) : undefined}
             onDeleteRoutine={canManageRoutines ? withRepositorySync(repository.deleteRoutine) : undefined}
             onRetryRoutines={withOptionalRepositorySync(repository.retryRemoteSync)}
+            online={online}
+            onListRoutineDrafts={canManageRoutines ? bindOptionalRepository(repository.listRoutineDrafts) : undefined}
+            onDeleteRoutineDraft={canManageRoutines ? bindOptionalRepository(repository.deleteRoutineDraft) : undefined}
             onSelectParticipant={selectActiveParticipant}
             onSaveMonitoringPlan={canManageRoutines ? async (routineId, plan, validationMode) => {
               setSavingRoutineId(routineId);

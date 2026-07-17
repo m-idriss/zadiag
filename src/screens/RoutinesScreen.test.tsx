@@ -3,6 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BottomNav, navigationTabs, tabAfterSwipe } from '../components/BottomNav';
 import { createDefaultRoutineAssignment, type AppState } from '../domain/models';
+import type { RoutineDraft } from '../domain/routineDraft';
 import { translate } from '../services/i18n';
 import { RoutinesScreen } from './RoutinesScreen';
 
@@ -96,6 +97,90 @@ describe('participant routines navigation', () => {
     expect(dock?.querySelector('.routines-add-dock-button')?.textContent).toContain('Add a routine');
     expect(dock?.querySelector('.routine-catalog-popover')).not.toBeNull();
     expect(dock?.closest('.content-screen')).toBeNull();
+  });
+
+  it('loads, opens and deletes private routine drafts without hiding built-ins', async () => {
+    const assignment = createDefaultRoutineAssignment('2026-07-02T08:00:00.000Z');
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      participantAccess: [{ participant: { id: 'participant-1', displayName: 'Maya' }, membership: { role: 'owner', status: 'active' } }],
+      activeParticipantId: 'participant-1', routineAssignments: [assignment], events: [], routinesLoaded: true, routinesError: false,
+    };
+    const draft: RoutineDraft = {
+      id: 'draft-1', ownerId: 'owner-1', revision: 2, state: 'active',
+      package: { schemaVersion: 1, version: 1, defaultLocale: 'en', availableLocales: ['en'], routine: { ...assignment.routine, id: 'private-hydration', name: 'My hydration plan', description: 'A private draft description' } },
+      validation: { status: 'incomplete', issues: [{ code: 'required_field', path: 'routine.proofExample' }] },
+      createdAt: '2026-07-02T08:00:00.000Z', updatedAt: '2026-07-02T09:00:00.000Z',
+    };
+    const listDrafts = vi.fn().mockResolvedValue([draft]);
+    const deleteDraft = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    act(() => {
+      root.render(<RoutinesScreen state={state} onAssignRoutine={async () => undefined} onListRoutineDrafts={listDrafts} onDeleteRoutineDraft={deleteDraft} t={(key) => translate('en', key)} />);
+    });
+    await act(async () => {
+      document.body.querySelector<HTMLButtonElement>('.routines-add-dock-button')?.click();
+      await Promise.resolve();
+    });
+
+    expect(listDrafts).toHaveBeenCalledWith('participant-1');
+    expect(document.body.textContent).toContain('Private drafts');
+    expect(document.body.textContent).toContain('Needs completion');
+    expect(document.body.textContent).toContain('My hydration plan');
+    expect(document.body.textContent).toContain('Built-in routines');
+    expect(document.body.textContent).toContain('Hydration');
+
+    const view = Array.from(document.body.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent === 'View');
+    act(() => view?.click());
+    expect(view?.getAttribute('aria-expanded')).toBe('true');
+    expect(document.body.textContent).toContain('A private draft description');
+    expect(document.body.textContent).toContain('Revision 2 · 1 issues');
+
+    await act(async () => {
+      document.body.querySelector<HTMLButtonElement>('button[aria-label="Delete My hydration plan"]')?.click();
+      await Promise.resolve();
+    });
+    expect(deleteDraft).toHaveBeenCalledWith('participant-1', 'draft-1', 2);
+    expect(document.body.textContent).not.toContain('My hydration plan');
+  });
+
+  it('keeps built-in and assigned routines visible when private drafts fail', async () => {
+    const assignment = createDefaultRoutineAssignment('2026-07-02T08:00:00.000Z');
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      participantAccess: [{ participant: { id: 'participant-1', displayName: 'Maya' }, membership: { role: 'owner', status: 'active' } }],
+      activeParticipantId: 'participant-1', routineAssignments: [assignment], events: [], routinesLoaded: true, routinesError: false,
+    };
+    act(() => {
+      root.render(<RoutinesScreen state={state} onAssignRoutine={async () => undefined} onListRoutineDrafts={vi.fn().mockRejectedValue(new Error('offline'))} t={(key) => translate('en', key)} />);
+    });
+    await act(async () => {
+      document.body.querySelector<HTMLButtonElement>('.routines-add-dock-button')?.click();
+      await Promise.resolve();
+    });
+    expect(document.body.querySelector('[role="alert"]')?.textContent).toContain('Private drafts could not be loaded');
+    expect(document.body.textContent).toContain('Hydration');
+    expect(container.textContent).toContain('Orthodontic Elastics');
+  });
+
+  it('does not request private drafts offline and keeps built-ins available', async () => {
+    const listDrafts = vi.fn();
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      participantAccess: [{ participant: { id: 'participant-1', displayName: 'Maya' }, membership: { role: 'owner', status: 'active' } }],
+      activeParticipantId: 'participant-1', routineAssignments: [], events: [], routinesLoaded: true, routinesError: false,
+    };
+    await act(async () => {
+      root.render(<RoutinesScreen state={state} online={false} onAssignRoutine={async () => undefined} onListRoutineDrafts={listDrafts} t={(key) => translate('en', key)} />);
+      await Promise.resolve();
+    });
+    expect(listDrafts).not.toHaveBeenCalled();
+    expect(document.body.textContent).toContain('Private drafts are unavailable offline');
+    expect(document.body.textContent).toContain('Hydration');
   });
 
   it('shows the assigned routine frequency, completion and next task', async () => {
