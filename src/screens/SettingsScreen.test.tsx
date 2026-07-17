@@ -6,6 +6,7 @@ import { translate } from '../services/i18n';
 import { pilotParticipationRecord } from '../domain/pilotParticipation';
 import { SettingsScreen } from './SettingsScreen';
 import type { SyncStatus } from '../services/contracts';
+import { PushSetupError } from '../services/webPush';
 
 const renderSettings = ({
   notificationsEnabled = false,
@@ -17,6 +18,7 @@ const renderSettings = ({
     lastDispatchAt: '2026-07-07T19:42:00.000Z',
   },
   sendTestPushNotification = async () => undefined,
+  enableNotifications = async () => undefined,
   reset = async () => undefined,
   syncStatus = 'synced',
   pilotParticipation,
@@ -25,6 +27,7 @@ const renderSettings = ({
   notificationsEnabled?: boolean;
   pushHealth?: PushSubscriptionHealth;
   sendTestPushNotification?: () => Promise<void>;
+  enableNotifications?: () => Promise<void>;
   reset?: () => Promise<void>;
   syncStatus?: SyncStatus;
   pilotParticipation?: ReturnType<typeof pilotParticipationRecord>;
@@ -47,7 +50,7 @@ const renderSettings = ({
         pushHealth={pushHealth}
         preferences={defaultAppPreferences}
         setPreferences={async () => undefined}
-        enableNotifications={async () => undefined}
+        enableNotifications={enableNotifications}
         sendTestPushNotification={sendTestPushNotification}
         childInstalled
         familyId="family-1"
@@ -219,6 +222,20 @@ describe('SettingsScreen privacy and data', () => {
 });
 
 describe('SettingsScreen push diagnostics', () => {
+  it('shows permission recovery steps when notification activation is blocked', async () => {
+    const { container, root } = renderSettings({
+      enableNotifications: async () => { throw new PushSetupError('notification_permission_denied'); },
+    });
+    const enable = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Enable');
+
+    await act(async () => enable?.click());
+
+    expect(container.querySelector('.notification-recovery-guide')?.textContent).toContain('Open iPhone Settings');
+    expect(container.querySelector('.notification-recovery-guide')?.textContent).toContain('tap the activation button again');
+    act(() => root.unmount());
+    container.remove();
+  });
+
   it('treats a successful test push as endpoint evidence', async () => {
     const { container, root } = renderSettings({
       notificationsEnabled: true,

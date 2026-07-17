@@ -2,31 +2,11 @@ import { useState } from 'react';
 import { notificationsOutline } from 'ionicons/icons';
 import type { MessageKey } from '../services/i18n';
 import { SetupProgress } from '../components/SetupProgress';
-import { PushSetupError } from '../services/webPush';
 import { SvgIcon } from '../components/SvgIcon';
 import { ActionButton } from '../components/ui';
 import { AppIcon } from '../components/Icon';
-
-export const notificationSetupErrorMessageKey = (error: unknown): MessageKey => {
-  const code = error instanceof PushSetupError
-    ? error.code
-    : String((error as { code?: unknown; message?: unknown })?.code ?? (error as { message?: unknown })?.message ?? '');
-  switch (code) {
-    case 'push_not_installed':
-      return 'pushErrorNotInstalled';
-    case 'notification_permission_denied':
-      return 'pushErrorPermissionDenied';
-    case 'notification_permission_reset':
-      return 'pushErrorPermissionReset';
-    case 'push_subscription_invalidated':
-      return 'pushErrorSubscriptionInvalidated';
-    case 'missing_web_push_public_key':
-    case 'push_unsupported':
-      return 'pushErrorUnsupported';
-    default:
-      return 'pushError';
-  }
-};
+import { notificationSetupErrorMessageKey } from '../services/notificationRecovery';
+import { NotificationRecoveryGuide } from '../components/NotificationRecoveryGuide';
 
 export function NotificationSetupScreen({
   enableNotifications,
@@ -69,7 +49,7 @@ export function NotificationSetupScreen({
       </section>
 
       <aside className="setup-help"><span aria-hidden="true"><AppIcon name="info" /></span><p>{t('setupNotifyHelp')}</p></aside>
-      {errorKey ? <p className="setup-error" role="alert">{t(errorKey)}</p> : null}
+      {errorKey ? <NotificationRecoveryGuide errorKey={errorKey} t={t} /> : null}
       <ActionButton disabled={status === 'busy'} aria-busy={status === 'busy'} onClick={() => { void enable(); }}>
         {status === 'busy' ? <span className="button-spinner" aria-hidden="true" /> : null}
         {status === 'busy' ? t('enablingReminders') : t('setupNotifyAction')}
