@@ -10,6 +10,7 @@ import { ParticipantSelector } from '../components/ParticipantSelector';
 import { presentRoutine } from '../domain/routinePresentation';
 import { assignableRoutineTemplates, marketplaceFromTemplates, presentRoutineTemplate } from '../domain/routineMarketplace';
 import { withResolvedEventStatuses } from '../domain/adherence';
+import type { RoutineDraft } from '../domain/routineDraft';
 import { readUiStorageJson, readUiStorageString, removeUiStorageItem, writeUiStorageString } from '../services/uiStorage';
 
 const RoutineDetailScreen = lazy(() => import('./RoutineDetailScreen').then((module) => ({ default: module.RoutineDetailScreen })));
@@ -118,6 +119,9 @@ export function RoutinesScreen({
   onAssignRoutine,
   onDeleteRoutine,
   onRetryRoutines,
+  online = true,
+  onListRoutineDrafts,
+  onDeleteRoutineDraft,
   onSelectParticipant,
   onSaveMonitoringPlan,
   savingRoutineId,
@@ -134,6 +138,9 @@ export function RoutinesScreen({
   onAssignRoutine?: (routineId: string) => Promise<void>;
   onDeleteRoutine?: (routineId: string) => Promise<void>;
   onRetryRoutines?: () => Promise<void>;
+  online?: boolean;
+  onListRoutineDrafts?: (participantId: string) => Promise<RoutineDraft[]>;
+  onDeleteRoutineDraft?: (participantId: string, draftId: string, expectedRevision: number) => Promise<void>;
   onSelectParticipant?: (participantId: string) => void;
   onSaveMonitoringPlan?: (routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode) => Promise<void>;
   savingRoutineId?: string;
@@ -156,6 +163,12 @@ export function RoutinesScreen({
   const [assignError, setAssignError] = useState(false);
   const [deletingRoutineId, setDeletingRoutineId] = useState<string>();
   const [deleteErrorRoutineId, setDeleteErrorRoutineId] = useState<string>();
+  const [routineDrafts, setRoutineDrafts] = useState<RoutineDraft[]>([]);
+  const [draftsStatus, setDraftsStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  const [draftReloadSequence, setDraftReloadSequence] = useState(0);
+  const [openDraftId, setOpenDraftId] = useState<string>();
+  const [deletingDraftId, setDeletingDraftId] = useState<string>();
+  const [draftDeleteErrorId, setDraftDeleteErrorId] = useState<string>();
   const [detailInitialTab, setDetailInitialTab] = useState<'overview' | 'plan' | 'tracking' | undefined>(() => focusedEventId ? 'tracking' : undefined);
   const [expandedScheduleIds, setExpandedScheduleIds] = useState<Set<string>>(() => readStoredStringSet(ROUTINES_EXPANDED_SCHEDULES_KEY));
   const selected = state.routineAssignments.find((assignment) => assignment.id === selectedId);
@@ -204,6 +217,22 @@ export function RoutinesScreen({
   useEffect(() => {
     writeUiStorageString(ROUTINES_EXPANDED_SCHEDULES_KEY, JSON.stringify([...expandedScheduleIds]));
   }, [expandedScheduleIds]);
+
+  useEffect(() => {
+    const participantId = activeParticipantAccess?.participant.id;
+    if (!catalogOpen || !canAssignRoutine || !participantId || !onListRoutineDrafts || !online) return undefined;
+    let cancelled = false;
+    setDraftsStatus('loading');
+    void onListRoutineDrafts(participantId).then((drafts) => {
+      if (cancelled) return;
+      setRoutineDrafts(drafts);
+      setDraftsStatus('loaded');
+    }).catch((error) => {
+      console.error(error);
+      if (!cancelled) setDraftsStatus('error');
+    });
+    return () => { cancelled = true; };
+  }, [activeParticipantAccess?.participant.id, canAssignRoutine, catalogOpen, draftReloadSequence, onListRoutineDrafts, online]);
 
   if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={backToList} start={start} edit={canManageRoutines} initialTab={detailInitialTab} initialEventId={focusedEventId} onInitialEventConsumed={onFocusedEventConsumed} getProofImageUrl={getProofImageUrl} reviewCheck={canManageRoutines ? reviewCheck : undefined} requestCheck={canManageRoutines ? requestCheck : undefined} onSaveMonitoringPlan={canManageRoutines && onSaveMonitoringPlan ? (plan, validationMode) => onSaveMonitoringPlan(selected.routineId, plan, validationMode) : undefined} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
 
@@ -261,6 +290,23 @@ export function RoutinesScreen({
       setAssignError(true);
     } finally {
       setAssigningRoutineId(undefined);
+    }
+  };
+  const deleteDraft = async (draft: RoutineDraft, routineName: string) => {
+    const participantId = activeParticipantAccess?.participant.id;
+    if (!participantId || !onDeleteRoutineDraft || deletingDraftId) return;
+    if (!window.confirm(formatMessage(t('routineLibraryDeleteConfirm'), { routine: routineName }))) return;
+    setDeletingDraftId(draft.id);
+    setDraftDeleteErrorId(undefined);
+    try {
+      await onDeleteRoutineDraft(participantId, draft.id, draft.revision);
+      setRoutineDrafts((current) => current.filter((item) => item.id !== draft.id));
+      if (openDraftId === draft.id) setOpenDraftId(undefined);
+    } catch (error) {
+      console.error(error);
+      setDraftDeleteErrorId(draft.id);
+    } finally {
+      setDeletingDraftId(undefined);
     }
   };
   const deleteRoutine = async (assignment: RoutineAssignment, routineName: string) => {
@@ -345,6 +391,58 @@ export function RoutinesScreen({
             <button type="button" className="routine-catalog-close" onClick={() => setCatalogOpen(false)} aria-label={t('close')}><AppIcon name="close" /></button>
           </div>
           <div className="routine-catalog-list">
+            {onListRoutineDrafts ? (
+              <section className="routine-library-group" aria-labelledby="routine-library-drafts-title">
+                <h3 id="routine-library-drafts-title">{t('routineLibraryDrafts')}</h3>
+                {!online ? <p className="routine-library-state" role="status">{t('routineLibraryDraftsOffline')}</p> : null}
+                {online && draftsStatus === 'loading' ? <p className="routine-library-state" role="status">{t('routineLibraryLoadingDrafts')}</p> : null}
+                {online && draftsStatus === 'error' ? (
+                  <div className="routine-library-state" role="alert">
+                    <p>{t('routineLibraryDraftsError')}</p>
+                    <button type="button" onClick={() => setDraftReloadSequence((value) => value + 1)}>{t('retryNow')}</button>
+                  </div>
+                ) : null}
+                {online && draftsStatus === 'loaded' && !routineDrafts.length ? <p className="routine-library-state">{t('routineLibraryNoDrafts')}</p> : null}
+                {routineDrafts.map((draft) => {
+                  const visual = presentRoutine(draft.package.routine, state.locale);
+                  const expanded = openDraftId === draft.id;
+                  const statusKey: MessageKey = draft.state === 'archived'
+                    ? 'routineLibraryArchived'
+                    : draft.validation.status === 'valid'
+                      ? 'routineLibraryDraft'
+                      : draft.validation.status === 'incomplete'
+                        ? 'routineLibraryIncomplete'
+                        : 'routineLibraryInvalid';
+                  return (
+                    <article className="routine-library-draft" key={draft.id} style={visual.style}>
+                      <div className="routine-library-draft-heading">
+                        <span className="settings-row-icon routine-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
+                        <div>
+                          <span className="routine-library-badge">{t(statusKey)}</span>
+                          <h4>{visual.name}</h4>
+                        </div>
+                        <div className="routine-library-draft-actions">
+                          <button type="button" aria-expanded={expanded} onClick={() => setOpenDraftId(expanded ? undefined : draft.id)}>
+                            {expanded ? t('routineLibraryCloseDraft') : t('routineLibraryOpenDraft')}
+                          </button>
+                          <button type="button" disabled={deletingDraftId === draft.id} onClick={() => { void deleteDraft(draft, visual.name); }} aria-label={formatMessage(t('routineLibraryDeleteDraft'), { routine: visual.name })}>
+                            <AppIcon name="close" />
+                          </button>
+                        </div>
+                      </div>
+                      {expanded ? (
+                        <div className="routine-library-draft-detail">
+                          <p>{visual.description}</p>
+                          <small>{formatMessage(t('routineLibraryRevision'), { revision: draft.revision })} · {formatMessage(t('routineLibraryIssues'), { count: draft.validation.issues.length })}</small>
+                        </div>
+                      ) : null}
+                      {draftDeleteErrorId === draft.id ? <p className="request-feedback error" role="alert">{t('routineLibraryDeleteError')}</p> : null}
+                    </article>
+                  );
+                })}
+              </section>
+            ) : null}
+            <h3 className="routine-library-section-title">{t('routineLibraryBuiltins')}</h3>
             {marketplace.templates.map((template) => {
               const visual = presentRoutineTemplate(template, state.locale);
               const routineId = template.routine.id;
@@ -355,6 +453,7 @@ export function RoutinesScreen({
                   <span className="settings-row-icon routine-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
                   <div className="routine-catalog-item-content">
                     <div className="routine-catalog-meta" aria-label={`${t(routineCategoryKey(visual.category))} · ${t(routineValidationModeKey(visual.recommendedValidationMode))}`}>
+                      <span>{t('routineLibraryBuiltin')}</span>
                       <span>{t(routineCategoryKey(visual.category))}</span>
                       <span>{t('routineCatalogValidationMode')}: {t(routineValidationModeKey(visual.recommendedValidationMode))}</span>
                     </div>
