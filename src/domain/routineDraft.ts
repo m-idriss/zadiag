@@ -1,10 +1,10 @@
-import type { Routine } from './models';
+import type { Locale, Routine } from './models';
 
 export interface RoutinePackageV1 {
   schemaVersion: 1;
   version: number;
-  defaultLocale: 'en';
-  availableLocales: ['en'] | ['en', 'fr'];
+  defaultLocale: 'en' | 'fr';
+  availableLocales: ['en'] | ['fr'] | ['en', 'fr'];
   routine: Routine;
 }
 
@@ -30,6 +30,24 @@ export interface RoutineDraft {
   readonly createdAt: string;
   updatedAt: string;
 }
+
+export const DEFAULT_PRIVATE_ROUTINE_ACCENT = '#2563EB';
+
+export const createBlankRoutinePackage = (locale: Locale, id = `private-${crypto.randomUUID().toLowerCase()}`): RoutinePackageV1 => ({
+  schemaVersion: 1,
+  version: 1,
+  defaultLocale: locale,
+  availableLocales: [locale],
+  routine: {
+    id, name: '', description: '', instructions: '', icon: 'sparkles', accentColor: DEFAULT_PRIVATE_ROUTINE_ACCENT, category: 'custom',
+    proofType: 'photo', proofExample: '', recommendedValidationMode: 'ai', responsibleName: '',
+    instructionSteps: [
+      { id: 'step-1', icon: 'sparkles', title: '', description: '' },
+      { id: 'step-2', icon: 'sparkles', title: '', description: '' },
+    ],
+    analysis: { expectedEvidence: '', detectedCriteria: '', notDetectedCriteria: '', uncertaintyCriteria: '' },
+  },
+});
 
 type RoutineDraftErrorCode =
   | 'invalid_identity'

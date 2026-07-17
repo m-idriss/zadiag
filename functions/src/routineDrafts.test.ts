@@ -36,6 +36,12 @@ test('parses complete packages as valid and incomplete packages as resumable', (
   assert.deepEqual(result.validation.issues, [{ code: 'required_field', path: 'routine.instructions' }]);
 });
 
+test('accepts French as the primary package locale', () => {
+  const french = { ...routinePackage(), defaultLocale: 'fr', availableLocales: ['fr'] };
+  assert.equal(parseRoutineDraftPackage(french).package.defaultLocale, 'fr');
+  assert.equal(parseRoutineDraftPackage(french).validation.status, 'valid');
+});
+
 test('rejects unknown, malformed, and oversized package data', () => {
   assert.throws(() => parseRoutineDraftPackage({ ...routinePackage(), executable: '<script>' }), RoutineDraftInputError);
   assert.throws(() => parseRoutineDraftPackage({ ...routinePackage(), schemaVersion: 2 }), RoutineDraftInputError);

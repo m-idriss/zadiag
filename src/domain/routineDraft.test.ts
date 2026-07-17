@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Routine } from './models';
 import {
   archiveRoutineDraft,
+  createBlankRoutinePackage,
   createRoutineDraft,
   createRoutineDraftSnapshot,
   restoreRoutineDraft,
@@ -47,6 +48,14 @@ const draft = (validation = valid) => createRoutineDraft({
 });
 
 describe('private routine draft domain', () => {
+  it('creates a blank package in the selected primary locale', () => {
+    const routinePackage = createBlankRoutinePackage('fr', 'private-evening');
+    expect(routinePackage.defaultLocale).toBe('fr');
+    expect(routinePackage.availableLocales).toEqual(['fr']);
+    expect(routinePackage.routine.id).toBe('private-evening');
+    expect(routinePackage.routine.instructionSteps).toHaveLength(2);
+  });
+
   it('creates an owned active draft at revision one without retaining mutable input', () => {
     const sourcePackage = packageV1();
     const created = createRoutineDraft({
