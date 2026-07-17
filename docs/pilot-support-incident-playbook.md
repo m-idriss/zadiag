@@ -46,6 +46,36 @@ These are pilot operating targets, not contractual service-level guarantees.
 8. Close with cause, timeline, affected scope, containment, correction, and one
    concrete prevention action.
 
+## Incident record and decision log
+
+Create one private record for the incident. Use opaque profile and account
+references; never paste a proof image, bearer code, push endpoint, email address,
+or raw production document. Keep these fields current throughout the response:
+
+| Field | Required content |
+| --- | --- |
+| Incident ID | `ZDI-YYYYMMDD-NN`, severity, owner and deputy |
+| Detection | UTC timestamp, reporting channel, first observed version |
+| Scope | Affected feature, deployment, estimated profiles and data categories |
+| Timeline | UTC timestamp, actor, action, evidence reference and outcome for every decision |
+| Containment | Access suspended, feature disabled, secret/code rotated or release reverted |
+| Data assessment | Confidentiality, integrity, availability and retention impact; confirmed versus suspected |
+| Recovery evidence | Commit/deployment, automated checks, synthetic smoke test and monitoring result |
+| Communication | Audience, approver, time sent and correction if later facts changed |
+| Closure | Root cause, contributing controls, prevention owner and due date |
+
+At each hand-off, the incident owner states the current facts, unresolved
+questions, next decision, and next update time. Preserve logs and audit records
+in place when possible. Any exceptional export must be approved by the incident
+owner, minimized, encrypted, access-limited, recorded in the timeline, and
+deleted when the investigation no longer needs it.
+
+Before closure, verify that temporary access, feature flags, exported evidence,
+test accounts, and rotated codes have been removed. Record why user or authority
+notification was or was not required, who made that determination, and the
+applicable deadline; obtain qualified legal or privacy advice rather than
+deriving that decision from this engineering playbook.
+
 ## Privacy or security escalation
 
 Treat any suspected unauthorized access, proof exposure, identifier leakage,
