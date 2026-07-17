@@ -30,6 +30,9 @@ export interface RoutineDraft {
   readonly createdAt: string;
   updatedAt: string;
 }
+export interface PublishedRoutineVersion {
+  ownerId: string; sourceDraftId: string; sourceRevision: number; version: number; package: RoutinePackageV1; publishedAt: string; archivedAt?: string;
+}
 
 export const DEFAULT_PRIVATE_ROUTINE_ACCENT = '#2563EB';
 

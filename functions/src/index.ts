@@ -18,7 +18,7 @@ import { expiredPendingCheckCleanupUpdate, shouldDeleteProofAfterReview, staleCl
 import { reportOperationalAlert, reportOperationalEvent } from './observability.js';
 import { shouldRecoverSyntheticPush } from './syntheticMonitor.js';
 import { canLeaveMembership, canRemoveMembership, createMembership, hasParticipantPermission, isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, isProfileColorKey, membershipRoles, migrateLegacyFamilyRelationships, scheduledAggregatePaths, type MembershipRole } from './relationships.js';
-import { assertRoutineDraftRevision, createRoutineDraftDocument, RoutineDraftConflictError, RoutineDraftInputError, updateRoutineDraftDocument, type RoutineDraftDocument } from './routineDrafts.js';
+import { assertRoutineDraftRevision, createRoutineDraftDocument, RoutineDraftConflictError, RoutineDraftInputError, updateRoutineDraftDocument, type PublishedRoutineVersionDocument, type RoutineDraftDocument } from './routineDrafts.js';
 
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
   ?? (process.env.GCLOUD_PROJECT ? `${process.env.GCLOUD_PROJECT}.firebasestorage.app` : undefined);
@@ -2068,6 +2068,82 @@ export const assignRoutineDraft = onCall({ region, cors, enforceAppCheck: true }
   });
   await recordAuditEvent(db, { action: 'assign_routine_draft', actorUid: uid, participantId, metadata: { draftId, revision: expectedRevision, routineId } });
   return { success: true, routineId };
+});
+
+export const publishRoutineDraft = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
+  const draftId = requireDocumentId(request.data?.draftId, 'Draft ID');
+  const expectedRevision = requireDraftRevision(request.data?.expectedRevision);
+  const participantRef = await requireParticipantRoutineDraftAccess(uid, participantId);
+  const draftRef = participantRef.collection('routineDrafts').doc(draftId);
+  let published: PublishedRoutineVersionDocument | undefined;
+  await db.runTransaction(async (transaction) => {
+    const [, draft] = await Promise.all([requireParticipantRoutineDraftTransactionAccess(transaction, participantRef, uid), transaction.get(draftRef)]);
+    if (!draft.exists || draft.data()?.ownerId !== uid) throw new HttpsError('not-found', 'The routine draft could not be found.');
+    const current = draft.data() as RoutineDraftDocument;
+    try { assertRoutineDraftRevision(current.revision, expectedRevision); } catch (error) { routineDraftInputError(error); }
+    if (current.state !== 'active' || current.validation.status !== 'valid') throw new HttpsError('failed-precondition', 'Only a valid active draft can be published.');
+    const routineId = current.package.routine.id;
+    const versionRef = participantRef.collection('routinePublications').doc(routineId).collection('versions').doc(String(current.package.version));
+    if ((await transaction.get(versionRef)).exists) throw new HttpsError('already-exists', 'This routine version is already published.');
+    const now = new Date().toISOString();
+    published = { ownerId: uid, sourceDraftId: draftId, sourceRevision: current.revision, version: current.package.version, package: structuredClone(current.package), publishedAt: now };
+    transaction.create(versionRef, published);
+    transaction.update(draftRef, { state: 'archived', revision: current.revision + 1, updatedAt: now });
+  });
+  await recordAuditEvent(db, { action: 'publish_routine_version', actorUid: uid, participantId, metadata: { draftId, revision: expectedRevision, version: published?.version } });
+  return published;
+});
+
+export const upgradeRoutineAssignment = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
+  const routineId = requireDocumentId(request.data?.routineId, 'Routine ID');
+  const targetVersion = requireDraftRevision(request.data?.targetVersion);
+  const participantRef = await requireParticipantRoutineDraftAccess(uid, participantId);
+  const assignmentRef = participantRef.collection('routineAssignments').doc(routineId);
+  const versionRef = participantRef.collection('routinePublications').doc(routineId).collection('versions').doc(String(targetVersion));
+  await db.runTransaction(async (transaction) => {
+    const [, assignment, version] = await Promise.all([requireParticipantRoutineDraftTransactionAccess(transaction, participantRef, uid), transaction.get(assignmentRef), transaction.get(versionRef)]);
+    if (!assignment.exists) throw new HttpsError('not-found', 'The routine assignment could not be found.');
+    if (!version.exists || version.data()?.archivedAt) throw new HttpsError('failed-precondition', 'The target routine version is unavailable.');
+    const published = version.data() as PublishedRoutineVersionDocument;
+    transaction.update(assignmentRef, { routine: structuredClone(published.package.routine), sourceDraftId: published.sourceDraftId, sourceRevision: published.sourceRevision, sourceVersion: published.version, validationMode: published.package.routine.recommendedValidationMode ?? 'ai' });
+  });
+  await recordAuditEvent(db, { action: 'upgrade_routine_assignment', actorUid: uid, participantId, metadata: { routineId, version: targetVersion } });
+  return { success: true };
+});
+
+export const listPublishedRoutineVersions = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
+  const participantRef = await requireParticipantRoutineDraftAccess(uid, participantId);
+  const publications = await participantRef.collection('routinePublications').get();
+  const versions = (await Promise.all(publications.docs.map(async (publication) =>
+    (await publication.ref.collection('versions').get()).docs.map((version) => ({ routineId: publication.id, ...version.data() }))))).flat();
+  return { versions };
+});
+
+export const createNextRoutineDraft = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
+  const routineId = requireDocumentId(request.data?.routineId, 'Routine ID');
+  const sourceVersion = requireDraftRevision(request.data?.sourceVersion);
+  const participantRef = await requireParticipantRoutineDraftAccess(uid, participantId);
+  const versionRef = participantRef.collection('routinePublications').doc(routineId).collection('versions').doc(String(sourceVersion));
+  const draftRef = participantRef.collection('routineDrafts').doc();
+  let document: RoutineDraftDocument | undefined;
+  await db.runTransaction(async (transaction) => {
+    const [, version] = await Promise.all([requireParticipantRoutineDraftTransactionAccess(transaction, participantRef, uid), transaction.get(versionRef)]);
+    if (!version.exists || version.data()?.archivedAt) throw new HttpsError('failed-precondition', 'The source version is unavailable.');
+    const source = version.data() as PublishedRoutineVersionDocument;
+    const routinePackage = structuredClone(source.package);
+    routinePackage.version = source.version + 1;
+    document = createRoutineDraftDocument(uid, routinePackage);
+    transaction.create(draftRef, document);
+  });
+  return { id: draftRef.id, ...document };
 });
 
 export const assignRoutine = onCall({

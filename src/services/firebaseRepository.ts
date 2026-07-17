@@ -35,7 +35,7 @@ import {
   type VerificationEvent,
 } from '../domain/models';
 import { routineFromCatalog } from '../domain/routineCatalog';
-import type { RoutineDraft, RoutinePackageV1 } from '../domain/routineDraft';
+import type { PublishedRoutineVersion, RoutineDraft, RoutinePackageV1 } from '../domain/routineDraft';
 import { isFreshCapture } from '../domain/adherence';
 import { activeParticipantAccess, preferredParticipantId } from '../domain/participantAccess';
 import { isProfileColorKey } from '../domain/profileColor';
@@ -152,6 +152,7 @@ const asRoutineAssignment = (id: string, data: DocumentData): RoutineAssignment 
     validationMode,
     sourceDraftId: data.sourceDraftId ? String(data.sourceDraftId) : undefined,
     sourceRevision: Number.isSafeInteger(data.sourceRevision) ? Number(data.sourceRevision) : undefined,
+    sourceVersion: Number.isSafeInteger(data.sourceVersion) ? Number(data.sourceVersion) : undefined,
   };
 };
 
@@ -495,6 +496,22 @@ export class FirebaseRepository implements AppRepository {
   async assignRoutineDraft(participantId: string, draftId: string, expectedRevision: number) {
     const assignRoutineDraft = httpsCallable<{ participantId: string; draftId: string; expectedRevision: number }, void>(this.services.functions, 'assignRoutineDraft');
     await assignRoutineDraft({ participantId, draftId, expectedRevision });
+  }
+  async publishRoutineDraft(participantId: string, draftId: string, expectedRevision: number) {
+    const callable = httpsCallable<{ participantId: string; draftId: string; expectedRevision: number }, PublishedRoutineVersion>(this.services.functions, 'publishRoutineDraft');
+    return (await callable({ participantId, draftId, expectedRevision })).data;
+  }
+  async listPublishedRoutineVersions(participantId: string) {
+    const callable = httpsCallable<{ participantId: string }, { versions: Array<PublishedRoutineVersion & { routineId: string }> }>(this.services.functions, 'listPublishedRoutineVersions');
+    return (await callable({ participantId })).data.versions;
+  }
+  async upgradeRoutineAssignment(participantId: string, routineId: string, targetVersion: number) {
+    const callable = httpsCallable<{ participantId: string; routineId: string; targetVersion: number }, void>(this.services.functions, 'upgradeRoutineAssignment');
+    await callable({ participantId, routineId, targetVersion });
+  }
+  async createNextRoutineDraft(participantId: string, routineId: string, sourceVersion: number) {
+    const callable = httpsCallable<{ participantId: string; routineId: string; sourceVersion: number }, RoutineDraft>(this.services.functions, 'createNextRoutineDraft');
+    return (await callable({ participantId, routineId, sourceVersion })).data;
   }
 
   async requestCheckNow(routineId = DEFAULT_ROUTINE_ID) {

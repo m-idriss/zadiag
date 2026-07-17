@@ -56,6 +56,7 @@ export interface RoutineAssignmentDocument {
   validationMode?: 'ai' | 'auto';
   sourceDraftId?: string;
   sourceRevision?: number;
+  sourceVersion?: number;
 }
 
 export const routineFromCatalog = (routineId: string) =>
@@ -95,11 +96,13 @@ export const createDraftRoutineAssignment = (
   sourceDraftId: string,
   sourceRevision: number,
   assignedAt = new Date().toISOString(),
+  sourceVersion = 1,
 ): RoutineAssignmentDocument => ({
   ...createRoutineAssignment(structuredClone(routine), plan, assignedAt, 'parent'),
   validationMode: routine.recommendedValidationMode ?? 'ai',
   sourceDraftId,
   sourceRevision,
+  sourceVersion,
 });
 
 export const migrateCheckRoutineId = <T extends Record<string, unknown>>(check: T): T & { routineId: string } => ({

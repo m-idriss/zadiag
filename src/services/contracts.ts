@@ -1,5 +1,5 @@
 import type { AppPreferences, AppState, Locale, MembershipRole, MonitoringPlan, ParticipantMember, PilotParticipation, ProfileColorKey, Role, RoutineValidationMode, VerificationEvent } from '../domain/models';
-import type { RoutineDraft, RoutinePackageV1 } from '../domain/routineDraft';
+import type { PublishedRoutineVersion, RoutineDraft, RoutinePackageV1 } from '../domain/routineDraft';
 
 export type SyncStatus = 'synced' | 'syncing' | 'offline' | 'failed';
 export type JourneyStage = 'app_ready' | 'notifications_enabled' | 'notification_opened' | 'check_opened';
@@ -35,6 +35,10 @@ export interface AppRepository {
   updateRoutineDraft?(participantId: string, draftId: string, expectedRevision: number, routinePackage: RoutinePackageV1): Promise<RoutineDraft>;
   deleteRoutineDraft?(participantId: string, draftId: string, expectedRevision: number): Promise<void>;
   assignRoutineDraft?(participantId: string, draftId: string, expectedRevision: number): Promise<void>;
+  publishRoutineDraft?(participantId: string, draftId: string, expectedRevision: number): Promise<PublishedRoutineVersion>;
+  listPublishedRoutineVersions?(participantId: string): Promise<Array<PublishedRoutineVersion & { routineId: string }>>;
+  upgradeRoutineAssignment?(participantId: string, routineId: string, targetVersion: number): Promise<void>;
+  createNextRoutineDraft?(participantId: string, routineId: string, sourceVersion: number): Promise<RoutineDraft>;
   requestCheckNow(routineId?: string): Promise<void>;
   updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode): Promise<void>;
   savePushSubscription(subscription: PushSubscriptionJSON): Promise<void>;
