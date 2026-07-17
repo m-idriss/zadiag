@@ -23,6 +23,8 @@ type AuditAction =
   | 'recover_relationship'
   | 'assign_routine'
   | 'assign_routine_draft'
+  | 'publish_routine_version'
+  | 'upgrade_routine_assignment'
   | 'delete_routine'
   | 'create_routine_draft'
   | 'update_routine_draft'

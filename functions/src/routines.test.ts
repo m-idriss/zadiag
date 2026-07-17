@@ -24,6 +24,7 @@ test('creates an isolated assignment snapshot with its source revision', () => {
   assert.equal(assignment.routine.name, 'Evening');
   assert.equal(assignment.sourceDraftId, 'draft-1');
   assert.equal(assignment.sourceRevision, 3);
+  assert.equal(assignment.sourceVersion, 1);
   assert.equal(assignment.validationMode, 'auto');
 });
 

@@ -67,6 +67,16 @@ export interface RoutineDraftDocument {
   updatedAt: string;
 }
 
+export interface PublishedRoutineVersionDocument {
+  ownerId: string;
+  sourceDraftId: string;
+  sourceRevision: number;
+  version: number;
+  package: RoutineDraftPackage;
+  publishedAt: string;
+  archivedAt?: string;
+}
+
 export class RoutineDraftInputError extends Error {}
 export class RoutineDraftConflictError extends Error {}
 

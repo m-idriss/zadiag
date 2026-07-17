@@ -10,7 +10,7 @@ import { ParticipantSelector } from '../components/ParticipantSelector';
 import { presentRoutine } from '../domain/routinePresentation';
 import { assignableRoutineTemplates, marketplaceFromTemplates, presentRoutineTemplate } from '../domain/routineMarketplace';
 import { withResolvedEventStatuses } from '../domain/adherence';
-import type { RoutineDraft } from '../domain/routineDraft';
+import type { PublishedRoutineVersion, RoutineDraft } from '../domain/routineDraft';
 import { readUiStorageJson, readUiStorageString, removeUiStorageItem, writeUiStorageString } from '../services/uiStorage';
 
 const RoutineDetailScreen = lazy(() => import('./RoutineDetailScreen').then((module) => ({ default: module.RoutineDetailScreen })));
@@ -126,6 +126,9 @@ export function RoutinesScreen({
   onCreateRoutineDraft,
   onUpdateRoutineDraft,
   onAssignRoutineDraft,
+  onPublishRoutineDraft,
+  onListPublishedRoutineVersions,
+  onUpgradeRoutineAssignment,
   onSelectParticipant,
   onSaveMonitoringPlan,
   savingRoutineId,
@@ -148,6 +151,9 @@ export function RoutinesScreen({
   onCreateRoutineDraft?: (participantId: string, routinePackage: RoutineDraft['package']) => Promise<RoutineDraft>;
   onUpdateRoutineDraft?: (participantId: string, draftId: string, expectedRevision: number, routinePackage: RoutineDraft['package']) => Promise<RoutineDraft>;
   onAssignRoutineDraft?: (participantId: string, draftId: string, expectedRevision: number) => Promise<void>;
+  onPublishRoutineDraft?: (participantId: string, draftId: string, expectedRevision: number) => Promise<unknown>;
+  onListPublishedRoutineVersions?: (participantId: string) => Promise<Array<PublishedRoutineVersion & { routineId: string }>>;
+  onUpgradeRoutineAssignment?: (participantId: string, routineId: string, targetVersion: number) => Promise<void>;
   onSelectParticipant?: (participantId: string) => void;
   onSaveMonitoringPlan?: (routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode) => Promise<void>;
   savingRoutineId?: string;
@@ -179,6 +185,9 @@ export function RoutinesScreen({
   const [editingDraftId, setEditingDraftId] = useState<string | 'new'>();
   const [assigningDraftId, setAssigningDraftId] = useState<string>();
   const [draftAssignErrorId, setDraftAssignErrorId] = useState<string>();
+  const [publishingDraftId, setPublishingDraftId] = useState<string>();
+  const [publishedVersions, setPublishedVersions] = useState<Array<PublishedRoutineVersion & { routineId: string }>>([]);
+  const [upgradingRoutineId, setUpgradingRoutineId] = useState<string>();
   const [detailInitialTab, setDetailInitialTab] = useState<'overview' | 'plan' | 'tracking' | undefined>(() => focusedEventId ? 'tracking' : undefined);
   const [expandedScheduleIds, setExpandedScheduleIds] = useState<Set<string>>(() => readStoredStringSet(ROUTINES_EXPANDED_SCHEDULES_KEY));
   const selected = state.routineAssignments.find((assignment) => assignment.id === selectedId);
@@ -243,6 +252,14 @@ export function RoutinesScreen({
     });
     return () => { cancelled = true; };
   }, [activeParticipantAccess?.participant.id, canAssignRoutine, catalogOpen, draftReloadSequence, onListRoutineDrafts, online]);
+
+  useEffect(() => {
+    const participantId = activeParticipantAccess?.participant.id;
+    if (!catalogOpen || !participantId || !online || !onListPublishedRoutineVersions) return;
+    let cancelled = false;
+    void onListPublishedRoutineVersions(participantId).then((versions) => { if (!cancelled) setPublishedVersions(versions); }).catch(console.error);
+    return () => { cancelled = true; };
+  }, [activeParticipantAccess?.participant.id, catalogOpen, onListPublishedRoutineVersions, online, publishingDraftId]);
 
   if (editingDraftId) {
     const participantId = activeParticipantAccess?.participant.id;
@@ -347,6 +364,25 @@ export function RoutinesScreen({
       console.error(error);
       setDraftAssignErrorId(draft.id);
     } finally { setAssigningDraftId(undefined); }
+  };
+  const publishDraft = async (draft: RoutineDraft, name: string) => {
+    const participantId = activeParticipantAccess?.participant.id;
+    if (!participantId || !onPublishRoutineDraft || draft.validation.status !== 'valid' || !window.confirm(formatMessage(t('routineDraftPublishConfirm'), { routine: name, version: draft.package.version }))) return;
+    setPublishingDraftId(draft.id);
+    try {
+      await onPublishRoutineDraft(participantId, draft.id, draft.revision);
+      setRoutineDrafts((current) => current.map((item) => item.id === draft.id ? { ...item, state: 'archived', revision: item.revision + 1 } : item));
+    } finally { setPublishingDraftId(undefined); }
+  };
+  const upgradeAssignment = async (assignment: RoutineAssignment, target: PublishedRoutineVersion & { routineId: string }) => {
+    const participantId = activeParticipantAccess?.participant.id;
+    if (!participantId || !onUpgradeRoutineAssignment) return;
+    const current = presentRoutine(assignment.routine, state.locale);
+    const next = presentRoutine(target.package.routine, state.locale);
+    if (!window.confirm(formatMessage(t('routineUpgradeConfirm'), { current: current.name, next: next.name, version: target.version }))) return;
+    setUpgradingRoutineId(assignment.routineId);
+    try { await onUpgradeRoutineAssignment(participantId, assignment.routineId, target.version); }
+    finally { setUpgradingRoutineId(undefined); }
   };
   const deleteRoutine = async (assignment: RoutineAssignment, routineName: string) => {
     if (!canManageRoutines || !onDeleteRoutine || deletingRoutineId) return;
@@ -475,6 +511,7 @@ export function RoutinesScreen({
                             {(['routineDraftResponsiblePreview', 'routineDraftParticipantPreview'] as MessageKey[]).map((roleKey) => <article key={roleKey}><small>{t(roleKey)}</small><h5>{visual.name}</h5><p>{visual.instructions}</p><b>{visual.proofExample}</b></article>)}
                           </div>
                           {onAssignRoutineDraft ? <button type="button" className="routine-draft-assign" disabled={draft.validation.status !== 'valid' || draft.state !== 'active' || assigningDraftId === draft.id} onClick={() => { void assignDraft(draft); }}>{assigningDraftId === draft.id ? t('routineDraftAssigning') : t('routineDraftAssign')}</button> : null}
+                          {onPublishRoutineDraft ? <button type="button" className="routine-draft-publish" disabled={draft.validation.status !== 'valid' || draft.state !== 'active' || publishingDraftId === draft.id} onClick={() => { void publishDraft(draft, visual.name); }}>{publishingDraftId === draft.id ? t('routineDraftPublishing') : t('routineDraftPublish')}</button> : null}
                         </div>
                       ) : null}
                       {draftAssignErrorId === draft.id ? <p className="request-feedback error" role="alert">{t('routineDraftAssignError')}</p> : null}
@@ -484,6 +521,13 @@ export function RoutinesScreen({
                 })}
               </section>
             ) : null}
+            {state.routineAssignments.map((assignment) => {
+              const target = publishedVersions.filter((version) => version.routineId === assignment.routineId && !version.archivedAt && version.version > (assignment.sourceVersion ?? 0)).sort((a, b) => b.version - a.version)[0];
+              if (!target) return null;
+              const current = presentRoutine(assignment.routine, state.locale);
+              const next = presentRoutine(target.package.routine, state.locale);
+              return <section className="routine-upgrade-card" key={`upgrade-${assignment.id}`}><small>{t('routineUpgradeAvailable')}</small><h3>{current.name} → {next.name}</h3><p>{current.description}</p><p>{next.description}</p><button type="button" disabled={upgradingRoutineId === assignment.routineId} onClick={() => { void upgradeAssignment(assignment, target); }}>{upgradingRoutineId === assignment.routineId ? t('routineUpgrading') : formatMessage(t('routineUpgradeTo'), { version: target.version })}</button></section>;
+            })}
             <h3 className="routine-library-section-title">{t('routineLibraryBuiltins')}</h3>
             {marketplace.templates.map((template) => {
               const visual = presentRoutineTemplate(template, state.locale);
