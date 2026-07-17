@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { adherencePeriodReport, eventsInSummaryRange, isSummaryRange, type SummaryRange } from '../domain/reporting';
+import { adherencePeriodReport, eventsInSummaryRange, isSummaryRange, routineAnomalies, type SummaryRange } from '../domain/reporting';
 import type { Locale, RoutineAssignment, VerificationEvent, VerificationStatus } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { presentRoutine } from '../domain/routinePresentation';
@@ -65,6 +65,7 @@ export function AdherenceSummaryCard({
 }) {
   const selectedRange = ranges.find((item) => item.id === range) ?? ranges[0];
   const report = useMemo(() => adherencePeriodReport(events, range), [events, range]);
+  const anomalies = useMemo(() => routineAnomalies(events), [events]);
   const summary = report.current;
   const ring = summaryRing(summary.statusCounts, summary.completed);
   const routineNames = useMemo(() => new Map(assignments.map((assignment) => [
@@ -92,6 +93,7 @@ export function AdherenceSummaryCard({
       { label: t('reportAdherenceRate'), value: `${Math.round(summary.rate * 100)}%` },
       { label: t('successful'), value: `${summary.successful}/${summary.completed}` },
       { label: t('reportEvolution'), value: comparison },
+      { label: t('reportAnomalies'), value: String(anomalies.length) },
     ],
     routineHeading: t('summaryByRoutine'),
     routineColumns: [t('routine'), t('successful'), t('reportAdherenceRate')] as [string, string, string],
@@ -147,6 +149,7 @@ export function AdherenceSummaryCard({
             reviewedAt: event.reviewedAt,
             reviewReason: event.reviewReason,
             responsibleActions: event.responsibleActions,
+            anomaly: anomalies.find((anomaly) => anomaly.routineId === event.routineId)?.kind,
           })),
         });
       await deliverReportFile(blob, adherenceReportFilename(subjectName, format), reportExportInput.title);

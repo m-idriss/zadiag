@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { VerificationEvent } from './models';
-import { adherencePeriodReport, eventsForReportingPeriods } from './reporting';
+import { adherencePeriodReport, eventsForReportingPeriods, routineAnomalies } from './reporting';
 
 const event = (id: string, routineId: string, capturedAt: string, status: VerificationEvent['status']): VerificationEvent => ({
   id,
@@ -10,6 +10,29 @@ const event = (id: string, routineId: string, capturedAt: string, status: Verifi
   expiresAt: capturedAt,
   capturedAt,
   status,
+});
+
+describe('routineAnomalies', () => {
+  it('flags three failures among the last five checks and identifies missed-check trends', () => {
+    const now = Date.parse('2026-07-17T12:00:00.000Z');
+    const statuses = ['detected', 'missed', 'expired', 'detected', 'missed'] as const;
+    const anomalies = routineAnomalies(statuses.map((status, index) => ({
+      id: `event-${index}`, routineId: 'routine-1', sessionId: `session-${index}`,
+      requestedAt: new Date(now - index * 3_600_000).toISOString(),
+      expiresAt: new Date(now - index * 3_600_000 + 1_800_000).toISOString(), status,
+    })), now);
+
+    expect(anomalies).toEqual([{ routineId: 'routine-1', kind: 'missed', failed: 3, checked: 5, latestEventId: 'event-1' }]);
+  });
+
+  it('does not flag sparse or stale failures', () => {
+    const now = Date.parse('2026-07-17T12:00:00.000Z');
+    expect(routineAnomalies([0, 1].map((index) => ({
+      id: `event-${index}`, routineId: 'routine-1', sessionId: `session-${index}`,
+      requestedAt: new Date(now - (8 + index) * 86_400_000).toISOString(),
+      expiresAt: new Date(now - (8 + index) * 86_400_000 + 1_800_000).toISOString(), status: 'missed' as const,
+    })), now)).toEqual([]);
+  });
 });
 
 describe('reporting periods', () => {

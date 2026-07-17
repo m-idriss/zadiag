@@ -95,6 +95,35 @@ describe('ParentDashboard', () => {
     expect(container.querySelector('.screen-header h1')?.textContent).toBe('Activity');
   });
 
+  it('shows an actionable repeated-failure trend and keeps it dismissed until a new failure', async () => {
+    const now = Date.now();
+    const assignment = createDefaultRoutineAssignment();
+    const requestCheck = vi.fn().mockResolvedValue(undefined);
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true, activeParticipantId: 'maya',
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      routineAssignments: [assignment],
+      events: [0, 1, 2].map((index) => ({
+        id: `missed-${index}`, routineId: assignment.routineId, sessionId: `session-${index}`,
+        requestedAt: new Date(now - index * 3_600_000).toISOString(),
+        expiresAt: new Date(now - index * 3_600_000 + 1_800_000).toISOString(), status: 'missed' as const,
+      })),
+    };
+
+    act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} requestCheck={requestCheck} t={(key) => translate('en', key)} />));
+    expect(container.querySelector('.routine-anomaly-card')?.textContent).toContain('3/3 recent checks were unsuccessful');
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.routine-anomaly-action')?.click();
+      await Promise.resolve();
+    });
+    expect(requestCheck).toHaveBeenCalledWith(assignment.routineId);
+
+    act(() => container.querySelector<HTMLButtonElement>('.routine-anomaly-dismiss')?.click());
+    expect(container.querySelector('.routine-anomaly-card')).toBeNull();
+    expect(localStorage.getItem('zadiag.dashboard.anomaly.maya')).toBe('orthodontic-elastics:missed-0');
+  });
+
   it.each([
     { status: 'pending' as const, label: 'Resend reminder', expiresOffset: 60 * 60_000 },
     { status: 'missed' as const, label: 'Request a check now', expiresOffset: -60 * 60_000 },
