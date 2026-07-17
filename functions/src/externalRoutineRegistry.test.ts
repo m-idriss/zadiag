@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import { generateKeyPairSync, sign } from 'node:crypto';
+import test from 'node:test';
+import { assertExternalPackageResponse, sha256Hex, verifyExternalRegistryIndex } from './externalRoutineRegistry.js';
+
+const keys = generateKeyPairSync('ed25519');
+const payload = JSON.stringify({ format: 'zadiag-routine-registry', version: 1, generatedAt: '2026-07-17T12:00:00.000Z', entries: [{ id: 'safe-routine', version: 1, packageUrl: 'https://registry.example/routine.json', sha256: 'a'.repeat(64), authorName: 'Publisher', license: 'CC-BY-4.0' }] });
+const index = (value = payload, keyId = 'current') => JSON.stringify({ keyId, payload: value, signature: sign(null, Buffer.from(value), keys.privateKey).toString('base64') });
+test('accepts a signed versioned index and supports key rotation', () => { assert.equal(verifyExternalRegistryIndex(index(), { current: keys.publicKey.export({ type: 'spki', format: 'pem' }).toString() }).entries[0].id, 'safe-routine'); });
+test('rejects tampering, unknown keys, insecure URLs and unsupported versions', () => { const pem = keys.publicKey.export({ type: 'spki', format: 'pem' }).toString(); const tampered = JSON.parse(index()); tampered.payload += ' '; assert.throws(() => verifyExternalRegistryIndex(JSON.stringify(tampered), { current: pem })); assert.throws(() => verifyExternalRegistryIndex(index(payload, 'old'), { current: pem })); for (const replacement of ['http://registry.example/routine.json', 'javascript:alert(1)']) { const changed = payload.replace('https://registry.example/routine.json', replacement); assert.throws(() => verifyExternalRegistryIndex(index(changed), { current: pem })); } assert.throws(() => verifyExternalRegistryIndex(index(payload.replace('"version":1', '"version":2')), { current: pem })); });
+test('verifies package MIME, size and checksum', () => { const content = '{}'; assert.doesNotThrow(() => assertExternalPackageResponse(content, 'application/vnd.zadiag.routine+json', sha256Hex(content))); assert.throws(() => assertExternalPackageResponse(content, 'text/html', sha256Hex(content))); assert.throws(() => assertExternalPackageResponse(content, 'application/vnd.zadiag.routine+json', '0'.repeat(64))); });
