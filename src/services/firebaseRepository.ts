@@ -150,6 +150,8 @@ const asRoutineAssignment = (id: string, data: DocumentData): RoutineAssignment 
     assignedAt: String(data.assignedAt),
     createdBy,
     validationMode,
+    sourceDraftId: data.sourceDraftId ? String(data.sourceDraftId) : undefined,
+    sourceRevision: Number.isSafeInteger(data.sourceRevision) ? Number(data.sourceRevision) : undefined,
   };
 };
 
@@ -488,6 +490,11 @@ export class FirebaseRepository implements AppRepository {
       void
     >(this.services.functions, 'deleteRoutineDraft');
     await deleteRoutineDraft({ participantId, draftId, expectedRevision });
+  }
+
+  async assignRoutineDraft(participantId: string, draftId: string, expectedRevision: number) {
+    const assignRoutineDraft = httpsCallable<{ participantId: string; draftId: string; expectedRevision: number }, void>(this.services.functions, 'assignRoutineDraft');
+    await assignRoutineDraft({ participantId, draftId, expectedRevision });
   }
 
   async requestCheckNow(routineId = DEFAULT_ROUTINE_ID) {

@@ -34,6 +34,7 @@ export interface AppRepository {
   createRoutineDraft?(participantId: string, routinePackage: RoutinePackageV1): Promise<RoutineDraft>;
   updateRoutineDraft?(participantId: string, draftId: string, expectedRevision: number, routinePackage: RoutinePackageV1): Promise<RoutineDraft>;
   deleteRoutineDraft?(participantId: string, draftId: string, expectedRevision: number): Promise<void>;
+  assignRoutineDraft?(participantId: string, draftId: string, expectedRevision: number): Promise<void>;
   requestCheckNow(routineId?: string): Promise<void>;
   updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode): Promise<void>;
   savePushSubscription(subscription: PushSubscriptionJSON): Promise<void>;

@@ -676,6 +676,7 @@ export function App() {
             onDeleteRoutineDraft={canManageRoutines ? bindOptionalRepository(repository.deleteRoutineDraft) : undefined}
             onCreateRoutineDraft={canManageRoutines ? bindOptionalRepository(repository.createRoutineDraft) : undefined}
             onUpdateRoutineDraft={canManageRoutines ? bindOptionalRepository(repository.updateRoutineDraft) : undefined}
+            onAssignRoutineDraft={canManageRoutines ? bindOptionalRepository(repository.assignRoutineDraft) : undefined}
             onSelectParticipant={selectActiveParticipant}
             onSaveMonitoringPlan={canManageRoutines ? async (routineId, plan, validationMode) => {
               setSavingRoutineId(routineId);

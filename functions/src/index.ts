@@ -10,7 +10,7 @@ import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, createRecoveryCode, createRelationshipInvitationCode, hashLinkCode, isFirestoreDocumentId, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, isRelationshipInvitationCode, normalizeLinkCode, sensitiveCodeAttemptState } from './helpers.js';
 import { analyzeWithGemini, parseImageDataUrl, routeAnalysisStatusForReview, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
 import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema, plannedCheckDispatchSchedule, shouldAutoDispatchCheck } from './planning.js';
-import { createDefaultRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, isRoutineValidationMode, routineFromCatalog, type RoutineAssignmentDocument } from './routines.js';
+import { createDefaultRoutineAssignment, createDraftRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, isRoutineValidationMode, routineFromCatalog, type RoutineAssignmentDocument, type RoutineDocument } from './routines.js';
 import { buildCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription, type SyntheticReceiptPayload } from './notifications.js';
 import { isCheckRequestRateLimited } from './reminders.js';
 import { recordAuditEvent, recordJourneyEvent, type JourneyStage } from './audit.js';
@@ -2042,6 +2042,32 @@ export const deleteRoutineDraft = onCall({ region, cors, enforceAppCheck: true }
     action: 'delete_routine_draft', actorUid: uid, participantId, metadata: { draftId, revision: expectedRevision },
   });
   return { success: true };
+});
+
+export const assignRoutineDraft = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
+  const draftId = requireDocumentId(request.data?.draftId, 'Draft ID');
+  const expectedRevision = requireDraftRevision(request.data?.expectedRevision);
+  const participantRef = await requireParticipantRoutineDraftAccess(uid, participantId);
+  const draftRef = participantRef.collection('routineDrafts').doc(draftId);
+  let routineId = '';
+  await db.runTransaction(async (transaction) => {
+    const [, draft] = await Promise.all([
+      requireParticipantRoutineDraftTransactionAccess(transaction, participantRef, uid),
+      transaction.get(draftRef),
+    ]);
+    if (!draft.exists || draft.data()?.ownerId !== uid) throw new HttpsError('not-found', 'The routine draft could not be found.');
+    const current = draft.data() as RoutineDraftDocument;
+    try { assertRoutineDraftRevision(current.revision, expectedRevision); } catch (error) { routineDraftInputError(error); }
+    if (current.state !== 'active' || current.validation.status !== 'valid') throw new HttpsError('failed-precondition', 'Only a valid active draft can be assigned.');
+    routineId = current.package.routine.id;
+    const assignmentRef = participantRef.collection('routineAssignments').doc(routineId);
+    if ((await transaction.get(assignmentRef)).exists) throw new HttpsError('already-exists', 'This routine is already assigned.');
+    transaction.create(assignmentRef, createDraftRoutineAssignment(current.package.routine as RoutineDocument, defaultPlan, draftId, current.revision));
+  });
+  await recordAuditEvent(db, { action: 'assign_routine_draft', actorUid: uid, participantId, metadata: { draftId, revision: expectedRevision, routineId } });
+  return { success: true, routineId };
 });
 
 export const assignRoutine = onCall({

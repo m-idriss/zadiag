@@ -116,6 +116,8 @@ export interface RoutineAssignment {
   assignedAt: string;
   createdBy?: RoutineAssignmentCreator;
   validationMode?: RoutineValidationMode;
+  sourceDraftId?: string;
+  sourceRevision?: number;
 }
 
 interface RoutineTask {

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createDefaultRoutineAssignment, DEFAULT_ROUTINE_ID, isRoutineValidationMode, migrateCheckRoutineId } from './routines.js';
+import { createDefaultRoutineAssignment, createDraftRoutineAssignment, DEFAULT_ROUTINE_ID, isRoutineValidationMode, migrateCheckRoutineId } from './routines.js';
 
 const plan = {
   checksPerDay: 1,
@@ -15,6 +15,16 @@ test('creates a stable default routine assignment from a legacy plan', () => {
   assert.equal(assignment.routineId, DEFAULT_ROUTINE_ID);
   assert.deepEqual(assignment.plan, plan);
   assert.equal(assignment.assignedAt, '2026-07-02T00:00:00.000Z');
+});
+
+test('creates an isolated assignment snapshot with its source revision', () => {
+  const routine = { id: 'private-evening', name: 'Evening', description: 'Private routine', recommendedValidationMode: 'auto' as const };
+  const assignment = createDraftRoutineAssignment(routine, plan, 'draft-1', 3, '2026-07-17T12:00:00.000Z');
+  routine.name = 'Changed draft';
+  assert.equal(assignment.routine.name, 'Evening');
+  assert.equal(assignment.sourceDraftId, 'draft-1');
+  assert.equal(assignment.sourceRevision, 3);
+  assert.equal(assignment.validationMode, 'auto');
 });
 
 test('migrates legacy checks idempotently', () => {
