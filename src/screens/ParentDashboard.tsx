@@ -21,6 +21,7 @@ import { AwaitingCheckCards } from '../components/AwaitingCheckCards';
 import { useCurrentTime } from '../hooks/useCurrentTime';
 import { VerificationEventDetailDialog } from '../components/VerificationEventDetailDialog';
 import { planningRecommendation, routineAnomalies, weeklyInsight } from '../domain/reporting';
+import { DisclosureToggle } from '../components/DisclosureToggle';
 
 export function ParentDashboard({
   state,
@@ -69,6 +70,7 @@ export function ParentDashboard({
   const [planningRecommendationOpen, setPlanningRecommendationOpen] = useState(false);
   const [planningRecommendationStatus, setPlanningRecommendationStatus] = useState<'saving' | 'saved' | 'error'>();
   const [weeklyReportOpenSignal, setWeeklyReportOpenSignal] = useState(0);
+  const [weeklyInsightOpen, setWeeklyInsightOpen] = useState(false);
   const swipeStartRef = useRef<{ eventId: string; x: number; y: number } | undefined>(undefined);
   const handledNotificationEventIdRef = useRef<string | undefined>(undefined);
   const summaryRange = controlledSummaryRange ?? localSummaryRange;
@@ -244,6 +246,7 @@ export function ParentDashboard({
     setDismissedAnomaly(undefined);
     setPlanningRecommendationOpen(false);
     setPlanningRecommendationStatus(undefined);
+    setWeeklyInsightOpen(false);
   }, [state.activeParticipantId]);
   useEffect(() => {
     if (!notificationEventId) {
@@ -460,12 +463,18 @@ export function ParentDashboard({
       ) : null}
 
       {state.family.childLinked ? (
-        <details className="card weekly-insight-card">
-          <summary aria-labelledby="weekly-insight-title">
+        <section className="card weekly-insight-card" aria-labelledby="weekly-insight-title">
+          <div className="weekly-insight-heading">
             <div><span className="eyebrow">{t('weeklyInsightEyebrow')}</span><h2 id="weekly-insight-title">{t('weeklyInsightTitle')}</h2></div>
-            <span className="weekly-insight-rate"><strong>{weekly ? `${Math.round(weekly.rate * 100)}%` : '—'}</strong><AppIcon name="chevron-forward" /></span>
-          </summary>
-          <div className="weekly-insight-content">
+            <span className="weekly-insight-rate"><strong>{weekly ? `${Math.round(weekly.rate * 100)}%` : '—'}</strong></span>
+            <DisclosureToggle
+              expanded={weeklyInsightOpen}
+              showLabel={t('weeklyInsightShow')}
+              hideLabel={t('weeklyInsightHide')}
+              onToggle={() => setWeeklyInsightOpen((open) => !open)}
+            />
+          </div>
+          {weeklyInsightOpen ? <div className="weekly-insight-content">
             {weekly && weeklyPriorityKey ? (
               <>
                 <p className="weekly-insight-evolution">{weekly.rateDelta === undefined
@@ -483,8 +492,8 @@ export function ParentDashboard({
                 <button type="button" onClick={() => { setSummaryRange('week'); setWeeklyReportOpenSignal((current) => current + 1); }}>{t('weeklyInsightOpenReport')}</button>
               </>
             ) : <p className="weekly-insight-empty">{t('weeklyInsightEmpty')}</p>}
-          </div>
-        </details>
+          </div> : null}
+        </section>
       ) : null}
 
       {expandedStatus === 'review' && reviewEvents.length ? (

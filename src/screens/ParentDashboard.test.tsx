@@ -170,11 +170,12 @@ describe('ParentDashboard', () => {
     };
 
     act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
-    const weeklyInsight = container.querySelector<HTMLDetailsElement>('.weekly-insight-card');
+    const weeklyInsight = container.querySelector<HTMLElement>('.weekly-insight-card');
     expect(weeklyInsight?.textContent).toContain('The week at a glance');
-    expect(weeklyInsight?.open).toBe(false);
-    act(() => weeklyInsight?.querySelector('summary')?.click());
-    expect(weeklyInsight?.open).toBe(true);
+    const weeklyToggle = weeklyInsight?.querySelector<HTMLButtonElement>('.card-disclosure-toggle');
+    expect(weeklyToggle?.getAttribute('aria-expanded')).toBe('false');
+    act(() => weeklyToggle?.click());
+    expect(weeklyToggle?.getAttribute('aria-expanded')).toBe('true');
     expect(weeklyInsight?.textContent).toContain('Strongest routine');
     expect(weeklyInsight?.textContent).toContain('Priority for next week');
     act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent === 'Open the 7-day report')?.click());
@@ -196,12 +197,13 @@ describe('ParentDashboard', () => {
     };
 
     act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
-    const weeklyInsight = container.querySelector<HTMLDetailsElement>('.weekly-insight-card');
+    const weeklyInsight = container.querySelector<HTMLElement>('.weekly-insight-card');
 
     expect(weeklyInsight).not.toBeNull();
     expect(weeklyInsight?.querySelector('.weekly-insight-rate')?.textContent).toContain('—');
-    act(() => weeklyInsight?.querySelector('summary')?.click());
-    expect(weeklyInsight?.open).toBe(true);
+    const weeklyToggle = weeklyInsight?.querySelector<HTMLButtonElement>('.card-disclosure-toggle');
+    act(() => weeklyToggle?.click());
+    expect(weeklyToggle?.getAttribute('aria-expanded')).toBe('true');
     expect(weeklyInsight?.textContent).toContain('The summary will appear after 3 completed checks this week.');
   });
 
