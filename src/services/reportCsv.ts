@@ -20,6 +20,7 @@ export interface AdherenceReportCsvInput {
     reviewedAt?: string;
     reviewReason?: string;
     responsibleActions?: Array<{ type: string; at: string; actorUid: string; actorName: string }>;
+    anomaly?: string;
   }>;
 }
 
@@ -44,6 +45,7 @@ const columns = [
   'reviewed_at',
   'review_reason',
   'responsible_actions',
+  'routine_anomaly',
 ] as const;
 
 const csvCell = (value: string) => {
@@ -74,6 +76,7 @@ export const createAdherenceReportCsv = (input: AdherenceReportCsvInput) => {
     event.reviewedAt ?? '',
     event.reviewReason ?? '',
     event.responsibleActions ? JSON.stringify(event.responsibleActions) : '',
+    event.anomaly ?? '',
   ]);
   const content = [columns, ...rows]
     .map((row) => row.map((cell) => csvCell(cell)).join(','))

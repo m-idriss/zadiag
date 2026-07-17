@@ -3,6 +3,14 @@ import type { VerificationEvent } from './models';
 
 export type SummaryRange = 'day' | 'twoDays' | 'week' | 'month' | 'quarter';
 
+export interface RoutineAnomaly {
+  routineId: string;
+  kind: 'missed' | 'rejected';
+  failed: number;
+  checked: number;
+  latestEventId: string;
+}
+
 const rangeDays: Record<SummaryRange, number> = {
   day: 1,
   twoDays: 2,
@@ -70,4 +78,32 @@ export const adherencePeriodReport = (events: VerificationEvent[], range: Summar
     }))
     .filter((routine) => routine.completed > 0);
   return { current, previous, rateDelta, byRoutine, completedEvents };
+};
+
+const isAnomalyFailure = (event: VerificationEvent) => ['missed', 'expired', 'not_detected'].includes(event.status)
+  || event.reviewStatus === 'rejected';
+
+export const routineAnomalies = (events: VerificationEvent[], now = Date.now()): RoutineAnomaly[] => {
+  const cutoff = now - 7 * 86_400_000;
+  const grouped = events.reduce((groups, event) => {
+    if (!isCompletedVerification(event) || eventTimestamp(event) < cutoff || eventTimestamp(event) > now) return groups;
+    const routineEvents = groups.get(event.routineId) ?? [];
+    routineEvents.push(event);
+    groups.set(event.routineId, routineEvents);
+    return groups;
+  }, new Map<string, VerificationEvent[]>());
+
+  return Array.from(grouped, ([routineId, routineEvents]) => {
+    const recent = routineEvents.sort((a, b) => eventTimestamp(b) - eventTimestamp(a)).slice(0, 5);
+    const failures = recent.filter(isAnomalyFailure);
+    if (recent.length < 3 || failures.length < 3) return undefined;
+    const missed = failures.filter((event) => ['missed', 'expired'].includes(event.status)).length;
+    return {
+      routineId,
+      kind: missed >= Math.ceil(failures.length / 2) ? 'missed' as const : 'rejected' as const,
+      failed: failures.length,
+      checked: recent.length,
+      latestEventId: failures[0].id,
+    };
+  }).filter((anomaly): anomaly is RoutineAnomaly => Boolean(anomaly));
 };

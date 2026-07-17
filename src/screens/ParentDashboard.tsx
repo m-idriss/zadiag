@@ -20,6 +20,7 @@ import { NotificationCenter } from '../components/NotificationCenter';
 import { AwaitingCheckCards } from '../components/AwaitingCheckCards';
 import { useCurrentTime } from '../hooks/useCurrentTime';
 import { VerificationEventDetailDialog } from '../components/VerificationEventDetailDialog';
+import { routineAnomalies } from '../domain/reporting';
 
 export function ParentDashboard({
   state,
@@ -62,6 +63,7 @@ export function ParentDashboard({
   const [activeReminderStatus, setActiveReminderStatus] = useState<'sent' | 'error'>();
   const [enlargedProofUrl, setEnlargedProofUrl] = useState<string>();
   const [detailEventId, setDetailEventId] = useState<string>();
+  const [dismissedAnomaly, setDismissedAnomaly] = useState<string>();
   const swipeStartRef = useRef<{ eventId: string; x: number; y: number } | undefined>(undefined);
   const handledNotificationEventIdRef = useRef<string | undefined>(undefined);
   const summaryRange = controlledSummaryRange ?? localSummaryRange;
@@ -97,6 +99,12 @@ export function ParentDashboard({
     ?? state.family.childName;
   const upcomingChecks = useMemo(() => presentedUpcomingRoutineChecks(state.routineAssignments, state.locale, nowDate),
   [nowDate, state.locale, state.routineAssignments]);
+  const anomaly = useMemo(() => routineAnomalies(displayEvents, now)
+    .sort((a, b) => b.failed - a.failed)[0], [displayEvents, now]);
+  const anomalyFingerprint = anomaly ? `${anomaly.routineId}:${anomaly.latestEventId}` : undefined;
+  const anomalyStorageKey = `zadiag.dashboard.anomaly.${state.activeParticipantId ?? state.family.childName}`;
+  const visibleAnomaly = anomaly && dismissedAnomaly !== anomalyFingerprint
+    && localStorage.getItem(anomalyStorageKey) !== anomalyFingerprint ? anomaly : undefined;
   const responsibleEmptyState = !state.family.childLinked
     ? { icon: 'link' as const, title: t('responsibleEmptyParticipantNotLinkedTitle'), hint: t('responsibleEmptyParticipantNotLinkedHint') }
     : !state.routineAssignments.length
@@ -217,7 +225,10 @@ export function ParentDashboard({
     assignments: state.routineAssignments,
     events: displayEvents,
   }] : [];
-  useEffect(() => setExpandedStatus(undefined), [state.activeParticipantId]);
+  useEffect(() => {
+    setExpandedStatus(undefined);
+    setDismissedAnomaly(undefined);
+  }, [state.activeParticipantId]);
   useEffect(() => {
     if (!notificationEventId) {
       handledNotificationEventIdRef.current = undefined;
@@ -283,6 +294,30 @@ export function ParentDashboard({
           selectedId={expandedStatus}
           onSelect={(id) => setExpandedStatus((current) => current === id ? undefined : id as typeof current)}
         />
+      ) : null}
+
+      {visibleAnomaly ? (
+        <section className="card routine-anomaly-card" role="status" aria-labelledby="routine-anomaly-title">
+          <span className="settings-row-icon" aria-hidden="true"><AppIcon name="stats" /></span>
+          <div>
+            <span className="eyebrow">{t('routineAnomalyEyebrow')}</span>
+            <h2 id="routine-anomaly-title">{routinePresentationsById.get(visibleAnomaly.routineId)?.name ?? t('routine')}</h2>
+            <p>{t(visibleAnomaly.kind === 'missed' ? 'routineAnomalyMissed' : 'routineAnomalyRejected')}</p>
+            <small>{visibleAnomaly.failed}/{visibleAnomaly.checked} {t('routineAnomalyRecentChecks')}</small>
+          </div>
+          <button type="button" className="routine-anomaly-action" onClick={() => {
+            if (visibleAnomaly.kind === 'missed' && requestCheck) {
+              setExpandedStatus('active');
+              void resendActiveReminders(visibleAnomaly.routineId);
+            }
+            else setSummaryRange('week');
+          }}>{t(visibleAnomaly.kind === 'missed' && requestCheck ? 'routineAnomalyRequest' : 'routineAnomalyReview')}</button>
+          <button type="button" className="routine-anomaly-dismiss" aria-label={t('routineAnomalyDismiss')} onClick={() => {
+            if (!anomalyFingerprint) return;
+            localStorage.setItem(anomalyStorageKey, anomalyFingerprint);
+            setDismissedAnomaly(anomalyFingerprint);
+          }}><AppIcon name="close" /></button>
+        </section>
       ) : null}
 
       {(responsibleEmptyState || (expandedStatus === 'active' && currentCheckCount) || (!state.family.childLinked && state.family.linkingCode) || (!state.routineAssignments.length && onCreateRoutine)) ? (
