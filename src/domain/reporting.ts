@@ -21,6 +21,17 @@ export interface PlanningRecommendation {
   proposedChecksPerDay: number;
 }
 
+export interface WeeklyInsight {
+  rate: number;
+  rateDelta?: number;
+  strongestRoutineId?: string;
+  watchRoutineId?: string;
+  bestWindow?: { start: string; end: string };
+  responsibleActionCount: number;
+  responsibleActions: Array<{ actorName: string; count: number }>;
+  priority: 'adjust_schedule' | 'review_proofs' | 'support_consistency' | 'keep_course';
+}
+
 const rangeDays: Record<SummaryRange, number> = {
   day: 1,
   twoDays: 2,
@@ -182,5 +193,61 @@ export const planningRecommendation = (
     ...(preserved ? { preservedWindow: { start: preserved.window.start, end: preserved.window.end } } : {}),
     previousChecksPerDay: assignment.plan.checksPerDay,
     proposedChecksPerDay: plan.checksPerDay,
+  };
+};
+
+export const weeklyInsight = (
+  assignments: RoutineAssignment[],
+  events: VerificationEvent[],
+  now = Date.now(),
+): WeeklyInsight | undefined => {
+  const report = adherencePeriodReport(events, 'week', now);
+  if (report.current.completed < 3) return undefined;
+  const rankedRoutines = [...report.byRoutine].sort((a, b) => b.rate - a.rate || b.completed - a.completed);
+  const strongestRoutineId = rankedRoutines[0]?.routineId;
+  const weakest = [...rankedRoutines].sort((a, b) => a.rate - b.rate || b.completed - a.completed)[0];
+  const watchRoutineId = weakest && weakest.rate < .8 ? weakest.routineId : undefined;
+  const windowScores = new Map<string, { start: string; end: string; successes: number }>();
+  const currentEvents = eventsForReportingPeriods(events, 'week', now).current;
+
+  currentEvents.filter((event) => event.status === 'detected').forEach((event) => {
+    const assignment = assignments.find((item) => item.routineId === event.routineId);
+    if (!assignment) return;
+    const schedule = eventScheduleParts(event.requestedAt, assignment.plan.timeZone);
+    groupsFromLegacyPlan(assignment.plan).forEach((group) => {
+      if (!group.weekdays.includes(schedule.weekday)) return;
+      group.windows.forEach((window) => {
+        if (schedule.minute < timeMinutes(window.start) || schedule.minute > timeMinutes(window.end)) return;
+        const key = `${window.start}-${window.end}`;
+        const score = windowScores.get(key) ?? { start: window.start, end: window.end, successes: 0 };
+        score.successes += 1;
+        windowScores.set(key, score);
+      });
+    });
+  });
+  const bestWindow = [...windowScores.values()].sort((a, b) => b.successes - a.successes)[0];
+  const responsibleActionsByName = currentEvents.flatMap((event) => event.responsibleActions ?? [])
+    .filter((action) => Date.parse(action.at) >= now - 7 * 86_400_000 && Date.parse(action.at) <= now)
+    .reduce((counts, action) => counts.set(action.actorName, (counts.get(action.actorName) ?? 0) + 1), new Map<string, number>());
+  const responsibleActions = [...responsibleActionsByName].map(([actorName, count]) => ({ actorName, count }))
+    .sort((a, b) => b.count - a.count || a.actorName.localeCompare(b.actorName));
+  const responsibleActionCount = responsibleActions.reduce((count, actor) => count + actor.count, 0);
+  const anomalies = routineAnomalies(events, now);
+  const priority = assignments.some((assignment) => planningRecommendation(assignment, events, now))
+    ? 'adjust_schedule' as const
+    : anomalies.some((anomaly) => anomaly.kind === 'rejected')
+      ? 'review_proofs' as const
+      : report.current.rate < .7
+        ? 'support_consistency' as const
+        : 'keep_course' as const;
+  return {
+    rate: report.current.rate,
+    rateDelta: report.rateDelta,
+    strongestRoutineId,
+    watchRoutineId,
+    ...(bestWindow ? { bestWindow: { start: bestWindow.start, end: bestWindow.end } } : {}),
+    responsibleActionCount,
+    responsibleActions,
+    priority,
   };
 };

@@ -156,6 +156,26 @@ describe('ParentDashboard', () => {
     expect(container.querySelector('.planning-recommendation')?.textContent).toContain('The new schedule is saved.');
   });
 
+  it('opens the detailed seven-day report from the weekly insight', () => {
+    const assignment = createDefaultRoutineAssignment();
+    const now = Date.now();
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      routineAssignments: [assignment],
+      events: [0, 1, 2].map((index) => ({
+        id: `success-${index}`, routineId: assignment.routineId, sessionId: `session-${index}`,
+        requestedAt: new Date(now - index * 86_400_000).toISOString(), expiresAt: new Date(now - index * 86_400_000 + 3_600_000).toISOString(), status: 'detected' as const,
+      })),
+    };
+
+    act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
+    expect(container.querySelector('.weekly-insight-card')?.textContent).toContain('The week at a glance');
+    act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent === 'Open the 7-day report')?.click());
+    expect(Array.from(container.querySelectorAll<HTMLButtonElement>('.summary-range-toggle button')).find((button) => button.textContent === '7 days')?.getAttribute('aria-pressed')).toBe('true');
+    expect(container.querySelector<HTMLDetailsElement>('.detailed-reporting')?.open).toBe(true);
+  });
+
   it.each([
     { status: 'pending' as const, label: 'Resend reminder', expiresOffset: 60 * 60_000 },
     { status: 'missed' as const, label: 'Request a check now', expiresOffset: -60 * 60_000 },
