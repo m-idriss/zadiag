@@ -1,4 +1,4 @@
-import type { AppPreferences, AppState, Locale, MembershipRole, MonitoringPlan, ParticipantMember, ProfileColorKey, Role, RoutineValidationMode, VerificationEvent } from '../domain/models';
+import type { AppPreferences, AppState, Locale, MembershipRole, MonitoringPlan, ParticipantMember, PilotParticipation, ProfileColorKey, Role, RoutineValidationMode, VerificationEvent } from '../domain/models';
 
 export type SyncStatus = 'synced' | 'syncing' | 'offline' | 'failed';
 export type JourneyStage = 'app_ready' | 'notifications_enabled' | 'notification_opened' | 'check_opened';
@@ -34,6 +34,7 @@ export interface AppRepository {
   savePushSubscription(subscription: PushSubscriptionJSON): Promise<void>;
   sendTestPushNotification(): Promise<void>;
   recordJourneyEvent?(stage: JourneyStage, source: JourneySource, contextId?: string): Promise<void>;
+  updatePilotParticipation?(status: PilotParticipation['status']): Promise<PilotParticipation>;
   savePlan(plan: MonitoringPlan, routineId?: string): Promise<void>;
   activeSession(routineId?: string): VerificationEvent | undefined;
   submitCapture(sessionId: string, capturedAt: Date, imageDataUrl: string): Promise<VerificationEvent>;

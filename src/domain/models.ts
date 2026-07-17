@@ -2,6 +2,12 @@ import { translationsForRoutine } from './routineTranslations';
 
 export type Role = 'parent' | 'child';
 export type Locale = 'en' | 'fr';
+export interface PilotParticipation {
+  version: string;
+  status: 'accepted' | 'declined' | 'withdrawn';
+  role: Role;
+  recordedAt: string;
+}
 export type VerificationStatus =
   | 'pending'
   | 'analyzing'
@@ -209,6 +215,7 @@ export const normalizeAppPreferences = (preferences?: Partial<AppPreferences>): 
 
 export interface AppState {
   role?: Role;
+  pilotParticipation?: PilotParticipation;
   accountDisplayName?: string;
   contactEmail?: string;
   accessStatus?: 'active' | 'suspended';

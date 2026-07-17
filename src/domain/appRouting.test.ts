@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { AppState } from './models';
 import { routeForState } from './appRouting';
+import { pilotParticipationRecord } from './pilotParticipation';
 
 const state = (overrides: Partial<AppState> = {}): AppState => ({
   locale: 'en',
@@ -41,10 +42,18 @@ describe('app routing', () => {
   });
 
   it('only requires notifications for linked child devices outside local demo', () => {
-    const linkedChild = state({ role: 'child', family: { ...state().family, linked: true } });
+    const linkedChild = state({ role: 'child', family: { ...state().family, linked: true }, pilotParticipation: pilotParticipationRecord('declined', 'child') });
 
     expect(routeForState(linkedChild)).toBe('notifications');
     expect(routeForState(linkedChild, { useLocalDemo: true })).toBe('app');
     expect(routeForState({ ...linkedChild, notificationsEnabled: true })).toBe('app');
+  });
+
+  it('asks every linked account for the current optional pilot choice first', () => {
+    const linkedParent = state({ role: 'parent', family: { ...state().family, linked: true } });
+
+    expect(routeForState(linkedParent)).toBe('pilot-consent');
+    expect(routeForState({ ...linkedParent, pilotParticipation: { ...pilotParticipationRecord('accepted', 'parent'), version: 'previous' } })).toBe('pilot-consent');
+    expect(routeForState({ ...linkedParent, pilotParticipation: pilotParticipationRecord('declined', 'parent') })).toBe('app');
   });
 });

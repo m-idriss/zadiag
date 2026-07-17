@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import { defaultAppPreferences, type PushSubscriptionHealth, type VerificationEvent } from '../domain/models';
 import { translate } from '../services/i18n';
+import { pilotParticipationRecord } from '../domain/pilotParticipation';
 import { SettingsScreen } from './SettingsScreen';
 import type { SyncStatus } from '../services/contracts';
 
@@ -18,12 +19,16 @@ const renderSettings = ({
   sendTestPushNotification = async () => undefined,
   reset = async () => undefined,
   syncStatus = 'synced',
+  pilotParticipation,
+  updatePilotParticipation,
 }: {
   notificationsEnabled?: boolean;
   pushHealth?: PushSubscriptionHealth;
   sendTestPushNotification?: () => Promise<void>;
   reset?: () => Promise<void>;
   syncStatus?: SyncStatus;
+  pilotParticipation?: ReturnType<typeof pilotParticipationRecord>;
+  updatePilotParticipation?: (status: 'accepted' | 'declined' | 'withdrawn') => Promise<ReturnType<typeof pilotParticipationRecord>>;
 } = {}) => {
   const container = document.createElement('div');
   document.body.appendChild(container);
@@ -57,6 +62,8 @@ const renderSettings = ({
           { participant: { id: 'leo', displayName: 'Leo' }, membership: { role: 'owner', status: 'active' } },
         ]}
         activeParticipantId="leo"
+        pilotParticipation={pilotParticipation}
+        updatePilotParticipation={updatePilotParticipation}
       />,
     );
   });
@@ -176,6 +183,22 @@ describe('SettingsScreen privacy and data', () => {
     expect(container.textContent).toContain('The data could not be deleted');
     expect(deleteButton?.disabled).toBe(false);
 
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  it('withdraws pilot participation without deleting the account', async () => {
+    const updatePilotParticipation = vi.fn(async (status: 'accepted' | 'declined' | 'withdrawn') => pilotParticipationRecord(status, 'parent'));
+    const { container, root } = renderSettings({
+      pilotParticipation: pilotParticipationRecord('accepted', 'parent', '2026-07-17T08:00:00.000Z'),
+      updatePilotParticipation,
+    });
+    const withdraw = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Withdraw');
+
+    await act(async () => withdraw?.click());
+
+    expect(updatePilotParticipation).toHaveBeenCalledWith('withdrawn');
+    expect(container.textContent).toContain('Participation withdrawn. Zadiag remains available.');
     act(() => root.unmount());
     container.remove();
   });
