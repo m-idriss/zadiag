@@ -170,7 +170,11 @@ describe('ParentDashboard', () => {
     };
 
     act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
-    expect(container.querySelector('.weekly-insight-card')?.textContent).toContain('The week at a glance');
+    const weeklyInsight = container.querySelector<HTMLDetailsElement>('.weekly-insight-card');
+    expect(weeklyInsight?.textContent).toContain('The week at a glance');
+    expect(weeklyInsight?.open).toBe(false);
+    act(() => weeklyInsight?.querySelector('summary')?.click());
+    expect(weeklyInsight?.open).toBe(true);
     act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent === 'Open the 7-day report')?.click());
     expect(Array.from(container.querySelectorAll<HTMLButtonElement>('.summary-range-toggle button')).find((button) => button.textContent === '7 days')?.getAttribute('aria-pressed')).toBe('true');
     expect(container.querySelector<HTMLDetailsElement>('.detailed-reporting')?.open).toBe(true);
