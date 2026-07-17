@@ -42,6 +42,14 @@ test('accepts French as the primary package locale', () => {
   assert.equal(parseRoutineDraftPackage(french).validation.status, 'valid');
 });
 
+test('rejects translated placeholder drift', () => {
+  const translated = routinePackage() as ReturnType<typeof routinePackage> & { routine: ReturnType<typeof routinePackage>['routine'] & { translations?: unknown } };
+  translated.availableLocales = ['en', 'fr'];
+  translated.routine.name = 'Routine for {name}';
+  translated.routine.translations = { fr: { name: 'Routine traduite', description: translated.routine.description, instructions: translated.routine.instructions, proofExample: translated.routine.proofExample, analysis: translated.routine.analysis, instructionSteps: translated.routine.instructionSteps } };
+  assert.equal(parseRoutineDraftPackage(translated).validation.status, 'invalid');
+});
+
 test('rejects unknown, malformed, and oversized package data', () => {
   assert.throws(() => parseRoutineDraftPackage({ ...routinePackage(), executable: '<script>' }), RoutineDraftInputError);
   assert.throws(() => parseRoutineDraftPackage({ ...routinePackage(), schemaVersion: 2 }), RoutineDraftInputError);

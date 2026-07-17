@@ -85,6 +85,7 @@ export const assertRoutineDraftRevision = (currentRevision: number, expectedRevi
 };
 
 const missing = (value: unknown, minimum = 1) => typeof value !== 'string' || value.trim().length < minimum;
+const placeholders = (value: unknown) => typeof value === 'string' ? [...value.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map((match) => match[1]).sort() : [];
 
 const completenessIssues = (routinePackage: RoutineDraftPackage): RoutineDraftValidationIssue[] => {
   const { routine } = routinePackage;
@@ -125,6 +126,9 @@ const completenessIssues = (routinePackage: RoutineDraftPackage): RoutineDraftVa
     requireText(localized.description, `routine.translations.${locale}.description`, 10);
     requireText(localized.instructions, `routine.translations.${locale}.instructions`, 10);
     requireText(localized.proofExample, `routine.translations.${locale}.proofExample`, 10);
+    ([['name', routine.name], ['description', routine.description], ['instructions', routine.instructions], ['proofExample', routine.proofExample]] as const).forEach(([field, primary]) => {
+      if (placeholders(localized[field]).join('|') !== placeholders(primary).join('|')) issues.push({ code: 'invalid_package', path: `routine.translations.${locale}.${field}` });
+    });
     ['expectedEvidence', 'detectedCriteria', 'notDetectedCriteria', 'uncertaintyCriteria'].forEach((field) => {
       requireText(localized.analysis?.[field as keyof NonNullable<typeof localized.analysis>], `routine.translations.${locale}.analysis.${field}`, 20);
     });

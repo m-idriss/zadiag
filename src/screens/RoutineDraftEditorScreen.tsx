@@ -39,10 +39,19 @@ export function RoutineDraftEditorScreen({
   const [savedValidation, setSavedValidation] = useState<RoutineDraft['validation']>();
   const [errorKind, setErrorKind] = useState<'conflict' | 'limit' | 'invalid' | 'remote'>();
   const routine = routinePackage.routine;
+  const secondaryLocale: Locale = routinePackage.defaultLocale === 'en' ? 'fr' : 'en';
+  const translation = routine.translations?.[secondaryLocale];
   const updateRoutine = (patch: Partial<Routine>) => setRoutinePackage((current) => ({ ...current, routine: { ...current.routine, ...patch } }));
   const updateAnalysis = (field: keyof NonNullable<Routine['analysis']>, value: string) => updateRoutine({ analysis: { expectedEvidence: '', detectedCriteria: '', notDetectedCriteria: '', uncertaintyCriteria: '', ...routine.analysis, [field]: value } });
   const updateStep = (index: number, patch: Partial<RoutineStep>) => updateRoutine({ instructionSteps: (routine.instructionSteps ?? []).map((step, stepIndex) => stepIndex === index ? { ...step, ...patch } : step) });
   const changePrimaryLocale = (defaultLocale: Locale) => setRoutinePackage((current) => ({ ...current, defaultLocale, availableLocales: [defaultLocale] }));
+  const toggleTranslation = (enabled: boolean) => setRoutinePackage((current) => ({
+    ...current,
+    availableLocales: enabled ? ['en', 'fr'] : [current.defaultLocale],
+    routine: { ...current.routine, translations: enabled ? { ...current.routine.translations, [secondaryLocale]: { name: '', description: '', instructions: '', proofExample: '', analysis: { expectedEvidence: '', detectedCriteria: '', notDetectedCriteria: '', uncertaintyCriteria: '' }, instructionSteps: (current.routine.instructionSteps ?? []).map((step) => ({ ...step, title: '', description: '' })) } } : undefined },
+  }));
+  const updateTranslation = (patch: Partial<NonNullable<Routine['translations']>[Locale]>) => updateRoutine({ translations: { ...routine.translations, [secondaryLocale]: { ...translation, ...patch } } });
+  const updateTranslationAnalysis = (field: 'expectedEvidence' | 'detectedCriteria' | 'notDetectedCriteria' | 'uncertaintyCriteria', value: string) => updateTranslation({ analysis: { ...translation?.analysis, [field]: value } });
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!online || saving) return;
@@ -83,6 +92,22 @@ export function RoutineDraftEditorScreen({
           {field('routineDraftName', routine.name, (value) => updateRoutine({ name: value }), 120)}
           {field('routineDraftDescription', routine.description, (value) => updateRoutine({ description: value }), 500, true)}
           {field('routineDraftResponsibleName', routine.responsibleName, (value) => updateRoutine({ responsibleName: value }), 120)}
+        </section>
+        <section className="card routine-draft-editor-section">
+          <h2>{t('routineTranslationTitle')}</h2>
+          <label className="routine-draft-translation-toggle"><input type="checkbox" checked={Boolean(translation)} onChange={(event) => toggleTranslation(event.target.checked)} /><span>{formatMessage(t('routineTranslationEnable'), { locale: secondaryLocale.toUpperCase() })}</span></label>
+          {translation ? <>
+            {field('routineDraftName', translation.name, (value) => updateTranslation({ name: value }), 120)}
+            {field('routineDraftDescription', translation.description, (value) => updateTranslation({ description: value }), 500, true)}
+            {field('routineDraftInstructions', translation.instructions, (value) => updateTranslation({ instructions: value }), 2000, true)}
+            {field('routineDraftProofExample', translation.proofExample, (value) => updateTranslation({ proofExample: value }), 500, true)}
+            {field('routineDraftExpectedEvidence', translation.analysis?.expectedEvidence, (value) => updateTranslationAnalysis('expectedEvidence', value), 2000, true)}
+            {field('routineDraftDetectedCriteria', translation.analysis?.detectedCriteria, (value) => updateTranslationAnalysis('detectedCriteria', value), 2000, true)}
+            {field('routineDraftNotDetectedCriteria', translation.analysis?.notDetectedCriteria, (value) => updateTranslationAnalysis('notDetectedCriteria', value), 2000, true)}
+            {field('routineDraftUncertaintyCriteria', translation.analysis?.uncertaintyCriteria, (value) => updateTranslationAnalysis('uncertaintyCriteria', value), 2000, true)}
+            {(translation.instructionSteps ?? []).map((step, index) => <fieldset className="routine-draft-step" key={step.id}><legend>{formatMessage(t('routineDraftStep'), { number: index + 1 })}</legend>{field('routineDraftStepTitle', step.title, (value) => updateTranslation({ instructionSteps: translation.instructionSteps?.map((item, itemIndex) => itemIndex === index ? { ...item, title: value } : item) }), 120)}{field('routineDraftStepDescription', step.description, (value) => updateTranslation({ instructionSteps: translation.instructionSteps?.map((item, itemIndex) => itemIndex === index ? { ...item, description: value } : item) }), 500, true)}</fieldset>)}
+            <p className="routine-translation-hint">{t('routineTranslationHint')}</p>
+          </> : null}
         </section>
         <section className="card routine-draft-editor-section">
           <h2>{t('routineDraftAppearance')}</h2>
