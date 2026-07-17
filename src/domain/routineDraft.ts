@@ -33,6 +33,9 @@ export interface RoutineDraft {
 export interface PublishedRoutineVersion {
   ownerId: string; sourceDraftId: string; sourceRevision: number; version: number; package: RoutinePackageV1; publishedAt: string; archivedAt?: string;
 }
+export interface RoutineCatalogEntry extends PublishedRoutineVersion {
+  id: string; routineId: string; authorName: string; visibility: 'listed' | 'unlisted'; sharedAt: string; revokedAt?: string;
+}
 
 export const DEFAULT_PRIVATE_ROUTINE_ACCENT = '#2563EB';
 

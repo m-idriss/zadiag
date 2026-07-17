@@ -119,6 +119,7 @@ export interface RoutineAssignment {
   sourceDraftId?: string;
   sourceRevision?: number;
   sourceVersion?: number;
+  sourceCatalogEntryId?: string;
 }
 
 interface RoutineTask {

@@ -139,6 +139,11 @@ class LazyFirebaseRepository implements AppRepository {
   async listPublishedRoutineVersions(participantId: string) { const repository = await this.load(); if (!repository.listPublishedRoutineVersions) throw new Error('routine_publication_unavailable'); return repository.listPublishedRoutineVersions(participantId); }
   async upgradeRoutineAssignment(participantId: string, routineId: string, targetVersion: number) { const repository = await this.load(); if (!repository.upgradeRoutineAssignment) throw new Error('routine_publication_unavailable'); return repository.upgradeRoutineAssignment(participantId, routineId, targetVersion); }
   async createNextRoutineDraft(participantId: string, routineId: string, sourceVersion: number) { const repository = await this.load(); if (!repository.createNextRoutineDraft) throw new Error('routine_publication_unavailable'); return repository.createNextRoutineDraft(participantId, routineId, sourceVersion); }
+  async searchRoutineCatalog(query: string) { const repository = await this.load(); if (!repository.searchRoutineCatalog) throw new Error('routine_catalog_unavailable'); return repository.searchRoutineCatalog(query); }
+  async resolveSharedRoutine(shareCode: string) { const repository = await this.load(); if (!repository.resolveSharedRoutine) throw new Error('routine_catalog_unavailable'); return repository.resolveSharedRoutine(shareCode); }
+  async installCatalogRoutine(participantId: string, entryId: string) { const repository = await this.load(); if (!repository.installCatalogRoutine) throw new Error('routine_catalog_unavailable'); return repository.installCatalogRoutine(participantId, entryId); }
+  async sharePublishedRoutine(participantId: string, routineId: string, version: number, visibility: 'listed' | 'unlisted') { const repository = await this.load(); if (!repository.sharePublishedRoutine) throw new Error('routine_catalog_unavailable'); return repository.sharePublishedRoutine(participantId, routineId, version, visibility); }
+  async revokeSharedRoutine(entryId: string) { const repository = await this.load(); if (!repository.revokeSharedRoutine) throw new Error('routine_catalog_unavailable'); return repository.revokeSharedRoutine(entryId); }
 
   async requestCheckNow(routineId?: string) {
     return (await this.load()).requestCheckNow(routineId);

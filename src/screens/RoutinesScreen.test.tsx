@@ -3,7 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BottomNav, navigationTabs, tabAfterSwipe } from '../components/BottomNav';
 import { createDefaultRoutineAssignment, type AppState } from '../domain/models';
-import type { RoutineDraft } from '../domain/routineDraft';
+import type { RoutineCatalogEntry, RoutineDraft } from '../domain/routineDraft';
 import { translate } from '../services/i18n';
 import { RoutinesScreen } from './RoutinesScreen';
 
@@ -612,5 +612,44 @@ describe('participant routines navigation', () => {
     });
 
     expect(requestButton.disabled).toBe(false);
+  });
+
+  it('discovers, resolves and installs catalogue routine snapshots', async () => {
+    vi.useFakeTimers();
+    const routine = { ...createDefaultRoutineAssignment().routine, id: 'community-hydration', name: 'Community hydration', description: 'Shared hydration guidance' };
+    const entry: RoutineCatalogEntry = {
+      id: 'catalog-entry', routineId: routine.id, authorName: 'Alex Martin', visibility: 'listed', version: 3,
+      package: { schemaVersion: 1, version: 3, defaultLocale: 'en', availableLocales: ['en', 'fr'], routine },
+      publishedAt: '2026-07-15T08:00:00.000Z', sharedAt: '2026-07-16T08:00:00.000Z',
+    };
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      participantAccess: [{ participant: { id: 'participant-1', displayName: 'Maya' }, membership: { role: 'owner', status: 'active' } }],
+      activeParticipantId: 'participant-1', routineAssignments: [], events: [], routinesLoaded: true, routinesError: false,
+    };
+    const search = vi.fn().mockResolvedValue([entry]);
+    const resolve = vi.fn().mockResolvedValue(entry);
+    const install = vi.fn().mockResolvedValue(undefined);
+    act(() => root.render(<RoutinesScreen state={state} onAssignRoutine={async () => undefined} onSearchRoutineCatalog={search} onResolveSharedRoutine={resolve} onInstallCatalogRoutine={install} t={(key) => translate('en', key)} />));
+
+    await act(async () => { vi.advanceTimersByTime(250); await Promise.resolve(); });
+    expect(document.body.textContent).toContain('Alex Martin · v3 · EN, FR');
+    expect(document.body.textContent).toContain('Community hydration');
+
+    const codeInput = document.body.querySelector<HTMLInputElement>('input[aria-label="Private share code"]')!;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(codeInput, 'private-code');
+      codeInput.dispatchEvent(new Event('input', { bubbles: true }));
+      Array.from(document.body.querySelectorAll('button')).find((button) => button.textContent === 'Open')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await Promise.resolve();
+    });
+    expect(resolve).toHaveBeenCalledWith('private-code');
+
+    await act(async () => {
+      Array.from(document.body.querySelectorAll('button')).find((button) => button.textContent === 'Install')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await Promise.resolve();
+    });
+    expect(install).toHaveBeenCalledWith('participant-1', 'catalog-entry');
   });
 });

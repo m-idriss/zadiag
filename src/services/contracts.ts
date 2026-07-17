@@ -1,5 +1,5 @@
 import type { AppPreferences, AppState, Locale, MembershipRole, MonitoringPlan, ParticipantMember, PilotParticipation, ProfileColorKey, Role, RoutineValidationMode, VerificationEvent } from '../domain/models';
-import type { PublishedRoutineVersion, RoutineDraft, RoutinePackageV1 } from '../domain/routineDraft';
+import type { PublishedRoutineVersion, RoutineCatalogEntry, RoutineDraft, RoutinePackageV1 } from '../domain/routineDraft';
 
 export type SyncStatus = 'synced' | 'syncing' | 'offline' | 'failed';
 export type JourneyStage = 'app_ready' | 'notifications_enabled' | 'notification_opened' | 'check_opened';
@@ -39,6 +39,11 @@ export interface AppRepository {
   listPublishedRoutineVersions?(participantId: string): Promise<Array<PublishedRoutineVersion & { routineId: string }>>;
   upgradeRoutineAssignment?(participantId: string, routineId: string, targetVersion: number): Promise<void>;
   createNextRoutineDraft?(participantId: string, routineId: string, sourceVersion: number): Promise<RoutineDraft>;
+  searchRoutineCatalog?(query: string): Promise<RoutineCatalogEntry[]>;
+  resolveSharedRoutine?(shareCode: string): Promise<RoutineCatalogEntry>;
+  installCatalogRoutine?(participantId: string, entryId: string): Promise<void>;
+  sharePublishedRoutine?(participantId: string, routineId: string, version: number, visibility: 'listed' | 'unlisted'): Promise<{ entryId: string; shareCode: string }>;
+  revokeSharedRoutine?(entryId: string): Promise<void>;
   requestCheckNow(routineId?: string): Promise<void>;
   updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode): Promise<void>;
   savePushSubscription(subscription: PushSubscriptionJSON): Promise<void>;
