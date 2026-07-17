@@ -70,6 +70,9 @@ first instrumented cohort, then recorded alongside cohort size and timeframe.
 5. Scope regulatory and security work against the chosen route, rather than
    prematurely building for every possible market.
 
+The operating procedure for milestone 2 is defined in the
+[pilot support and incident playbook](pilot-support-incident-playbook.md).
+
 ## Principal risks
 
 | Risk | Current response |
