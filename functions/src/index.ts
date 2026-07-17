@@ -31,6 +31,7 @@ const vapidPublicKey = defineSecret('WEB_PUSH_VAPID_PUBLIC_KEY');
 const resendApiKey = defineSecret('RESEND_API_KEY');
 const moderationEmail = defineSecret('USER_MODERATION_EMAIL');
 const moderationFromEmail = defineSecret('USER_MODERATION_FROM_EMAIL');
+const pilotConsentVersion = '2026-07-17';
 const geminiAuth = new GoogleAuth({
   scopes: ['https://www.googleapis.com/auth/generative-language'],
 });
@@ -277,6 +278,10 @@ export const recordClientJourney = onCall({ region, cors, enforceAppCheck: true 
   const source = String(request.data?.source ?? '');
   if (!journeySources.has(source)) throw new HttpsError('invalid-argument', 'A valid journey source is required.');
   const aggregateRef = await requireFamilyMember(uid, aggregateId);
+  const participation = (await db.collection('users').doc(uid).get()).data()?.pilotParticipation;
+  if (participation?.version !== pilotConsentVersion || participation?.status !== 'accepted') {
+    throw new HttpsError('failed-precondition', 'Pilot participation is not active.');
+  }
   const checkScoped = stage === 'notification_opened' || stage === 'check_opened';
   if (checkScoped && !contextId) throw new HttpsError('invalid-argument', 'This journey stage requires a check context.');
   if (!checkScoped && contextId) throw new HttpsError('invalid-argument', 'This journey stage does not accept a check context.');
@@ -288,10 +293,37 @@ export const recordClientJourney = onCall({ region, cors, enforceAppCheck: true 
     stage,
     actorUid: uid,
     ...(aggregateRef.parent.id === 'participants' ? { participantId: aggregateId } : { familyId: aggregateId }),
-    role: role === 'child' ? 'child' : 'parent',
+    role: role === 'child' ? 'child' as const : 'parent' as const,
     contextId,
     metadata: { source, ...(contextId ? { contextId } : {}) },
   });
+});
+
+export const updatePilotParticipation = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const aggregateId = requireDocumentId(request.data?.aggregateId, 'Profile ID');
+  const status = String(request.data?.status ?? '') as 'accepted' | 'declined' | 'withdrawn';
+  if (!['accepted', 'declined', 'withdrawn'].includes(status)) {
+    throw new HttpsError('invalid-argument', 'A valid pilot participation choice is required.');
+  }
+  const aggregateRef = await requireFamilyMember(uid, aggregateId);
+  const role = await pushRoleForAggregate(uid, aggregateRef);
+  const recordedAt = new Date().toISOString();
+  const pilotParticipation = {
+    version: pilotConsentVersion,
+    status,
+    role: (role === 'child' ? 'child' : 'parent') as 'child' | 'parent',
+    recordedAt,
+  };
+  await db.collection('users').doc(uid).set({ pilotParticipation, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  await recordAuditEvent(db, {
+    action: status === 'accepted' ? 'accept_pilot_participation' : status === 'declined' ? 'decline_pilot_participation' : 'withdraw_pilot_participation',
+    actorUid: uid,
+    ...(aggregateRef.parent.id === 'participants' ? { participantId: aggregateId } : { familyId: aggregateId }),
+    role: pilotParticipation.role,
+    metadata: { version: pilotConsentVersion },
+  });
+  return pilotParticipation;
 });
 
 const imageExtensionFor = (mimeType: string) => {

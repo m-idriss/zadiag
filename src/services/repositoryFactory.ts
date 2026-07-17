@@ -1,6 +1,6 @@
 import type { AppRepository, JourneySource, JourneyStage } from './contracts';
 import { DemoRepository } from './demoRepository';
-import { type AppPreferences, type Locale, type MembershipRole, type MonitoringPlan, type ProfileColorKey, type Role, type RoutineValidationMode } from '../domain/models';
+import { type AppPreferences, type Locale, type MembershipRole, type MonitoringPlan, type PilotParticipation, type ProfileColorKey, type Role, type RoutineValidationMode } from '../domain/models';
 import { firebaseEnabled } from './firebaseConfig';
 import { isLocalDemoEnvironment } from './browserEnvironment';
 import { initialRemoteState } from './appStateDefaults';
@@ -148,6 +148,12 @@ class LazyFirebaseRepository implements AppRepository {
   async recordJourneyEvent(stage: JourneyStage, source: JourneySource, contextId?: string) {
     const repository = await this.load();
     if (repository.recordJourneyEvent) await repository.recordJourneyEvent(stage, source, contextId);
+  }
+
+  async updatePilotParticipation(status: PilotParticipation['status']) {
+    const repository = await this.load();
+    if (!repository.updatePilotParticipation) throw new Error('pilot_participation_unavailable');
+    return repository.updatePilotParticipation(status);
   }
 
   async savePlan(plan: MonitoringPlan, routineId?: string) {

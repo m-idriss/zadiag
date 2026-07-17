@@ -3,6 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import type { AppRepository } from '../services/contracts';
 import type { AppState, MonitoringPlan, VerificationEvent } from '../domain/models';
 import { createDefaultRoutineAssignment, DEFAULT_ROUTINE_ID, defaultPlan } from '../domain/models';
+import { pilotParticipationRecord } from '../domain/pilotParticipation';
 
 let fakeRepository: AppRepository;
 
@@ -84,6 +85,7 @@ const makeState = (): AppState => ({
   role: 'child',
   locale: 'en',
   notificationsEnabled: true,
+  pilotParticipation: pilotParticipationRecord('declined', 'child'),
   family: {
     id: 'family-1',
     linked: true,

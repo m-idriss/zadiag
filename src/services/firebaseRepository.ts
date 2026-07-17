@@ -25,6 +25,7 @@ import {
   type MembershipRole,
   type ParticipantAccess,
   type ParticipantMember,
+  type PilotParticipation,
   type ParticipantNotificationSource,
   type ProfileColorKey,
   type Role,
@@ -50,6 +51,7 @@ interface UserProfile {
   linkingCode?: string;
   parentRecoveryCode?: string;
   notificationsEnabled?: boolean;
+  pilotParticipation?: unknown;
 }
 interface ParticipantDocument {
   displayName?: string;
@@ -73,6 +75,15 @@ interface FamilyDocument {
 
 const asReviewStatus = (value: unknown): VerificationEvent['reviewStatus'] =>
   value === 'pending' || value === 'approved' || value === 'rejected' ? value : undefined;
+
+const asPilotParticipation = (value: unknown): PilotParticipation | undefined => {
+  if (!value || typeof value !== 'object') return undefined;
+  const participation = value as Record<string, unknown>;
+  if (!['accepted', 'declined', 'withdrawn'].includes(String(participation.status))) return undefined;
+  if (!['parent', 'child'].includes(String(participation.role))) return undefined;
+  if (typeof participation.version !== 'string' || typeof participation.recordedAt !== 'string') return undefined;
+  return participation as unknown as PilotParticipation;
+};
 
 const asResponsibleActions = (value: unknown): VerificationEvent['responsibleActions'] => {
   if (!Array.isArray(value)) return undefined;
@@ -232,6 +243,15 @@ export class FirebaseRepository implements AppRepository {
     const record = httpsCallable<{ aggregateId: string; stage: JourneyStage; source: JourneySource; contextId?: string }, void>(this.services.functions, 'recordClientJourney');
     await record({ aggregateId: this.state.family.id, stage, source, ...(contextId ? { contextId } : {}) });
     writeUiStorageString(dedupeKey, '1');
+  }
+
+  async updatePilotParticipation(status: PilotParticipation['status']) {
+    if (!this.state.family.id) throw new Error('profile_required');
+    const update = httpsCallable<{ aggregateId: string; status: PilotParticipation['status'] }, PilotParticipation>(this.services.functions, 'updatePilotParticipation');
+    const result = await update({ aggregateId: this.state.family.id, status });
+    this.state.pilotParticipation = result.data;
+    this.emit();
+    return result.data;
   }
 
   async updateParticipantColor(participantId: string, profileColor: ProfileColorKey) {
@@ -624,6 +644,7 @@ export class FirebaseRepository implements AppRepository {
     const data = profile.exists() ? profile.data() as UserProfile : undefined;
     const accessData = accessDocument.exists() ? accessDocument.data() as { contactEmail?: string; status?: string } : undefined;
     this.state.accountDisplayName = data?.displayName?.trim() || undefined;
+    this.state.pilotParticipation = asPilotParticipation(data?.pilotParticipation);
     this.state.contactEmail = accessData?.contactEmail?.trim() || undefined;
     this.state.accessStatus = accessData?.status === 'suspended' ? 'suspended' : 'active';
     if (this.state.accessStatus === 'suspended') {
@@ -672,6 +693,7 @@ export class FirebaseRepository implements AppRepository {
     const data = profile.exists() ? profile.data() as UserProfile : undefined;
     const accessData = accessDocument.exists() ? accessDocument.data() as { contactEmail?: string; status?: string } : undefined;
     this.state.accountDisplayName = data?.displayName?.trim() || undefined;
+    this.state.pilotParticipation = asPilotParticipation(data?.pilotParticipation);
     this.state.contactEmail = accessData?.contactEmail?.trim() || undefined;
     this.state.accessStatus = accessData?.status === 'suspended' ? 'suspended' : 'active';
   }

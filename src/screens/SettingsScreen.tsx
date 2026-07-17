@@ -14,7 +14,7 @@ import {
   timeOutline,
   trashOutline,
 } from 'ionicons/icons';
-import type { AppPreferences, Locale, MembershipRole, ParticipantAccess, ParticipantMember, ProfileColorKey, PushSubscriptionHealth, Role, VerificationEvent } from '../domain/models';
+import type { AppPreferences, Locale, MembershipRole, ParticipantAccess, ParticipantMember, PilotParticipation, ProfileColorKey, PushSubscriptionHealth, Role, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { buildDiagnosticsEmailBody, createCorrelationId } from '../services/appLogs';
 import type { AppUpdateInfo } from '../services/appUpdate';
@@ -65,6 +65,8 @@ export function SettingsScreen({
   deleteParticipant,
   createRelationshipRecovery,
   recoverRelationship,
+  pilotParticipation,
+  updatePilotParticipation,
 }: {
   t: (key: MessageKey) => string;
   locale: Locale;
@@ -102,6 +104,8 @@ export function SettingsScreen({
   deleteParticipant?: (participantId: string) => Promise<void>;
   createRelationshipRecovery?: (participantId: string) => Promise<{ recoveryCode: string; expiresAt: string }>;
   recoverRelationship?: (code: string) => Promise<{ participantId: string; recoveryCode?: string; expiresAt?: string }>;
+  pilotParticipation?: PilotParticipation;
+  updatePilotParticipation?: (status: PilotParticipation['status']) => Promise<PilotParticipation>;
 }) {
   const [contactMailError, setContactMailError] = useState(false);
   const [dataCopyMailError, setDataCopyMailError] = useState(false);
@@ -115,6 +119,7 @@ export function SettingsScreen({
   const [localPushDispatchAt, setLocalPushDispatchAt] = useState<string>();
   const [resettingAccount, setResettingAccount] = useState(false);
   const [resetError, setResetError] = useState(false);
+  const [pilotWithdrawalStatus, setPilotWithdrawalStatus] = useState<'busy' | 'saved' | 'error'>();
 
   useEffect(() => {
     let cancelled = false;
@@ -477,8 +482,15 @@ export function SettingsScreen({
           <ListRow
             icon={<SvgIcon icon={informationCircleOutline} />}
             title={t('trustJourneyTitle')}
-            detail={t('trustJourneyDetail')}
-          />
+            detail={`${t('trustJourneyDetail')} ${t(pilotParticipation?.status === 'accepted' ? 'pilotStatusAccepted' : pilotParticipation?.status === 'withdrawn' ? 'pilotStatusWithdrawn' : 'pilotStatusDeclined')}${pilotParticipation ? ` · v${pilotParticipation.version} · ${new Intl.DateTimeFormat(languageTag(locale), { dateStyle: 'medium' }).format(new Date(pilotParticipation.recordedAt))}` : ''}`}
+            trailing={pilotParticipation?.status === 'accepted' && updatePilotParticipation ? <button type="button" className="settings-inline-action" disabled={pilotWithdrawalStatus === 'busy'} onClick={() => {
+              setPilotWithdrawalStatus('busy');
+              void updatePilotParticipation('withdrawn').then(() => setPilotWithdrawalStatus('saved')).catch((error) => { console.error(error); setPilotWithdrawalStatus('error'); });
+            }}>{t(pilotWithdrawalStatus === 'busy' ? 'pilotWithdrawing' : 'pilotWithdraw')}</button> : undefined}
+          >
+            {pilotWithdrawalStatus === 'saved' ? <small>{t('pilotWithdrawnConfirmation')}</small> : null}
+            {pilotWithdrawalStatus === 'error' ? <small className="settings-action-error">{t('pilotConsentError')}</small> : null}
+          </ListRow>
           <ListRow
             icon={<SvgIcon icon={downloadOutline} />}
             title={t('trustDataCopyTitle')}

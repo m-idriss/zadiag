@@ -5,6 +5,7 @@ import type {
   ProfileColorKey,
   MonitoringPlan,
   Role,
+  PilotParticipation,
   RoutineAssignment,
   RoutineValidationMode,
   VerificationEvent,
@@ -16,6 +17,7 @@ import { isFreshCapture } from '../domain/adherence';
 import { responseWindowExpiresAt } from '../domain/monitoringPlan';
 import type { AppRepository, JourneySource, JourneyStage } from './contracts';
 import { browserLocale } from './appStateDefaults';
+import { pilotParticipationRecord } from '../domain/pilotParticipation';
 
 const STORAGE_KEY = 'zadiag.demo.v1';
 const HYDRATION_ROUTINE_ID = 'daily-hydration';
@@ -512,6 +514,13 @@ export class DemoRepository implements AppRepository {
   }
 
   async recordJourneyEvent(_stage: JourneyStage, _source: JourneySource, _contextId?: string) {}
+
+  async updatePilotParticipation(status: PilotParticipation['status']) {
+    if (!this.state.role) throw new Error('role_required');
+    this.state.pilotParticipation = pilotParticipationRecord(status, this.state.role);
+    this.persist();
+    return structuredClone(this.state.pilotParticipation);
+  }
 
   async savePlan(plan: MonitoringPlan, routineId = DEFAULT_ROUTINE_ID) {
     const assignment = this.state.routineAssignments.find((item) => item.routineId === routineId);

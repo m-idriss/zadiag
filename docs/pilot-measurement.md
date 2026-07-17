@@ -3,6 +3,19 @@
 Zadiag measures whether the core coordination loop works without collecting
 proof content or introducing a third-party analytics SDK.
 
+## Participation boundary
+
+Journey measurement is optional and is disabled until the account records an
+explicit choice for the current consent text version. Declining does not limit
+the application. An accepted account can withdraw from **Privacy & data**;
+withdrawal stops new client journey records without deleting the account.
+Changing the consent text version requires a new explicit choice.
+
+The server verifies the active consent version before accepting every client
+journey record. Pilot reporting must only include records created while that
+version was accepted. Previously created technical records keep their normal
+35-day deletion schedule after withdrawal.
+
 ## Data boundary
 
 Journey records contain a technical stage, timestamp, role, scoped profile

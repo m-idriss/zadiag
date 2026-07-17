@@ -10,7 +10,7 @@ import { Snackbar } from './components/Snackbar';
 import { PullToUpdate } from './components/PullToUpdate';
 import { isSummaryRange, type SummaryRange } from './components/AdherenceSummaryCard';
 import { firebaseEnabled } from './services/firebaseConfig';
-import { browserRouteContext, captureRelationshipInvitationCode, clearNotificationLaunchUrl, clearRelationshipInvitationUrl, isLocalDemoEnvironment, notificationLaunchIntent, notificationLaunchIntentFromMessage, routineCentricUiEnabled, type NotificationLaunchIntent } from './services/browserEnvironment';
+import { browserRouteContext, captureRelationshipInvitationCode, clearNotificationLaunchUrl, clearRelationshipInvitationUrl, notificationLaunchIntent, notificationLaunchIntentFromMessage, routineCentricUiEnabled, type NotificationLaunchIntent } from './services/browserEnvironment';
 import { runWhenStartupIsIdle } from './services/appUpdate';
 import { InstallScreen } from './screens/InstallScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
@@ -37,6 +37,7 @@ const SettingsScreen = lazyScreen(() => import('./screens/SettingsScreen'), 'Set
 const ParentDashboard = lazyScreen(() => import('./screens/ParentDashboard'), 'ParentDashboard');
 const RoutinesScreen = lazyScreen(() => import('./screens/RoutinesScreen'), 'RoutinesScreen');
 const InvitationScreen = lazyScreen(() => import('./screens/InvitationScreen'), 'InvitationScreen');
+const PilotConsentScreen = lazyScreen(() => import('./screens/PilotConsentScreen'), 'PilotConsentScreen');
 
 const appBadgeApi = navigator as Navigator & {
   setAppBadge?: (contents?: number) => Promise<void>;
@@ -172,7 +173,6 @@ export function App() {
   const [serviceWorkerStatus, setServiceWorkerStatus] = useState<'unsupported' | 'registered' | 'notRegistered'>(
     () => ('serviceWorker' in navigator ? 'notRegistered' : 'unsupported'),
   );
-  const useLocalDemo = isLocalDemoEnvironment();
   const t = createTranslator(state.locale);
   const preferences = normalizeAppPreferences(state.preferences);
   const {
@@ -536,7 +536,7 @@ export function App() {
     clearRelationshipInvitationUrl();
     setPendingInvitationCode(undefined);
     setInvitationNeedsAccountName(false);
-    setRoute(restored.role === 'child' && !restored.notificationsEnabled && !useLocalDemo ? 'notifications' : 'app');
+    setRoute(routeForState(restored, browserRouteContext()));
   };
 
   if (startupError) {
@@ -611,8 +611,8 @@ export function App() {
         code={state.family.linkingCode}
         childName={state.family.childName}
         back={() => setRoute('welcome')}
-        onParentLink={async (name) => { await repository.linkParent(name); sync(); setTab('home'); setRoute('app'); }}
-        onParentRecover={async (code) => { await repository.recoverParent(code); sync(); setRoute('app'); }}
+        onParentLink={async (name) => { await repository.linkParent(name); sync(); setTab('home'); setRoute(routeForState(repository.snapshot(), browserRouteContext())); }}
+        onParentRecover={async (code) => { await repository.recoverParent(code); sync(); setRoute(routeForState(repository.snapshot(), browserRouteContext())); }}
         onChildLink={async (code) => {
           if (isParticipantInvitationCode(code) && repository.acceptParticipantInvitation) {
             await repository.acceptParticipantInvitation(code);
@@ -620,11 +620,21 @@ export function App() {
             await repository.linkChild(code);
           }
           sync();
-          setRoute(useLocalDemo ? 'app' : 'notifications');
+          setRoute(routeForState(repository.snapshot(), browserRouteContext()));
         }}
         t={t}
       />
     );
+  } else if (route === 'pilot-consent' && state.role) {
+    content = <PilotConsentScreen role={state.role} decide={async (status) => {
+      if (!repository.updatePilotParticipation) throw new Error('pilot_participation_unavailable');
+      await repository.updatePilotParticipation(status);
+      if (status === 'accepted') {
+        void repository.recordJourneyEvent?.('app_ready', 'startup').catch((error) => console.error(error));
+      }
+      sync();
+      setRoute(routeForState(repository.snapshot(), browserRouteContext()));
+    }} t={t} />;
   } else if (route === 'notifications') {
     content = (
       <NotificationSetupScreen
@@ -710,6 +720,8 @@ export function App() {
             deleteParticipant={withOptionalRepositorySync(repository.deleteParticipant)}
             createRelationshipRecovery={bindOptionalRepository(repository.createRelationshipRecovery)}
             recoverRelationship={withOptionalRepositorySync(repository.recoverRelationship)}
+            pilotParticipation={state.pilotParticipation}
+            updatePilotParticipation={withOptionalRepositorySync(repository.updatePilotParticipation)}
             locale={state.locale}
             setLocale={syncLocale}
             updateInfo={appUpdateInfo}

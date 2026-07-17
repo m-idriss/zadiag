@@ -28,7 +28,10 @@ type AuditAction =
   | 'app_ready'
   | 'notifications_enabled'
   | 'notification_opened'
-  | 'check_opened';
+  | 'check_opened'
+  | 'accept_pilot_participation'
+  | 'decline_pilot_participation'
+  | 'withdraw_pilot_participation';
 
 type AuditMetadataValue = string | number | boolean | null | undefined;
 
