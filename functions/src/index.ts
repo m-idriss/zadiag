@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase-admin/app';
-import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { HttpsError, onCall, onRequest } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
@@ -13,7 +13,7 @@ import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema
 import { createDefaultRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, isRoutineValidationMode, routineFromCatalog, type RoutineAssignmentDocument } from './routines.js';
 import { buildCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription, type SyntheticReceiptPayload } from './notifications.js';
 import { isCheckRequestRateLimited } from './reminders.js';
-import { recordAuditEvent } from './audit.js';
+import { recordAuditEvent, recordJourneyEvent, type JourneyStage } from './audit.js';
 import { expiredPendingCheckCleanupUpdate, shouldDeleteProofAfterReview, staleCleanupCutoffs } from './cleanup.js';
 import { reportOperationalAlert, reportOperationalEvent } from './observability.js';
 import { shouldRecoverSyntheticPush } from './syntheticMonitor.js';
@@ -264,6 +264,35 @@ const pushRoleForAggregate = async (uid: string, aggregateRef: FirebaseFirestore
   const membership = await aggregateRef.collection('memberships').doc(uid).get();
   return membership.data()?.role === 'participant' ? 'child' : 'parent';
 };
+
+const journeyStages = new Set<JourneyStage>(['app_ready', 'notifications_enabled', 'notification_opened', 'check_opened']);
+const journeySources = new Set(['startup', 'settings', 'push', 'notification_center', 'dashboard', 'history']);
+
+export const recordClientJourney = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const aggregateId = requireDocumentId(request.data?.aggregateId, 'Profile ID');
+  const stage = String(request.data?.stage ?? '') as JourneyStage;
+  if (!journeyStages.has(stage)) throw new HttpsError('invalid-argument', 'A valid journey stage is required.');
+  const contextId = request.data?.contextId === undefined ? undefined : requireDocumentId(request.data.contextId, 'Context ID');
+  const source = String(request.data?.source ?? '');
+  if (!journeySources.has(source)) throw new HttpsError('invalid-argument', 'A valid journey source is required.');
+  const aggregateRef = await requireFamilyMember(uid, aggregateId);
+  const checkScoped = stage === 'notification_opened' || stage === 'check_opened';
+  if (checkScoped && !contextId) throw new HttpsError('invalid-argument', 'This journey stage requires a check context.');
+  if (!checkScoped && contextId) throw new HttpsError('invalid-argument', 'This journey stage does not accept a check context.');
+  if (contextId && !(await aggregateRef.collection('checks').doc(contextId).get()).exists) {
+    throw new HttpsError('not-found', 'The check could not be found.');
+  }
+  const role = await pushRoleForAggregate(uid, aggregateRef);
+  await recordJourneyEvent(db, {
+    stage,
+    actorUid: uid,
+    ...(aggregateRef.parent.id === 'participants' ? { participantId: aggregateId } : { familyId: aggregateId }),
+    role: role === 'child' ? 'child' : 'parent',
+    contextId,
+    metadata: { source, ...(contextId ? { contextId } : {}) },
+  });
+});
 
 const imageExtensionFor = (mimeType: string) => {
   if (mimeType === 'image/png') return 'png';
@@ -2579,6 +2608,7 @@ export const cleanupStaleOperationalData = onSchedule({
     expiredRelationshipRecoveryCodes,
     staleRecoveryAttempts,
     expiredPendingChecks,
+    expiredAuditEvents,
   ] = await Promise.all([
     db.collection('linkCodes').where('expiresAt', '<', cutoffs.expiredBefore).limit(200).get(),
     db.collection('linkCodes').where('consumedAt', '<', cutoffs.consumedBefore).limit(200).get(),
@@ -2592,6 +2622,7 @@ export const cleanupStaleOperationalData = onSchedule({
       .where('expiresAt', '<', cutoffs.pendingCheckExpiredBefore)
       .limit(200)
       .get(),
+    db.collection('auditEvents').where('createdAt', '<', Timestamp.fromMillis(now.getTime() - 35 * 86_400_000)).limit(200).get(),
   ]);
 
   const touchedPaths = new Set<string>();
@@ -2608,6 +2639,7 @@ export const cleanupStaleOperationalData = onSchedule({
   consumedRelationshipInvitations.docs.forEach(deleteOnce);
   expiredRelationshipRecoveryCodes.docs.forEach(deleteOnce);
   staleRecoveryAttempts.docs.forEach(deleteOnce);
+  expiredAuditEvents.docs.forEach(deleteOnce);
   const missedUpdate = expiredPendingCheckCleanupUpdate(now);
   expiredPendingChecks.docs.forEach((document) => {
     if (touchedPaths.has(document.ref.path)) return;

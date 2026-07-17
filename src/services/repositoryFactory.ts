@@ -1,4 +1,4 @@
-import type { AppRepository } from './contracts';
+import type { AppRepository, JourneySource, JourneyStage } from './contracts';
 import { DemoRepository } from './demoRepository';
 import { type AppPreferences, type Locale, type MembershipRole, type MonitoringPlan, type ProfileColorKey, type Role, type RoutineValidationMode } from '../domain/models';
 import { firebaseEnabled } from './firebaseConfig';
@@ -143,6 +143,11 @@ class LazyFirebaseRepository implements AppRepository {
 
   async sendTestPushNotification() {
     return (await this.load()).sendTestPushNotification();
+  }
+
+  async recordJourneyEvent(stage: JourneyStage, source: JourneySource, contextId?: string) {
+    const repository = await this.load();
+    if (repository.recordJourneyEvent) await repository.recordJourneyEvent(stage, source, contextId);
   }
 
   async savePlan(plan: MonitoringPlan, routineId?: string) {

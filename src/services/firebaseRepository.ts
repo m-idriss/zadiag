@@ -13,7 +13,7 @@ import {
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { getDownloadURL, ref as storageRef } from 'firebase/storage';
-import type { AppRepository } from './contracts';
+import type { AppRepository, JourneySource, JourneyStage } from './contracts';
 import { routineUpdatePayload } from './routineUpdate';
 import { getFirebaseServices, type FirebaseServices } from './firebaseClient';
 import {
@@ -222,6 +222,16 @@ export class FirebaseRepository implements AppRepository {
     await this.loadParticipantAccess();
     this.emit();
     return result.data.displayName;
+  }
+
+  async recordJourneyEvent(stage: JourneyStage, source: JourneySource, contextId?: string) {
+    if (!this.state.family.id) return;
+    const day = new Date().toISOString().slice(0, 10);
+    const dedupeKey = `zadiag.journey.${this.state.family.id}.${stage}.${contextId ?? day}`;
+    if (readUiStorageString(dedupeKey)) return;
+    const record = httpsCallable<{ aggregateId: string; stage: JourneyStage; source: JourneySource; contextId?: string }, void>(this.services.functions, 'recordClientJourney');
+    await record({ aggregateId: this.state.family.id, stage, source, ...(contextId ? { contextId } : {}) });
+    writeUiStorageString(dedupeKey, '1');
   }
 
   async updateParticipantColor(participantId: string, profileColor: ProfileColorKey) {

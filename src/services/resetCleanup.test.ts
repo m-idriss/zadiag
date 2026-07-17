@@ -28,6 +28,7 @@ describe('reset cleanup', () => {
 
   it('removes transient local and session state without touching persisted app data', async () => {
     localStorage.setItem('zadiag.transient.selectedSession', 'session-1');
+    localStorage.setItem('zadiag.journey.family.app_ready.2026-07-17', '1');
     localStorage.setItem('zadiag.demo.v1', '{"role":"child"}');
     sessionStorage.setItem('zadiag.notification.lastRoute', '/?open=verification');
     sessionStorage.setItem('unrelated', 'keep');
@@ -35,6 +36,7 @@ describe('reset cleanup', () => {
     await cleanupClientAfterReset();
 
     expect(localStorage.getItem('zadiag.transient.selectedSession')).toBeNull();
+    expect(localStorage.getItem('zadiag.journey.family.app_ready.2026-07-17')).toBeNull();
     expect(localStorage.getItem('zadiag.demo.v1')).toBe('{"role":"child"}');
     expect(sessionStorage.getItem('zadiag.notification.lastRoute')).toBeNull();
     expect(sessionStorage.getItem('unrelated')).toBe('keep');

@@ -14,7 +14,7 @@ import { routineFromCatalog } from '../domain/routineCatalog';
 import { activeParticipantAccess } from '../domain/participantAccess';
 import { isFreshCapture } from '../domain/adherence';
 import { responseWindowExpiresAt } from '../domain/monitoringPlan';
-import type { AppRepository } from './contracts';
+import type { AppRepository, JourneySource, JourneyStage } from './contracts';
 import { browserLocale } from './appStateDefaults';
 
 const STORAGE_KEY = 'zadiag.demo.v1';
@@ -510,6 +510,8 @@ export class DemoRepository implements AppRepository {
     };
     this.persist();
   }
+
+  async recordJourneyEvent(_stage: JourneyStage, _source: JourneySource, _contextId?: string) {}
 
   async savePlan(plan: MonitoringPlan, routineId = DEFAULT_ROUTINE_ID) {
     const assignment = this.state.routineAssignments.find((item) => item.routineId === routineId);
