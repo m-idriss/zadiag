@@ -720,6 +720,15 @@ export function App() {
               getProofImageUrl={(eventId) => repository.getProofImageUrl(eventId)}
               reviewCheck={withRepositorySyncVoid(repository.reviewCheck)}
               requestCheck={withRepositorySync(repository.requestCheckNow)}
+              updateRoutine={async (routineId, plan) => {
+                setSavingRoutineId(routineId);
+                try {
+                  await repository.updateRoutine(routineId, plan);
+                  sync();
+                } finally {
+                  setSavingRoutineId(undefined);
+                }
+              }}
               summaryRange={dashboardSummaryRange}
               onSummaryRangeChange={setDashboardSummaryRange}
               onSelectParticipant={selectActiveParticipant}

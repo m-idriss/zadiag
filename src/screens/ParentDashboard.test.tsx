@@ -124,6 +124,38 @@ describe('ParentDashboard', () => {
     expect(localStorage.getItem('zadiag.dashboard.anomaly.maya')).toBe('orthodontic-elastics:missed-0');
   });
 
+  it('compares and applies a conservative schedule recommendation only after confirmation', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-17T12:00:00.000Z'));
+    const assignment = createDefaultRoutineAssignment();
+    assignment.plan.timeZone = 'UTC';
+    const updateRoutine = vi.fn().mockResolvedValue(undefined);
+    const events = ['2026-07-17', '2026-07-16', '2026-07-15'].map((day, index) => ({
+      id: `morning-missed-${index}`, routineId: assignment.routineId, sessionId: `session-${index}`,
+      requestedAt: `${day}T07:45:00.000Z`, expiresAt: `${day}T09:30:00.000Z`, status: 'missed' as const,
+    }));
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true, activeParticipantId: 'maya',
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      routineAssignments: [assignment], events,
+    };
+
+    act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} updateRoutine={updateRoutine} t={(key) => translate('en', key)} />));
+    expect(container.textContent).not.toContain('Suggested schedule adjustment');
+    act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent === 'View suggestion')?.click());
+    expect(container.querySelector('.planning-recommendation')?.textContent).toContain('3 max checks each day');
+    expect(container.querySelector('.planning-recommendation')?.textContent).toContain('2 max checks each day');
+    expect(updateRoutine).not.toHaveBeenCalled();
+
+    await act(async () => {
+      Array.from(container.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent === 'Apply this schedule')?.click();
+      await Promise.resolve();
+    });
+    expect(updateRoutine).toHaveBeenCalledOnce();
+    expect(updateRoutine.mock.calls[0][1].scheduleGroups[0].windows.map((window: { id: string }) => window.id)).toEqual(['midday', 'evening']);
+    expect(container.querySelector('.planning-recommendation')?.textContent).toContain('The new schedule is saved.');
+  });
+
   it.each([
     { status: 'pending' as const, label: 'Resend reminder', expiresOffset: 60 * 60_000 },
     { status: 'missed' as const, label: 'Request a check now', expiresOffset: -60 * 60_000 },

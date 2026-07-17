@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type TouchEvent } from 'react';
-import type { AppState, VerificationEvent } from '../domain/models';
+import type { AppState, MonitoringPlan, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
 import { CodeBox } from '../components/CodeBox';
@@ -20,7 +20,7 @@ import { NotificationCenter } from '../components/NotificationCenter';
 import { AwaitingCheckCards } from '../components/AwaitingCheckCards';
 import { useCurrentTime } from '../hooks/useCurrentTime';
 import { VerificationEventDetailDialog } from '../components/VerificationEventDetailDialog';
-import { routineAnomalies } from '../domain/reporting';
+import { planningRecommendation, routineAnomalies } from '../domain/reporting';
 
 export function ParentDashboard({
   state,
@@ -29,6 +29,7 @@ export function ParentDashboard({
   getProofImageUrl,
   reviewCheck,
   requestCheck,
+  updateRoutine,
   summaryRange: controlledSummaryRange,
   onSummaryRangeChange,
   onSelectParticipant,
@@ -43,6 +44,7 @@ export function ParentDashboard({
   getProofImageUrl?: (eventId: string) => Promise<string>;
   reviewCheck?: (eventId: string, decision: 'detected' | 'not_detected') => Promise<void>;
   requestCheck?: (routineId: string) => Promise<void>;
+  updateRoutine?: (routineId: string, plan: MonitoringPlan) => Promise<void>;
   summaryRange?: SummaryRange;
   onSummaryRangeChange?: (range: SummaryRange) => void;
   onSelectParticipant?: (participantId: string) => void;
@@ -64,6 +66,8 @@ export function ParentDashboard({
   const [enlargedProofUrl, setEnlargedProofUrl] = useState<string>();
   const [detailEventId, setDetailEventId] = useState<string>();
   const [dismissedAnomaly, setDismissedAnomaly] = useState<string>();
+  const [planningRecommendationOpen, setPlanningRecommendationOpen] = useState(false);
+  const [planningRecommendationStatus, setPlanningRecommendationStatus] = useState<'saving' | 'saved' | 'error'>();
   const swipeStartRef = useRef<{ eventId: string; x: number; y: number } | undefined>(undefined);
   const handledNotificationEventIdRef = useRef<string | undefined>(undefined);
   const summaryRange = controlledSummaryRange ?? localSummaryRange;
@@ -105,6 +109,8 @@ export function ParentDashboard({
   const anomalyStorageKey = `zadiag.dashboard.anomaly.${state.activeParticipantId ?? state.family.childName}`;
   const visibleAnomaly = anomaly && dismissedAnomaly !== anomalyFingerprint
     && localStorage.getItem(anomalyStorageKey) !== anomalyFingerprint ? anomaly : undefined;
+  const anomalyAssignment = visibleAnomaly ? state.routineAssignments.find((assignment) => assignment.routineId === visibleAnomaly.routineId) : undefined;
+  const recommendedPlan = anomalyAssignment ? planningRecommendation(anomalyAssignment, displayEvents, now) : undefined;
   const responsibleEmptyState = !state.family.childLinked
     ? { icon: 'link' as const, title: t('responsibleEmptyParticipantNotLinkedTitle'), hint: t('responsibleEmptyParticipantNotLinkedHint') }
     : !state.routineAssignments.length
@@ -228,6 +234,8 @@ export function ParentDashboard({
   useEffect(() => {
     setExpandedStatus(undefined);
     setDismissedAnomaly(undefined);
+    setPlanningRecommendationOpen(false);
+    setPlanningRecommendationStatus(undefined);
   }, [state.activeParticipantId]);
   useEffect(() => {
     if (!notificationEventId) {
@@ -305,18 +313,40 @@ export function ParentDashboard({
             <p>{t(visibleAnomaly.kind === 'missed' ? 'routineAnomalyMissed' : 'routineAnomalyRejected')}</p>
             <small>{visibleAnomaly.failed}/{visibleAnomaly.checked} {t('routineAnomalyRecentChecks')}</small>
           </div>
-          <button type="button" className="routine-anomaly-action" onClick={() => {
-            if (visibleAnomaly.kind === 'missed' && requestCheck) {
+          <button type="button" className="routine-anomaly-action" disabled={planningRecommendationStatus === 'saving'} onClick={() => {
+            if (recommendedPlan && updateRoutine) setPlanningRecommendationOpen((current) => !current);
+            else if (visibleAnomaly.kind === 'missed' && requestCheck) {
               setExpandedStatus('active');
               void resendActiveReminders(visibleAnomaly.routineId);
             }
             else setSummaryRange('week');
-          }}>{t(visibleAnomaly.kind === 'missed' && requestCheck ? 'routineAnomalyRequest' : 'routineAnomalyReview')}</button>
+          }}>{t(recommendedPlan && updateRoutine ? 'planningSuggestionView' : visibleAnomaly.kind === 'missed' && requestCheck ? 'routineAnomalyRequest' : 'routineAnomalyReview')}</button>
           <button type="button" className="routine-anomaly-dismiss" aria-label={t('routineAnomalyDismiss')} onClick={() => {
             if (!anomalyFingerprint) return;
             localStorage.setItem(anomalyStorageKey, anomalyFingerprint);
             setDismissedAnomaly(anomalyFingerprint);
           }}><AppIcon name="close" /></button>
+          {planningRecommendationOpen && recommendedPlan && updateRoutine ? (
+            <div className="planning-recommendation">
+              <h3>{t('planningSuggestionTitle')}</h3>
+              <p>{t('planningSuggestionDetail')} <strong>{recommendedPlan.removedWindow.start}–{recommendedPlan.removedWindow.end}</strong></p>
+              {recommendedPlan.preservedWindow ? <p>{t('planningSuggestionPreserved')} <strong>{recommendedPlan.preservedWindow.start}–{recommendedPlan.preservedWindow.end}</strong></p> : null}
+              <div className="planning-recommendation-comparison">
+                <span><small>{t('planningSuggestionCurrent')}</small><strong>{recommendedPlan.previousChecksPerDay} {t('checksDay')}</strong></span>
+                <AppIcon name="chevron-forward" />
+                <span><small>{t('planningSuggestionProposed')}</small><strong>{recommendedPlan.proposedChecksPerDay} {t('checksDay')}</strong></span>
+              </div>
+              <p className="planning-recommendation-note">{t('planningSuggestionNote')}</p>
+              {planningRecommendationStatus === 'saved' ? <p className="request-feedback success" role="status">{t('planningSuggestionSaved')}</p> : null}
+              {planningRecommendationStatus === 'error' ? <p className="request-feedback error" role="alert">{t('planningSuggestionError')}</p> : null}
+              <button type="button" disabled={planningRecommendationStatus === 'saving' || planningRecommendationStatus === 'saved'} onClick={() => {
+                setPlanningRecommendationStatus('saving');
+                void updateRoutine(recommendedPlan.routineId, recommendedPlan.plan)
+                  .then(() => setPlanningRecommendationStatus('saved'))
+                  .catch((error) => { console.error(error); setPlanningRecommendationStatus('error'); });
+              }}>{planningRecommendationStatus === 'saving' ? t('planningSuggestionApplying') : t('planningSuggestionApply')}</button>
+            </div>
+          ) : null}
         </section>
       ) : null}
 

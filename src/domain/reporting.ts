@@ -1,5 +1,6 @@
 import { adherenceSummary, isCompletedVerification } from './adherence';
-import type { VerificationEvent } from './models';
+import type { MonitoringPlan, RoutineAssignment, VerificationEvent } from './models';
+import { buildMonitoringPlanFromGroups, groupsFromLegacyPlan } from './monitoringPlan';
 
 export type SummaryRange = 'day' | 'twoDays' | 'week' | 'month' | 'quarter';
 
@@ -9,6 +10,15 @@ export interface RoutineAnomaly {
   failed: number;
   checked: number;
   latestEventId: string;
+}
+
+export interface PlanningRecommendation {
+  routineId: string;
+  plan: MonitoringPlan;
+  removedWindow: { start: string; end: string };
+  preservedWindow?: { start: string; end: string };
+  previousChecksPerDay: number;
+  proposedChecksPerDay: number;
 }
 
 const rangeDays: Record<SummaryRange, number> = {
@@ -106,4 +116,71 @@ export const routineAnomalies = (events: VerificationEvent[], now = Date.now()):
       latestEventId: failures[0].id,
     };
   }).filter((anomaly): anomaly is RoutineAnomaly => Boolean(anomaly));
+};
+
+const eventScheduleParts = (value: string, timeZone: string) => {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone, weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(new Date(value));
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? '';
+  const weekday = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(part('weekday')) + 1;
+  return { weekday, minute: Number(part('hour')) * 60 + Number(part('minute')) };
+};
+
+const timeMinutes = (value: string) => {
+  const [hour, minute] = value.split(':').map(Number);
+  return hour * 60 + minute;
+};
+
+export const planningRecommendation = (
+  assignment: RoutineAssignment,
+  events: VerificationEvent[],
+  now = Date.now(),
+): PlanningRecommendation | undefined => {
+  const anomaly = routineAnomalies(events, now).find((item) => item.routineId === assignment.routineId && item.kind === 'missed');
+  if (!anomaly) return undefined;
+  const groups = groupsFromLegacyPlan(assignment.plan);
+  const cutoff = now - 30 * 86_400_000;
+  const performance = new Map<string, { failures: number; successes: number }>();
+
+  events.filter((event) => event.routineId === assignment.routineId
+    && eventTimestamp(event) >= cutoff && eventTimestamp(event) <= now
+    && ['detected', 'missed', 'expired'].includes(event.status)).forEach((event) => {
+    const schedule = eventScheduleParts(event.requestedAt, assignment.plan.timeZone);
+    groups.forEach((group) => {
+      if (!group.weekdays.includes(schedule.weekday)) return;
+      group.windows.forEach((window) => {
+        if (schedule.minute < timeMinutes(window.start) || schedule.minute > timeMinutes(window.end)) return;
+        const key = `${group.id}:${window.id}`;
+        const current = performance.get(key) ?? { failures: 0, successes: 0 };
+        if (event.status === 'detected') current.successes += 1;
+        else current.failures += 1;
+        performance.set(key, current);
+      });
+    });
+  });
+
+  const candidate = groups.flatMap((group) => group.windows.length > 1 ? group.windows.map((window) => ({
+    groupId: group.id, window, performance: performance.get(`${group.id}:${window.id}`) ?? { failures: 0, successes: 0 },
+  })) : []).filter((item) => item.performance.failures >= 2)
+    .sort((a, b) => b.performance.failures - a.performance.failures || a.performance.successes - b.performance.successes)[0];
+  if (!candidate) return undefined;
+
+  const nextGroups = groups.map((group) => group.id === candidate.groupId
+    ? { ...group, windows: group.windows.filter((window) => window.id !== candidate.window.id) }
+    : group);
+  const plan = buildMonitoringPlanFromGroups(assignment.plan, nextGroups);
+  if (plan.checksPerDay >= assignment.plan.checksPerDay) return undefined;
+  const preserved = groups.flatMap((group) => group.windows.map((window) => ({
+    groupId: group.id, window, performance: performance.get(`${group.id}:${window.id}`) ?? { failures: 0, successes: 0 },
+  }))).filter((item) => !(item.groupId === candidate.groupId && item.window.id === candidate.window.id) && item.performance.successes > 0)
+    .sort((a, b) => b.performance.successes - a.performance.successes || a.performance.failures - b.performance.failures)[0];
+  return {
+    routineId: assignment.routineId,
+    plan,
+    removedWindow: { start: candidate.window.start, end: candidate.window.end },
+    ...(preserved ? { preservedWindow: { start: preserved.window.start, end: preserved.window.end } } : {}),
+    previousChecksPerDay: assignment.plan.checksPerDay,
+    proposedChecksPerDay: plan.checksPerDay,
+  };
 };

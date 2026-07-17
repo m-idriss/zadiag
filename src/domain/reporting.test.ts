@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { VerificationEvent } from './models';
-import { adherencePeriodReport, eventsForReportingPeriods, routineAnomalies } from './reporting';
+import { adherencePeriodReport, eventsForReportingPeriods, planningRecommendation, routineAnomalies } from './reporting';
+import { createDefaultRoutineAssignment } from './models';
 
 const event = (id: string, routineId: string, capturedAt: string, status: VerificationEvent['status']): VerificationEvent => ({
   id,
@@ -32,6 +33,39 @@ describe('routineAnomalies', () => {
       requestedAt: new Date(now - (8 + index) * 86_400_000).toISOString(),
       expiresAt: new Date(now - (8 + index) * 86_400_000 + 1_800_000).toISOString(), status: 'missed' as const,
     })), now)).toEqual([]);
+  });
+});
+
+describe('planningRecommendation', () => {
+  it('proposes removing a repeatedly missed window while preserving the rest of the plan', () => {
+    const now = Date.parse('2026-07-17T12:00:00.000Z');
+    const assignment = createDefaultRoutineAssignment();
+    assignment.plan.timeZone = 'UTC';
+    const statuses = ['missed', 'missed', 'missed', 'detected', 'detected'] as const;
+    const events = statuses.map((status, index) => ({
+      id: `event-${index}`, routineId: assignment.routineId, sessionId: `session-${index}`,
+      requestedAt: new Date(Date.parse(`2026-07-${17 - index}T${status === 'detected' ? '12:15' : '07:45'}:00.000Z`)).toISOString(),
+      expiresAt: new Date(Date.parse(`2026-07-${17 - index}T09:30:00.000Z`)).toISOString(), status,
+    }));
+
+    const recommendation = planningRecommendation(assignment, events, now);
+    expect(recommendation?.removedWindow).toEqual({ start: '07:30', end: '09:30' });
+    expect(recommendation?.preservedWindow).toEqual({ start: '12:00', end: '14:00' });
+    expect(recommendation?.previousChecksPerDay).toBe(3);
+    expect(recommendation?.proposedChecksPerDay).toBe(2);
+    expect(recommendation?.plan.scheduleGroups?.[0].windows.map((window) => window.id)).toEqual(['midday', 'evening']);
+  });
+
+  it('does not reduce a plan when misses are spread without a weak window', () => {
+    const assignment = createDefaultRoutineAssignment();
+    assignment.plan.timeZone = 'UTC';
+    const now = Date.parse('2026-07-17T20:00:00.000Z');
+    const hours = ['07:45', '12:15', '17:15'];
+    const events = hours.map((hour, index) => ({
+      id: `event-${index}`, routineId: assignment.routineId, sessionId: `session-${index}`,
+      requestedAt: `2026-07-${17 - index}T${hour}:00.000Z`, expiresAt: `2026-07-${17 - index}T20:00:00.000Z`, status: 'missed' as const,
+    }));
+    expect(planningRecommendation(assignment, events, now)).toBeUndefined();
   });
 });
 
