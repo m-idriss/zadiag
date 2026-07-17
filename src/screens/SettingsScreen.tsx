@@ -475,6 +475,11 @@ export function SettingsScreen({
             detail={t('trustDiagnosticsDetail')}
           />
           <ListRow
+            icon={<SvgIcon icon={informationCircleOutline} />}
+            title={t('trustJourneyTitle')}
+            detail={t('trustJourneyDetail')}
+          />
+          <ListRow
             icon={<SvgIcon icon={downloadOutline} />}
             title={t('trustDataCopyTitle')}
             detail={t('trustDataCopyDetail')}

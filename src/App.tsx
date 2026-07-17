@@ -293,6 +293,7 @@ export function App() {
       return;
     }
     setFocusedDashboardEventId(resolution.eventId);
+    void repository.recordJourneyEvent?.('notification_opened', 'push', resolution.eventId).catch((error) => console.error('Journey event error:', error));
     if (resolution.status === 'stale') setNotificationNotice({ key: resolution.noticeKey, eventId: resolution.eventId });
     setTab('home');
     setRoute('app');
@@ -360,6 +361,7 @@ export function App() {
       setStartupStep(100, 'splashFinalizing');
       setStartupError(false);
       setReady(true);
+      void repository.recordJourneyEvent?.('app_ready', 'startup').catch((error) => console.error('Journey event error:', error));
       runWhenStartupIsIdle(() => {
         void checkForAppUpdate();
       });
@@ -468,6 +470,8 @@ export function App() {
   };
 
   const startCapture = (event?: VerificationEvent) => {
+    const openedEvent = event ?? repository.activeSession();
+    if (openedEvent) void repository.recordJourneyEvent?.('check_opened', 'dashboard', openedEvent.id).catch((error) => console.error('Journey event error:', error));
     setSelectedSessionId(event?.sessionId);
     setRoute('camera');
   };
@@ -485,6 +489,7 @@ export function App() {
       if (!selectActiveParticipant) return;
       await selectActiveParticipant(participantId);
     }
+    void repository.recordJourneyEvent?.('notification_opened', 'notification_center', event.id).catch((error) => console.error('Journey event error:', error));
     setFocusedDashboardEventId(event.id);
     setTab('home');
     setRoute('app');
@@ -519,6 +524,7 @@ export function App() {
     if (permission !== 'granted') throw new PushSetupError('notification_permission_reset');
     const subscription = await push.subscribe();
     await repository.savePushSubscription(subscription.toJSON());
+    void repository.recordJourneyEvent?.('notifications_enabled', 'settings').catch((error) => console.error('Journey event error:', error));
   };
   const updateSnackbarMessage = appUpdateInfo.severity === 'major'
     ? t('snackbarUpdateMajorAvailable')

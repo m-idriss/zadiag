@@ -153,6 +153,8 @@ describe('SettingsScreen privacy and data', () => {
     expect(trustCenter?.textContent).toContain('Privacy & data');
     expect(trustCenter?.textContent).toContain('automatically deleted after at most 30 days');
     expect(trustCenter?.textContent).toContain('Diagnostic logs stay on this device for up to 7 days');
+    expect(trustCenter?.textContent).toContain('No photo, name, email, routine content, or medical information is included');
+    expect(trustCenter?.textContent).toContain('deleted after 35 days');
     expect(trustCenter?.textContent).toContain('Who has access');
     expect(trustCenter?.textContent).toContain('Your data copy');
     expect(container.textContent).toContain('Delete account data');

@@ -4,6 +4,7 @@ const TRANSIENT_STORAGE_PREFIXES = [
   'zadiag.transient.',
   'zadiag.session.',
   'zadiag.notification.',
+  'zadiag.journey.',
 ];
 
 const navigatorBadge = navigator as Navigator & {
