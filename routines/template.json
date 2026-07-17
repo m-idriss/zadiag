@@ -5,7 +5,10 @@
   "instructions": "Tell the participant exactly what to do when a check is requested.",
   "icon": "star",
   "accentColor": "#2387c9",
+  "category": "custom",
   "proofType": "Photo",
+  "proofExample": "Describe the concrete proof shown in the photo.",
+  "recommendedValidationMode": "ai",
   "responsibleName": "Care team",
   "analysis": {
     "expectedEvidence": "Describe the visible proof that should be accepted.",
@@ -38,6 +41,7 @@
       "name": "Nom de la routine",
       "description": "Une phrase qui décrit ce qui est suivi.",
       "instructions": "Explique au participant quoi faire quand un contrôle est demandé.",
+      "proofExample": "Décris la preuve concrète visible sur la photo.",
       "analysis": {
         "expectedEvidence": "Décris la preuve visible qui doit être acceptée.",
         "detectedCriteria": "La photo montre clairement la preuve attendue.",

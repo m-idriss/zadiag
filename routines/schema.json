@@ -9,9 +9,16 @@
     "name",
     "description",
     "instructions",
+    "icon",
+    "accentColor",
+    "category",
     "proofType",
+    "proofExample",
+    "recommendedValidationMode",
+    "responsibleName",
     "analysis",
-    "instructionSteps"
+    "instructionSteps",
+    "translations"
   ],
   "properties": {
     "id": {
@@ -37,9 +44,12 @@
       "type": "string",
       "pattern": "^#[0-9a-fA-F]{6}$"
     },
+    "category": { "type": "string", "enum": ["dental", "wellness", "medication", "activity", "custom"] },
     "proofType": {
       "type": "string"
     },
+    "proofExample": { "type": "string", "minLength": 10 },
+    "recommendedValidationMode": { "type": "string", "enum": ["ai", "auto"] },
     "responsibleName": {
       "type": "string"
     },
@@ -135,6 +145,7 @@
         "instructions": {
           "type": "string"
         },
+        "proofExample": { "type": "string" },
         "analysis": {
           "$ref": "#/$defs/analysis"
         },

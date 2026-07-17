@@ -52,8 +52,8 @@ This gives us a repo-friendly workflow before the full marketplace backend exist
 
 1. A routine is proposed as a JSON file.
 2. The file is reviewed in a PR.
-3. Approved routines can be added to the built-in catalog or published to Firestore `routineTemplates`.
-4. Later, CI can validate and generate the TypeScript catalog from these files.
+3. CI validates every routine file and verifies that generated catalogs are current.
+4. `npm run generate:routines` generates the frontend and Functions catalogs from the same files.
 
 ## Flows
 

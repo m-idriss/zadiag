@@ -1,7 +1,7 @@
 {
   "name": "zadiag-pwa",
   "private": true,
-  "version": "0.9.41",
+  "version": "0.9.42",
   "type": "module",
   "packageManager": "pnpm@11.7.0",
   "engines": {
@@ -13,7 +13,9 @@
     "check:architecture": "node scripts/check-architecture.mjs",
     "check:bundle": "node scripts/check-bundle-size.mjs",
     "check:design": "node scripts/check-design.mjs",
-    "check": "npm run check:architecture && npm run check:design && npm run test && npm run build && npm run check:bundle && npm --prefix functions test",
+    "check:routines": "node scripts/generate-routine-catalog.mjs --check",
+    "generate:routines": "node scripts/generate-routine-catalog.mjs",
+    "check": "npm run check:routines && npm run check:architecture && npm run check:design && npm run test && npm run build && npm run check:bundle && npm --prefix functions test",
     "check:full": "npm run check && npm run test:rules",
     "check:security": "corepack pnpm audit --prod --audit-level high && npm --prefix functions audit --omit=dev --audit-level=high",
     "icons": "node scripts/generate-icons.mjs",

@@ -19,9 +19,9 @@ routines/
 4. Add French content under `translations.fr` when available.
 5. Define the `analysis` block carefully. This is what the verification prompt uses.
 6. Keep `accentColor` as a hex color like `#2387c9`.
-7. Run tests and build before opening a PR.
+7. Run `npm run generate:routines`, then `npm run check:routines` before opening a PR.
 
-`schema.json` defines the validation contract. The next CI step should validate every routine file except `template.json` and `schema.json` against that schema.
+`schema.json` defines the validation contract. CI validates every routine file except `template.json` and `schema.json`, then refuses stale generated catalogs.
 
 ## Required Fields
 
@@ -45,11 +45,11 @@ routines/
 
 ## Import Path
 
-Today, built-in routines still live in `src/domain/routineCatalog.ts`. The target architecture is:
+Built-in routines use this flow:
 
 1. Keep one routine file here.
 2. Validate these JSON files in CI.
-3. Generate the app catalog from these files.
+3. Generate the frontend and Functions catalogs from these files with `npm run generate:routines`.
 4. Publish selected routines to Firestore `routineTemplates` for the marketplace.
 
 If this grows into its own repository later, keep the same structure:
