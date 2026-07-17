@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { VerificationEvent } from './models';
-import { adherencePeriodReport, eventsForReportingPeriods, planningRecommendation, routineAnomalies } from './reporting';
+import { adherencePeriodReport, eventsForReportingPeriods, planningRecommendation, routineAnomalies, weeklyInsight } from './reporting';
 import { createDefaultRoutineAssignment } from './models';
 
 const event = (id: string, routineId: string, capturedAt: string, status: VerificationEvent['status']): VerificationEvent => ({
@@ -66,6 +66,39 @@ describe('planningRecommendation', () => {
       requestedAt: `2026-07-${17 - index}T${hour}:00.000Z`, expiresAt: `2026-07-${17 - index}T20:00:00.000Z`, status: 'missed' as const,
     }));
     expect(planningRecommendation(assignment, events, now)).toBeUndefined();
+  });
+});
+
+describe('weeklyInsight', () => {
+  it('summarizes progress, the best slot, responsible activity and one priority', () => {
+    const now = Date.parse('2026-07-17T20:00:00.000Z');
+    const assignment = createDefaultRoutineAssignment();
+    assignment.plan.timeZone = 'UTC';
+    const events: VerificationEvent[] = [
+      { id: 'one', routineId: assignment.routineId, sessionId: 'one', requestedAt: '2026-07-17T12:15:00.000Z', expiresAt: '2026-07-17T14:00:00.000Z', status: 'detected', responsibleActions: [{ type: 'approved', at: '2026-07-17T13:00:00.000Z', actorUid: 'owner', actorName: 'Idriss' }] },
+      { id: 'two', routineId: assignment.routineId, sessionId: 'two', requestedAt: '2026-07-16T12:15:00.000Z', expiresAt: '2026-07-16T14:00:00.000Z', status: 'detected' },
+      { id: 'three', routineId: assignment.routineId, sessionId: 'three', requestedAt: '2026-07-15T07:45:00.000Z', expiresAt: '2026-07-15T09:30:00.000Z', status: 'missed' },
+      { id: 'previous', routineId: assignment.routineId, sessionId: 'previous', requestedAt: '2026-07-08T12:15:00.000Z', expiresAt: '2026-07-08T14:00:00.000Z', status: 'detected' },
+    ];
+
+    const insight = weeklyInsight([assignment], events, now);
+    expect(insight).toMatchObject({
+      rate: 2 / 3,
+      strongestRoutineId: assignment.routineId,
+      watchRoutineId: assignment.routineId,
+      bestWindow: { start: '12:00', end: '14:00' },
+      responsibleActionCount: 1,
+      responsibleActions: [{ actorName: 'Idriss', count: 1 }],
+      priority: 'support_consistency',
+    });
+    expect(insight?.rateDelta).toBeCloseTo(-1 / 3);
+  });
+
+  it('waits for three completed checks before presenting a weekly conclusion', () => {
+    const assignment = createDefaultRoutineAssignment();
+    expect(weeklyInsight([assignment], [{
+      id: 'one', routineId: assignment.routineId, sessionId: 'one', requestedAt: new Date().toISOString(), expiresAt: new Date().toISOString(), status: 'detected',
+    }])).toBeUndefined();
   });
 });
 

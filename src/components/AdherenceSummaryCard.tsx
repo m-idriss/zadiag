@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { adherencePeriodReport, eventsInSummaryRange, isSummaryRange, routineAnomalies, type SummaryRange } from '../domain/reporting';
 import type { Locale, RoutineAssignment, VerificationEvent, VerificationStatus } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
@@ -53,6 +53,7 @@ export function AdherenceSummaryCard({
   subjectName,
   range,
   onRangeChange,
+  detailedReportOpenSignal,
   t,
 }: {
   events: VerificationEvent[];
@@ -61,9 +62,11 @@ export function AdherenceSummaryCard({
   subjectName: string;
   range: SummaryRange;
   onRangeChange: (range: SummaryRange) => void;
+  detailedReportOpenSignal?: number;
   t: (key: MessageKey) => string;
 }) {
   const selectedRange = ranges.find((item) => item.id === range) ?? ranges[0];
+  const detailedReportRef = useRef<HTMLDetailsElement>(null);
   const report = useMemo(() => adherencePeriodReport(events, range), [events, range]);
   const anomalies = useMemo(() => routineAnomalies(events), [events]);
   const summary = report.current;
@@ -117,6 +120,9 @@ export function AdherenceSummaryCard({
     privacyNote: t('reportPrivacyNote'),
   };
   const [reportDownloadState, setReportDownloadState] = useState<'idle' | 'pdf' | 'csv' | 'error'>('idle');
+  useEffect(() => {
+    if (detailedReportOpenSignal && detailedReportRef.current) detailedReportRef.current.open = true;
+  }, [detailedReportOpenSignal]);
   const downloadReport = async (format: 'pdf' | 'csv') => {
     if (['pdf', 'csv'].includes(reportDownloadState) || !summary.completed) return;
     setReportDownloadState(format);
@@ -185,7 +191,7 @@ export function AdherenceSummaryCard({
           </button>
         ))}
       </div>
-      <details className="detailed-reporting">
+      <details ref={detailedReportRef} className="detailed-reporting">
         <summary>{t('summaryDetailedReport')}</summary>
         <div className="detailed-reporting-content">
           <small className="summary-comparison">{comparison}</small>

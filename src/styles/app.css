@@ -764,6 +764,21 @@ button:disabled { cursor: not-allowed; }
 .planning-recommendation .planning-recommendation-note { color: var(--color-text-muted); font-size: 11px; }
 .planning-recommendation > button { justify-self: start; min-height: var(--height-action); padding: 8px 12px; border: 0; border-radius: 12px; background: var(--color-primary); color: var(--color-surface-solid); font-size: 11px; font-weight: 850; }
 .planning-recommendation .request-feedback { margin: 0; }
+.weekly-insight-card { display: grid; gap: 10px; padding: var(--block-padding-lg); }
+.weekly-insight-card > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.weekly-insight-card > header .eyebrow { padding: 0; background: transparent; color: var(--color-primary); font-size: 10px; }
+.weekly-insight-card > header h2 { margin: 3px 0 0; font-size: 18px; }
+.weekly-insight-card > header > strong { color: var(--color-primary); font-size: 26px; line-height: 1; }
+.weekly-insight-evolution { margin: 0; color: var(--color-text-muted); font-size: 12px; font-weight: 750; }
+.weekly-insight-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.weekly-insight-metrics > span { display: grid; gap: 3px; padding: 9px 10px; border-radius: 12px; background: var(--color-canvas-elevated); }
+.weekly-insight-metrics small, .weekly-insight-priority small { color: var(--color-text-muted); font-size: 10px; font-weight: 800; }
+.weekly-insight-metrics strong { overflow-wrap: anywhere; font-size: 12px; }
+.weekly-insight-priority { display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: start; gap: 9px; padding: 10px; border-radius: 13px; background: var(--color-primary-soft); color: var(--color-primary); }
+.weekly-insight-priority > .app-icon { margin-top: 2px; font-size: 22px; }
+.weekly-insight-priority p { display: grid; gap: 2px; margin: 0; }
+.weekly-insight-priority strong { color: var(--color-text); font-size: 12px; line-height: 1.35; }
+.weekly-insight-card > button { justify-self: start; min-height: var(--height-action); padding: 8px 12px; border: 0; border-radius: 12px; background: var(--color-text); color: var(--color-surface-solid); font-size: 11px; font-weight: 850; }
 @media (max-width: 560px) {
   .routine-anomaly-card { grid-template-columns: 40px minmax(0, 1fr); }
   .routine-anomaly-action { grid-column: 2; width: 100%; margin: 0; }
