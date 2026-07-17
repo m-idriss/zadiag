@@ -10,7 +10,7 @@ import { ParticipantSelector } from '../components/ParticipantSelector';
 import { presentRoutine } from '../domain/routinePresentation';
 import { assignableRoutineTemplates, marketplaceFromTemplates, presentRoutineTemplate } from '../domain/routineMarketplace';
 import { withResolvedEventStatuses } from '../domain/adherence';
-import type { PublishedRoutineVersion, RoutineDraft } from '../domain/routineDraft';
+import type { PublishedRoutineVersion, RoutineCatalogEntry, RoutineDraft } from '../domain/routineDraft';
 import { readUiStorageJson, readUiStorageString, removeUiStorageItem, writeUiStorageString } from '../services/uiStorage';
 
 const RoutineDetailScreen = lazy(() => import('./RoutineDetailScreen').then((module) => ({ default: module.RoutineDetailScreen })));
@@ -129,6 +129,11 @@ export function RoutinesScreen({
   onPublishRoutineDraft,
   onListPublishedRoutineVersions,
   onUpgradeRoutineAssignment,
+  onSearchRoutineCatalog,
+  onInstallCatalogRoutine,
+  onSharePublishedRoutine,
+  onResolveSharedRoutine,
+  onRevokeSharedRoutine,
   onSelectParticipant,
   onSaveMonitoringPlan,
   savingRoutineId,
@@ -154,6 +159,11 @@ export function RoutinesScreen({
   onPublishRoutineDraft?: (participantId: string, draftId: string, expectedRevision: number) => Promise<unknown>;
   onListPublishedRoutineVersions?: (participantId: string) => Promise<Array<PublishedRoutineVersion & { routineId: string }>>;
   onUpgradeRoutineAssignment?: (participantId: string, routineId: string, targetVersion: number) => Promise<void>;
+  onSearchRoutineCatalog?: (query: string) => Promise<RoutineCatalogEntry[]>;
+  onInstallCatalogRoutine?: (participantId: string, entryId: string) => Promise<void>;
+  onSharePublishedRoutine?: (participantId: string, routineId: string, version: number, visibility: 'listed' | 'unlisted') => Promise<{ entryId: string; shareCode: string }>;
+  onResolveSharedRoutine?: (shareCode: string) => Promise<RoutineCatalogEntry>;
+  onRevokeSharedRoutine?: (entryId: string) => Promise<void>;
   onSelectParticipant?: (participantId: string) => void;
   onSaveMonitoringPlan?: (routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode) => Promise<void>;
   savingRoutineId?: string;
@@ -188,6 +198,12 @@ export function RoutinesScreen({
   const [publishingDraftId, setPublishingDraftId] = useState<string>();
   const [publishedVersions, setPublishedVersions] = useState<Array<PublishedRoutineVersion & { routineId: string }>>([]);
   const [upgradingRoutineId, setUpgradingRoutineId] = useState<string>();
+  const [catalogQuery, setCatalogQuery] = useState('');
+  const [catalogEntries, setCatalogEntries] = useState<RoutineCatalogEntry[]>([]);
+  const [remoteCatalogStatus, setRemoteCatalogStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  const [installingEntryId, setInstallingEntryId] = useState<string>();
+  const [routineShare, setRoutineShare] = useState<{ entryId: string; shareCode: string }>();
+  const [sharedRoutineCode, setSharedRoutineCode] = useState('');
   const [detailInitialTab, setDetailInitialTab] = useState<'overview' | 'plan' | 'tracking' | undefined>(() => focusedEventId ? 'tracking' : undefined);
   const [expandedScheduleIds, setExpandedScheduleIds] = useState<Set<string>>(() => readStoredStringSet(ROUTINES_EXPANDED_SCHEDULES_KEY));
   const selected = state.routineAssignments.find((assignment) => assignment.id === selectedId);
@@ -260,6 +276,13 @@ export function RoutinesScreen({
     void onListPublishedRoutineVersions(participantId).then((versions) => { if (!cancelled) setPublishedVersions(versions); }).catch(console.error);
     return () => { cancelled = true; };
   }, [activeParticipantAccess?.participant.id, catalogOpen, onListPublishedRoutineVersions, online, publishingDraftId]);
+  useEffect(() => {
+    if (!catalogOpen || !online || !onSearchRoutineCatalog) return;
+    let cancelled = false;
+    setRemoteCatalogStatus('loading');
+    const timeout = window.setTimeout(() => { void onSearchRoutineCatalog(catalogQuery).then((entries) => { if (!cancelled) { setCatalogEntries(entries); setRemoteCatalogStatus('loaded'); } }).catch(() => { if (!cancelled) setRemoteCatalogStatus('error'); }); }, 250);
+    return () => { cancelled = true; window.clearTimeout(timeout); };
+  }, [catalogOpen, catalogQuery, onSearchRoutineCatalog, online]);
 
   if (editingDraftId) {
     const participantId = activeParticipantAccess?.participant.id;
@@ -383,6 +406,29 @@ export function RoutinesScreen({
     setUpgradingRoutineId(assignment.routineId);
     try { await onUpgradeRoutineAssignment(participantId, assignment.routineId, target.version); }
     finally { setUpgradingRoutineId(undefined); }
+  };
+  const installCatalogEntry = async (entry: RoutineCatalogEntry) => {
+    const participantId = activeParticipantAccess?.participant.id;
+    if (!participantId || !onInstallCatalogRoutine) return;
+    setInstallingEntryId(entry.id);
+    try { await onInstallCatalogRoutine(participantId, entry.id); setCatalogOpen(false); }
+    finally { setInstallingEntryId(undefined); }
+  };
+  const shareVersion = async (version: PublishedRoutineVersion & { routineId: string }, visibility: 'listed' | 'unlisted') => {
+    const participantId = activeParticipantAccess?.participant.id;
+    if (!participantId || !onSharePublishedRoutine) return;
+    const result = await onSharePublishedRoutine(participantId, version.routineId, version.version, visibility);
+    setRoutineShare(result);
+  };
+  const resolveShared = async () => {
+    if (!onResolveSharedRoutine || !sharedRoutineCode.trim()) return;
+    try {
+      const entry = await onResolveSharedRoutine(sharedRoutineCode);
+      setCatalogEntries((current) => [entry, ...current.filter((item) => item.id !== entry.id)]);
+    } catch (error) {
+      console.error(error);
+      setRemoteCatalogStatus('error');
+    }
   };
   const deleteRoutine = async (assignment: RoutineAssignment, routineName: string) => {
     if (!canManageRoutines || !onDeleteRoutine || deletingRoutineId) return;
@@ -528,6 +574,8 @@ export function RoutinesScreen({
               const next = presentRoutine(target.package.routine, state.locale);
               return <section className="routine-upgrade-card" key={`upgrade-${assignment.id}`}><small>{t('routineUpgradeAvailable')}</small><h3>{current.name} → {next.name}</h3><p>{current.description}</p><p>{next.description}</p><button type="button" disabled={upgradingRoutineId === assignment.routineId} onClick={() => { void upgradeAssignment(assignment, target); }}>{upgradingRoutineId === assignment.routineId ? t('routineUpgrading') : formatMessage(t('routineUpgradeTo'), { version: target.version })}</button></section>;
             })}
+            {onSearchRoutineCatalog ? <section className="routine-remote-catalog"><h3>{t('routineInternalCatalog')}</h3><label><span>{t('search')}</span><input value={catalogQuery} onChange={(event) => setCatalogQuery(event.target.value)} placeholder={t('routineCatalogSearchPlaceholder')} /></label>{onResolveSharedRoutine ? <div className="routine-share-code"><input aria-label={t('routineShareCode')} value={sharedRoutineCode} onChange={(event) => setSharedRoutineCode(event.target.value)} placeholder={t('routineShareCodePlaceholder')} /><button type="button" onClick={() => { void resolveShared(); }}>{t('routineShareCodeOpen')}</button></div> : null}{remoteCatalogStatus === 'loading' ? <p role="status">{t('routineCatalogSearching')}</p> : null}{remoteCatalogStatus === 'error' ? <p role="alert">{t('routineCatalogUnavailable')}</p> : null}{catalogEntries.map((entry) => { const visual = presentRoutine(entry.package.routine, state.locale); return <article key={entry.id}><div><small>{entry.authorName} · v{entry.version} · {entry.package.availableLocales.join(', ').toUpperCase()} · {new Intl.DateTimeFormat(state.locale, { dateStyle: 'medium' }).format(new Date(entry.sharedAt))}</small><h4>{visual.name}</h4><p>{visual.description}</p></div><button type="button" disabled={installingEntryId === entry.id || assignedRoutineIds.has(entry.routineId)} onClick={() => { void installCatalogEntry(entry); }}>{assignedRoutineIds.has(entry.routineId) ? t('routineAlreadyAdded') : installingEntryId === entry.id ? t('routineInstalling') : t('routineInstall')}</button></article>; })}</section> : null}
+            {onSharePublishedRoutine && publishedVersions.length ? <section className="routine-share-versions"><h3>{t('routineShareTitle')}</h3>{publishedVersions.map((version) => <div key={`${version.routineId}-${version.version}`}><span>{presentRoutine(version.package.routine, state.locale).name} · v{version.version}</span><button type="button" onClick={() => { void shareVersion(version, 'listed'); }}>{t('routineShareListed')}</button><button type="button" onClick={() => { void shareVersion(version, 'unlisted'); }}>{t('routineShareUnlisted')}</button></div>)}{routineShare ? <div className="routine-share-result"><code>{routineShare.shareCode}</code>{onRevokeSharedRoutine ? <button type="button" onClick={() => { void onRevokeSharedRoutine(routineShare.entryId).then(() => setRoutineShare(undefined)); }}>{t('routineShareRevoke')}</button> : null}</div> : null}</section> : null}
             <h3 className="routine-library-section-title">{t('routineLibraryBuiltins')}</h3>
             {marketplace.templates.map((template) => {
               const visual = presentRoutineTemplate(template, state.locale);

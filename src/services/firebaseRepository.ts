@@ -35,7 +35,7 @@ import {
   type VerificationEvent,
 } from '../domain/models';
 import { routineFromCatalog } from '../domain/routineCatalog';
-import type { PublishedRoutineVersion, RoutineDraft, RoutinePackageV1 } from '../domain/routineDraft';
+import type { PublishedRoutineVersion, RoutineCatalogEntry, RoutineDraft, RoutinePackageV1 } from '../domain/routineDraft';
 import { isFreshCapture } from '../domain/adherence';
 import { activeParticipantAccess, preferredParticipantId } from '../domain/participantAccess';
 import { isProfileColorKey } from '../domain/profileColor';
@@ -133,7 +133,7 @@ const asRoutineAssignment = (id: string, data: DocumentData): RoutineAssignment 
   return {
     id,
     routineId,
-    routine: catalogRoutine ?? {
+    routine: data.routine ? {
       id: String(data.routine?.id ?? routineId),
       name: String(data.routine?.name ?? ''),
       description: String(data.routine?.description ?? ''),
@@ -144,7 +144,7 @@ const asRoutineAssignment = (id: string, data: DocumentData): RoutineAssignment 
       responsibleName: data.routine?.responsibleName ? String(data.routine.responsibleName) : undefined,
       instructionSteps: Array.isArray(data.routine?.instructionSteps) ? data.routine.instructionSteps : undefined,
       translations: data.routine?.translations,
-    },
+    } : catalogRoutine ?? { id: routineId, name: '', description: '' },
     plan: data.plan as MonitoringPlan,
     status: data.status,
     assignedAt: String(data.assignedAt),
@@ -153,6 +153,7 @@ const asRoutineAssignment = (id: string, data: DocumentData): RoutineAssignment 
     sourceDraftId: data.sourceDraftId ? String(data.sourceDraftId) : undefined,
     sourceRevision: Number.isSafeInteger(data.sourceRevision) ? Number(data.sourceRevision) : undefined,
     sourceVersion: Number.isSafeInteger(data.sourceVersion) ? Number(data.sourceVersion) : undefined,
+    sourceCatalogEntryId: data.sourceCatalogEntryId ? String(data.sourceCatalogEntryId) : undefined,
   };
 };
 
@@ -513,6 +514,11 @@ export class FirebaseRepository implements AppRepository {
     const callable = httpsCallable<{ participantId: string; routineId: string; sourceVersion: number }, RoutineDraft>(this.services.functions, 'createNextRoutineDraft');
     return (await callable({ participantId, routineId, sourceVersion })).data;
   }
+  async searchRoutineCatalog(query: string) { const callable = httpsCallable<{ query: string }, { entries: RoutineCatalogEntry[] }>(this.services.functions, 'searchRoutineCatalog'); return (await callable({ query })).data.entries; }
+  async resolveSharedRoutine(shareCode: string) { const callable = httpsCallable<{ shareCode: string }, RoutineCatalogEntry>(this.services.functions, 'resolveSharedRoutine'); return (await callable({ shareCode })).data; }
+  async installCatalogRoutine(participantId: string, entryId: string) { const callable = httpsCallable<{ participantId: string; entryId: string }, void>(this.services.functions, 'installCatalogRoutine'); await callable({ participantId, entryId }); }
+  async sharePublishedRoutine(participantId: string, routineId: string, version: number, visibility: 'listed' | 'unlisted') { const callable = httpsCallable<{ participantId: string; routineId: string; version: number; visibility: 'listed' | 'unlisted' }, { entryId: string; shareCode: string }>(this.services.functions, 'sharePublishedRoutine'); return (await callable({ participantId, routineId, version, visibility })).data; }
+  async revokeSharedRoutine(entryId: string) { const callable = httpsCallable<{ entryId: string }, void>(this.services.functions, 'revokeSharedRoutine'); await callable({ entryId }); }
 
   async requestCheckNow(routineId = DEFAULT_ROUTINE_ID) {
     if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');

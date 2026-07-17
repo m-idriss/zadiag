@@ -680,6 +680,11 @@ export function App() {
             onPublishRoutineDraft={canManageRoutines ? bindOptionalRepository(repository.publishRoutineDraft) : undefined}
             onListPublishedRoutineVersions={canManageRoutines ? bindOptionalRepository(repository.listPublishedRoutineVersions) : undefined}
             onUpgradeRoutineAssignment={canManageRoutines ? bindOptionalRepository(repository.upgradeRoutineAssignment) : undefined}
+            onSearchRoutineCatalog={canManageRoutines ? bindOptionalRepository(repository.searchRoutineCatalog) : undefined}
+            onInstallCatalogRoutine={canManageRoutines ? bindOptionalRepository(repository.installCatalogRoutine) : undefined}
+            onSharePublishedRoutine={canManageRoutines ? bindOptionalRepository(repository.sharePublishedRoutine) : undefined}
+            onResolveSharedRoutine={canManageRoutines ? bindOptionalRepository(repository.resolveSharedRoutine) : undefined}
+            onRevokeSharedRoutine={canManageRoutines ? bindOptionalRepository(repository.revokeSharedRoutine) : undefined}
             onSelectParticipant={selectActiveParticipant}
             onSaveMonitoringPlan={canManageRoutines ? async (routineId, plan, validationMode) => {
               setSavingRoutineId(routineId);

@@ -2146,6 +2146,91 @@ export const createNextRoutineDraft = onCall({ region, cors, enforceAppCheck: tr
   return { id: draftRef.id, ...document };
 });
 
+export const sharePublishedRoutine = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
+  const routineId = requireDocumentId(request.data?.routineId, 'Routine ID');
+  const version = requireDraftRevision(request.data?.version);
+  const visibility = request.data?.visibility === 'listed' ? 'listed' : 'unlisted';
+  const participantRef = await requireParticipantRoutineDraftAccess(uid, participantId);
+  const versionRef = participantRef.collection('routinePublications').doc(routineId).collection('versions').doc(String(version));
+  const published = await versionRef.get();
+  if (!published.exists || published.data()?.archivedAt || published.data()?.ownerId !== uid) throw new HttpsError('not-found', 'The published routine version is unavailable.');
+  const source = published.data() as PublishedRoutineVersionDocument;
+  const entryId = hashLinkCode(`${participantId}:${routineId}:${version}`);
+  const shareCode = randomBytes(18).toString('base64url');
+  const shareCodeHash = hashLinkCode(shareCode);
+  const entry = { ownerId: uid, authorName: await responsibleActorName(uid), routineId, version, visibility, package: structuredClone(source.package), publishedAt: source.publishedAt, sharedAt: new Date().toISOString(), shareCodeHash };
+  const batch = db.batch();
+  batch.set(db.collection('routineCatalogEntries').doc(entryId), entry);
+  batch.set(db.collection('routineShareCodes').doc(shareCodeHash), { entryId, ownerId: uid, createdAt: entry.sharedAt });
+  await batch.commit();
+  await recordAuditEvent(db, { action: 'share_routine_version', actorUid: uid, participantId, metadata: { routineId, version, visibility } });
+  return { entryId, shareCode };
+});
+
+const publicCatalogEntry = (id: string, data: FirebaseFirestore.DocumentData) => ({
+  id,
+  authorName: data.authorName,
+  routineId: data.routineId,
+  version: data.version,
+  visibility: data.visibility,
+  package: data.package,
+  publishedAt: data.publishedAt,
+  sharedAt: data.sharedAt,
+});
+
+export const searchRoutineCatalog = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  await requireUid(request.auth);
+  const query = String(request.data?.query ?? '').trim().toLocaleLowerCase().slice(0, 120);
+  const snapshot = await db.collection('routineCatalogEntries').where('visibility', '==', 'listed').limit(100).get();
+  const entries = snapshot.docs.filter((doc) => !doc.data().revokedAt).map((doc) => publicCatalogEntry(doc.id, doc.data())).filter((entry) => !query || JSON.stringify(entry).toLocaleLowerCase().includes(query)).slice(0, 30);
+  return { entries };
+});
+
+export const resolveSharedRoutine = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  await requireUid(request.auth);
+  const code = String(request.data?.shareCode ?? '').trim();
+  if (!code) throw new HttpsError('invalid-argument', 'A share code is required.');
+  const shareCodeHash = hashLinkCode(code);
+  const mapping = await db.collection('routineShareCodes').doc(shareCodeHash).get();
+  if (!mapping.exists) throw new HttpsError('not-found', 'This shared routine is unavailable.');
+  const entry = await db.collection('routineCatalogEntries').doc(String(mapping.data()?.entryId)).get();
+  if (!entry.exists || entry.data()?.revokedAt || entry.data()?.shareCodeHash !== shareCodeHash) throw new HttpsError('not-found', 'This shared routine is unavailable.');
+  return publicCatalogEntry(entry.id, entry.data()!);
+});
+
+export const installCatalogRoutine = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
+  const entryId = requireDocumentId(request.data?.entryId, 'Catalog entry ID');
+  const participantRef = await requireParticipantRoutineDraftAccess(uid, participantId);
+  const entryRef = db.collection('routineCatalogEntries').doc(entryId);
+  let routineId = '';
+  await db.runTransaction(async (transaction) => {
+    const [, entry] = await Promise.all([requireParticipantRoutineDraftTransactionAccess(transaction, participantRef, uid), transaction.get(entryRef)]);
+    if (!entry.exists || entry.data()?.revokedAt) throw new HttpsError('failed-precondition', 'This routine is no longer available for installation.');
+    const data = entry.data() as { routineId: string; version: number; package: PublishedRoutineVersionDocument['package'] };
+    routineId = requireDocumentId(data.routineId, 'Routine ID');
+    const assignmentRef = participantRef.collection('routineAssignments').doc(routineId);
+    if ((await transaction.get(assignmentRef)).exists) throw new HttpsError('already-exists', 'This routine is already installed.');
+    transaction.create(assignmentRef, { ...createDraftRoutineAssignment(data.package.routine as RoutineDocument, defaultPlan, entryId, data.version), sourceVersion: data.version, sourceCatalogEntryId: entryId });
+  });
+  await recordAuditEvent(db, { action: 'install_catalog_routine', actorUid: uid, participantId, metadata: { entryId, routineId } });
+  return { success: true, routineId };
+});
+
+export const revokeSharedRoutine = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const entryId = requireDocumentId(request.data?.entryId, 'Catalog entry ID');
+  const entryRef = db.collection('routineCatalogEntries').doc(entryId);
+  const entry = await entryRef.get();
+  if (!entry.exists || entry.data()?.ownerId !== uid) throw new HttpsError('permission-denied', 'Only the author can revoke this routine.');
+  await entryRef.update({ revokedAt: new Date().toISOString(), visibility: 'unlisted' });
+  await recordAuditEvent(db, { action: 'revoke_catalog_routine', actorUid: uid, metadata: { entryId } });
+  return { success: true };
+});
+
 export const assignRoutine = onCall({
   region,
   cors,
