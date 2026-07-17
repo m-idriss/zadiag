@@ -38,13 +38,13 @@ const routineSchema = z.strictObject({
   responsibleName: boundedString(120).optional(),
   analysis: analysisSchema,
   instructionSteps: instructionStepsSchema,
-  translations: z.strictObject({ fr: localizedContentSchema.optional() }).optional(),
+  translations: z.strictObject({ en: localizedContentSchema.optional(), fr: localizedContentSchema.optional() }).optional(),
 });
 const routinePackageSchema = z.strictObject({
   schemaVersion: z.literal(1),
   version: z.number().int().positive(),
-  defaultLocale: z.literal('en'),
-  availableLocales: z.union([z.tuple([z.literal('en')]), z.tuple([z.literal('en'), z.literal('fr')])]),
+  defaultLocale: z.enum(['en', 'fr']),
+  availableLocales: z.union([z.tuple([z.literal('en')]), z.tuple([z.literal('fr')]), z.tuple([z.literal('en'), z.literal('fr')])]),
   routine: routineSchema,
 });
 
@@ -104,28 +104,31 @@ const completenessIssues = (routinePackage: RoutineDraftPackage): RoutineDraftVa
   });
   if (new Set(stepIds).size !== stepIds.length) issues.push({ code: 'invalid_package', path: 'routine.instructionSteps' });
 
-  const hasFrench = routinePackage.availableLocales.length === 2;
-  if (hasFrench !== Boolean(routine.translations?.fr)) issues.push({ code: 'invalid_package', path: 'availableLocales' });
-  if (routine.translations?.fr) {
-    const localized = routine.translations.fr;
-    requireText(localized.name, 'routine.translations.fr.name', 2);
-    requireText(localized.description, 'routine.translations.fr.description', 10);
-    requireText(localized.instructions, 'routine.translations.fr.instructions', 10);
-    requireText(localized.proofExample, 'routine.translations.fr.proofExample', 10);
+  const availableLocales: readonly string[] = routinePackage.availableLocales;
+  if (!availableLocales.includes(routinePackage.defaultLocale)) issues.push({ code: 'invalid_package', path: 'defaultLocale' });
+  (['en', 'fr'] as const).filter((locale) => locale !== routinePackage.defaultLocale).forEach((locale) => {
+    const enabled = availableLocales.includes(locale);
+    const localized = routine.translations?.[locale];
+    if (enabled !== Boolean(localized)) issues.push({ code: 'invalid_package', path: 'availableLocales' });
+    if (!localized) return;
+    requireText(localized.name, `routine.translations.${locale}.name`, 2);
+    requireText(localized.description, `routine.translations.${locale}.description`, 10);
+    requireText(localized.instructions, `routine.translations.${locale}.instructions`, 10);
+    requireText(localized.proofExample, `routine.translations.${locale}.proofExample`, 10);
     ['expectedEvidence', 'detectedCriteria', 'notDetectedCriteria', 'uncertaintyCriteria'].forEach((field) => {
-      requireText(localized.analysis?.[field as keyof NonNullable<typeof localized.analysis>], `routine.translations.fr.analysis.${field}`, 20);
+      requireText(localized.analysis?.[field as keyof NonNullable<typeof localized.analysis>], `routine.translations.${locale}.analysis.${field}`, 20);
     });
     const translatedIds = localized.instructionSteps?.map((step) => step.id) ?? [];
     localized.instructionSteps?.forEach((step, index) => {
-      requireText(step.id, `routine.translations.fr.instructionSteps.${index}.id`);
-      requireText(step.icon, `routine.translations.fr.instructionSteps.${index}.icon`);
-      requireText(step.title, `routine.translations.fr.instructionSteps.${index}.title`, 2);
-      requireText(step.description, `routine.translations.fr.instructionSteps.${index}.description`, 10);
+      requireText(step.id, `routine.translations.${locale}.instructionSteps.${index}.id`);
+      requireText(step.icon, `routine.translations.${locale}.instructionSteps.${index}.icon`);
+      requireText(step.title, `routine.translations.${locale}.instructionSteps.${index}.title`, 2);
+      requireText(step.description, `routine.translations.${locale}.instructionSteps.${index}.description`, 10);
     });
     if (translatedIds.length !== stepIds.length || translatedIds.some((id, index) => id !== stepIds[index])) {
-      issues.push({ code: 'invalid_package', path: 'routine.translations.fr.instructionSteps' });
+      issues.push({ code: 'invalid_package', path: `routine.translations.${locale}.instructionSteps` });
     }
-  }
+  });
   return issues.slice(0, 50);
 };
 
