@@ -146,7 +146,21 @@ describe('SettingsScreen help and reliability', () => {
     expect(help?.textContent).toContain('Why am I not receiving notifications?');
     expect(help?.textContent).toContain('How does automatic analysis work?');
     expect(help?.textContent).toContain('What happens when a result is uncertain?');
+    expect(help?.textContent).toContain('What should I do if access or data looks wrong?');
 
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  it('asks before attaching redacted diagnostics to a support request', () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const { container, root } = renderSettings();
+    const contact = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Contact us');
+
+    act(() => contact?.click());
+
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining('Attach redacted technical diagnostics'));
+    confirm.mockRestore();
     act(() => root.unmount());
     container.remove();
   });

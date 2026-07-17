@@ -189,7 +189,10 @@ export function SettingsScreen({
       setError(true);
     }
   };
-  const contactSupport = () => openSupportEmail('Zadiag contact', t('settingsContactEmailPrompt'), true, setContactMailError);
+  const contactSupport = () => {
+    const includeDiagnostics = window.confirm(t('settingsContactDiagnosticsConsent'));
+    openSupportEmail('Zadiag contact', t('settingsContactEmailPrompt'), includeDiagnostics, setContactMailError);
+  };
   const requestDataCopy = () => openSupportEmail('Zadiag data copy', t('trustDataCopyEmailPrompt'), false, setDataCopyMailError);
   const forceUpdate = async () => {
     setUpdateError(false);
@@ -395,6 +398,7 @@ export function SettingsScreen({
               <div><strong>{t('settingsHelpNotificationQuestion')}</strong><p>{t('settingsHelpNotificationAnswer')}</p></div>
               <div><strong>{t('settingsHelpAnalysisQuestion')}</strong><p>{t('settingsHelpAnalysisAnswer')}</p></div>
               <div><strong>{t('settingsHelpUncertainQuestion')}</strong><p>{t('settingsHelpUncertainAnswer')}</p></div>
+              <div><strong>{t('settingsHelpIncidentQuestion')}</strong><p>{t('settingsHelpIncidentAnswer')}</p></div>
             </div>
           </details>
           <ListRow
