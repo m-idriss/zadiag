@@ -5,6 +5,7 @@ import { groupsFromLegacyPlan, nextPlannedWindow, summarizeWeekdaysShort } from 
 import { formatMessage, type MessageKey } from '../services/i18n';
 import { languageTag } from '../services/locale';
 import { AppIcon, routineIconName } from '../components/Icon';
+import { DisclosureToggle } from '../components/DisclosureToggle';
 import { ParticipantSelector } from '../components/ParticipantSelector';
 import { presentRoutine } from '../domain/routinePresentation';
 import { assignableRoutineTemplates, marketplaceFromTemplates, presentRoutineTemplate } from '../domain/routineMarketplace';
@@ -414,15 +415,12 @@ export function RoutinesScreen({
                     <div><h2>{visual.name}</h2><p><b>{assignment.plan.checksPerDay}</b> {t('checksDay')} · {responseWindowSummary(assignment.plan.expiryMinutes, t)}</p></div>
                   </div>
                   <b className="routine-rate">{Math.round(rate * 100)}%</b>
-                  <button
-                    type="button"
-                    className="routine-schedule-toggle"
-                    aria-label={t(scheduleExpanded ? 'hideSchedule' : 'showSchedule')}
-                    aria-expanded={scheduleExpanded}
-                    onClick={() => toggleSchedule(assignment.id)}
-                  >
-                    <AppIcon name="chevron-down" className={scheduleExpanded ? 'expanded' : undefined} />
-                  </button>
+                  <DisclosureToggle
+                    expanded={scheduleExpanded}
+                    showLabel={t('showSchedule')}
+                    hideLabel={t('hideSchedule')}
+                    onToggle={() => toggleSchedule(assignment.id)}
+                  />
                 </div>
                 <div className="routine-progress-row">
                   <div className="routine-progress-track"><span style={{ '--routine-progress': `${Math.round(rate * 100)}%` } as CSSProperties} /></div>
