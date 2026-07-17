@@ -4,6 +4,7 @@ import { type AppPreferences, type Locale, type MembershipRole, type MonitoringP
 import { firebaseEnabled } from './firebaseConfig';
 import { isLocalDemoEnvironment } from './browserEnvironment';
 import { initialRemoteState } from './appStateDefaults';
+import type { RoutinePackageV1 } from '../domain/routineDraft';
 
 class LazyFirebaseRepository implements AppRepository {
   private delegate?: AppRepository;
@@ -128,6 +129,16 @@ class LazyFirebaseRepository implements AppRepository {
   async deleteRoutine(routineId: string) {
     return (await this.load()).deleteRoutine(routineId);
   }
+
+  async listRoutineDrafts(participantId: string) { const repository = await this.load(); if (!repository.listRoutineDrafts) throw new Error('routine_drafts_unavailable'); return repository.listRoutineDrafts(participantId); }
+  async createRoutineDraft(participantId: string, routinePackage: RoutinePackageV1) { const repository = await this.load(); if (!repository.createRoutineDraft) throw new Error('routine_drafts_unavailable'); return repository.createRoutineDraft(participantId, routinePackage); }
+  async updateRoutineDraft(participantId: string, draftId: string, expectedRevision: number, routinePackage: RoutinePackageV1) { const repository = await this.load(); if (!repository.updateRoutineDraft) throw new Error('routine_drafts_unavailable'); return repository.updateRoutineDraft(participantId, draftId, expectedRevision, routinePackage); }
+  async deleteRoutineDraft(participantId: string, draftId: string, expectedRevision: number) { const repository = await this.load(); if (!repository.deleteRoutineDraft) throw new Error('routine_drafts_unavailable'); return repository.deleteRoutineDraft(participantId, draftId, expectedRevision); }
+  async assignRoutineDraft(participantId: string, draftId: string, expectedRevision: number) { const repository = await this.load(); if (!repository.assignRoutineDraft) throw new Error('routine_drafts_unavailable'); return repository.assignRoutineDraft(participantId, draftId, expectedRevision); }
+  async publishRoutineDraft(participantId: string, draftId: string, expectedRevision: number) { const repository = await this.load(); if (!repository.publishRoutineDraft) throw new Error('routine_publication_unavailable'); return repository.publishRoutineDraft(participantId, draftId, expectedRevision); }
+  async listPublishedRoutineVersions(participantId: string) { const repository = await this.load(); if (!repository.listPublishedRoutineVersions) throw new Error('routine_publication_unavailable'); return repository.listPublishedRoutineVersions(participantId); }
+  async upgradeRoutineAssignment(participantId: string, routineId: string, targetVersion: number) { const repository = await this.load(); if (!repository.upgradeRoutineAssignment) throw new Error('routine_publication_unavailable'); return repository.upgradeRoutineAssignment(participantId, routineId, targetVersion); }
+  async createNextRoutineDraft(participantId: string, routineId: string, sourceVersion: number) { const repository = await this.load(); if (!repository.createNextRoutineDraft) throw new Error('routine_publication_unavailable'); return repository.createNextRoutineDraft(participantId, routineId, sourceVersion); }
 
   async requestCheckNow(routineId?: string) {
     return (await this.load()).requestCheckNow(routineId);
