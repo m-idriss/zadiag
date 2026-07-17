@@ -1215,6 +1215,9 @@ button:disabled { cursor: not-allowed; }
 .routine-library-group { display: grid; gap: 8px; padding-bottom: 10px; }
 .routine-library-group > h3, .routine-library-group-heading h3, .routine-library-section-title { margin: 0; padding: 4px 0 2px; color: var(--color-text-muted); font-size: 11px; font-weight: 900; letter-spacing: .05em; text-transform: uppercase; }
 .routine-library-group-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.routine-library-group-heading > div { display: flex; gap: 6px; }
+.routine-import-button { display: inline-flex; align-items: center; min-height: var(--height-action); padding: 8px 10px; border-radius: 9px; background: var(--color-control-surface); font-size: 11px; font-weight: 850; cursor: pointer; }
+.routine-import-button input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .routine-library-group-heading button { min-height: var(--height-action); padding: 8px 11px; border: 0; border-radius: 10px; background: var(--color-text); color: var(--color-surface-solid); font-size: 11px; font-weight: 850; }
 .routine-library-section-title { border-top: 1px solid color-mix(in srgb, var(--color-text) 7%, transparent); padding-top: 12px; }
 .routine-library-state { display: grid; justify-items: start; gap: 8px; margin: 0; padding: 10px 12px; border-radius: 12px; background: var(--color-control-surface); color: var(--color-text-muted); font-size: 12px; }

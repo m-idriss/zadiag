@@ -684,6 +684,8 @@ export function App() {
             onInstallCatalogRoutine={canManageRoutines ? bindOptionalRepository(repository.installCatalogRoutine) : undefined}
             onSharePublishedRoutine={canManageRoutines ? bindOptionalRepository(repository.sharePublishedRoutine) : undefined}
             onResolveSharedRoutine={canManageRoutines ? bindOptionalRepository(repository.resolveSharedRoutine) : undefined}
+            onExportRoutinePackage={canManageRoutines ? bindOptionalRepository(repository.exportRoutinePackage) : undefined}
+            onImportRoutinePackage={canManageRoutines ? bindOptionalRepository(repository.importRoutinePackage) : undefined}
             onRevokeSharedRoutine={canManageRoutines ? bindOptionalRepository(repository.revokeSharedRoutine) : undefined}
             onSelectParticipant={selectActiveParticipant}
             onSaveMonitoringPlan={canManageRoutines ? async (routineId, plan, validationMode) => {

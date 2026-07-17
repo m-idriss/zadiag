@@ -133,6 +133,8 @@ export function RoutinesScreen({
   onInstallCatalogRoutine,
   onSharePublishedRoutine,
   onResolveSharedRoutine,
+  onExportRoutinePackage,
+  onImportRoutinePackage,
   onRevokeSharedRoutine,
   onSelectParticipant,
   onSaveMonitoringPlan,
@@ -163,6 +165,8 @@ export function RoutinesScreen({
   onInstallCatalogRoutine?: (participantId: string, entryId: string) => Promise<void>;
   onSharePublishedRoutine?: (participantId: string, routineId: string, version: number, visibility: 'listed' | 'unlisted') => Promise<{ entryId: string; shareCode: string }>;
   onResolveSharedRoutine?: (shareCode: string) => Promise<RoutineCatalogEntry>;
+  onExportRoutinePackage?: (participantId: string, draftId: string) => Promise<{ content: string; mimeType: string; fileName: string }>;
+  onImportRoutinePackage?: (participantId: string, content: string, mimeType: string, conflict: 'reject' | 'copy') => Promise<RoutineDraft>;
   onRevokeSharedRoutine?: (entryId: string) => Promise<void>;
   onSelectParticipant?: (participantId: string) => void;
   onSaveMonitoringPlan?: (routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode) => Promise<void>;
@@ -430,6 +434,21 @@ export function RoutinesScreen({
       setRemoteCatalogStatus('error');
     }
   };
+  const exportDraft = async (draftId: string) => {
+    const participantId = activeParticipantAccess?.participant.id;
+    if (!participantId || !onExportRoutinePackage) return;
+    const exported = await onExportRoutinePackage(participantId, draftId);
+    const url = URL.createObjectURL(new Blob([exported.content], { type: exported.mimeType }));
+    const anchor = document.createElement('a'); anchor.href = url; anchor.download = exported.fileName; anchor.click(); URL.revokeObjectURL(url);
+  };
+  const importPackage = async (file: File) => {
+    const participantId = activeParticipantAccess?.participant.id;
+    if (!participantId || !onImportRoutinePackage) return;
+    const content = await file.text();
+    try { await onImportRoutinePackage(participantId, content, file.type, 'reject'); }
+    catch (error) { if ((error as { code?: string }).code !== 'functions/already-exists' || !window.confirm(t('routineImportConflict'))) throw error; await onImportRoutinePackage(participantId, content, file.type, 'copy'); }
+    setDraftReloadSequence((value) => value + 1);
+  };
   const deleteRoutine = async (assignment: RoutineAssignment, routineName: string) => {
     if (!canManageRoutines || !onDeleteRoutine || deletingRoutineId) return;
     if (state.routineAssignments.length <= 1) {
@@ -514,7 +533,7 @@ export function RoutinesScreen({
           <div className="routine-catalog-list">
             {onListRoutineDrafts ? (
               <section className="routine-library-group" aria-labelledby="routine-library-drafts-title">
-                <div className="routine-library-group-heading"><h3 id="routine-library-drafts-title">{t('routineLibraryDrafts')}</h3>{onCreateRoutineDraft ? <button type="button" onClick={() => setEditingDraftId('new')}>{t('routineDraftNew')}</button> : null}</div>
+                <div className="routine-library-group-heading"><h3 id="routine-library-drafts-title">{t('routineLibraryDrafts')}</h3><div>{onImportRoutinePackage ? <label className="routine-import-button">{t('routineImport')}<input type="file" accept="application/vnd.zadiag.routine+json,.zadiag-routine" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importPackage(file); event.target.value = ''; }} /></label> : null}{onCreateRoutineDraft ? <button type="button" onClick={() => setEditingDraftId('new')}>{t('routineDraftNew')}</button> : null}</div></div>
                 {!online ? <p className="routine-library-state" role="status">{t('routineLibraryDraftsOffline')}</p> : null}
                 {online && draftsStatus === 'loading' ? <p className="routine-library-state" role="status">{t('routineLibraryLoadingDrafts')}</p> : null}
                 {online && draftsStatus === 'error' ? (
@@ -547,6 +566,7 @@ export function RoutinesScreen({
                           <button type="button" disabled={deletingDraftId === draft.id} onClick={() => { void deleteDraft(draft, visual.name); }} aria-label={formatMessage(t('routineLibraryDeleteDraft'), { routine: visual.name })}>
                             <AppIcon name="close" />
                           </button>
+                          {onExportRoutinePackage ? <button type="button" onClick={() => { void exportDraft(draft.id); }}>{t('routineExport')}</button> : null}
                         </div>
                       </div>
                       {expanded ? (
