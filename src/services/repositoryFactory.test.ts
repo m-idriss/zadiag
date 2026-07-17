@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AppRepository } from './contracts';
 import type { AppState, Locale, MonitoringPlan, Role, VerificationEvent } from '../domain/models';
+import { createBlankRoutinePackage, type RoutineDraft } from '../domain/routineDraft';
 
 const configuredFirebaseEnv = {
   VITE_FIREBASE_API_KEY: 'api-key',
@@ -52,6 +53,8 @@ class FakeFirebaseRepository implements AppRepository {
   async regenerateLinkCode() {}
   async assignRoutine() {}
   async deleteRoutine() {}
+  async listRoutineDrafts(): Promise<RoutineDraft[]> { return []; }
+  async createRoutineDraft(_participantId: string, routinePackage: RoutineDraft['package']): Promise<RoutineDraft> { return { id: 'draft-1', ownerId: 'owner', revision: 1, state: 'active', package: routinePackage, validation: { status: 'incomplete', issues: [{ code: 'required_field', path: 'routine.name' }] }, createdAt: '2026-07-17T00:00:00.000Z', updatedAt: '2026-07-17T00:00:00.000Z' }; }
   async requestCheckNow() {}
   async updateRoutine(_routineId: string, _plan: MonitoringPlan) {}
   async savePushSubscription() {}
@@ -94,5 +97,7 @@ describe('repository factory', () => {
     expect(listener).toHaveBeenCalled();
     await expect(repository.inviteParticipantMember?.('participant-1', 'caregiver')).resolves.toMatchObject({ code: 'ZI-123456' });
     await expect(repository.createRelationshipRecovery?.('participant-1')).resolves.toMatchObject({ recoveryCode: 'PR-2345-6789-ABCD' });
+    expect(repository.listRoutineDrafts).toBeTypeOf('function');
+    await expect(repository.createRoutineDraft?.('participant-1', createBlankRoutinePackage('en', 'private-test'))).resolves.toMatchObject({ id: 'draft-1' });
   });
 });
