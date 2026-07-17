@@ -115,10 +115,11 @@ describe('participant routines navigation', () => {
     };
     const listDrafts = vi.fn().mockResolvedValue([draft]);
     const deleteDraft = vi.fn().mockResolvedValue(undefined);
+    const assignDraft = vi.fn().mockResolvedValue(undefined);
     vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     act(() => {
-      root.render(<RoutinesScreen state={state} onAssignRoutine={async () => undefined} onListRoutineDrafts={listDrafts} onDeleteRoutineDraft={deleteDraft} t={(key) => translate('en', key)} />);
+      root.render(<RoutinesScreen state={state} onAssignRoutine={async () => undefined} onListRoutineDrafts={listDrafts} onDeleteRoutineDraft={deleteDraft} onAssignRoutineDraft={assignDraft} t={(key) => translate('en', key)} />);
     });
     await act(async () => {
       document.body.querySelector<HTMLButtonElement>('.routines-add-dock-button')?.click();
@@ -137,6 +138,10 @@ describe('participant routines navigation', () => {
     expect(view?.getAttribute('aria-expanded')).toBe('true');
     expect(document.body.textContent).toContain('A private draft description');
     expect(document.body.textContent).toContain('Revision 2 · 1 issues');
+    expect(document.body.textContent).toContain('Responsible view');
+    expect(document.body.textContent).toContain('Participant view');
+    expect(Array.from(document.body.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent === 'Assign this draft')?.disabled).toBe(true);
+    expect(assignDraft).not.toHaveBeenCalled();
 
     await act(async () => {
       document.body.querySelector<HTMLButtonElement>('button[aria-label="Delete My hydration plan"]')?.click();

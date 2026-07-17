@@ -125,6 +125,7 @@ export function RoutinesScreen({
   onDeleteRoutineDraft,
   onCreateRoutineDraft,
   onUpdateRoutineDraft,
+  onAssignRoutineDraft,
   onSelectParticipant,
   onSaveMonitoringPlan,
   savingRoutineId,
@@ -146,6 +147,7 @@ export function RoutinesScreen({
   onDeleteRoutineDraft?: (participantId: string, draftId: string, expectedRevision: number) => Promise<void>;
   onCreateRoutineDraft?: (participantId: string, routinePackage: RoutineDraft['package']) => Promise<RoutineDraft>;
   onUpdateRoutineDraft?: (participantId: string, draftId: string, expectedRevision: number, routinePackage: RoutineDraft['package']) => Promise<RoutineDraft>;
+  onAssignRoutineDraft?: (participantId: string, draftId: string, expectedRevision: number) => Promise<void>;
   onSelectParticipant?: (participantId: string) => void;
   onSaveMonitoringPlan?: (routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode) => Promise<void>;
   savingRoutineId?: string;
@@ -175,6 +177,8 @@ export function RoutinesScreen({
   const [deletingDraftId, setDeletingDraftId] = useState<string>();
   const [draftDeleteErrorId, setDraftDeleteErrorId] = useState<string>();
   const [editingDraftId, setEditingDraftId] = useState<string | 'new'>();
+  const [assigningDraftId, setAssigningDraftId] = useState<string>();
+  const [draftAssignErrorId, setDraftAssignErrorId] = useState<string>();
   const [detailInitialTab, setDetailInitialTab] = useState<'overview' | 'plan' | 'tracking' | undefined>(() => focusedEventId ? 'tracking' : undefined);
   const [expandedScheduleIds, setExpandedScheduleIds] = useState<Set<string>>(() => readStoredStringSet(ROUTINES_EXPANDED_SCHEDULES_KEY));
   const selected = state.routineAssignments.find((assignment) => assignment.id === selectedId);
@@ -331,6 +335,19 @@ export function RoutinesScreen({
       setDeletingDraftId(undefined);
     }
   };
+  const assignDraft = async (draft: RoutineDraft) => {
+    const participantId = activeParticipantAccess?.participant.id;
+    if (!participantId || !onAssignRoutineDraft || draft.validation.status !== 'valid' || draft.state !== 'active') return;
+    setAssigningDraftId(draft.id);
+    setDraftAssignErrorId(undefined);
+    try {
+      await onAssignRoutineDraft(participantId, draft.id, draft.revision);
+      setCatalogOpen(false);
+    } catch (error) {
+      console.error(error);
+      setDraftAssignErrorId(draft.id);
+    } finally { setAssigningDraftId(undefined); }
+  };
   const deleteRoutine = async (assignment: RoutineAssignment, routineName: string) => {
     if (!canManageRoutines || !onDeleteRoutine || deletingRoutineId) return;
     if (state.routineAssignments.length <= 1) {
@@ -454,8 +471,13 @@ export function RoutinesScreen({
                         <div className="routine-library-draft-detail">
                           <p>{visual.description}</p>
                           <small>{formatMessage(t('routineLibraryRevision'), { revision: draft.revision })} · {formatMessage(t('routineLibraryIssues'), { count: draft.validation.issues.length })}</small>
+                          <div className="routine-draft-preview-grid" aria-label={t('routineDraftPreview')}>
+                            {(['routineDraftResponsiblePreview', 'routineDraftParticipantPreview'] as MessageKey[]).map((roleKey) => <article key={roleKey}><small>{t(roleKey)}</small><h5>{visual.name}</h5><p>{visual.instructions}</p><b>{visual.proofExample}</b></article>)}
+                          </div>
+                          {onAssignRoutineDraft ? <button type="button" className="routine-draft-assign" disabled={draft.validation.status !== 'valid' || draft.state !== 'active' || assigningDraftId === draft.id} onClick={() => { void assignDraft(draft); }}>{assigningDraftId === draft.id ? t('routineDraftAssigning') : t('routineDraftAssign')}</button> : null}
                         </div>
                       ) : null}
+                      {draftAssignErrorId === draft.id ? <p className="request-feedback error" role="alert">{t('routineDraftAssignError')}</p> : null}
                       {draftDeleteErrorId === draft.id ? <p className="request-feedback error" role="alert">{t('routineLibraryDeleteError')}</p> : null}
                     </article>
                   );
