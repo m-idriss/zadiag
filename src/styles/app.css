@@ -772,7 +772,7 @@ button:disabled { cursor: not-allowed; }
 .planning-recommendation .planning-recommendation-note { color: var(--color-text-muted); font-size: 11px; }
 .planning-recommendation > button { justify-self: start; min-height: var(--height-action); padding: 8px 12px; border: 0; border-radius: 12px; background: var(--color-primary); color: var(--color-surface-solid); font-size: 11px; font-weight: 850; }
 .planning-recommendation .request-feedback { margin: 0; }
-.weekly-insight-card { padding: 0; overflow: hidden; }
+.weekly-insight-card { padding: 0; }
 .weekly-insight-card > summary { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: var(--block-padding); cursor: pointer; list-style: none; }
 .weekly-insight-card > summary::-webkit-details-marker { display: none; }
 .weekly-insight-card > summary:focus-visible { outline: 3px solid color-mix(in srgb, var(--color-primary) 35%, transparent); outline-offset: -3px; }
@@ -783,6 +783,7 @@ button:disabled { cursor: not-allowed; }
 .weekly-insight-rate .app-icon { font-size: 18px; transition: transform .2s ease; }
 .weekly-insight-card[open] .weekly-insight-rate .app-icon { transform: rotate(90deg); }
 .weekly-insight-content { display: grid; gap: 10px; padding: 0 var(--block-padding) var(--block-padding); }
+.weekly-insight-empty { margin: 0; color: var(--color-text-muted); }
 .weekly-insight-evolution { margin: 0; color: var(--color-text-muted); font-size: 12px; font-weight: 750; }
 .weekly-insight-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
 .weekly-insight-metrics > span { display: grid; gap: 3px; padding: 9px 10px; border-radius: 12px; background: var(--color-canvas-elevated); }

@@ -175,9 +175,34 @@ describe('ParentDashboard', () => {
     expect(weeklyInsight?.open).toBe(false);
     act(() => weeklyInsight?.querySelector('summary')?.click());
     expect(weeklyInsight?.open).toBe(true);
+    expect(weeklyInsight?.textContent).toContain('Strongest routine');
+    expect(weeklyInsight?.textContent).toContain('Priority for next week');
     act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent === 'Open the 7-day report')?.click());
     expect(Array.from(container.querySelectorAll<HTMLButtonElement>('.summary-range-toggle button')).find((button) => button.textContent === '7 days')?.getAttribute('aria-pressed')).toBe('true');
     expect(container.querySelector<HTMLDetailsElement>('.detailed-reporting')?.open).toBe(true);
+  });
+
+  it('keeps the weekly summary available before a profile has enough completed checks', () => {
+    const assignment = createDefaultRoutineAssignment();
+    const now = Date.now();
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'New profile', linkingCode: '', parentRecoveryCode: '', consented: true },
+      routineAssignments: [assignment],
+      events: [{
+        id: 'first', routineId: assignment.routineId, sessionId: 'first',
+        requestedAt: new Date(now - 60_000).toISOString(), expiresAt: new Date(now + 3_600_000).toISOString(), status: 'detected',
+      }],
+    };
+
+    act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} t={(key) => translate('en', key)} />));
+    const weeklyInsight = container.querySelector<HTMLDetailsElement>('.weekly-insight-card');
+
+    expect(weeklyInsight).not.toBeNull();
+    expect(weeklyInsight?.querySelector('.weekly-insight-rate')?.textContent).toContain('—');
+    act(() => weeklyInsight?.querySelector('summary')?.click());
+    expect(weeklyInsight?.open).toBe(true);
+    expect(weeklyInsight?.textContent).toContain('The summary will appear after 3 completed checks this week.');
   });
 
   it.each([
@@ -336,6 +361,7 @@ describe('ParentDashboard', () => {
     expect(container.textContent).not.toContain('Create the first routine');
     expect(container.textContent).toContain('No routine assigned');
     expect(container.querySelectorAll('.responsible-state-card')).toHaveLength(1);
+    expect(container.querySelector('.weekly-insight-card')).not.toBeNull();
     expect(container.textContent).toContain('No history yet');
     expect(container.textContent).not.toContain('StatusAll');
     act(() => Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Choose a routine')?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
