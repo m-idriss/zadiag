@@ -28,6 +28,8 @@ type AuditAction =
   | 'share_routine_version'
   | 'install_catalog_routine'
   | 'revoke_catalog_routine'
+  | 'export_routine_package'
+  | 'import_routine_package'
   | 'delete_routine'
   | 'create_routine_draft'
   | 'update_routine_draft'

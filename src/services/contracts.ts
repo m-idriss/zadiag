@@ -39,6 +39,8 @@ export interface AppRepository {
   listPublishedRoutineVersions?(participantId: string): Promise<Array<PublishedRoutineVersion & { routineId: string }>>;
   upgradeRoutineAssignment?(participantId: string, routineId: string, targetVersion: number): Promise<void>;
   createNextRoutineDraft?(participantId: string, routineId: string, sourceVersion: number): Promise<RoutineDraft>;
+  exportRoutinePackage?(participantId: string, draftId: string): Promise<{ content: string; mimeType: string; fileName: string }>;
+  importRoutinePackage?(participantId: string, content: string, mimeType: string, conflict: 'reject' | 'copy'): Promise<RoutineDraft>;
   searchRoutineCatalog?(query: string): Promise<RoutineCatalogEntry[]>;
   resolveSharedRoutine?(shareCode: string): Promise<RoutineCatalogEntry>;
   installCatalogRoutine?(participantId: string, entryId: string): Promise<void>;

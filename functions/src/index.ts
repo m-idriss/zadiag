@@ -19,6 +19,7 @@ import { reportOperationalAlert, reportOperationalEvent } from './observability.
 import { shouldRecoverSyntheticPush } from './syntheticMonitor.js';
 import { canLeaveMembership, canRemoveMembership, createMembership, hasParticipantPermission, isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, isProfileColorKey, membershipRoles, migrateLegacyFamilyRelationships, scheduledAggregatePaths, type MembershipRole } from './relationships.js';
 import { assertRoutineDraftRevision, createRoutineDraftDocument, RoutineDraftConflictError, RoutineDraftInputError, updateRoutineDraftDocument, type PublishedRoutineVersionDocument, type RoutineDraftDocument } from './routineDrafts.js';
+import { ROUTINE_PACKAGE_MIME, parseRoutinePackageEnvelope, serializeRoutinePackage } from './routinePackages.js';
 
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
   ?? (process.env.GCLOUD_PROJECT ? `${process.env.GCLOUD_PROJECT}.firebasestorage.app` : undefined);
@@ -1972,6 +1973,39 @@ export const createRoutineDraft = onCall({ region, cors, enforceAppCheck: true }
   await recordAuditEvent(db, {
     action: 'create_routine_draft', actorUid: uid, participantId, metadata: { draftId: draftRef.id, revision: document.revision },
   });
+  return { id: draftRef.id, ...document };
+});
+
+export const exportRoutinePackage = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
+  const draftId = requireDocumentId(request.data?.draftId, 'Draft ID');
+  const participantRef = await requireParticipantRoutineDraftAccess(uid, participantId);
+  const draft = await participantRef.collection('routineDrafts').doc(draftId).get();
+  if (!draft.exists || draft.data()?.ownerId !== uid) throw new HttpsError('not-found', 'The routine draft could not be found.');
+  const data = draft.data() as RoutineDraftDocument;
+  await recordAuditEvent(db, { action: 'export_routine_package', actorUid: uid, participantId, metadata: { draftId, revision: data.revision } });
+  return { content: serializeRoutinePackage(draftId, data.revision, data.updatedAt, data.package), mimeType: ROUTINE_PACKAGE_MIME, fileName: `${data.package.routine.id}-v${data.package.version}.zadiag-routine` };
+});
+
+export const importRoutinePackage = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
+  const conflict = request.data?.conflict === 'copy' ? 'copy' : 'reject';
+  const participantRef = await requireParticipantRoutineDraftAccess(uid, participantId);
+  let envelope;
+  try { envelope = parseRoutinePackageEnvelope(request.data?.content, request.data?.mimeType); } catch (error) { return routineDraftInputError(error); }
+  const importedPackage = structuredClone(envelope.package);
+  if (conflict === 'copy') importedPackage.routine.id = `private-${randomBytes(12).toString('hex')}`;
+  const draftRef = participantRef.collection('routineDrafts').doc();
+  const document = createRoutineDraftDocument(uid, importedPackage);
+  await db.runTransaction(async (transaction) => {
+    await requireParticipantRoutineDraftTransactionAccess(transaction, participantRef, uid);
+    const conflicts = await transaction.get(participantRef.collection('routineDrafts').where('package.routine.id', '==', importedPackage.routine.id).limit(1));
+    if (!conflicts.empty) throw new HttpsError('already-exists', 'A routine with this ID already exists. Import it explicitly as a copy.');
+    transaction.create(draftRef, { ...document, importProvenance: envelope.provenance });
+  });
+  await recordAuditEvent(db, { action: 'import_routine_package', actorUid: uid, participantId, metadata: { draftId: draftRef.id, sourceDraftId: envelope.provenance.sourceDraftId, conflict } });
   return { id: draftRef.id, ...document };
 });
 
