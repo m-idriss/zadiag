@@ -25,6 +25,8 @@ import { RelationshipManager } from '../components/RelationshipManager';
 import { CopyableText } from '../components/CopyableText';
 import { languageTag } from '../services/locale';
 import type { SyncStatus } from '../services/contracts';
+import { notificationSetupErrorMessageKey } from '../services/notificationRecovery';
+import { NotificationRecoveryGuide } from '../components/NotificationRecoveryGuide';
 
 const SUPPORT_EMAIL = 'contact@3dime.com';
 
@@ -115,6 +117,7 @@ export function SettingsScreen({
   const [enablingNotifications, setEnablingNotifications] = useState(false);
   const [testingPush, setTestingPush] = useState(false);
   const [testPushStatus, setTestPushStatus] = useState<'idle' | 'success' | 'error' | 'enableError'>('idle');
+  const [notificationEnableErrorKey, setNotificationEnableErrorKey] = useState<MessageKey>();
   const [localPushEndpointPresent, setLocalPushEndpointPresent] = useState(false);
   const [localPushDispatchAt, setLocalPushDispatchAt] = useState<string>();
   const [resettingAccount, setResettingAccount] = useState(false);
@@ -224,12 +227,14 @@ export function SettingsScreen({
   };
   const activateNotifications = async () => {
     setTestPushStatus('idle');
+    setNotificationEnableErrorKey(undefined);
     setEnablingNotifications(true);
     try {
       await enableNotifications();
       setLocalPushEndpointPresent(true);
     } catch (error) {
       console.error(error);
+      setNotificationEnableErrorKey(notificationSetupErrorMessageKey(error));
       setTestPushStatus('enableError');
     } finally {
       setEnablingNotifications(false);
@@ -380,7 +385,7 @@ export function SettingsScreen({
           >
             {testPushStatus === 'success' ? <small>{t('settingsTestNotificationSuccess')}</small> : null}
             {testPushStatus === 'error' ? <small className="settings-action-error">{t('settingsTestNotificationError')}</small> : null}
-            {testPushStatus === 'enableError' ? <small className="settings-action-error">{t('settingsEnableNotificationsError')}</small> : null}
+            {testPushStatus === 'enableError' && notificationEnableErrorKey ? <NotificationRecoveryGuide errorKey={notificationEnableErrorKey} t={t} /> : null}
           </ListRow>
         </div>
       </section>

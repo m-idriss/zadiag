@@ -354,12 +354,16 @@ button:disabled { cursor: not-allowed; }
 .setup-help { display: flex; gap: 11px; align-items: flex-start; margin: 16px 0; padding: var(--row-padding-y) var(--row-padding-x); border-radius: 17px; background: #eef5f6; color: var(--color-text); }
 .setup-help > span { color: var(--color-primary); font-weight: 900; }
 .setup-help p { margin: 0; color: var(--color-text); font-size: 12px; line-height: 1.45; }
+.notification-recovery-guide { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 9px; padding: var(--row-padding-y) var(--row-padding-x); border-radius: 14px; background: var(--color-warning-soft); color: var(--color-text); }
+.notification-recovery-guide > .app-icon { color: var(--color-warning-strong); font-size: 20px; }
+.notification-recovery-guide strong, .notification-recovery-guide p { display: block; margin: 0; }
+.notification-recovery-guide p { margin-top: 3px; color: var(--color-text-muted); }
+.notification-recovery-guide ol { display: grid; gap: 4px; margin: 8px 0 0; padding-left: 18px; color: var(--color-text); font-size: 11px; line-height: 1.4; }
 .setup-help-text { margin: -2px 0 0; color: var(--color-text-muted); font-size: 12px; line-height: 1.45; }
 .notification-benefits { display: grid; gap: 14px; }
 .notification-benefits > div { display: flex; align-items: flex-start; gap: 11px; }
 .notification-benefits span { width: 24px; height: 24px; flex: 0 0 24px; display: grid; place-items: center; border-radius: 50%; background: var(--color-primary-soft); color: var(--color-primary); font-size: 12px; font-weight: 900; }
 .notification-benefits p { margin: 1px 0 0; color: var(--color-text); font-size: 14px; font-weight: 700; line-height: 1.4; }
-.setup-error { color: var(--color-danger) !important; font-size: 13px; font-weight: 800; text-align: center; }
 .required-note { display: block; margin-top: 9px; color: var(--color-text-muted); font-size: 11px; text-align: center; }
 .link-page .setup-progress { margin-top: -30px; margin-left: 54px; }
 .parent-onboarding-card { margin-top: 14px; padding: var(--block-padding-lg); }

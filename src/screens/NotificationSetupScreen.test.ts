@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PushSetupError } from '../services/webPush';
-import { notificationSetupErrorMessageKey } from './NotificationSetupScreen';
+import { notificationSetupErrorMessageKey } from '../services/notificationRecovery';
 
 describe('notification setup errors', () => {
   it('maps iOS setup failures to actionable copy', () => {
