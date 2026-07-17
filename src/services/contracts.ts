@@ -1,4 +1,5 @@
 import type { AppPreferences, AppState, Locale, MembershipRole, MonitoringPlan, ParticipantMember, PilotParticipation, ProfileColorKey, Role, RoutineValidationMode, VerificationEvent } from '../domain/models';
+import type { RoutineDraft, RoutinePackageV1 } from '../domain/routineDraft';
 
 export type SyncStatus = 'synced' | 'syncing' | 'offline' | 'failed';
 export type JourneyStage = 'app_ready' | 'notifications_enabled' | 'notification_opened' | 'check_opened';
@@ -29,6 +30,10 @@ export interface AppRepository {
   regenerateLinkCode(): Promise<void>;
   assignRoutine(routineId: string): Promise<void>;
   deleteRoutine(routineId: string): Promise<void>;
+  listRoutineDrafts?(participantId: string): Promise<RoutineDraft[]>;
+  createRoutineDraft?(participantId: string, routinePackage: RoutinePackageV1): Promise<RoutineDraft>;
+  updateRoutineDraft?(participantId: string, draftId: string, expectedRevision: number, routinePackage: RoutinePackageV1): Promise<RoutineDraft>;
+  deleteRoutineDraft?(participantId: string, draftId: string, expectedRevision: number): Promise<void>;
   requestCheckNow(routineId?: string): Promise<void>;
   updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode): Promise<void>;
   savePushSubscription(subscription: PushSubscriptionJSON): Promise<void>;

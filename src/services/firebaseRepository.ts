@@ -35,6 +35,7 @@ import {
   type VerificationEvent,
 } from '../domain/models';
 import { routineFromCatalog } from '../domain/routineCatalog';
+import type { RoutineDraft, RoutinePackageV1 } from '../domain/routineDraft';
 import { isFreshCapture } from '../domain/adherence';
 import { activeParticipantAccess, preferredParticipantId } from '../domain/participantAccess';
 import { isProfileColorKey } from '../domain/profileColor';
@@ -458,6 +459,35 @@ export class FirebaseRepository implements AppRepository {
       const deleteRoutine = httpsCallable<{ familyId: string; routineId: string }, void>(this.services.functions, 'deleteRoutine');
       return deleteRoutine({ familyId, routineId });
     });
+  }
+
+  async listRoutineDrafts(participantId: string) {
+    const listRoutineDrafts = httpsCallable<{ participantId: string }, { drafts: RoutineDraft[] }>(this.services.functions, 'listRoutineDrafts');
+    return (await listRoutineDrafts({ participantId })).data.drafts;
+  }
+
+  async createRoutineDraft(participantId: string, routinePackage: RoutinePackageV1) {
+    const createRoutineDraft = httpsCallable<
+      { participantId: string; package: RoutinePackageV1 },
+      RoutineDraft
+    >(this.services.functions, 'createRoutineDraft');
+    return (await createRoutineDraft({ participantId, package: routinePackage })).data;
+  }
+
+  async updateRoutineDraft(participantId: string, draftId: string, expectedRevision: number, routinePackage: RoutinePackageV1) {
+    const updateRoutineDraft = httpsCallable<
+      { participantId: string; draftId: string; expectedRevision: number; package: RoutinePackageV1 },
+      RoutineDraft
+    >(this.services.functions, 'updateRoutineDraft');
+    return (await updateRoutineDraft({ participantId, draftId, expectedRevision, package: routinePackage })).data;
+  }
+
+  async deleteRoutineDraft(participantId: string, draftId: string, expectedRevision: number) {
+    const deleteRoutineDraft = httpsCallable<
+      { participantId: string; draftId: string; expectedRevision: number },
+      void
+    >(this.services.functions, 'deleteRoutineDraft');
+    await deleteRoutineDraft({ participantId, draftId, expectedRevision });
   }
 
   async requestCheckNow(routineId = DEFAULT_ROUTINE_ID) {
