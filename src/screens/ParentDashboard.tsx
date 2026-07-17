@@ -358,28 +358,6 @@ export function ParentDashboard({
         </section>
       ) : null}
 
-      {!setupStep && weekly && weeklyPriorityKey ? (
-        <section className="card weekly-insight-card" aria-labelledby="weekly-insight-title">
-          <header>
-            <div><span className="eyebrow">{t('weeklyInsightEyebrow')}</span><h2 id="weekly-insight-title">{t('weeklyInsightTitle')}</h2></div>
-            <strong>{Math.round(weekly.rate * 100)}%</strong>
-          </header>
-          <p className="weekly-insight-evolution">{weekly.rateDelta === undefined
-            ? t('summaryNoPreviousBaseline')
-            : weekly.rateDelta === 0
-              ? t('summaryComparedStable')
-              : `${t(weekly.rateDelta > 0 ? 'weeklyInsightUp' : 'weeklyInsightDown')} ${Math.abs(Math.round(weekly.rateDelta * 100))} ${t('summaryPoints')}`}</p>
-          <div className="weekly-insight-metrics">
-            {weekly.strongestRoutineId && weekly.strongestRoutineId !== weekly.watchRoutineId ? <span><small>{t('weeklyInsightStrongest')}</small><strong>{routinePresentationsById.get(weekly.strongestRoutineId)?.name ?? t('routine')}</strong></span> : null}
-            {weekly.watchRoutineId ? <span><small>{t('weeklyInsightWatch')}</small><strong>{routinePresentationsById.get(weekly.watchRoutineId)?.name ?? t('routine')}</strong></span> : null}
-            {weekly.bestWindow ? <span><small>{t('weeklyInsightBestWindow')}</small><strong>{weekly.bestWindow.start}–{weekly.bestWindow.end}</strong></span> : null}
-            <span><small>{t('weeklyInsightResponsibleActions')}</small><strong>{weekly.responsibleActions.length ? weekly.responsibleActions.map((actor) => `${actor.actorName} · ${actor.count}`).join(', ') : weekly.responsibleActionCount}</strong></span>
-          </div>
-          <div className="weekly-insight-priority"><AppIcon name="sparkles" /><p><small>{t('weeklyInsightPriority')}</small><strong>{t(weeklyPriorityKey)}</strong></p></div>
-          <button type="button" onClick={() => { setSummaryRange('week'); setWeeklyReportOpenSignal((current) => current + 1); }}>{t('weeklyInsightOpenReport')}</button>
-        </section>
-      ) : null}
-
       {(responsibleEmptyState || (expandedStatus === 'active' && currentCheckCount) || (!state.family.childLinked && state.family.linkingCode) || (!state.routineAssignments.length && onCreateRoutine)) ? (
         <section className="settings-section parent-setup-section" aria-labelledby="parent-setup-title">
           <h2 id="parent-setup-title">{currentCheckCount ? `${currentCheckCount} ${t(currentCheckCount === 1 ? 'checkToComplete' : 'checksToComplete')}` : t('responsibleCurrentChecksTitle')}</h2>
@@ -479,6 +457,30 @@ export function ParentDashboard({
 
           </div>
         </section>
+      ) : null}
+
+      {!setupStep && weekly && weeklyPriorityKey ? (
+        <details className="card weekly-insight-card">
+          <summary aria-labelledby="weekly-insight-title">
+            <div><span className="eyebrow">{t('weeklyInsightEyebrow')}</span><h2 id="weekly-insight-title">{t('weeklyInsightTitle')}</h2></div>
+            <span className="weekly-insight-rate"><strong>{Math.round(weekly.rate * 100)}%</strong><AppIcon name="chevron-forward" /></span>
+          </summary>
+          <div className="weekly-insight-content">
+            <p className="weekly-insight-evolution">{weekly.rateDelta === undefined
+              ? t('summaryNoPreviousBaseline')
+              : weekly.rateDelta === 0
+                ? t('summaryComparedStable')
+                : `${t(weekly.rateDelta > 0 ? 'weeklyInsightUp' : 'weeklyInsightDown')} ${Math.abs(Math.round(weekly.rateDelta * 100))} ${t('summaryPoints')}`}</p>
+            <div className="weekly-insight-metrics">
+              {weekly.strongestRoutineId && weekly.strongestRoutineId !== weekly.watchRoutineId ? <span><small>{t('weeklyInsightStrongest')}</small><strong>{routinePresentationsById.get(weekly.strongestRoutineId)?.name ?? t('routine')}</strong></span> : null}
+              {weekly.watchRoutineId ? <span><small>{t('weeklyInsightWatch')}</small><strong>{routinePresentationsById.get(weekly.watchRoutineId)?.name ?? t('routine')}</strong></span> : null}
+              {weekly.bestWindow ? <span><small>{t('weeklyInsightBestWindow')}</small><strong>{weekly.bestWindow.start}–{weekly.bestWindow.end}</strong></span> : null}
+              <span><small>{t('weeklyInsightResponsibleActions')}</small><strong>{weekly.responsibleActions.length ? weekly.responsibleActions.map((actor) => `${actor.actorName} · ${actor.count}`).join(', ') : weekly.responsibleActionCount}</strong></span>
+            </div>
+            <div className="weekly-insight-priority"><AppIcon name="sparkles" /><p><small>{t('weeklyInsightPriority')}</small><strong>{t(weeklyPriorityKey)}</strong></p></div>
+            <button type="button" onClick={() => { setSummaryRange('week'); setWeeklyReportOpenSignal((current) => current + 1); }}>{t('weeklyInsightOpenReport')}</button>
+          </div>
+        </details>
       ) : null}
 
       {expandedStatus === 'review' && reviewEvents.length ? (
