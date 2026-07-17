@@ -5,7 +5,10 @@
   "instructions": "When requested, send a photo showing you drinking water or a clear hydration proof.",
   "icon": "water",
   "accentColor": "#2387c9",
+  "category": "wellness",
   "proofType": "Photo",
+  "proofExample": "Photo of the participant drinking water, a visible glass, bottle, or hydration tracker.",
+  "recommendedValidationMode": "ai",
   "responsibleName": "Care team",
   "analysis": {
     "expectedEvidence": "A photo showing the participant drinking water is sufficient. Also accept a clearly visible glass of water, water bottle, hydration tracker, or another clear sign of water intake.",
@@ -38,6 +41,7 @@
       "name": "Hydratation",
       "description": "Contrôle quotidien de l'hydratation.",
       "instructions": "Quand c'est demandé, envoie une photo où tu bois de l'eau ou une preuve claire d'hydratation.",
+      "proofExample": "Photo du participant qui boit de l'eau, verre, bouteille ou suivi d'hydratation visible.",
       "analysis": {
         "expectedEvidence": "Une photo montrant le participant en train de boire de l'eau suffit. Accepte aussi un verre d'eau, une bouteille d'eau, un suivi d'hydratation ou un autre signe clair de consommation d'eau.",
         "detectedCriteria": "La photo montre clairement le participant en train de boire de l'eau, ou une autre preuve claire de consommation d'eau.",

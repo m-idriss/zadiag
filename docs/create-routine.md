@@ -30,7 +30,10 @@ Required fields:
   "instructions": "Wear your retainer as prescribed and send a clear photo when requested.",
   "icon": "smile",
   "accentColor": "#2387c9",
+  "category": "custom",
   "proofType": "Photo",
+  "proofExample": "Photo showing the expected retainer proof.",
+  "recommendedValidationMode": "ai",
   "responsibleName": "Care team",
   "analysis": {
     "expectedEvidence": "A clear photo showing the retainer being worn or prepared for wear.",
@@ -78,17 +81,16 @@ Add French under `translations.fr` with the same meaning as English:
 1. Add or update the JSON file in `routines/`.
 2. Check that the routine id is stable and unique.
 3. Check that `analysis` is specific enough for AI verification.
-4. Add the routine to `src/domain/routineCatalog.ts` only if it should ship as a built-in routine now.
+4. Generate both deployable catalogs and validate that no generated file is stale.
 5. Run:
 
 ```bash
-corepack pnpm test
-corepack pnpm build
+corepack pnpm generate:routines
+corepack pnpm check:routines
+corepack pnpm check
 ```
 
-## Future Automation
-
-The next step is to add a script that validates every `routines/*.json` file and generates the built-in catalog from those files. Until then, the JSON files are the contribution format and `src/domain/routineCatalog.ts` remains the runtime source for built-ins.
+The JSON files are the only authored source for built-in routine content. Files under `src/generated/` and `functions/src/generated/` are committed build artifacts and must never be edited manually.
 
 ## Separate Repository Option
 

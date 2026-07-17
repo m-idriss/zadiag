@@ -10,7 +10,7 @@ describe('routine presentation', () => {
     }, 'fr');
 
     expect(visual.name).toBe('Élastiques orthodontiques');
-    expect(visual.icon).toBe('🦷');
+    expect(visual.icon).toBe('tooth');
     expect(visual.accent).toBe('#0d927d');
     expect(visual.instructionSteps).toHaveLength(3);
   });
@@ -22,7 +22,7 @@ describe('routine presentation', () => {
       description: '',
     }, 'fr');
 
-    expect(visual.icon).toBe('🦷');
+    expect(visual.icon).toBe('tooth');
     expect(visual.accent).toBe('#0d927d');
   });
 

@@ -11,7 +11,7 @@ describe('built-in routine translations', () => {
 
   it('attaches the central entry instead of duplicating localized content', () => {
     for (const routine of availableRoutines) {
-      expect(routine.translations).toBe(builtinRoutineTranslations[routine.id]);
+      expect(routine.translations).toStrictEqual(builtinRoutineTranslations[routine.id]);
       expect(routine.translations?.fr?.name).toBeTruthy();
     }
   });

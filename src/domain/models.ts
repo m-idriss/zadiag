@@ -1,4 +1,4 @@
-import { translationsForRoutine } from './routineTranslations';
+import { generatedRoutines } from '../generated/routineCatalog';
 
 export type Role = 'parent' | 'child';
 export type Locale = 'en' | 'fr';
@@ -266,31 +266,9 @@ export const defaultPlan: MonitoringPlan = {
 
 export const DEFAULT_ROUTINE_ID = 'orthodontic-elastics';
 
-export const defaultRoutine: Routine = {
-  id: DEFAULT_ROUTINE_ID,
-  name: 'Orthodontic Elastics',
-  description: 'Daily orthodontic elastic wear checks.',
-  instructions: 'Wear your elastics as prescribed. When a check is ready, take a clear photo in good light.',
-  icon: '🦷',
-  accentColor: '#0d927d',
-  category: 'dental',
-  proofType: 'Photo',
-  proofExample: 'Mouth photo with the elastics visible in good light.',
-  recommendedValidationMode: 'ai',
-  responsibleName: 'Care team',
-  analysis: {
-    expectedEvidence: 'A clear view of the mouth showing whether orthodontic elastics are being worn.',
-    detectedCriteria: 'orthodontic elastics are clearly visible on the teeth or braces.',
-    notDetectedCriteria: 'the mouth or teeth are visible and orthodontic elastics are clearly absent.',
-    uncertaintyCriteria: 'the mouth is not visible enough, the image is blurry or dark, or it is impossible to tell whether elastics are present.',
-  },
-  instructionSteps: [
-    { id: 'wear', icon: '🦷', title: 'Wear your elastics', description: 'Follow the instructions from your healthcare professional.' },
-    { id: 'photo', icon: '📷', title: 'Take a clear photo', description: 'Use good light and keep your mouth centered.' },
-    { id: 'send', icon: '📤', title: 'Send your proof', description: 'Submit it so the responsible person can review it.' },
-  ],
-  translations: translationsForRoutine(DEFAULT_ROUTINE_ID),
-};
+export const defaultRoutine = structuredClone(
+  generatedRoutines.find((routine) => routine.id === DEFAULT_ROUTINE_ID),
+) as unknown as Routine;
 
 export const createDefaultRoutineAssignment = (assignedAt = new Date().toISOString()): RoutineAssignment => ({
   id: DEFAULT_ROUTINE_ID,
