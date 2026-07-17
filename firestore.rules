@@ -63,7 +63,9 @@ service cloud.firestore {
       }
 
       match /pushSubscriptions/{subscriptionId} {
-        allow read: if familyMember(familyId);
+        // A subscription contains a device endpoint. Members only need their
+        // own registration state; notification fan-out stays server-side.
+        allow read: if familyMember(familyId) && subscriptionId == request.auth.uid;
         allow create, update, delete: if false;
       }
     }
@@ -88,7 +90,7 @@ service cloud.firestore {
       }
 
       match /pushSubscriptions/{subscriptionId} {
-        allow read: if canViewParticipant(participantId);
+        allow read: if canViewParticipant(participantId) && subscriptionId == request.auth.uid;
         allow write: if false;
       }
     }

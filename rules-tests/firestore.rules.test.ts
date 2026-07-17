@@ -6,7 +6,7 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { collection, doc, getDoc, getDocs, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
 import { afterAll, beforeAll, beforeEach, describe, test } from 'vitest';
 
 const projectId = 'zadiag-rules-test';
@@ -55,6 +55,8 @@ beforeEach(async () => {
     });
     await setDoc(doc(db, 'participants/participant-1/checks/check-1'), { status: 'pending' });
     await setDoc(doc(db, 'participants/participant-1/routineAssignments/routine-1'), { status: 'active' });
+    await setDoc(doc(db, 'participants/participant-1/pushSubscriptions/parent'), { endpoint: 'parent-device' });
+    await setDoc(doc(db, 'participants/participant-1/pushSubscriptions/coparent'), { endpoint: 'coparent-device' });
     await setDoc(doc(db, 'users/parent/participantRefs/participant-1'), {
       participantId: 'participant-1', role: 'owner', status: 'active',
     });
@@ -63,6 +65,12 @@ beforeEach(async () => {
       uid: 'jordan', role: 'owner', label: 'self', status: 'active', permissions: { view: true },
     });
     await setDoc(doc(db, 'relationshipInvitations/private-invitation'), { participantId: 'participant-1' });
+    await setDoc(doc(db, 'relationshipRecoveryCodes/private-recovery'), { participantId: 'participant-1' });
+    await setDoc(doc(db, 'parentRecoveryCodes/private-parent-recovery'), { familyId: 'family-1' });
+    await setDoc(doc(db, 'recoveryAttempts/parent'), { attempts: 2 });
+    await setDoc(doc(db, 'auditEvents/private-audit'), { action: 'accept_relationship_invitation', actorUid: 'parent' });
+    await setDoc(doc(db, 'families/family-1/pushSubscriptions/parent'), { endpoint: 'legacy-parent-device' });
+    await setDoc(doc(db, 'families/family-1/pushSubscriptions/child'), { endpoint: 'legacy-child-device' });
   });
 });
 
@@ -103,6 +111,29 @@ describe('participant relationship isolation', () => {
     await assertFails(updateDoc(doc(parentDb, 'participants/participant-1/memberships/coparent'), { role: 'owner' }));
     await assertFails(getDoc(doc(parentDb, 'relationshipInvitations/private-invitation')));
   });
+
+  test('keeps every bearer code, recovery attempt, and audit event server-only', async () => {
+    const parentDb = environment.authenticatedContext('parent').firestore();
+    for (const path of [
+      'linkCodes/private-hash',
+      'parentRecoveryCodes/private-parent-recovery',
+      'relationshipInvitations/private-invitation',
+      'relationshipRecoveryCodes/private-recovery',
+      'recoveryAttempts/parent',
+      'auditEvents/private-audit',
+    ]) {
+      await assertFails(getDoc(doc(parentDb, path)));
+      await assertFails(setDoc(doc(parentDb, path), { tampered: true }));
+      await assertFails(deleteDoc(doc(parentDb, path)));
+    }
+  });
+
+  test('exposes only the signed-in member own push registration', async () => {
+    const parentDb = environment.authenticatedContext('parent').firestore();
+    await assertSucceeds(getDoc(doc(parentDb, 'participants/participant-1/pushSubscriptions/parent')));
+    await assertFails(getDoc(doc(parentDb, 'participants/participant-1/pushSubscriptions/coparent')));
+    await assertFails(getDocs(collection(parentDb, 'participants/participant-1/pushSubscriptions')));
+  });
 });
 
 afterAll(async () => environment.cleanup());
@@ -140,6 +171,13 @@ describe('family isolation', () => {
     const suspendedDb = environment.authenticatedContext('suspended-account').firestore();
     await assertSucceeds(getDoc(doc(suspendedDb, 'userAccess/suspended-account')));
     await assertFails(getDoc(doc(suspendedDb, 'families/family-1')));
+  });
+
+  test('keeps legacy family device endpoints private to their owner', async () => {
+    const parentDb = environment.authenticatedContext('parent').firestore();
+    await assertSucceeds(getDoc(doc(parentDb, 'families/family-1/pushSubscriptions/parent')));
+    await assertFails(getDoc(doc(parentDb, 'families/family-1/pushSubscriptions/child')));
+    await assertFails(getDocs(collection(parentDb, 'families/family-1/pushSubscriptions')));
   });
 });
 

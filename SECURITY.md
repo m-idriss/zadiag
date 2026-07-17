@@ -26,6 +26,11 @@ email. They are kept for at most seven days, and common user or family
 identifiers, codes, tokens, email addresses, and URL parameters are removed from
 generated reports.
 
+The release security and privacy control map, verified boundaries, retention
+periods, and known residual risks are recorded in
+[`docs/security-privacy-audit.md`](docs/security-privacy-audit.md). Incident
+handling follows [`docs/pilot-support-incident-playbook.md`](docs/pilot-support-incident-playbook.md).
+
 ## Scope
 
 Useful reports include authentication or authorization bypasses, cross-family
