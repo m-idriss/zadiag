@@ -1,160 +1,95 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://zadiag.app/schemas/routine.schema.json",
-  "title": "Zadiag Routine",
+  "$id": "https://zadiag.app/schemas/routine-package-v1.schema.json",
+  "title": "Zadiag Routine Package V1",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "id",
-    "name",
-    "description",
-    "instructions",
-    "icon",
-    "accentColor",
-    "category",
-    "proofType",
-    "proofExample",
-    "recommendedValidationMode",
-    "responsibleName",
-    "analysis",
-    "instructionSteps",
-    "translations"
-  ],
+  "required": ["schemaVersion", "version", "defaultLocale", "availableLocales", "routine"],
   "properties": {
+    "schemaVersion": { "const": 1 },
+    "version": { "type": "integer", "minimum": 1 },
+    "defaultLocale": { "const": "en" },
+    "availableLocales": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "prefixItems": [{ "const": "en" }],
+      "items": { "type": "string", "enum": ["en", "fr"] }
+    },
+    "routine": { "$ref": "#/$defs/routine" }
+  },
+  "$defs": {
+    "routine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "description", "instructions", "icon", "accentColor", "category", "proofType", "proofExample", "recommendedValidationMode", "responsibleName", "analysis", "instructionSteps", "translations"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "description": { "type": "string", "minLength": 10, "maxLength": 500 },
+        "instructions": { "type": "string", "minLength": 10, "maxLength": 2000 },
+        "icon": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "accentColor": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+        "category": { "type": "string", "enum": ["dental", "wellness", "medication", "activity", "custom"] },
+        "proofType": { "type": "string", "minLength": 1, "maxLength": 50 },
+        "proofExample": { "type": "string", "minLength": 10, "maxLength": 500 },
+        "recommendedValidationMode": { "type": "string", "enum": ["ai", "auto"] },
+        "responsibleName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "analysis": { "$ref": "#/$defs/analysis" },
+        "instructionSteps": { "$ref": "#/$defs/instructionSteps" },
+        "translations": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "fr": { "$ref": "#/$defs/localizedContent" } }
+        }
+      }
+    },
     "id": {
       "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
       "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
     },
-    "name": {
-      "type": "string",
-      "minLength": 2
-    },
-    "description": {
-      "type": "string",
-      "minLength": 10
-    },
-    "instructions": {
-      "type": "string",
-      "minLength": 10
-    },
-    "icon": {
-      "type": "string"
-    },
-    "accentColor": {
-      "type": "string",
-      "pattern": "^#[0-9a-fA-F]{6}$"
-    },
-    "category": { "type": "string", "enum": ["dental", "wellness", "medication", "activity", "custom"] },
-    "proofType": {
-      "type": "string"
-    },
-    "proofExample": { "type": "string", "minLength": 10 },
-    "recommendedValidationMode": { "type": "string", "enum": ["ai", "auto"] },
-    "responsibleName": {
-      "type": "string"
-    },
     "analysis": {
-      "$ref": "#/$defs/analysis"
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["expectedEvidence", "detectedCriteria", "notDetectedCriteria", "uncertaintyCriteria"],
+      "properties": {
+        "expectedEvidence": { "type": "string", "minLength": 20, "maxLength": 2000 },
+        "detectedCriteria": { "type": "string", "minLength": 20, "maxLength": 2000 },
+        "notDetectedCriteria": { "type": "string", "minLength": 20, "maxLength": 2000 },
+        "uncertaintyCriteria": { "type": "string", "minLength": 20, "maxLength": 2000 }
+      }
     },
     "instructionSteps": {
       "type": "array",
       "minItems": 2,
       "maxItems": 4,
-      "items": {
-        "$ref": "#/$defs/instructionStep"
-      }
-    },
-    "translations": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "fr": {
-          "$ref": "#/$defs/localizedContent"
-        },
-        "en": {
-          "$ref": "#/$defs/localizedContent"
-        }
-      }
-    }
-  },
-  "$defs": {
-    "analysis": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "expectedEvidence",
-        "detectedCriteria",
-        "notDetectedCriteria"
-      ],
-      "properties": {
-        "expectedEvidence": {
-          "type": "string",
-          "minLength": 20
-        },
-        "detectedCriteria": {
-          "type": "string",
-          "minLength": 20
-        },
-        "notDetectedCriteria": {
-          "type": "string",
-          "minLength": 20
-        },
-        "uncertaintyCriteria": {
-          "type": "string",
-          "minLength": 20
-        }
-      }
+      "items": { "$ref": "#/$defs/instructionStep" }
     },
     "instructionStep": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "id",
-        "icon",
-        "title",
-        "description"
-      ],
+      "required": ["id", "icon", "title", "description"],
       "properties": {
-        "id": {
-          "type": "string",
-          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
-        },
-        "icon": {
-          "type": "string"
-        },
-        "title": {
-          "type": "string",
-          "minLength": 2
-        },
-        "description": {
-          "type": "string",
-          "minLength": 10
-        }
+        "id": { "$ref": "#/$defs/id" },
+        "icon": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "title": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "description": { "type": "string", "minLength": 10, "maxLength": 500 }
       }
     },
     "localizedContent": {
       "type": "object",
       "additionalProperties": false,
+      "required": ["name", "description", "instructions", "proofExample", "analysis", "instructionSteps"],
       "properties": {
-        "name": {
-          "type": "string"
-        },
-        "description": {
-          "type": "string"
-        },
-        "instructions": {
-          "type": "string"
-        },
-        "proofExample": { "type": "string" },
-        "analysis": {
-          "$ref": "#/$defs/analysis"
-        },
-        "instructionSteps": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/instructionStep"
-          }
-        }
+        "name": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "description": { "type": "string", "minLength": 10, "maxLength": 500 },
+        "instructions": { "type": "string", "minLength": 10, "maxLength": 2000 },
+        "proofExample": { "type": "string", "minLength": 10, "maxLength": 500 },
+        "analysis": { "$ref": "#/$defs/analysis" },
+        "instructionSteps": { "$ref": "#/$defs/instructionSteps" }
       }
     }
   }

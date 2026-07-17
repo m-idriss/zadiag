@@ -1,73 +1,82 @@
 {
-  "id": "daily-hydration",
-  "name": "Hydration",
-  "description": "Daily water intake check.",
-  "instructions": "When requested, send a photo showing you drinking water or a clear hydration proof.",
-  "icon": "water",
-  "accentColor": "#2387c9",
-  "category": "wellness",
-  "proofType": "Photo",
-  "proofExample": "Photo of the participant drinking water, a visible glass, bottle, or hydration tracker.",
-  "recommendedValidationMode": "ai",
-  "responsibleName": "Care team",
-  "analysis": {
-    "expectedEvidence": "A photo showing the participant drinking water is sufficient. Also accept a clearly visible glass of water, water bottle, hydration tracker, or another clear sign of water intake.",
-    "detectedCriteria": "The photo clearly shows the participant drinking water, or another clear proof of water intake.",
-    "notDetectedCriteria": "The image is clear but does not show the participant drinking, water, a bottle, a glass, a tracker, or any hydration proof.",
-    "uncertaintyCriteria": "The action or proof is ambiguous, cropped, too dark, blurry, or could be unrelated to hydration."
-  },
-  "instructionSteps": [
-    {
-      "id": "prepare",
-      "icon": "water",
-      "title": "Keep water nearby",
-      "description": "Make it easy to drink regularly during the day."
-    },
-    {
-      "id": "track",
-      "icon": "camera",
-      "title": "Show hydration",
-      "description": "A photo of you drinking water is enough. A bottle, glass, or tracker also works."
-    },
-    {
-      "id": "send",
-      "icon": "send",
-      "title": "Send your proof",
-      "description": "Submit it so the responsible person can review it."
-    }
+  "schemaVersion": 1,
+  "version": 1,
+  "defaultLocale": "en",
+  "availableLocales": [
+    "en",
+    "fr"
   ],
-  "translations": {
-    "fr": {
-      "name": "Hydratation",
-      "description": "Contrôle quotidien de l'hydratation.",
-      "instructions": "Quand c'est demandé, envoie une photo où tu bois de l'eau ou une preuve claire d'hydratation.",
-      "proofExample": "Photo du participant qui boit de l'eau, verre, bouteille ou suivi d'hydratation visible.",
-      "analysis": {
-        "expectedEvidence": "Une photo montrant le participant en train de boire de l'eau suffit. Accepte aussi un verre d'eau, une bouteille d'eau, un suivi d'hydratation ou un autre signe clair de consommation d'eau.",
-        "detectedCriteria": "La photo montre clairement le participant en train de boire de l'eau, ou une autre preuve claire de consommation d'eau.",
-        "notDetectedCriteria": "L'image est claire mais ne montre pas le participant en train de boire, ni eau, ni bouteille, ni verre, ni suivi, ni preuve d'hydratation.",
-        "uncertaintyCriteria": "L'action ou la preuve est ambiguë, coupée, trop sombre, floue ou pourrait ne pas être liée à l'hydratation."
+  "routine": {
+    "id": "daily-hydration",
+    "name": "Hydration",
+    "description": "Daily water intake check.",
+    "instructions": "When requested, send a photo showing you drinking water or a clear hydration proof.",
+    "icon": "water",
+    "accentColor": "#2387c9",
+    "category": "wellness",
+    "proofType": "Photo",
+    "proofExample": "Photo of the participant drinking water, a visible glass, bottle, or hydration tracker.",
+    "recommendedValidationMode": "ai",
+    "responsibleName": "Care team",
+    "analysis": {
+      "expectedEvidence": "A photo showing the participant drinking water is sufficient. Also accept a clearly visible glass of water, water bottle, hydration tracker, or another clear sign of water intake.",
+      "detectedCriteria": "The photo clearly shows the participant drinking water, or another clear proof of water intake.",
+      "notDetectedCriteria": "The image is clear but does not show the participant drinking, water, a bottle, a glass, a tracker, or any hydration proof.",
+      "uncertaintyCriteria": "The action or proof is ambiguous, cropped, too dark, blurry, or could be unrelated to hydration."
+    },
+    "instructionSteps": [
+      {
+        "id": "prepare",
+        "icon": "water",
+        "title": "Keep water nearby",
+        "description": "Make it easy to drink regularly during the day."
       },
-      "instructionSteps": [
-        {
-          "id": "prepare",
-          "icon": "water",
-          "title": "Garde de l'eau à portée",
-          "description": "Rends l'hydratation simple pendant la journée."
+      {
+        "id": "track",
+        "icon": "camera",
+        "title": "Show hydration",
+        "description": "A photo of you drinking water is enough. A bottle, glass, or tracker also works."
+      },
+      {
+        "id": "send",
+        "icon": "send",
+        "title": "Send your proof",
+        "description": "Submit it so the responsible person can review it."
+      }
+    ],
+    "translations": {
+      "fr": {
+        "name": "Hydratation",
+        "description": "Contrôle quotidien de l'hydratation.",
+        "instructions": "Quand c'est demandé, envoie une photo où tu bois de l'eau ou une preuve claire d'hydratation.",
+        "proofExample": "Photo du participant qui boit de l'eau, verre, bouteille ou suivi d'hydratation visible.",
+        "analysis": {
+          "expectedEvidence": "Une photo montrant le participant en train de boire de l'eau suffit. Accepte aussi un verre d'eau, une bouteille d'eau, un suivi d'hydratation ou un autre signe clair de consommation d'eau.",
+          "detectedCriteria": "La photo montre clairement le participant en train de boire de l'eau, ou une autre preuve claire de consommation d'eau.",
+          "notDetectedCriteria": "L'image est claire mais ne montre pas le participant en train de boire, ni eau, ni bouteille, ni verre, ni suivi, ni preuve d'hydratation.",
+          "uncertaintyCriteria": "L'action ou la preuve est ambiguë, coupée, trop sombre, floue ou pourrait ne pas être liée à l'hydratation."
         },
-        {
-          "id": "track",
-          "icon": "camera",
-          "title": "Montre l'hydratation",
-          "description": "Une photo où tu bois de l'eau suffit. Une bouteille, un verre ou un suivi fonctionne aussi."
-        },
-        {
-          "id": "send",
-          "icon": "send",
-          "title": "Envoie ta preuve",
-          "description": "Le responsable pourra ensuite la vérifier."
-        }
-      ]
+        "instructionSteps": [
+          {
+            "id": "prepare",
+            "icon": "water",
+            "title": "Garde de l'eau à portée",
+            "description": "Rends l'hydratation simple pendant la journée."
+          },
+          {
+            "id": "track",
+            "icon": "camera",
+            "title": "Montre l'hydratation",
+            "description": "Une photo où tu bois de l'eau suffit. Une bouteille, un verre ou un suivi fonctionne aussi."
+          },
+          {
+            "id": "send",
+            "icon": "send",
+            "title": "Envoie ta preuve",
+            "description": "Le responsable pourra ensuite la vérifier."
+          }
+        ]
+      }
     }
   }
 }

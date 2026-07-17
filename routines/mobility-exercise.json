@@ -1,31 +1,82 @@
 {
-  "id": "mobility-exercise", "name": "Exercise", "description": "Daily mobility or exercise check.",
-  "instructions": "Complete the planned exercise and send proof when requested.",
-  "icon": "fitness", "accentColor": "#c07a17", "category": "activity", "proofType": "Photo",
-  "proofExample": "Photo showing the completed position, equipment, or activity proof agreed for the routine.", "recommendedValidationMode": "ai", "responsibleName": "Care team",
-  "analysis": {
-    "expectedEvidence": "A clear proof that the planned mobility or exercise routine was performed, such as the participant in position, exercise equipment, or a completed activity proof.",
-    "detectedCriteria": "The photo clearly shows exercise or mobility activity proof matching the routine.",
-    "notDetectedCriteria": "The image is clear but shows no exercise, mobility activity, equipment, position, or completed activity proof.",
-    "uncertaintyCriteria": "The scene is ambiguous, too cropped, too dark, blurry, or does not show enough context to verify the exercise."
-  },
-  "instructionSteps": [
-    { "id": "prepare", "icon": "fitness", "title": "Prepare the session", "description": "Choose a safe space and follow the plan." },
-    { "id": "complete", "icon": "check", "title": "Complete the exercise", "description": "Do the routine as agreed with your responsible person." },
-    { "id": "send", "icon": "send", "title": "Send your proof", "description": "Submit it so the responsible person can review it." }
+  "schemaVersion": 1,
+  "version": 1,
+  "defaultLocale": "en",
+  "availableLocales": [
+    "en",
+    "fr"
   ],
-  "translations": { "fr": {
-    "name": "Exercice", "description": "Contrôle quotidien d’exercice ou de mobilité.", "instructions": "Réalise l’exercice prévu et envoie une preuve quand elle est demandée.", "proofExample": "Photo montrant la position, le matériel ou la preuve d’activité prévue pour la routine.",
+  "routine": {
+    "id": "mobility-exercise",
+    "name": "Exercise",
+    "description": "Daily mobility or exercise check.",
+    "instructions": "Complete the planned exercise and send proof when requested.",
+    "icon": "fitness",
+    "accentColor": "#c07a17",
+    "category": "activity",
+    "proofType": "Photo",
+    "proofExample": "Photo showing the completed position, equipment, or activity proof agreed for the routine.",
+    "recommendedValidationMode": "ai",
+    "responsibleName": "Care team",
     "analysis": {
-      "expectedEvidence": "Une preuve claire que l’exercice ou la routine de mobilité prévue a été réalisée, comme le participant en position, du matériel d’exercice ou une preuve d’activité terminée.",
-      "detectedCriteria": "La photo montre clairement une preuve d’exercice ou de mobilité correspondant à la routine.",
-      "notDetectedCriteria": "L’image est claire mais ne montre ni exercice, ni mobilité, ni matériel, ni position, ni preuve d’activité terminée.",
-      "uncertaintyCriteria": "La scène est ambiguë, trop coupée, trop sombre, floue ou ne montre pas assez de contexte pour vérifier l’exercice."
+      "expectedEvidence": "A clear proof that the planned mobility or exercise routine was performed, such as the participant in position, exercise equipment, or a completed activity proof.",
+      "detectedCriteria": "The photo clearly shows exercise or mobility activity proof matching the routine.",
+      "notDetectedCriteria": "The image is clear but shows no exercise, mobility activity, equipment, position, or completed activity proof.",
+      "uncertaintyCriteria": "The scene is ambiguous, too cropped, too dark, blurry, or does not show enough context to verify the exercise."
     },
     "instructionSteps": [
-      { "id": "prepare", "icon": "fitness", "title": "Prépare la séance", "description": "Choisis un espace adapté et suis le plan." },
-      { "id": "complete", "icon": "check", "title": "Fais l’exercice", "description": "Réalise la routine convenue avec ton responsable." },
-      { "id": "send", "icon": "send", "title": "Envoie ta preuve", "description": "Le responsable pourra ensuite la vérifier." }
-    ]
-  }}
+      {
+        "id": "prepare",
+        "icon": "fitness",
+        "title": "Prepare the session",
+        "description": "Choose a safe space and follow the plan."
+      },
+      {
+        "id": "complete",
+        "icon": "check",
+        "title": "Complete the exercise",
+        "description": "Do the routine as agreed with your responsible person."
+      },
+      {
+        "id": "send",
+        "icon": "send",
+        "title": "Send your proof",
+        "description": "Submit it so the responsible person can review it."
+      }
+    ],
+    "translations": {
+      "fr": {
+        "name": "Exercice",
+        "description": "Contrôle quotidien d’exercice ou de mobilité.",
+        "instructions": "Réalise l’exercice prévu et envoie une preuve quand elle est demandée.",
+        "proofExample": "Photo montrant la position, le matériel ou la preuve d’activité prévue pour la routine.",
+        "analysis": {
+          "expectedEvidence": "Une preuve claire que l’exercice ou la routine de mobilité prévue a été réalisée, comme le participant en position, du matériel d’exercice ou une preuve d’activité terminée.",
+          "detectedCriteria": "La photo montre clairement une preuve d’exercice ou de mobilité correspondant à la routine.",
+          "notDetectedCriteria": "L’image est claire mais ne montre ni exercice, ni mobilité, ni matériel, ni position, ni preuve d’activité terminée.",
+          "uncertaintyCriteria": "La scène est ambiguë, trop coupée, trop sombre, floue ou ne montre pas assez de contexte pour vérifier l’exercice."
+        },
+        "instructionSteps": [
+          {
+            "id": "prepare",
+            "icon": "fitness",
+            "title": "Prépare la séance",
+            "description": "Choisis un espace adapté et suis le plan."
+          },
+          {
+            "id": "complete",
+            "icon": "check",
+            "title": "Fais l’exercice",
+            "description": "Réalise la routine convenue avec ton responsable."
+          },
+          {
+            "id": "send",
+            "icon": "send",
+            "title": "Envoie ta preuve",
+            "description": "Le responsable pourra ensuite la vérifier."
+          }
+        ]
+      }
+    }
+  }
 }

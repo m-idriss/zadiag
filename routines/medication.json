@@ -1,31 +1,82 @@
 {
-  "id": "medication", "name": "Medication", "description": "Medication adherence reminder.",
-  "instructions": "Take the medication as prescribed and send proof when requested.",
-  "icon": "medical", "accentColor": "#9468d7", "category": "medication", "proofType": "Photo",
-  "proofExample": "Photo of the medication box, pill organizer, or prepared prescribed dose.", "recommendedValidationMode": "ai", "responsibleName": "Care team",
-  "analysis": {
-    "expectedEvidence": "A clear medication adherence proof such as the medication package, pill organizer, prescribed dose, or other expected medication proof.",
-    "detectedCriteria": "The photo clearly shows medication-related proof consistent with taking or preparing the prescribed dose.",
-    "notDetectedCriteria": "The image is clear but contains no medication, package, pill organizer, dose, or medication proof.",
-    "uncertaintyCriteria": "The proof is ambiguous, the label or object is unclear, or the image quality prevents a reliable medication adherence decision."
-  },
-  "instructionSteps": [
-    { "id": "check", "icon": "medical", "title": "Check the dose", "description": "Follow the prescribed dose and timing." },
-    { "id": "photo", "icon": "camera", "title": "Take a clear photo", "description": "Show the expected proof clearly." },
-    { "id": "send", "icon": "send", "title": "Send your proof", "description": "Submit it so the responsible person can review it." }
+  "schemaVersion": 1,
+  "version": 1,
+  "defaultLocale": "en",
+  "availableLocales": [
+    "en",
+    "fr"
   ],
-  "translations": { "fr": {
-    "name": "Médicament", "description": "Rappel de prise de médicament.", "instructions": "Prends le médicament selon la prescription et envoie une preuve quand elle est demandée.", "proofExample": "Photo de la boîte, du pilulier ou de la dose préparée selon la prescription.",
+  "routine": {
+    "id": "medication",
+    "name": "Medication",
+    "description": "Medication adherence reminder.",
+    "instructions": "Take the medication as prescribed and send proof when requested.",
+    "icon": "medical",
+    "accentColor": "#9468d7",
+    "category": "medication",
+    "proofType": "Photo",
+    "proofExample": "Photo of the medication box, pill organizer, or prepared prescribed dose.",
+    "recommendedValidationMode": "ai",
+    "responsibleName": "Care team",
     "analysis": {
-      "expectedEvidence": "Une preuve claire de prise de médicament, comme la boîte, le pilulier, la dose prescrite ou une autre preuve attendue.",
-      "detectedCriteria": "La photo montre clairement une preuve liée au médicament et cohérente avec la prise ou la préparation de la dose.",
-      "notDetectedCriteria": "L’image est claire mais ne contient ni médicament, ni boîte, ni pilulier, ni dose, ni preuve liée au médicament.",
-      "uncertaintyCriteria": "La preuve est ambiguë, l’objet ou l’étiquette n’est pas clair, ou la qualité empêche une décision fiable."
+      "expectedEvidence": "A clear medication adherence proof such as the medication package, pill organizer, prescribed dose, or other expected medication proof.",
+      "detectedCriteria": "The photo clearly shows medication-related proof consistent with taking or preparing the prescribed dose.",
+      "notDetectedCriteria": "The image is clear but contains no medication, package, pill organizer, dose, or medication proof.",
+      "uncertaintyCriteria": "The proof is ambiguous, the label or object is unclear, or the image quality prevents a reliable medication adherence decision."
     },
     "instructionSteps": [
-      { "id": "check", "icon": "medical", "title": "Vérifie la dose", "description": "Suis la dose et l’horaire prescrits." },
-      { "id": "photo", "icon": "camera", "title": "Prends une photo claire", "description": "Montre clairement la preuve attendue." },
-      { "id": "send", "icon": "send", "title": "Envoie ta preuve", "description": "Le responsable pourra ensuite la vérifier." }
-    ]
-  }}
+      {
+        "id": "check",
+        "icon": "medical",
+        "title": "Check the dose",
+        "description": "Follow the prescribed dose and timing."
+      },
+      {
+        "id": "photo",
+        "icon": "camera",
+        "title": "Take a clear photo",
+        "description": "Show the expected proof clearly."
+      },
+      {
+        "id": "send",
+        "icon": "send",
+        "title": "Send your proof",
+        "description": "Submit it so the responsible person can review it."
+      }
+    ],
+    "translations": {
+      "fr": {
+        "name": "Médicament",
+        "description": "Rappel de prise de médicament.",
+        "instructions": "Prends le médicament selon la prescription et envoie une preuve quand elle est demandée.",
+        "proofExample": "Photo de la boîte, du pilulier ou de la dose préparée selon la prescription.",
+        "analysis": {
+          "expectedEvidence": "Une preuve claire de prise de médicament, comme la boîte, le pilulier, la dose prescrite ou une autre preuve attendue.",
+          "detectedCriteria": "La photo montre clairement une preuve liée au médicament et cohérente avec la prise ou la préparation de la dose.",
+          "notDetectedCriteria": "L’image est claire mais ne contient ni médicament, ni boîte, ni pilulier, ni dose, ni preuve liée au médicament.",
+          "uncertaintyCriteria": "La preuve est ambiguë, l’objet ou l’étiquette n’est pas clair, ou la qualité empêche une décision fiable."
+        },
+        "instructionSteps": [
+          {
+            "id": "check",
+            "icon": "medical",
+            "title": "Vérifie la dose",
+            "description": "Suis la dose et l’horaire prescrits."
+          },
+          {
+            "id": "photo",
+            "icon": "camera",
+            "title": "Prends une photo claire",
+            "description": "Montre clairement la preuve attendue."
+          },
+          {
+            "id": "send",
+            "icon": "send",
+            "title": "Envoie ta preuve",
+            "description": "Le responsable pourra ensuite la vérifier."
+          }
+        ]
+      }
+    }
+  }
 }
