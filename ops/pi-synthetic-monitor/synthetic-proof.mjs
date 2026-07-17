@@ -56,7 +56,21 @@ const installSyntheticCamera = (context) => {
   });
 };
 
-export const answerPendingCheck = async ({ context, page, appUrl, path, proofWaitMs = 20_000 }) => {
+const completeSyntheticOnboarding = async ({ page, contactEmail }) => {
+  const contactInput = page.getByRole('textbox', { name: /Contact email|E-mail de contact/i }).first();
+  if (await contactInput.isVisible().catch(() => false)) {
+    if (!contactEmail) throw new Error('Synthetic monitor contact email is required');
+    await contactInput.fill(contactEmail);
+    await page.getByRole('button', { name: /Continue|Continuer/i }).first().click();
+    await page.waitForLoadState('domcontentloaded').catch(() => undefined);
+  }
+  const declinePilot = page.getByRole('button', { name: /Continue without participating|Continuer sans participer/i }).first();
+  if (await declinePilot.waitFor({ state: 'visible', timeout: 10_000 }).then(() => true).catch(() => false)) {
+    await declinePilot.click();
+  }
+};
+
+export const answerPendingCheck = async ({ context, page, appUrl, path, contactEmail, proofWaitMs = 20_000 }) => {
   await installSyntheticCamera(context);
   let destination = new URL('/', appUrl);
   try {
@@ -66,6 +80,7 @@ export const answerPendingCheck = async ({ context, page, appUrl, path, proofWai
     // Keep the application root for malformed notification paths.
   }
   await page.goto(destination.href, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+  await completeSyntheticOnboarding({ page, contactEmail });
   const proofButton = page.getByRole('button', { name: /Proof|Preuve/i }).first();
   try {
     await proofButton.waitFor({ state: 'visible', timeout: proofWaitMs });

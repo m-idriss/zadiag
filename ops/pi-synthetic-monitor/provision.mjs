@@ -11,8 +11,9 @@ const firebaseAuth = require('../../node_modules/firebase-tools/lib/auth');
 const project = process.env.ZADIAG_FIREBASE_PROJECT || 'zadiag-22482';
 const ownerUid = process.argv[2]?.trim();
 const monitorUid = process.argv[3]?.trim();
-if (!ownerUid || !monitorUid) {
-  throw new Error('Usage: node ops/pi-synthetic-monitor/provision.mjs OWNER_UID MONITOR_UID');
+const contactEmail = process.env.ZADIAG_MONITOR_CONTACT_EMAIL?.trim();
+if (!ownerUid || !monitorUid || !contactEmail) {
+  throw new Error('Set ZADIAG_MONITOR_CONTACT_EMAIL and run: node ops/pi-synthetic-monitor/provision.mjs OWNER_UID MONITOR_UID');
 }
 
 const account = firebaseAuth.getGlobalDefaultAccount();
@@ -133,6 +134,7 @@ const environment = [
   `ZADIAG_MONITOR_PARTICIPANT_ID=${participantId}`,
   `ZADIAG_MONITOR_RECEIPT_TOKEN=${receiptToken}`,
   `ZADIAG_MONITOR_RECEIPT_URL=${receiptUrl}`,
+  `ZADIAG_MONITOR_CONTACT_EMAIL=${contactEmail}`,
   `ZADIAG_MONITOR_PROFILE_DIR=${profileDirectory}`,
   'ZADIAG_MONITOR_APP_URL=https://www.zadiag.com',
   'ZADIAG_MONITOR_DEBUG_PORT=9223',

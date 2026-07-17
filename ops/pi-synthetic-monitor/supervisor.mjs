@@ -17,6 +17,7 @@ const profileDir = required('ZADIAG_MONITOR_PROFILE_DIR');
 const monitorId = required('ZADIAG_MONITOR_ID');
 const receiptToken = required('ZADIAG_MONITOR_RECEIPT_TOKEN');
 const receiptUrl = required('ZADIAG_MONITOR_RECEIPT_URL');
+const contactEmail = required('ZADIAG_MONITOR_CONTACT_EMAIL');
 const appCheckDebugToken = process.env.ZADIAG_MONITOR_APP_CHECK_DEBUG_TOKEN?.trim();
 const heartbeatMs = Number(process.env.ZADIAG_MONITOR_HEARTBEAT_MS || 300_000);
 const statePath = process.env.ZADIAG_MONITOR_STATE_PATH || resolve(profileDir, '..', 'handled-checks.json');
@@ -158,7 +159,7 @@ const heartbeat = async () => {
           sessionId: notification.sessionId,
           routineId: notification.routineId,
         });
-        const answer = await answerPendingCheck({ context, page, appUrl, path: notification.path });
+        const answer = await answerPendingCheck({ context, page, appUrl, path: notification.path, contactEmail });
         await page.evaluate(async (answeredCheckId) => {
           const registration = await navigator.serviceWorker?.ready.catch(() => undefined);
           const notifications = await registration?.getNotifications().catch(() => []);
@@ -191,6 +192,7 @@ const heartbeat = async () => {
       context,
       page,
       appUrl,
+      contactEmail,
       proofWaitMs: 5_000,
     });
     if (fallbackAnswer.outcome !== 'already_settled') {

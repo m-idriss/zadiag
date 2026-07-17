@@ -8,6 +8,8 @@ Chromium runs inside Xvfb instead of native headless mode because persistent Web
 
 The runtime configuration and Chromium profile live in `.pi-monitor/`, which is intentionally ignored by Git. The monitor is isolated from real participant data and uses a dedicated Firebase anonymous UID.
 
+Set `ZADIAG_MONITOR_CONTACT_EMAIL` to the operational address for the synthetic account before provisioning. The supervisor completes the mandatory contact-email flow and declines optional pilot measurement automatically, so an onboarding release cannot block scheduled checks.
+
 Useful commands:
 
 ```sh

@@ -7,6 +7,7 @@ const profileDir = process.env.ZADIAG_MONITOR_PROFILE_DIR
   || '/home/idriss/dev/zadiag/.pi-monitor/chromium';
 const appUrl = process.env.ZADIAG_MONITOR_APP_URL || 'https://www.zadiag.com';
 const appCheckDebugToken = process.env.ZADIAG_MONITOR_APP_CHECK_DEBUG_TOKEN?.trim();
+const contactEmail = process.env.ZADIAG_MONITOR_CONTACT_EMAIL?.trim();
 
 const context = await chromium.launchPersistentContext(profileDir, {
   executablePath: process.env.ZADIAG_MONITOR_CHROMIUM || '/usr/bin/chromium',
@@ -90,7 +91,7 @@ if (command === 'uid') {
   await page.waitForTimeout(5_000);
   result = { uid: await readUid(), renewed: true, ...await status(), diagnostics };
 } else if (command === 'answer-check') {
-  const answer = await answerPendingCheck({ context, page, appUrl });
+  const answer = await answerPendingCheck({ context, page, appUrl, contactEmail });
   result = { uid: await readUid(), answered: true, ...answer, ...await status(), diagnostics };
 } else if (command === 'activate') {
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 30_000 });
