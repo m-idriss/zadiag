@@ -29,4 +29,12 @@ describe('routine presentation', () => {
   it('sanitizes custom accent colors', () => {
     expect(presentRoutine({ id: 'custom', name: 'Custom', description: '', accentColor: 'url(evil)' }, 'en').accent).toBe('#0d927d');
   });
+
+  it('falls back field-by-field to primary and safe minimal content', () => {
+    const visual = presentRoutine({ id: 'private', name: 'Primary name', description: 'Primary description', translations: { fr: { name: '', description: 'Description traduite', instructionSteps: [{ id: 'wrong', icon: '', title: 'Étape', description: 'Description' }] } } }, 'fr');
+    expect(visual.name).toBe('Primary name');
+    expect(visual.description).toBe('Description traduite');
+    expect(visual.instructionSteps).toEqual([]);
+    expect(presentRoutine({ id: 'empty', name: '', description: '' }, 'en').name).toBe('Routine');
+  });
 });
