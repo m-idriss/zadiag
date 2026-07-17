@@ -20,6 +20,7 @@ import { shouldRecoverSyntheticPush } from './syntheticMonitor.js';
 import { canLeaveMembership, canRemoveMembership, createMembership, hasParticipantPermission, isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, isProfileColorKey, membershipRoles, migrateLegacyFamilyRelationships, scheduledAggregatePaths, type MembershipRole } from './relationships.js';
 import { assertRoutineDraftRevision, createRoutineDraftDocument, RoutineDraftConflictError, RoutineDraftInputError, updateRoutineDraftDocument, type PublishedRoutineVersionDocument, type RoutineDraftDocument } from './routineDrafts.js';
 import { ROUTINE_PACKAGE_MIME, parseRoutinePackageEnvelope, serializeRoutinePackage } from './routinePackages.js';
+import { assertExternalPackageResponse, verifyExternalRegistryIndex } from './externalRoutineRegistry.js';
 
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
   ?? (process.env.GCLOUD_PROJECT ? `${process.env.GCLOUD_PROJECT}.firebasestorage.app` : undefined);
@@ -46,6 +47,42 @@ const cors = [
   'http://localhost:5173',
   /^http:\/\/localhost:\d+$/,
 ];
+
+const syncExternalRoutineRegistryCache = async () => {
+  const registryUrl = process.env.ROUTINE_REGISTRY_URL;
+  const publicKeys = JSON.parse(process.env.ROUTINE_REGISTRY_PUBLIC_KEYS ?? '{}') as Record<string, string>;
+  if (!registryUrl || new URL(registryUrl).protocol !== 'https:' || !Object.keys(publicKeys).length) return { status: 'disabled' as const };
+  try {
+    const indexResponse = await fetch(registryUrl, { signal: AbortSignal.timeout(10_000) });
+    if (!indexResponse.ok) throw new Error(`registry_http_${indexResponse.status}`);
+    const payload = verifyExternalRegistryIndex(await indexResponse.text(), publicKeys);
+    const resolved = await Promise.all(payload.entries.map(async (entry) => {
+      const response = await fetch(entry.packageUrl, { signal: AbortSignal.timeout(10_000) });
+      if (!response.ok) throw new Error(`registry_package_http_${response.status}`);
+      const content = await response.text();
+      assertExternalPackageResponse(content, response.headers.get('content-type'), entry.sha256);
+      const envelope = parseRoutinePackageEnvelope(content, ROUTINE_PACKAGE_MIME);
+      if (envelope.package.routine.id !== entry.id || envelope.package.version !== entry.version) throw new Error('registry_package_provenance_invalid');
+      return { entry, package: envelope.package };
+    }));
+    const now = new Date().toISOString();
+    const previous = await db.collection('routineCatalogEntries').where('source', '==', 'external').get();
+    const batch = db.batch();
+    previous.docs.forEach((doc) => batch.update(doc.ref, { revokedAt: now, visibility: 'unlisted' }));
+    resolved.forEach(({ entry, package: routinePackage }) => {
+      const id = `external-${hashLinkCode(`${entry.id}:${entry.version}`)}`;
+      batch.set(db.collection('routineCatalogEntries').doc(id), { source: 'external', ownerId: 'external-registry', authorName: entry.authorName, routineId: entry.id, version: entry.version, visibility: 'listed', package: routinePackage, publishedAt: payload.generatedAt, sharedAt: now, license: entry.license, registryUrl, checksum: entry.sha256 });
+    });
+    batch.set(db.collection('routineRegistry').doc('state'), { status: 'healthy', registryUrl, generatedAt: payload.generatedAt, syncedAt: now, entries: resolved.length });
+    await batch.commit();
+    return { status: 'healthy' as const, entries: resolved.length };
+  } catch (error) {
+    await db.collection('routineRegistry').doc('state').set({ status: 'degraded', lastAttemptAt: new Date().toISOString(), error: error instanceof Error ? error.message.slice(0, 160) : 'unknown' }, { merge: true });
+    throw error;
+  }
+};
+
+export const syncExternalRoutineRegistry = onSchedule({ region, schedule: 'every 6 hours', timeoutSeconds: 300 }, async () => { await syncExternalRoutineRegistryCache(); });
 
 interface RoutineNotificationNames {
   routineName: string;
@@ -2212,6 +2249,9 @@ const publicCatalogEntry = (id: string, data: FirebaseFirestore.DocumentData) =>
   package: data.package,
   publishedAt: data.publishedAt,
   sharedAt: data.sharedAt,
+  source: data.source,
+  license: data.license,
+  checksum: data.checksum,
 });
 
 export const searchRoutineCatalog = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
@@ -2220,6 +2260,12 @@ export const searchRoutineCatalog = onCall({ region, cors, enforceAppCheck: true
   const snapshot = await db.collection('routineCatalogEntries').where('visibility', '==', 'listed').limit(100).get();
   const entries = snapshot.docs.filter((doc) => !doc.data().revokedAt).map((doc) => publicCatalogEntry(doc.id, doc.data())).filter((entry) => !query || JSON.stringify(entry).toLocaleLowerCase().includes(query)).slice(0, 30);
   return { entries };
+});
+
+export const getExternalRoutineRegistryStatus = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  await requireUid(request.auth);
+  const state = await db.collection('routineRegistry').doc('state').get();
+  return state.exists ? state.data() : { status: process.env.ROUTINE_REGISTRY_URL ? 'pending' : 'disabled' };
 });
 
 export const resolveSharedRoutine = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
