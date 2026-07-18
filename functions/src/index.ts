@@ -22,6 +22,7 @@ import { assertRoutineDraftRevision, createRoutineDraftDocument, RoutineDraftCon
 import { ROUTINE_PACKAGE_MIME, parseRoutinePackageEnvelope, serializeRoutinePackage } from './routinePackages.js';
 import { assertExternalPackageResponse, verifyExternalRegistryIndex } from './externalRoutineRegistry.js';
 import { marketplaceEntryInstallable, marketplaceRole, moderateMarketplaceStatus, type ModerationAction, type ModerationStatus } from './routineMarketplaceGovernance.js';
+import { aiAuthoringCapabilityEnabled, aiAuthoringRegistry, parseAiAuthoringConfig } from './aiAuthoring.js';
 
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
   ?? (process.env.GCLOUD_PROJECT ? `${process.env.GCLOUD_PROJECT}.firebasestorage.app` : undefined);
@@ -2269,6 +2270,16 @@ export const getExternalRoutineRegistryStatus = onCall({ region, cors, enforceAp
   await requireUid(request.auth);
   const state = await db.collection('routineRegistry').doc('state').get();
   return state.exists ? state.data() : { status: process.env.ROUTINE_REGISTRY_URL ? 'pending' : 'disabled' };
+});
+
+export const getAiAuthoringCapabilities = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  await requireUid(request.auth);
+  const config = parseAiAuthoringConfig(process.env.AI_AUTHORING_CONFIG);
+  return {
+    prescriptionExtraction: { enabled: aiAuthoringCapabilityEnabled(config, 'prescriptionExtraction'), promptVersion: aiAuthoringRegistry.prescriptionExtraction.promptVersion },
+    routineTranslation: { enabled: aiAuthoringCapabilityEnabled(config, 'routineTranslation'), promptVersion: aiAuthoringRegistry.routineTranslation.promptVersion },
+    manualFallback: true,
+  };
 });
 
 export const resolveSharedRoutine = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
