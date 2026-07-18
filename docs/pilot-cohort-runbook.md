@@ -60,6 +60,8 @@ Before inviting the first family:
 - confirm the support mailbox is monitored and the incident owner is named;
 - perform synthetic smoke checks for linking, notification registration,
   reminder opening, proof submission, review, withdrawal, and account deletion;
+- complete the [real-device iPhone PWA matrix](ios-pwa-smoke-test.md) for the
+  named production version;
 - verify the current pilot consent version and the 35-day journey retention;
 - prepare the baseline and closing questions in `pilot-survey-template.md`;
 - define the cohort start, end, weekly review time, and stop authority;
@@ -121,4 +123,3 @@ cohort-wide pause but remain part of the weekly review.
 - choose one outcome: continue unchanged, change and repeat, or stop;
 - remove temporary contact and operating notes that are no longer required;
 - schedule the normal 35-day technical-record deletion verification.
-
