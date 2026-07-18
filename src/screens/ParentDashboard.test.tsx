@@ -704,8 +704,13 @@ describe('ParentDashboard', () => {
     expect(container.textContent).toContain('Confidence 67%');
     expect(container.textContent).toContain('Estimated quality 82%');
     expect(getProofImageUrl).toHaveBeenCalledWith('review');
+    act(() => detailDialog?.querySelector<HTMLButtonElement>('button[aria-label="Close"]')?.click());
+    expect(container.querySelector('.history-detail-dialog')).toBeNull();
+    act(() => container.querySelector<HTMLElement>('.parent-review-copy')?.click());
+    const reopenedDetailDialog = container.querySelector('.history-detail-dialog');
+    expect(reopenedDetailDialog).not.toBeNull();
     vi.useRealTimers();
-    const validate = detailDialog?.querySelector<HTMLButtonElement>('button[aria-label="Validate"]');
+    const validate = reopenedDetailDialog?.querySelector<HTMLButtonElement>('button[aria-label="Validate"]');
 
     await act(async () => {
       validate?.dispatchEvent(new MouseEvent('click', { bubbles: true }));

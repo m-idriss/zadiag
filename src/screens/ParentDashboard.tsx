@@ -72,6 +72,7 @@ export function ParentDashboard({
   const [weeklyReportOpenSignal, setWeeklyReportOpenSignal] = useState(0);
   const [weeklyInsightOpen, setWeeklyInsightOpen] = useState(false);
   const swipeStartRef = useRef<{ eventId: string; x: number; y: number } | undefined>(undefined);
+  const swipeDecisionRef = useRef(false);
   const handledNotificationEventIdRef = useRef<string | undefined>(undefined);
   const summaryRange = controlledSummaryRange ?? localSummaryRange;
   const setSummaryRange = onSummaryRangeChange ?? setLocalSummaryRange;
@@ -211,6 +212,7 @@ export function ParentDashboard({
   };
   const beginSwipe = (eventId: string, x: number, y: number, target: EventTarget) => {
     if (reviewingId === eventId || (target as HTMLElement).closest('button')) return;
+    swipeDecisionRef.current = false;
     swipeStartRef.current = { eventId, x, y };
   };
   const completeSwipe = (eventId: string, x: number, y: number) => {
@@ -220,6 +222,7 @@ export function ParentDashboard({
     const deltaX = x - swipeStart.x;
     const deltaY = y - swipeStart.y;
     if (Math.abs(deltaX) < 72 || Math.abs(deltaX) < Math.abs(deltaY) * 1.35) return;
+    swipeDecisionRef.current = true;
     void decide(eventId, deltaX > 0 ? 'detected' : 'not_detected');
   };
   const handleTouchStart = (event: TouchEvent<HTMLElement>, eventId: string) => {
@@ -522,6 +525,14 @@ export function ParentDashboard({
                   onMouseDown={(mouseEvent) => handleMouseDown(mouseEvent, event.id)}
                   onMouseLeave={() => { swipeStartRef.current = undefined; }}
                   onMouseUp={(mouseEvent) => handleMouseUp(mouseEvent, event.id)}
+                  onClick={(clickEvent) => {
+                    if ((clickEvent.target as HTMLElement).closest('button')) return;
+                    if (swipeDecisionRef.current) {
+                      swipeDecisionRef.current = false;
+                      return;
+                    }
+                    setDetailEventId(event.id);
+                  }}
                   onTouchCancel={() => { swipeStartRef.current = undefined; }}
                   onTouchEnd={(touchEvent) => handleTouchEnd(touchEvent, event.id)}
                   onTouchStart={(touchEvent) => handleTouchStart(touchEvent, event.id)}
@@ -546,6 +557,7 @@ export function ParentDashboard({
                           <small>{formatDateTime(event.capturedAt ?? event.requestedAt)}</small>
                           {proofExample ? <p className="routine-proof-context"><b>{t('expectedProof')}:</b> {proofExample}</p> : null}
                         </div>
+                        <button type="button" className="parent-review-detail-button" aria-label={`${t('historyDetailTitle')} · ${routineNameFor(event)}`} onClick={() => setDetailEventId(event.id)}><AppIcon name="chevron-forward" /></button>
                       </div>
                       {(source || confidence || quality) ? (
                         <div className="parent-review-analysis">
