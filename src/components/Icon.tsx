@@ -6,6 +6,8 @@ import {
   checkmarkCircleOutline,
   closeCircleOutline,
   downloadOutline,
+  eyeOutline,
+  fitnessOutline,
   addCircleOutline,
   calendarOutline,
   homeOutline,
@@ -15,10 +17,12 @@ import {
   medicalOutline,
   notificationsOutline,
   refreshOutline,
+  pulseOutline,
   sendOutline,
   settingsOutline,
   shareOutline,
   sparklesOutline,
+  starOutline,
   statsChartOutline,
   timeOutline,
   todayOutline,
@@ -34,6 +38,8 @@ export type AppIconName =
   | 'check'
   | 'close'
   | 'download'
+  | 'eye'
+  | 'fitness'
   | 'add'
   | 'calendar'
   | 'home'
@@ -42,11 +48,13 @@ export type AppIconName =
   | 'medical'
   | 'notifications'
   | 'refresh'
+  | 'pulse'
   | 'routines'
   | 'send'
   | 'settings'
   | 'share'
   | 'sparkles'
+  | 'star'
   | 'stats'
   | 'time'
   | 'today'
@@ -63,6 +71,8 @@ const icons: Record<AppIconName, string> = {
   check: checkmarkCircleOutline,
   close: closeCircleOutline,
   download: downloadOutline,
+  eye: eyeOutline,
+  fitness: fitnessOutline,
   add: addCircleOutline,
   calendar: calendarOutline,
   home: homeOutline,
@@ -71,11 +81,13 @@ const icons: Record<AppIconName, string> = {
   medical: medicalOutline,
   notifications: notificationsOutline,
   refresh: refreshOutline,
+  pulse: pulseOutline,
   routines: listOutline,
   send: sendOutline,
   settings: settingsOutline,
   share: shareOutline,
   sparkles: sparklesOutline,
+  star: starOutline,
   stats: statsChartOutline,
   time: timeOutline,
   today: todayOutline,
@@ -93,5 +105,14 @@ export const routineIconName = (icon?: string): AppIconName => {
   if (icon === '📷' || icon === '▣') return 'camera';
   if (icon === '📤' || icon === '➤') return 'send';
   if (icon === '🦷' || normalizedIcon === 'tooth' || normalizedIcon === 'teeth' || normalizedIcon === 'dental') return 'tooth';
+  if (normalizedIcon === 'water') return 'water';
+  if (normalizedIcon === 'camera') return 'camera';
+  if (normalizedIcon === 'send') return 'send';
+  if (normalizedIcon === 'medical') return 'medical';
+  if (normalizedIcon === 'fitness') return 'fitness';
+  if (normalizedIcon === 'check') return 'check';
+  if (normalizedIcon === 'pulse') return 'pulse';
+  if (normalizedIcon === 'eye') return 'eye';
+  if (normalizedIcon === 'star') return 'star';
   return 'sparkles';
 };

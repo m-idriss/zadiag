@@ -159,7 +159,7 @@ const heartbeat = async () => {
           sessionId: notification.sessionId,
           routineId: notification.routineId,
         });
-        const answer = await answerPendingCheck({ context, page, appUrl, path: notification.path, contactEmail });
+        const answer = await answerPendingCheck({ context, page, appUrl, path: notification.path, contactEmail, routineId: notification.routineId });
         await page.evaluate(async (answeredCheckId) => {
           const registration = await navigator.serviceWorker?.ready.catch(() => undefined);
           const notifications = await registration?.getNotifications().catch(() => []);

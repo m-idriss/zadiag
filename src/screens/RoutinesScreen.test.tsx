@@ -3,6 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BottomNav, navigationTabs, tabAfterSwipe } from '../components/BottomNav';
 import { createDefaultRoutineAssignment, type AppState } from '../domain/models';
+import { availableRoutines } from '../domain/routineCatalog';
 import type { RoutineCatalogEntry, RoutineDraft } from '../domain/routineDraft';
 import { translate } from '../services/i18n';
 import { RoutinesScreen } from './RoutinesScreen';
@@ -95,7 +96,7 @@ describe('participant routines navigation', () => {
     expect(document.body.textContent).toContain('visible glass');
     expect(document.body.querySelector('.routine-catalog-tabs')).toBeNull();
     const builtInCards = Array.from(document.body.querySelectorAll<HTMLElement>('.routine-catalog-item'));
-    expect(builtInCards).toHaveLength(4);
+    expect(builtInCards).toHaveLength(availableRoutines.length);
     for (const card of builtInCards) {
       const headingId = card.getAttribute('aria-labelledby');
       expect(headingId).toBeTruthy();

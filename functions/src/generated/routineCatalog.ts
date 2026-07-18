@@ -220,6 +220,79 @@ export const generatedRoutines = [
     }
   },
   {
+    "id": "nemu-health",
+    "name": "Nemu Health",
+    "description": "Daily operational health check for Nemu and its Raspberry Pi.",
+    "instructions": "Let Nemu run the scheduled diagnostic and submit its timestamped system health dashboard.",
+    "icon": "pulse",
+    "accentColor": "#167c6b",
+    "category": "custom",
+    "proofType": "System dashboard",
+    "proofExample": "Timestamped dashboard showing memory, load, disk, temperature, Docker and Nemu service status.",
+    "recommendedValidationMode": "ai",
+    "responsibleName": "System administrator",
+    "analysis": {
+      "expectedEvidence": "A current Nemu Health dashboard with a timestamp and visible rows for memory, system load, disk usage, CPU temperature, Docker containers and the Nemu service.",
+      "detectedCriteria": "The dashboard is current, clearly identifies Nemu, and every health row is visible without a red failure status.",
+      "notDetectedCriteria": "The image is clear but is not a Nemu Health dashboard, is stale, omits the required health rows, or shows one or more red failure statuses.",
+      "uncertaintyCriteria": "The dashboard is cropped, blurry, lacks a readable timestamp, or contains an orange warning that requires responsible-person review."
+    },
+    "instructionSteps": [
+      {
+        "id": "diagnose",
+        "icon": "pulse",
+        "title": "Run diagnostics",
+        "description": "Nemu checks the Raspberry Pi and its critical services."
+      },
+      {
+        "id": "review",
+        "icon": "eye",
+        "title": "Review indicators",
+        "description": "Memory, load, disk, temperature, Docker and Nemu must be visible."
+      },
+      {
+        "id": "send",
+        "icon": "send",
+        "title": "Send the dashboard",
+        "description": "Submit the timestamped dashboard to Zadiag for validation."
+      }
+    ],
+    "translations": {
+      "fr": {
+        "name": "Santé de Nemu",
+        "description": "Contrôle quotidien de Nemu et de son Raspberry Pi.",
+        "instructions": "Laisse Nemu lancer le diagnostic planifié et envoyer son tableau de santé horodaté.",
+        "proofExample": "Tableau horodaté affichant mémoire, charge, disque, température, Docker et état du service Nemu.",
+        "analysis": {
+          "expectedEvidence": "Un tableau Santé de Nemu récent, horodaté, avec des lignes visibles pour la mémoire, la charge système, le disque, la température CPU, les conteneurs Docker et le service Nemu.",
+          "detectedCriteria": "Le tableau est récent, identifie clairement Nemu et chaque indicateur est visible sans état d’échec rouge.",
+          "notDetectedCriteria": "L’image est claire mais ne montre pas le tableau Santé de Nemu, est ancienne, omet un indicateur requis ou affiche au moins un échec rouge.",
+          "uncertaintyCriteria": "Le tableau est coupé, flou, sans horodatage lisible ou contient un avertissement orange nécessitant une vérification."
+        },
+        "instructionSteps": [
+          {
+            "id": "diagnose",
+            "icon": "pulse",
+            "title": "Lance le diagnostic",
+            "description": "Nemu vérifie le Raspberry Pi et ses services critiques."
+          },
+          {
+            "id": "review",
+            "icon": "eye",
+            "title": "Vérifie les indicateurs",
+            "description": "Mémoire, charge, disque, température, Docker et Nemu doivent être visibles."
+          },
+          {
+            "id": "send",
+            "icon": "send",
+            "title": "Envoie le tableau",
+            "description": "Transmets le tableau horodaté à Zadiag pour validation."
+          }
+        ]
+      }
+    }
+  },
+  {
     "id": "orthodontic-elastics",
     "name": "Orthodontic Elastics",
     "description": "Daily orthodontic elastic wear checks.",

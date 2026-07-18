@@ -10,4 +10,12 @@ describe('routine icons', () => {
     expect(routineIconName('📷')).toBe('camera');
     expect(routineIconName('📤')).toBe('send');
   });
+
+  it('maps routine package icon names to application icons', () => {
+    expect(routineIconName('pulse')).toBe('pulse');
+    expect(routineIconName('eye')).toBe('eye');
+    expect(routineIconName('send')).toBe('send');
+    expect(routineIconName('fitness')).toBe('fitness');
+    expect(routineIconName('unknown-community-icon')).toBe('sparkles');
+  });
 });

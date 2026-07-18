@@ -26,6 +26,7 @@ const onboardingPage = () => {
       if (name?.test?.('Proof')) return proof;
       return locator();
     }),
+    evaluate: vi.fn().mockResolvedValue(undefined),
   };
   return { page, contact, continueButton, declinePilot };
 };
@@ -56,5 +57,25 @@ describe('Pi synthetic proof onboarding recovery', () => {
       page,
       appUrl: 'https://www.zadiag.com',
     })).rejects.toThrow('Synthetic monitor contact email is required');
+  });
+
+  it('injects Raspberry Pi health evidence for generic and legacy routine ids', async () => {
+    const context = { addInitScript: vi.fn().mockResolvedValue(undefined) };
+    const { page } = onboardingPage();
+    const healthEvidence = { timestamp: '18/07/2026 20:00:00', rows: [] };
+
+    await expect(answerPendingCheck({
+      context,
+      page,
+      appUrl: 'https://www.zadiag.com',
+      contactEmail: 'pi@example.com',
+      routineId: 'raspberry-pi-health',
+      healthEvidence,
+    })).resolves.toEqual({ outcome: 'already_settled' });
+
+    expect(page.evaluate).toHaveBeenCalledWith(expect.any(Function), {
+      currentRoutineId: 'raspberry-pi-health',
+      currentEvidence: healthEvidence,
+    });
   });
 });

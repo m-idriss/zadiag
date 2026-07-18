@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { cameraOutline, chevronBackOutline, chevronForwardOutline, ellipsisHorizontal, peopleOutline, sendOutline, timeOutline } from 'ionicons/icons';
+import { cameraOutline, chevronBackOutline, chevronForwardOutline, ellipsisHorizontal, peopleOutline, timeOutline } from 'ionicons/icons';
 import { adherenceSummary, withResolvedEventStatuses } from '../domain/adherence';
 import { presentRoutine } from '../domain/routinePresentation';
 import type { AppState, RoutineAssignment, RoutineValidationMode, VerificationEvent } from '../domain/models';
@@ -146,12 +146,6 @@ const streakFor = (events: VerificationEvent[]) => {
   return streak;
 };
 
-const renderRoutineStepIcon = (icon: string) => {
-  if (icon === '▣') return <SvgIcon icon={cameraOutline} />;
-  if (icon === '➤') return <SvgIcon icon={sendOutline} />;
-  return icon;
-};
-
 export function RoutineDetailScreen({ assignment, state, back, start, getProofImageUrl, reviewCheck, requestCheck, t, edit, initialTab, initialEventId, onInitialEventConsumed, onSaveMonitoringPlan, routinePlanBusy }: {
   assignment: RoutineAssignment;
   state: AppState;
@@ -251,7 +245,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
         <div><span aria-hidden="true"><SvgIcon icon={peopleOutline} /></span><b>{t('responsible')}</b><p>{visual.responsibleName}</p><i><SvgIcon icon={chevronForwardOutline} /></i></div>
       </section>
       <section className="routine-copy"><h2>{t('instructions')}</h2><p>{visual.instructions}</p></section>
-      <div className="routine-instruction-list">{visual.instructionSteps.map((step, index) => <article key={step.id}><b>{index + 1}</b><span aria-hidden="true">{renderRoutineStepIcon(step.icon)}</span><div><h3>{step.title}</h3><p>{step.description}</p></div></article>)}</div>
+      <div className="routine-instruction-list">{visual.instructionSteps.map((step, index) => <article key={step.id}><b>{index + 1}</b><span aria-hidden="true"><AppIcon name={routineIconName(step.icon)} /></span><div><h3>{step.title}</h3><p>{step.description}</p></div></article>)}</div>
       <aside className="routine-advice"><b>{t('advice')}</b><p>{t('routineAdvice')}</p></aside>
       {next && start && <ActionButton className="routine-proof-action" onClick={start}><SvgIcon icon={cameraOutline} />{t('sendProof')}</ActionButton>}
     </div>
