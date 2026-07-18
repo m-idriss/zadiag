@@ -71,6 +71,10 @@ beforeEach(async () => {
     await setDoc(doc(db, 'parentRecoveryCodes/private-parent-recovery'), { familyId: 'family-1' });
     await setDoc(doc(db, 'recoveryAttempts/parent'), { attempts: 2 });
     await setDoc(doc(db, 'auditEvents/private-audit'), { action: 'accept_relationship_invitation', actorUid: 'parent' });
+    await setDoc(doc(db, 'routineCatalogEntries/catalog-entry'), { visibility: 'listed', moderationStatus: 'approved' });
+    await setDoc(doc(db, 'routineShareCodes/private-share'), { entryId: 'catalog-entry' });
+    await setDoc(doc(db, 'routineCatalogReports/private-report'), { entryId: 'catalog-entry', reporterUid: 'parent' });
+    await setDoc(doc(db, 'routineRegistry/state'), { status: 'healthy' });
     await setDoc(doc(db, 'families/family-1/pushSubscriptions/parent'), { endpoint: 'legacy-parent-device' });
     await setDoc(doc(db, 'families/family-1/pushSubscriptions/child'), { endpoint: 'legacy-child-device' });
   });
@@ -144,6 +148,22 @@ describe('participant relationship isolation', () => {
       await assertFails(setDoc(doc(parentDb, path), { tampered: true }));
       await assertFails(deleteDoc(doc(parentDb, path)));
     }
+  });
+
+  test('keeps marketplace, registry, share codes, and reports behind callable functions', async () => {
+    const parentDb = environment.authenticatedContext('parent').firestore();
+    for (const path of [
+      'routineCatalogEntries/catalog-entry',
+      'routineShareCodes/private-share',
+      'routineCatalogReports/private-report',
+      'routineRegistry/state',
+    ]) {
+      await assertFails(getDoc(doc(parentDb, path)));
+      await assertFails(setDoc(doc(parentDb, path), { tampered: true }));
+      await assertFails(deleteDoc(doc(parentDb, path)));
+    }
+    await assertFails(getDocs(collection(parentDb, 'routineCatalogEntries')));
+    await assertFails(getDocs(collection(parentDb, 'routineCatalogReports')));
   });
 
   test('exposes only the signed-in member own push registration', async () => {
