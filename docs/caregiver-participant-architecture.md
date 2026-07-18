@@ -62,6 +62,9 @@ users/{uid}/participantRefs/{participantId}
 participants/{participantId}/routineAssignments/{assignmentId}
 participants/{participantId}/checks/{checkId}
 participants/{participantId}/pushSubscriptions/{uid}
+  locale: "en" | "fr"
+  roles: ("child" | "parent")[]
+  preferences: NotificationPreferences
 
 relationshipInvitations/{invitationHash}
   participantId: participantId
@@ -212,7 +215,7 @@ interface AppState {
 
 Single-participant accounts open directly as today. Accounts with several participants get a concise selector that shows the participant name and the user's display label. A management screen lists all linked participants for the current user and, within each participant, its caregivers and their status. Self-managed profiles use first-person copy and do not pretend the user is their own child.
 
-The active participant ID is a UI preference, not an authorization fact. Repository operations always pass the participant ID and the server rechecks membership.
+The active participant ID is a UI preference, not an authorization fact. Repository operations always pass the participant ID and the server rechecks membership. Client actions are presented from the active membership's explicit permissions rather than from the legacy parent/child display role. A self-managed owner is participant-facing while retaining management capabilities, and its push subscription may carry both child and parent notification roles.
 
 ## Examples
 

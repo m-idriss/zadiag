@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase-admin/app';
-import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
+import { FieldPath, FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { HttpsError, onCall, onRequest } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
@@ -17,11 +17,11 @@ import { recordAuditEvent, recordJourneyEvent, type JourneyStage } from './audit
 import { expiredPendingCheckCleanupUpdate, shouldDeleteProofAfterReview, staleCleanupCutoffs } from './cleanup.js';
 import { reportOperationalAlert, reportOperationalEvent, reportOperationalRecovery } from './observability.js';
 import { shouldRecoverSyntheticPush } from './syntheticMonitor.js';
-import { canLeaveMembership, canRemoveMembership, createMembership, hasParticipantPermission, isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, isProfileColorKey, membershipRoles, migrateLegacyFamilyRelationships, scheduledAggregatePaths, type MembershipRole } from './relationships.js';
+import { canLeaveMembership, canRemoveMembership, createMembership, hasParticipantPermission, isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, isProfileColorKey, membershipRoles, migrateLegacyFamilyRelationships, pushRolesForMembership, scheduledAggregatePaths, type MembershipPushRole, type MembershipRole } from './relationships.js';
 import { assertRoutineDraftRevision, createRoutineDraftDocument, RoutineDraftConflictError, RoutineDraftInputError, updateRoutineDraftDocument, type PublishedRoutineVersionDocument, type RoutineDraftDocument } from './routineDrafts.js';
 import { ROUTINE_PACKAGE_MIME, parseRoutinePackageEnvelope, serializeRoutinePackage } from './routinePackages.js';
 import { assertExternalPackageResponse, verifyExternalRegistryIndex } from './externalRoutineRegistry.js';
-import { marketplaceEntryInstallable, marketplaceRole, moderateMarketplaceStatus, type ModerationAction, type ModerationStatus } from './routineMarketplaceGovernance.js';
+import { marketplaceEntryAuthorizedForInstall, marketplaceEntryInstallable, marketplaceRole, moderateMarketplaceStatus, type ModerationAction, type ModerationStatus } from './routineMarketplaceGovernance.js';
 import { aiAuthoringCapabilityEnabled, aiAuthoringRegistry, parseAiAuthoringConfig } from './aiAuthoring.js';
 import { aggregatePilotReport, pilotReportPeriod } from './pilotReport.js';
 
@@ -96,7 +96,7 @@ interface RoutineNotificationNames {
   };
 }
 
-type PushRecipientRole = 'child' | 'parent';
+type PushRecipientRole = MembershipPushRole;
 type PushNotificationDocument = FirebaseFirestore.QueryDocumentSnapshot | FirebaseFirestore.DocumentSnapshot;
 type PushDispatchResult = 'success' | 'failed' | 'invalidated' | 'skipped';
 
@@ -336,14 +336,16 @@ const responsibleActorName = async (uid: string) => {
   return String(profile.data()?.displayName ?? '').trim() || 'Responsable';
 };
 
-const pushRoleForAggregate = async (uid: string, aggregateRef: FirebaseFirestore.DocumentReference): Promise<PushRecipientRole> => {
+const pushRolesForAggregate = async (uid: string, aggregateRef: FirebaseFirestore.DocumentReference): Promise<PushRecipientRole[]> => {
   if (aggregateRef.parent.id === 'families') {
     const profile = await db.collection('users').doc(uid).get();
-    return profile.data()?.role === 'child' ? 'child' : 'parent';
+    return [profile.data()?.role === 'child' ? 'child' : 'parent'];
   }
   const membership = await aggregateRef.collection('memberships').doc(uid).get();
-  return membership.data()?.role === 'participant' ? 'child' : 'parent';
+  return pushRolesForMembership(membership.data());
 };
+
+const primaryPushRole = (roles: PushRecipientRole[]): PushRecipientRole => roles.includes('child') ? 'child' : 'parent';
 
 const journeyStages = new Set<JourneyStage>(['app_ready', 'notifications_enabled', 'notification_opened', 'check_opened']);
 const journeySources = new Set(['startup', 'settings', 'push', 'notification_center', 'dashboard', 'history']);
@@ -367,7 +369,7 @@ export const recordClientJourney = onCall({ region, cors, enforceAppCheck: true 
   if (contextId && !(await aggregateRef.collection('checks').doc(contextId).get()).exists) {
     throw new HttpsError('not-found', 'The check could not be found.');
   }
-  const role = await pushRoleForAggregate(uid, aggregateRef);
+  const role = primaryPushRole(await pushRolesForAggregate(uid, aggregateRef));
   await recordJourneyEvent(db, {
     stage,
     actorUid: uid,
@@ -386,7 +388,7 @@ export const updatePilotParticipation = onCall({ region, cors, enforceAppCheck: 
     throw new HttpsError('invalid-argument', 'A valid pilot participation choice is required.');
   }
   const aggregateRef = await requireFamilyMember(uid, aggregateId);
-  const role = await pushRoleForAggregate(uid, aggregateRef);
+  const role = primaryPushRole(await pushRolesForAggregate(uid, aggregateRef));
   const recordedAt = new Date().toISOString();
   const pilotParticipation = {
     version: pilotConsentVersion,
@@ -554,9 +556,11 @@ const recordSensitiveCodeAttempt = async (uid: string) => {
   });
 };
 
-const pushRecipientRole = (subscriptionDocument: PushNotificationDocument): PushRecipientRole => {
+const pushRecipientRoles = (subscriptionDocument: PushNotificationDocument): PushRecipientRole[] => {
+  const roles = subscriptionDocument.data()?.roles;
+  if (Array.isArray(roles)) return roles.filter((role): role is PushRecipientRole => role === 'child' || role === 'parent');
   const role = subscriptionDocument.data()?.role;
-  return role === 'parent' ? 'parent' : 'child';
+  return [role === 'parent' ? 'parent' : 'child'];
 };
 
 const sendPushPayload = async (
@@ -623,7 +627,7 @@ const sendCheckPushNotification = async (
   resend: boolean,
   syntheticMonitor?: SyntheticMonitorTarget,
 ) => {
-  if (pushRecipientRole(subscriptionDocument) !== 'child') return 'skipped' as const;
+  if (!pushRecipientRoles(subscriptionDocument).includes('child')) return 'skipped' as const;
   const subscription = subscriptionDocument.data() as { locale?: string } | undefined;
   const basePayload = buildCheckNotificationPayload({
     sessionId: check.sessionId,
@@ -648,7 +652,7 @@ const sendReviewPushNotification = async (
   subscriptionDocument: PushNotificationDocument,
   check: { checkId: string; routineId: string } & RoutineNotificationNames,
 ): Promise<PushDispatchResult> => {
-  if (pushRecipientRole(subscriptionDocument) !== 'parent') return 'skipped';
+  if (!pushRecipientRoles(subscriptionDocument).includes('parent')) return 'skipped';
   const subscription = subscriptionDocument.data() as { locale?: string } | undefined;
   const payload = buildReviewNotificationPayload({
     participantId: subscriptionDocument.ref.parent.parent!.id,
@@ -1692,7 +1696,8 @@ export const savePushSubscription = onCall({ region, cors, enforceAppCheck: true
   }
 
   const aggregateRef = await requireAggregatePermission(uid, familyId, 'view');
-  const role = await pushRoleForAggregate(uid, aggregateRef);
+  const roles = await pushRolesForAggregate(uid, aggregateRef);
+  const role = primaryPushRole(roles);
   const userRef = db.collection('users').doc(uid);
   const subscriptionRef = aggregateRef.collection('pushSubscriptions').doc(uid);
   const batch = db.batch();
@@ -1700,6 +1705,7 @@ export const savePushSubscription = onCall({ region, cors, enforceAppCheck: true
     ...subscription,
     locale,
     role,
+    roles,
     endpointPresent: true,
     lastSuccessfulSaveAt: FieldValue.serverTimestamp(),
     ...(preferences ? { preferences } : {}),
@@ -1707,6 +1713,26 @@ export const savePushSubscription = onCall({ region, cors, enforceAppCheck: true
   });
   batch.set(userRef, { notificationsEnabled: true, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
   await batch.commit();
+});
+
+export const updatePushSubscriptionSettings = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const aggregateId = requireDocumentId(request.data?.aggregateId, 'Profile ID');
+  const locale = request.data?.locale === 'fr' ? 'fr' : request.data?.locale === 'en' ? 'en' : undefined;
+  const preferences = normalizePushPreferences(request.data?.preferences);
+  if (!locale || !preferences) throw new HttpsError('invalid-argument', 'Valid notification settings are required.');
+  const aggregateRef = await requireAggregatePermission(uid, aggregateId, 'view');
+  const subscriptionRef = aggregateRef.collection('pushSubscriptions').doc(uid);
+  const subscription = await subscriptionRef.get();
+  if (!subscription.exists) throw new HttpsError('failed-precondition', 'No push subscription is available for this device.');
+  const roles = await pushRolesForAggregate(uid, aggregateRef);
+  await subscriptionRef.update({
+    locale,
+    preferences,
+    role: primaryPushRole(roles),
+    roles,
+    updatedAt: FieldValue.serverTimestamp(),
+  });
 });
 
 export const sendTestPushNotification = onCall({
@@ -1718,7 +1744,7 @@ export const sendTestPushNotification = onCall({
   const uid = await requireUid(request.auth);
   const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const aggregateRef = await requireAggregatePermission(uid, familyId, 'view');
-  const role = await pushRoleForAggregate(uid, aggregateRef);
+  const role = primaryPushRole(await pushRolesForAggregate(uid, aggregateRef));
   const subscriptionDocument = await aggregateRef.collection('pushSubscriptions').doc(uid).get();
   const subscription = subscriptionDocument.data() as (PushSubscription & { locale?: string }) | undefined;
   if (!subscription?.endpoint) {
@@ -2327,12 +2353,16 @@ export const installCatalogRoutine = onCall({ region, cors, enforceAppCheck: tru
   const uid = await requireUid(request.auth);
   const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
   const entryId = requireDocumentId(request.data?.entryId, 'Catalog entry ID');
+  const shareCode = typeof request.data?.shareCode === 'string' ? request.data.shareCode.trim() : '';
+  const suppliedShareCodeHash = shareCode ? hashLinkCode(shareCode) : undefined;
   const participantRef = await requireParticipantRoutineDraftAccess(uid, participantId);
   const entryRef = db.collection('routineCatalogEntries').doc(entryId);
   let routineId = '';
   await db.runTransaction(async (transaction) => {
     const [, entry] = await Promise.all([requireParticipantRoutineDraftTransactionAccess(transaction, participantRef, uid), transaction.get(entryRef)]);
-    if (!entry.exists || !marketplaceEntryInstallable(entry.data() ?? {})) throw new HttpsError('failed-precondition', 'This routine is no longer available for installation.');
+    if (!entry.exists || !marketplaceEntryAuthorizedForInstall(entry.data() ?? {}, suppliedShareCodeHash)) {
+      throw new HttpsError('failed-precondition', 'This routine is no longer available for installation.');
+    }
     const data = entry.data() as { routineId: string; version: number; package: PublishedRoutineVersionDocument['package'] };
     routineId = requireDocumentId(data.routineId, 'Routine ID');
     const assignmentRef = participantRef.collection('routineAssignments').doc(routineId);
@@ -3066,37 +3096,45 @@ export const cleanupExpiredProofImages = onSchedule({
   region,
   schedule: 'every 24 hours',
   timeZone: 'UTC',
+  timeoutSeconds: 540,
 }, async () => {
-  const expired = await db.collectionGroup('checks')
-    .where('proofImageExpiresAt', '<', new Date().toISOString())
-    .limit(200)
-    .get();
-  if (expired.empty) {
-    reportOperationalRecovery('storage_cleanup_failed');
-    return;
-  }
-  const results = await Promise.allSettled(expired.docs.map(async (check) => {
-    const proofImagePath = check.data().proofImagePath;
-    if (typeof proofImagePath === 'string' && proofImagePath) {
-      try {
-        await bucket.file(proofImagePath).delete({ ignoreNotFound: true });
-      } catch (error) {
-        reportOperationalAlert({
-          kind: 'storage_cleanup_failed',
-          familyId: check.ref.parent.parent?.id,
-          checkId: check.id,
-          details: { phase: 'expired_proof_delete' },
-          error,
-        });
-        throw error;
+  const expiredBefore = new Date().toISOString();
+  let cursor: FirebaseFirestore.QueryDocumentSnapshot | undefined;
+  let failures = 0;
+  while (true) {
+    let expiredQuery: FirebaseFirestore.Query = db.collectionGroup('checks')
+      .where('proofImageExpiresAt', '<', expiredBefore)
+      .orderBy('proofImageExpiresAt')
+      .orderBy(FieldPath.documentId())
+      .limit(200);
+    if (cursor) expiredQuery = expiredQuery.startAfter(cursor);
+    const expired = await expiredQuery.get();
+    if (expired.empty) break;
+    const results = await Promise.allSettled(expired.docs.map(async (check) => {
+      const proofImagePath = check.data().proofImagePath;
+      if (typeof proofImagePath === 'string' && proofImagePath) {
+        try {
+          await bucket.file(proofImagePath).delete({ ignoreNotFound: true });
+        } catch (error) {
+          reportOperationalAlert({
+            kind: 'storage_cleanup_failed',
+            familyId: check.ref.parent.parent?.id,
+            checkId: check.id,
+            details: { phase: 'expired_proof_delete' },
+            error,
+          });
+          throw error;
+        }
       }
-    }
-    await check.ref.update({
-      proofImagePath: FieldValue.delete(),
-      proofImageExpiresAt: FieldValue.delete(),
-    });
-  }));
-  if (results.every((result) => result.status === 'fulfilled')) reportOperationalRecovery('storage_cleanup_failed');
+      await check.ref.update({
+        proofImagePath: FieldValue.delete(),
+        proofImageExpiresAt: FieldValue.delete(),
+      });
+    }));
+    failures += results.filter((result) => result.status === 'rejected').length;
+    cursor = expired.docs.at(-1);
+  }
+  if (failures === 0) reportOperationalRecovery('storage_cleanup_failed');
 });
 
 export const triggerOperationalTestAlert = onCall({ region, cors, enforceAppCheck: true }, async (request) => {

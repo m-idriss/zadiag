@@ -162,7 +162,7 @@ export function RoutinesScreen({
   onListPublishedRoutineVersions?: (participantId: string) => Promise<Array<PublishedRoutineVersion & { routineId: string }>>;
   onUpgradeRoutineAssignment?: (participantId: string, routineId: string, targetVersion: number) => Promise<void>;
   onSearchRoutineCatalog?: (query: string) => Promise<RoutineCatalogEntry[]>;
-  onInstallCatalogRoutine?: (participantId: string, entryId: string) => Promise<void>;
+  onInstallCatalogRoutine?: (participantId: string, entryId: string, shareCode?: string) => Promise<void>;
   onSharePublishedRoutine?: (participantId: string, routineId: string, version: number, visibility: 'listed' | 'unlisted') => Promise<{ entryId: string; shareCode: string }>;
   onResolveSharedRoutine?: (shareCode: string) => Promise<RoutineCatalogEntry>;
   onExportRoutinePackage?: (participantId: string, draftId: string) => Promise<{ content: string; mimeType: string; fileName: string }>;
@@ -209,6 +209,7 @@ export function RoutinesScreen({
   const [installingEntryId, setInstallingEntryId] = useState<string>();
   const [routineShare, setRoutineShare] = useState<{ entryId: string; shareCode: string }>();
   const [sharedRoutineCode, setSharedRoutineCode] = useState('');
+  const [privateShareCodes, setPrivateShareCodes] = useState<Record<string, string>>({});
   const [detailInitialTab, setDetailInitialTab] = useState<'overview' | 'plan' | 'tracking' | undefined>(() => focusedEventId ? 'tracking' : undefined);
   const [expandedScheduleIds, setExpandedScheduleIds] = useState<Set<string>>(() => readStoredStringSet(ROUTINES_EXPANDED_SCHEDULES_KEY));
   const selected = state.routineAssignments.find((assignment) => assignment.id === selectedId);
@@ -417,7 +418,7 @@ export function RoutinesScreen({
     const participantId = activeParticipantAccess?.participant.id;
     if (!participantId || !onInstallCatalogRoutine) return;
     setInstallingEntryId(entry.id);
-    try { await onInstallCatalogRoutine(participantId, entry.id); setCatalogOpen(false); }
+    try { await onInstallCatalogRoutine(participantId, entry.id, privateShareCodes[entry.id]); setCatalogOpen(false); }
     finally { setInstallingEntryId(undefined); }
   };
   const shareVersion = async (version: PublishedRoutineVersion & { routineId: string }, visibility: 'listed' | 'unlisted') => {
@@ -430,6 +431,7 @@ export function RoutinesScreen({
     if (!onResolveSharedRoutine || !sharedRoutineCode.trim()) return;
     try {
       const entry = await onResolveSharedRoutine(sharedRoutineCode);
+      setPrivateShareCodes((current) => ({ ...current, [entry.id]: sharedRoutineCode.trim() }));
       setCatalogEntries((current) => [entry, ...current.filter((item) => item.id !== entry.id)]);
     } catch (error) {
       console.error(error);

@@ -17,6 +17,7 @@ export const membershipPermissions = [
 ] as const;
 type MembershipPermission = typeof membershipPermissions[number];
 type PermissionSet = Record<MembershipPermission, boolean>;
+export type MembershipPushRole = 'child' | 'parent';
 
 type MembershipStatus = 'active' | 'suspended';
 type MembershipLabel = 'parent' | 'partner' | 'relative' | 'professional' | 'self' | 'other';
@@ -92,6 +93,18 @@ export const hasParticipantPermission = (
   membership: Partial<MembershipDocument> | undefined,
   permission: MembershipPermission,
 ) => membership?.status === 'active' && membership.permissions?.[permission] === true;
+
+export const pushRolesForMembership = (
+  membership: Partial<MembershipDocument> | undefined,
+): MembershipPushRole[] => {
+  const roles: MembershipPushRole[] = [];
+  if (
+    hasParticipantPermission(membership, 'submitChecks')
+    && (membership?.role === 'participant' || membership?.label === 'self')
+  ) roles.push('child');
+  if (hasParticipantPermission(membership, 'reviewProofs')) roles.push('parent');
+  return roles;
+};
 
 export const canGrantPermissions = (
   actor: Partial<MembershipDocument> | undefined,

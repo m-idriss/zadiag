@@ -40,7 +40,7 @@ export function ParentDashboard({
   t,
 }: {
   state: AppState;
-  regenerateCode: () => Promise<void>;
+  regenerateCode?: () => Promise<void>;
   onCreateRoutine?: () => void;
   getProofImageUrl?: (eventId: string) => Promise<string>;
   reviewCheck?: (eventId: string, decision: 'detected' | 'not_detected') => Promise<void>;
@@ -169,6 +169,7 @@ export function ParentDashboard({
   }, [getProofImageUrl, proofErrors, proofUrls, reviewEvents]);
 
   const regenerate = async () => {
+    if (!regenerateCode) return;
     if (!window.confirm(t('regenerateCodeConfirm'))) return;
     setCodeError(false);
     setRegenerating(true);
@@ -446,7 +447,7 @@ export function ParentDashboard({
                 hint={t('childLinkCodeHint')}
                 value={state.family.linkingCode}
                 t={t}
-                action={(
+                action={regenerateCode ? (
                   <>
                     <button type="button" className="regenerate-code" aria-busy={regenerating} disabled={regenerating} onClick={() => { void regenerate(); }}>
                       {regenerating ? <span className="button-spinner" aria-hidden="true" /> : null}
@@ -454,7 +455,7 @@ export function ParentDashboard({
                     </button>
                     {codeError ? <span className="form-error">{t('regenerateCodeError')}</span> : null}
                   </>
-                )}
+                ) : undefined}
               />
             ) : null}
 

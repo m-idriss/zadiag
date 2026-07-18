@@ -7,7 +7,6 @@ import {
   onSnapshot,
   orderBy,
   query,
-  updateDoc,
   type DocumentData,
   type Unsubscribe,
 } from 'firebase/firestore';
@@ -21,6 +20,8 @@ import {
   normalizeAppPreferences,
   type AppPreferences,
   type Locale,
+  type MembershipPermission,
+  type MembershipPermissions,
   type MonitoringPlan,
   type MembershipRole,
   type ParticipantAccess,
@@ -37,7 +38,7 @@ import {
 import { routineFromCatalog } from '../domain/routineCatalog';
 import type { PublishedRoutineVersion, RoutineCatalogEntry, RoutineDraft, RoutinePackageV1 } from '../domain/routineDraft';
 import { isFreshCapture } from '../domain/adherence';
-import { activeParticipantAccess, preferredParticipantId } from '../domain/participantAccess';
+import { activeParticipantAccess, participantAccessCan, participantRoleForAccess, preferredParticipantId } from '../domain/participantAccess';
 import { isProfileColorKey } from '../domain/profileColor';
 import { initialRemoteState, PREFERENCES_KEY } from './appStateDefaults';
 import { coalesceInFlight } from './idempotency';
@@ -84,6 +85,22 @@ const asPilotParticipation = (value: unknown): PilotParticipation | undefined =>
   if (!['parent', 'child'].includes(String(participation.role))) return undefined;
   if (typeof participation.version !== 'string' || typeof participation.recordedAt !== 'string') return undefined;
   return participation as unknown as PilotParticipation;
+};
+
+const membershipPermissionKeys: MembershipPermission[] = [
+  'view',
+  'manageRoutines',
+  'requestChecks',
+  'submitChecks',
+  'reviewProofs',
+  'manageCaregivers',
+  'manageParticipant',
+];
+
+const asMembershipPermissions = (value: unknown): MembershipPermissions | undefined => {
+  if (!value || typeof value !== 'object') return undefined;
+  const candidate = value as Record<string, unknown>;
+  return Object.fromEntries(membershipPermissionKeys.map((permission) => [permission, candidate[permission] === true])) as MembershipPermissions;
 };
 
 const asResponsibleActions = (value: unknown): VerificationEvent['responsibleActions'] => {
@@ -223,7 +240,7 @@ export class FirebaseRepository implements AppRepository {
     if (participantId === this.legacyFamilyId && this.legacyRole) {
       await this.attachFamily(participantId, this.legacyRole);
     } else {
-      await this.attachParticipant(participantId, access.membership.role);
+      await this.attachParticipant(participantId);
     }
   }
 
@@ -283,7 +300,7 @@ export class FirebaseRepository implements AppRepository {
     await this.loadAccountProfile();
     await this.loadParticipantAccess();
     const access = activeParticipantAccess(this.state.participantAccess, result.data.participantId);
-    if (access) await this.attachParticipant(result.data.participantId, access.membership.role);
+    if (access) await this.attachParticipant(result.data.participantId);
     return result.data.participantId;
   }
 
@@ -308,7 +325,7 @@ export class FirebaseRepository implements AppRepository {
     await this.loadAccountProfile();
     await this.loadParticipantAccess();
     const access = activeParticipantAccess(this.state.participantAccess, result.data.participantId);
-    if (access) await this.attachParticipant(result.data.participantId, access.membership.role);
+    if (access) await this.attachParticipant(result.data.participantId);
     return result.data.participantId;
   }
 
@@ -386,7 +403,7 @@ export class FirebaseRepository implements AppRepository {
     await this.loadAccountProfile();
     await this.loadParticipantAccess();
     const access = activeParticipantAccess(this.state.participantAccess, result.data.participantId);
-    if (access) await this.attachParticipant(result.data.participantId, access.membership.role);
+    if (access) await this.attachParticipant(result.data.participantId);
     return result.data;
   }
 
@@ -394,14 +411,14 @@ export class FirebaseRepository implements AppRepository {
     this.state.locale = locale;
     this.persistPreferences();
     this.emit();
-    await this.syncPushSubscriptionLocale();
+    await this.syncPushSubscriptionSettings();
   }
 
   async setPreferences(preferences: Partial<AppPreferences>) {
     this.state.preferences = normalizeAppPreferences({ ...this.state.preferences, ...preferences });
     this.persistPreferences();
     this.emit();
-    await this.syncPushSubscriptionPreferences();
+    await this.syncPushSubscriptionSettings();
   }
 
   async linkParent(childName: string) {
@@ -448,7 +465,7 @@ export class FirebaseRepository implements AppRepository {
   }
 
   async assignRoutine(routineId: string) {
-    if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
+    if (!this.state.family.id || !this.activeAccessCan('manageRoutines')) throw new Error('permission_denied');
     const familyId = this.state.family.id;
     await coalesceInFlight(this.inFlightCallables, `assignRoutine:${familyId}:${routineId}`, async () => {
       const assignRoutine = httpsCallable<{ familyId: string; routineId: string }, void>(this.services.functions, 'assignRoutine');
@@ -457,7 +474,7 @@ export class FirebaseRepository implements AppRepository {
   }
 
   async deleteRoutine(routineId: string) {
-    if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
+    if (!this.state.family.id || !this.activeAccessCan('manageRoutines')) throw new Error('permission_denied');
     const familyId = this.state.family.id;
     await coalesceInFlight(this.inFlightCallables, `deleteRoutine:${familyId}:${routineId}`, async () => {
       const deleteRoutine = httpsCallable<{ familyId: string; routineId: string }, void>(this.services.functions, 'deleteRoutine');
@@ -518,13 +535,13 @@ export class FirebaseRepository implements AppRepository {
   async exportRoutinePackage(participantId: string, draftId: string) { const callable = httpsCallable<{ participantId: string; draftId: string }, { content: string; mimeType: string; fileName: string }>(this.services.functions, 'exportRoutinePackage'); return (await callable({ participantId, draftId })).data; }
   async importRoutinePackage(participantId: string, content: string, mimeType: string, conflict: 'reject' | 'copy') { const callable = httpsCallable<{ participantId: string; content: string; mimeType: string; conflict: 'reject' | 'copy' }, RoutineDraft>(this.services.functions, 'importRoutinePackage'); return (await callable({ participantId, content, mimeType, conflict })).data; }
   async resolveSharedRoutine(shareCode: string) { const callable = httpsCallable<{ shareCode: string }, RoutineCatalogEntry>(this.services.functions, 'resolveSharedRoutine'); return (await callable({ shareCode })).data; }
-  async installCatalogRoutine(participantId: string, entryId: string) { const callable = httpsCallable<{ participantId: string; entryId: string }, void>(this.services.functions, 'installCatalogRoutine'); await callable({ participantId, entryId }); }
+  async installCatalogRoutine(participantId: string, entryId: string, shareCode?: string) { const callable = httpsCallable<{ participantId: string; entryId: string; shareCode?: string }, void>(this.services.functions, 'installCatalogRoutine'); await callable({ participantId, entryId, ...(shareCode ? { shareCode } : {}) }); }
   async sharePublishedRoutine(participantId: string, routineId: string, version: number, visibility: 'listed' | 'unlisted') { const callable = httpsCallable<{ participantId: string; routineId: string; version: number; visibility: 'listed' | 'unlisted' }, { entryId: string; shareCode: string }>(this.services.functions, 'sharePublishedRoutine'); return (await callable({ participantId, routineId, version, visibility })).data; }
   async revokeSharedRoutine(entryId: string) { const callable = httpsCallable<{ entryId: string }, void>(this.services.functions, 'revokeSharedRoutine'); await callable({ entryId }); }
   async reportRoutineCatalogEntry(entryId: string, reason: 'unsafe' | 'privacy' | 'copyright' | 'other') { const callable = httpsCallable<{ entryId: string; reason: string }, void>(this.services.functions, 'reportRoutineCatalogEntry'); await callable({ entryId, reason }); }
 
   async requestCheckNow(routineId = DEFAULT_ROUTINE_ID) {
-    if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
+    if (!this.state.family.id || !this.activeAccessCan('requestChecks')) throw new Error('permission_denied');
     const familyId = this.state.family.id;
     try {
       await coalesceInFlight(this.inFlightCallables, `requestCheckNow:${familyId}:${routineId}`, async () => {
@@ -539,7 +556,7 @@ export class FirebaseRepository implements AppRepository {
   }
 
   async updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode) {
-    if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
+    if (!this.state.family.id || !this.activeAccessCan('manageRoutines')) throw new Error('permission_denied');
     const familyId = this.state.family.id;
     try {
       await coalesceInFlight(this.inFlightCallables, `updateRoutine:${familyId}:${routineId}`, async () => {
@@ -584,7 +601,7 @@ export class FirebaseRepository implements AppRepository {
   }
 
   async savePlan(plan: MonitoringPlan, routineId = DEFAULT_ROUTINE_ID) {
-    if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
+    if (!this.state.family.id || !this.activeAccessCan('manageRoutines')) throw new Error('permission_denied');
     const familyId = this.state.family.id;
     await coalesceInFlight(this.inFlightCallables, `savePlan:${familyId}:${routineId}`, async () => {
       const updatePlan = httpsCallable<{ familyId: string; routineId: string; plan: MonitoringPlan }, void>(this.services.functions, 'updatePlan');
@@ -600,7 +617,7 @@ export class FirebaseRepository implements AppRepository {
   async submitCapture(sessionId: string, capturedAt: Date, imageDataUrl: string) {
     const familyId = this.state.family.id;
     const event = this.state.events.find((item) => item.sessionId === sessionId);
-    if (!familyId || !event || !isFreshCapture(event, capturedAt)) throw new Error('invalid_or_replayed_capture');
+    if (!familyId || !this.activeAccessCan('submitChecks') || !event || !isFreshCapture(event, capturedAt)) throw new Error('invalid_or_replayed_capture');
     const capturedAtIso = capturedAt.toISOString();
     const result = await coalesceInFlight(this.inFlightCallables, `analyzeCheck:${familyId}:${event.id}:${capturedAtIso}`, async () => {
       const analyzeCheck = httpsCallable<{
@@ -624,7 +641,7 @@ export class FirebaseRepository implements AppRepository {
   }
 
   async getProofImageUrl(eventId: string) {
-    if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
+    if (!this.state.family.id || !this.activeAccessCan('view')) throw new Error('permission_denied');
     const getProofImageUrl = httpsCallable<{ familyId: string; checkId: string }, { url: string }>(
       this.services.functions,
       'getProofImageUrl',
@@ -652,7 +669,7 @@ export class FirebaseRepository implements AppRepository {
   }
 
   async reviewCheck(eventId: string, decision: 'detected' | 'not_detected') {
-    if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
+    if (!this.state.family.id || !this.activeAccessCan('reviewProofs')) throw new Error('permission_denied');
     const familyId = this.state.family.id;
     const result = await coalesceInFlight(this.inFlightCallables, `reviewCheck:${familyId}:${eventId}:${decision}`, async () => {
       const reviewCheck = httpsCallable<{
@@ -672,7 +689,10 @@ export class FirebaseRepository implements AppRepository {
       await this.restoreProfile();
       return;
     }
-    await this.attachFamily(this.state.family.id, this.state.role);
+    await this.loadParticipantAccess();
+    const access = activeParticipantAccess(this.state.participantAccess, this.state.family.id);
+    if (access) await this.attachParticipant(access.participant.id);
+    else await this.attachFamily(this.state.family.id, this.state.role);
   }
 
   async reset() {
@@ -719,7 +739,7 @@ export class FirebaseRepository implements AppRepository {
     if (!data) {
       const activeId = this.state.activeParticipantId;
       const access = activeId ? activeParticipantAccess(this.state.participantAccess, activeId) : undefined;
-      if (access) await this.attachParticipant(activeId!, access.membership.role);
+      if (access) await this.attachParticipant(activeId!);
       else this.emit();
       return;
     }
@@ -734,7 +754,7 @@ export class FirebaseRepository implements AppRepository {
     const activeId = this.state.activeParticipantId;
     const access = activeId ? activeParticipantAccess(this.state.participantAccess, activeId) : undefined;
     if (access) {
-      await this.attachParticipant(activeId!, access.membership.role);
+      await this.attachParticipant(activeId!);
     }
     else if (data.familyId && data.role) {
       this.legacyFamilyId = data.familyId;
@@ -744,7 +764,7 @@ export class FirebaseRepository implements AppRepository {
     else {
       this.emit();
     }
-    this.runInBackground('Unable to sync push subscription locale', () => this.syncPushSubscriptionLocale());
+    this.runInBackground('Unable to sync push subscription settings', () => this.syncPushSubscriptionSettings());
   }
 
   private async loadAccountProfile() {
@@ -789,6 +809,7 @@ export class FirebaseRepository implements AppRepository {
           role,
           status: 'active',
           label: membershipData.label,
+          permissions: asMembershipPermissions(membershipData.permissions),
         },
         members: memberships.docs
           .filter((item) => item.data().status === 'active')
@@ -822,7 +843,7 @@ export class FirebaseRepository implements AppRepository {
     const access = this.state.participantAccess ?? [];
     this.state.notificationSources = access.map((entry): ParticipantNotificationSource => ({
       participant: { ...entry.participant },
-      role: entry.membership.role === 'participant' ? 'child' : 'parent',
+      role: participantRoleForAccess(entry),
       assignments: [],
       events: [],
     }));
@@ -846,20 +867,20 @@ export class FirebaseRepository implements AppRepository {
     });
   }
 
-  private async attachParticipant(participantId: string, membershipRole: MembershipRole) {
+  private async attachParticipant(participantId: string) {
     this.remoteSubscriptions.splice(0).forEach((unsubscribe) => unsubscribe());
     const access = activeParticipantAccess(this.state.participantAccess, participantId);
     if (!access) throw new Error('participant_access_not_found');
     this.state.activeParticipantId = participantId;
     if (this.user) writeUiStorageString(`${ACTIVE_PARTICIPANT_KEY_PREFIX}${this.user.uid}`, participantId);
-    this.state.role = membershipRole === 'participant' ? 'child' : 'parent';
+    this.state.role = participantRoleForAccess(access);
     this.state.family = {
       ...this.state.family,
       id: participantId,
       linked: true,
       childLinked: true,
       childName: access.participant.displayName,
-      consented: membershipRole !== 'participant',
+      consented: this.state.role === 'parent',
       linkingCode: '',
       parentRecoveryCode: '',
     };
@@ -1063,26 +1084,26 @@ export class FirebaseRepository implements AppRepository {
     }));
   }
 
-  private async syncPushSubscriptionLocale() {
-    if (!['child', 'parent'].includes(String(this.state.role)) || !this.user || !this.state.family.id || !this.state.notificationsEnabled) return;
-    try {
-      await updateDoc(doc(this.services.db, 'families', this.state.family.id, 'pushSubscriptions', this.user.uid), {
-        locale: this.state.locale,
-      });
-    } catch (error) {
-      console.error('Unable to update push subscription locale', error);
-    }
+  private activeAccessCan(permission: MembershipPermission) {
+    const activeId = this.state.activeParticipantId ?? this.state.family.id;
+    return participantAccessCan(
+      activeId ? activeParticipantAccess(this.state.participantAccess, activeId) : undefined,
+      permission,
+    );
   }
 
-  private async syncPushSubscriptionPreferences() {
-    if (this.state.role !== 'child' || !this.user || !this.state.family.id || !this.state.notificationsEnabled) return;
-    try {
-      await updateDoc(doc(this.services.db, 'families', this.state.family.id, 'pushSubscriptions', this.user.uid), {
-        preferences: normalizeAppPreferences(this.state.preferences),
-      });
-    } catch (error) {
-      console.error('Unable to update push subscription preferences', error);
-    }
+  private async syncPushSubscriptionSettings() {
+    if (!this.user || !this.state.family.id || !this.state.notificationsEnabled) return;
+    const updateSettings = httpsCallable<{
+      aggregateId: string;
+      locale: Locale;
+      preferences: AppPreferences;
+    }, void>(this.services.functions, 'updatePushSubscriptionSettings');
+    await updateSettings({
+      aggregateId: this.state.family.id,
+      locale: this.state.locale,
+      preferences: normalizeAppPreferences(this.state.preferences),
+    });
   }
 
   private runInBackground(label: string, task: () => Promise<void>) {

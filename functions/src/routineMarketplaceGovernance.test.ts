@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { marketplaceEntryInstallable, marketplaceRole, moderateMarketplaceStatus } from './routineMarketplaceGovernance.js';
+import { marketplaceEntryAuthorizedForInstall, marketplaceEntryInstallable, marketplaceRole, moderateMarketplaceStatus } from './routineMarketplaceGovernance.js';
 
 test('enforces marketplace roles and moderation transitions', () => {
   assert.equal(marketplaceRole({ routineMarketplaceRole: 'moderator' }), 'moderator');
@@ -17,4 +17,12 @@ test('blocks new installs after moderation without affecting snapshots', () => {
   assert.equal(marketplaceEntryInstallable({ visibility: 'unlisted', moderationStatus: 'unlisted' }), true);
   assert.equal(marketplaceEntryInstallable({ visibility: 'listed', moderationStatus: 'suspended' }), false);
   assert.equal(marketplaceEntryInstallable({ visibility: 'listed', moderationStatus: 'approved', revokedAt: 'now' }), false);
+});
+
+test('requires the private share credential for unlisted installations', () => {
+  const entry = { visibility: 'unlisted', moderationStatus: 'unlisted', shareCodeHash: 'expected' };
+  assert.equal(marketplaceEntryAuthorizedForInstall(entry), false);
+  assert.equal(marketplaceEntryAuthorizedForInstall(entry, 'wrong'), false);
+  assert.equal(marketplaceEntryAuthorizedForInstall(entry, 'expected'), true);
+  assert.equal(marketplaceEntryAuthorizedForInstall({ visibility: 'listed', moderationStatus: 'approved' }), true);
 });
