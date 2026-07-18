@@ -7,7 +7,7 @@ const execFileAsync = promisify(execFile);
 const PI_HEALTH_ROUTINE_IDS = new Set(['nemu-health', 'raspberry-pi-health']);
 const PI_HEALTH_ROUTINE_NAME_PATTERN = /Santé du Raspberry Pi|Raspberry Pi Health/i;
 const resultPattern = /Validated|Validé|Not detected|Non détecté|Needs review|À vérifier/i;
-const analyzingPattern = /Checking the photo|Analyse de la photo/i;
+const analyzingPattern = /Checking the photo|Analyse de la photo|Vérification de la photo/i;
 const cameraEnabledContexts = new WeakSet();
 
 const installSyntheticCamera = (context) => {
@@ -21,47 +21,47 @@ const installSyntheticCamera = (context) => {
       ...originalMediaDevices,
       getUserMedia: async () => {
         const canvas = document.createElement('canvas');
-        canvas.width = 640;
+        canvas.width = 360;
         canvas.height = 480;
         const draw = () => {
           const drawing = canvas.getContext('2d');
           if (!drawing) return;
           const health = globalThis.__ZADIAG_NEMU_HEALTH__;
           if (['nemu-health', 'raspberry-pi-health'].includes(globalThis.__ZADIAG_SYNTHETIC_ROUTINE_ID__) && health) {
-            drawing.fillStyle = '#eef8f5';
+            drawing.fillStyle = '#9fbeb6';
             drawing.fillRect(0, 0, canvas.width, canvas.height);
             drawing.fillStyle = '#123b35';
-            drawing.font = 'bold 34px sans-serif';
-            drawing.fillText('Raspberry Pi Health', 34, 55);
-            drawing.font = '18px sans-serif';
+            drawing.font = 'bold 26px sans-serif';
+            drawing.fillText('Raspberry Pi Health', 18, 48);
+            drawing.font = '15px sans-serif';
             drawing.fillStyle = '#48645f';
-            drawing.fillText(health.timestamp, 34, 86);
+            drawing.fillText(health.timestamp, 18, 76);
             health.rows.forEach((row, index) => {
-              const y = 120 + index * 52;
-              drawing.fillStyle = '#ffffff';
-              drawing.fillRect(28, y, 584, 42);
+              const y = 102 + index * 54;
+              drawing.fillStyle = '#bfd3ce';
+              drawing.fillRect(14, y, 332, 44);
               drawing.fillStyle = row.status === 'ok' ? '#16866f' : row.status === 'warning' ? '#c77b12' : '#c43d3d';
               drawing.beginPath();
-              drawing.arc(52, y + 21, 9, 0, Math.PI * 2);
+              drawing.arc(34, y + 22, 8, 0, Math.PI * 2);
               drawing.fill();
               drawing.fillStyle = '#183b35';
-              drawing.font = 'bold 17px sans-serif';
-              drawing.fillText(row.label, 76, y + 26);
-              drawing.font = '17px sans-serif';
+              drawing.font = 'bold 15px sans-serif';
+              drawing.fillText(row.label, 52, y + 27);
+              drawing.font = '15px sans-serif';
               drawing.textAlign = 'right';
-              drawing.fillText(row.value, 590, y + 26);
+              drawing.fillText(row.value, 332, y + 27);
               drawing.textAlign = 'left';
             });
             drawing.fillStyle = '#48645f';
-            drawing.font = '16px sans-serif';
-            drawing.fillText('Zadiag synthetic operational proof', 34, 458);
+            drawing.font = '13px sans-serif';
+            drawing.fillText('Zadiag synthetic operational proof', 18, 458);
             return;
           }
           drawing.fillStyle = '#eef8f5';
           drawing.fillRect(0, 0, canvas.width, canvas.height);
           drawing.fillStyle = '#123b35';
           drawing.font = 'bold 28px sans-serif';
-          drawing.fillText('No supported routine selected', 70, 245);
+        drawing.fillText('No supported routine selected', 18, 245);
         };
         draw();
         const timer = window.setInterval(draw, 250);
@@ -75,7 +75,7 @@ const installSyntheticCamera = (context) => {
     configurable: true,
     value: class SyntheticFaceDetector {
       async detect() {
-        return [{ boundingBox: new DOMRectReadOnly(120, 80, 400, 320) }];
+        return [{ boundingBox: new DOMRectReadOnly(45, 60, 270, 350) }];
       }
     },
   });
@@ -142,13 +142,14 @@ export const answerPendingCheck = async ({ context, page, appUrl, path, contactE
   }
   await page.goto(destination.href, { waitUntil: 'domcontentloaded', timeout: 30_000 });
   await completeSyntheticOnboarding({ page, contactEmail });
-  const proofButton = page.getByRole('button', { name: /Proof|Preuve/i }).first();
+  const healthCard = page.locator('.today-routine-card').filter({ hasText: PI_HEALTH_ROUTINE_NAME_PATTERN });
+  const proofButton = healthCard.getByRole('button', { name: /Proof|Preuve/i }).first();
   try {
     await proofButton.waitFor({ state: 'visible', timeout: proofWaitMs });
   } catch {
     return { outcome: 'already_settled' };
   }
-  const pageText = await page.evaluate(() => document.body?.innerText ?? '');
+  const pageText = await healthCard.innerText();
   const resolvedRoutineId = resolveSyntheticRoutineId({ routineId, pageText });
   if (!resolvedRoutineId) return { outcome: 'unsupported_routine' };
   const evidence = healthEvidence ?? await collectNemuHealth();
@@ -157,8 +158,22 @@ export const answerPendingCheck = async ({ context, page, appUrl, path, contactE
     globalThis.__ZADIAG_NEMU_HEALTH__ = currentEvidence;
   }, { currentRoutineId: resolvedRoutineId, currentEvidence: evidence });
   await proofButton.click();
+  await page.waitForFunction(() => {
+    const video = document.querySelector('video');
+    return Boolean(video && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && video.videoWidth > 0 && video.videoHeight > 0);
+  }, undefined, { timeout: 20_000 });
+  await page.locator('button.shutter').click({ timeout: 20_000 });
+  await page.locator('.camera-preview').waitFor({ state: 'visible', timeout: 20_000 });
   await page.getByRole('button', { name: /Use photo|Utiliser la photo/i }).click({ timeout: 20_000 });
-  await page.getByRole('button', { name: /Use photo|Utiliser la photo/i }).click({ timeout: 20_000 });
+  const submission = await page.waitForFunction(({ analyzingSource }) => {
+    const text = document.body?.innerText ?? '';
+    if (new RegExp(analyzingSource, 'i').test(text)) return { started: true };
+    const error = Array.from(document.querySelectorAll('[role="alert"]'))
+      .map((element) => element.textContent?.trim())
+      .find(Boolean);
+    return error ? { error } : undefined;
+  }, { analyzingSource: analyzingPattern.source }, { timeout: 30_000 }).then((handle) => handle.jsonValue());
+  if (submission.error) throw new Error(`Synthetic proof rejected before analysis: ${submission.error}`);
   const completion = await page.waitForFunction(({ analyzingSource, resultSource }) => {
     const text = document.body?.innerText ?? '';
     if (new RegExp(analyzingSource, 'i').test(text)) return undefined;

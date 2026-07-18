@@ -3,6 +3,9 @@ import { answerPendingCheck, resolveSyntheticRoutineId } from './synthetic-proof
 
 const locator = (overrides = {}) => ({
   first() { return this; },
+  filter() { return this; },
+  getByRole() { return this; },
+  innerText: vi.fn().mockResolvedValue('Santé du Raspberry Pi'),
   isVisible: vi.fn().mockResolvedValue(false),
   waitFor: vi.fn().mockRejectedValue(new Error('not visible')),
   fill: vi.fn(),
@@ -26,6 +29,9 @@ const onboardingPage = () => {
       if (name?.test?.('Proof')) return proof;
       return locator();
     }),
+    locator: vi.fn((selector) => selector === '.today-routine-card'
+      ? proof
+      : locator({ waitFor: vi.fn().mockResolvedValue(undefined) })),
     evaluate: vi.fn().mockResolvedValue(undefined),
     waitForFunction: vi.fn().mockResolvedValue({ jsonValue: vi.fn().mockResolvedValue({ result: 'Validé' }) }),
   };
