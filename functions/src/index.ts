@@ -21,6 +21,7 @@ import { canLeaveMembership, canRemoveMembership, createMembership, hasParticipa
 import { assertRoutineDraftRevision, createRoutineDraftDocument, RoutineDraftConflictError, RoutineDraftInputError, updateRoutineDraftDocument, type PublishedRoutineVersionDocument, type RoutineDraftDocument } from './routineDrafts.js';
 import { ROUTINE_PACKAGE_MIME, parseRoutinePackageEnvelope, serializeRoutinePackage } from './routinePackages.js';
 import { assertExternalPackageResponse, verifyExternalRegistryIndex } from './externalRoutineRegistry.js';
+import { marketplaceEntryInstallable, marketplaceRole, moderateMarketplaceStatus, type ModerationAction, type ModerationStatus } from './routineMarketplaceGovernance.js';
 
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
   ?? (process.env.GCLOUD_PROJECT ? `${process.env.GCLOUD_PROJECT}.firebasestorage.app` : undefined);
@@ -2231,7 +2232,9 @@ export const sharePublishedRoutine = onCall({ region, cors, enforceAppCheck: tru
   const entryId = hashLinkCode(`${participantId}:${routineId}:${version}`);
   const shareCode = randomBytes(18).toString('base64url');
   const shareCodeHash = hashLinkCode(shareCode);
-  const entry = { ownerId: uid, authorName: await responsibleActorName(uid), routineId, version, visibility, package: structuredClone(source.package), publishedAt: source.publishedAt, sharedAt: new Date().toISOString(), shareCodeHash };
+  const moderationStatus = visibility === 'listed' ? 'pending' : 'unlisted';
+  const effectiveVisibility = visibility === 'listed' ? 'unlisted' : visibility;
+  const entry = { ownerId: uid, authorName: await responsibleActorName(uid), routineId, version, visibility: effectiveVisibility, requestedVisibility: visibility, moderationStatus, license: 'All rights reserved', attribution: uid, package: structuredClone(source.package), publishedAt: source.publishedAt, sharedAt: new Date().toISOString(), shareCodeHash };
   const batch = db.batch();
   batch.set(db.collection('routineCatalogEntries').doc(entryId), entry);
   batch.set(db.collection('routineShareCodes').doc(shareCodeHash), { entryId, ownerId: uid, createdAt: entry.sharedAt });
@@ -2258,7 +2261,7 @@ export const searchRoutineCatalog = onCall({ region, cors, enforceAppCheck: true
   await requireUid(request.auth);
   const query = String(request.data?.query ?? '').trim().toLocaleLowerCase().slice(0, 120);
   const snapshot = await db.collection('routineCatalogEntries').where('visibility', '==', 'listed').limit(100).get();
-  const entries = snapshot.docs.filter((doc) => !doc.data().revokedAt).map((doc) => publicCatalogEntry(doc.id, doc.data())).filter((entry) => !query || JSON.stringify(entry).toLocaleLowerCase().includes(query)).slice(0, 30);
+  const entries = snapshot.docs.filter((doc) => !doc.data().revokedAt && (doc.data().source === 'external' || doc.data().moderationStatus === 'approved')).map((doc) => publicCatalogEntry(doc.id, doc.data())).filter((entry) => !query || JSON.stringify(entry).toLocaleLowerCase().includes(query)).slice(0, 30);
   return { entries };
 });
 
@@ -2276,7 +2279,7 @@ export const resolveSharedRoutine = onCall({ region, cors, enforceAppCheck: true
   const mapping = await db.collection('routineShareCodes').doc(shareCodeHash).get();
   if (!mapping.exists) throw new HttpsError('not-found', 'This shared routine is unavailable.');
   const entry = await db.collection('routineCatalogEntries').doc(String(mapping.data()?.entryId)).get();
-  if (!entry.exists || entry.data()?.revokedAt || entry.data()?.shareCodeHash !== shareCodeHash) throw new HttpsError('not-found', 'This shared routine is unavailable.');
+  if (!entry.exists || !marketplaceEntryInstallable(entry.data() ?? {}) || entry.data()?.shareCodeHash !== shareCodeHash) throw new HttpsError('not-found', 'This shared routine is unavailable.');
   return publicCatalogEntry(entry.id, entry.data()!);
 });
 
@@ -2289,7 +2292,7 @@ export const installCatalogRoutine = onCall({ region, cors, enforceAppCheck: tru
   let routineId = '';
   await db.runTransaction(async (transaction) => {
     const [, entry] = await Promise.all([requireParticipantRoutineDraftTransactionAccess(transaction, participantRef, uid), transaction.get(entryRef)]);
-    if (!entry.exists || entry.data()?.revokedAt) throw new HttpsError('failed-precondition', 'This routine is no longer available for installation.');
+    if (!entry.exists || !marketplaceEntryInstallable(entry.data() ?? {})) throw new HttpsError('failed-precondition', 'This routine is no longer available for installation.');
     const data = entry.data() as { routineId: string; version: number; package: PublishedRoutineVersionDocument['package'] };
     routineId = requireDocumentId(data.routineId, 'Routine ID');
     const assignmentRef = participantRef.collection('routineAssignments').doc(routineId);
@@ -2306,8 +2309,39 @@ export const revokeSharedRoutine = onCall({ region, cors, enforceAppCheck: true 
   const entryRef = db.collection('routineCatalogEntries').doc(entryId);
   const entry = await entryRef.get();
   if (!entry.exists || entry.data()?.ownerId !== uid) throw new HttpsError('permission-denied', 'Only the author can revoke this routine.');
-  await entryRef.update({ revokedAt: new Date().toISOString(), visibility: 'unlisted' });
+  await entryRef.update({ revokedAt: new Date().toISOString(), visibility: 'unlisted', moderationStatus: 'revoked' });
   await recordAuditEvent(db, { action: 'revoke_catalog_routine', actorUid: uid, metadata: { entryId } });
+  return { success: true };
+});
+
+export const moderateRoutineCatalogEntry = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const role = marketplaceRole(request.auth?.token as Record<string, unknown> | undefined);
+  if (!role) throw new HttpsError('permission-denied', 'A marketplace moderation role is required.');
+  const entryId = requireDocumentId(request.data?.entryId, 'Catalog entry ID');
+  const action = String(request.data?.action) as ModerationAction;
+  if (!['approve', 'reject', 'suspend', 'restore', 'revoke'].includes(action)) throw new HttpsError('invalid-argument', 'Unknown moderation action.');
+  const entryRef = db.collection('routineCatalogEntries').doc(entryId);
+  let next: ModerationStatus | undefined;
+  await db.runTransaction(async (transaction) => {
+    const entry = await transaction.get(entryRef);
+    if (!entry.exists) throw new HttpsError('not-found', 'Catalog entry not found.');
+    const current = (entry.data()?.moderationStatus ?? (entry.data()?.visibility === 'listed' ? 'approved' : 'unlisted')) as ModerationStatus;
+    try { next = moderateMarketplaceStatus(current, action, role); } catch (error) { throw new HttpsError('failed-precondition', error instanceof Error ? error.message : 'invalid_transition'); }
+    transaction.update(entryRef, { moderationStatus: next, visibility: next === 'approved' ? 'listed' : 'unlisted', moderatedAt: new Date().toISOString(), moderatedBy: uid, ...(next === 'revoked' ? { revokedAt: new Date().toISOString() } : {}) });
+  });
+  await recordAuditEvent(db, { action: action === 'revoke' ? 'emergency_revoke_catalog' : 'moderate_catalog_routine', actorUid: uid, metadata: { entryId, moderationAction: action, moderationStatus: next } });
+  return { status: next };
+});
+
+export const reportRoutineCatalogEntry = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const entryId = requireDocumentId(request.data?.entryId, 'Catalog entry ID');
+  const reason = ['unsafe', 'privacy', 'copyright', 'other'].includes(String(request.data?.reason)) ? String(request.data?.reason) : 'other';
+  if (!(await db.collection('routineCatalogEntries').doc(entryId).get()).exists) throw new HttpsError('not-found', 'Catalog entry not found.');
+  const reportId = hashLinkCode(`${uid}:${entryId}`);
+  await db.collection('routineCatalogReports').doc(reportId).set({ entryId, reporterUid: uid, reason, status: 'open', reportedAt: new Date().toISOString() });
+  await recordAuditEvent(db, { action: 'report_catalog_routine', actorUid: uid, metadata: { entryId, reason } });
   return { success: true };
 });
 
