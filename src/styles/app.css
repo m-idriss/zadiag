@@ -1297,8 +1297,9 @@ button:disabled { cursor: not-allowed; }
 .routine-catalog-add:disabled { background: #e8eeee; color: #7d8a92; }
 @media (max-width: 430px) {
   .routine-catalog-card { height: min(72dvh, 620px); min-height: min(440px, 66dvh); }
-  .routine-catalog-item { grid-template-columns: 36px minmax(0, 1fr) auto; align-items: start; gap: 8px; }
-  .routine-catalog-add { grid-column: 3; justify-self: end; align-self: start; padding-inline: 11px; }
+  .routine-catalog-item { grid-template-columns: 36px minmax(0, 1fr); align-items: start; gap: 8px; padding-block: 12px; }
+  .routine-catalog-item-content { overflow-wrap: anywhere; }
+  .routine-catalog-add { grid-column: 2; justify-self: start; align-self: start; padding-inline: 11px; }
   .routine-library-draft-heading { grid-template-columns: 36px minmax(0, 1fr); }
   .routine-library-draft-actions { grid-column: 2; }
   .routine-library-draft-detail { padding-left: 46px; }

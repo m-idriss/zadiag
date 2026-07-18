@@ -603,7 +603,7 @@ export function RoutinesScreen({
               const assigned = assignedRoutineIds.has(routineId);
               const assigning = assigningRoutineId === routineId;
               return (
-                <article className="routine-catalog-item" style={visual.style} key={template.id}>
+                <article className="routine-catalog-item" style={visual.style} key={template.id} aria-labelledby={`routine-catalog-${routineId}`}>
                   <span className="settings-row-icon routine-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
                   <div className="routine-catalog-item-content">
                     <div className="routine-catalog-meta" aria-label={`${t(routineCategoryKey(visual.category))} · ${t(routineValidationModeKey(visual.recommendedValidationMode))}`}>
@@ -611,7 +611,7 @@ export function RoutinesScreen({
                       <span>{t(routineCategoryKey(visual.category))}</span>
                       <span>{t('routineCatalogValidationMode')}: {t(routineValidationModeKey(visual.recommendedValidationMode))}</span>
                     </div>
-                    <h3>{visual.name}</h3>
+                    <h3 id={`routine-catalog-${routineId}`}>{visual.name}</h3>
                     <p>{visual.description}</p>
                     <p className="routine-catalog-proof"><b>{t('routineCatalogProofExample')}:</b> {visual.proofExample}</p>
                   </div>
