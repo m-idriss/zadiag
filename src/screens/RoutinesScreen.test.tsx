@@ -93,8 +93,7 @@ describe('participant routines navigation', () => {
     expect(document.body.textContent).toContain('Validation: AI analysis');
     expect(document.body.textContent).toContain('Proof example');
     expect(document.body.textContent).toContain('visible glass');
-    expect(Array.from(document.body.querySelectorAll<HTMLButtonElement>('.routine-catalog-tabs button')).map((button) => button.textContent)).toEqual(['Built-in routines']);
-    expect(document.body.querySelector('.routine-catalog-tabs button[aria-selected="true"]')?.textContent).toBe('Built-in routines');
+    expect(document.body.querySelector('.routine-catalog-tabs')).toBeNull();
     const builtInCards = Array.from(document.body.querySelectorAll<HTMLElement>('.routine-catalog-item'));
     expect(builtInCards).toHaveLength(4);
     for (const card of builtInCards) {
