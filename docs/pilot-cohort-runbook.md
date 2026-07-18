@@ -67,6 +67,9 @@ Before inviting the first family:
 - define the cohort start, end, weekly review time, and stop authority;
 - record baseline targets only after the initial instrumented observations,
   alongside cohort size and timeframe.
+- confirm a designated operator can obtain an identifier-free
+  `getPilotAggregateReport` result with synthetic data, then remove any
+  temporary operator claim not required during the cohort;
 
 ## Participant session
 

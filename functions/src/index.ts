@@ -23,6 +23,7 @@ import { ROUTINE_PACKAGE_MIME, parseRoutinePackageEnvelope, serializeRoutinePack
 import { assertExternalPackageResponse, verifyExternalRegistryIndex } from './externalRoutineRegistry.js';
 import { marketplaceEntryInstallable, marketplaceRole, moderateMarketplaceStatus, type ModerationAction, type ModerationStatus } from './routineMarketplaceGovernance.js';
 import { aiAuthoringCapabilityEnabled, aiAuthoringRegistry, parseAiAuthoringConfig } from './aiAuthoring.js';
+import { aggregatePilotReport, pilotReportPeriod } from './pilotReport.js';
 
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
   ?? (process.env.GCLOUD_PROJECT ? `${process.env.GCLOUD_PROJECT}.firebasestorage.app` : undefined);
@@ -373,7 +374,7 @@ export const recordClientJourney = onCall({ region, cors, enforceAppCheck: true 
     ...(aggregateRef.parent.id === 'participants' ? { participantId: aggregateId } : { familyId: aggregateId }),
     role: role === 'child' ? 'child' as const : 'parent' as const,
     contextId,
-    metadata: { source, ...(contextId ? { contextId } : {}) },
+    metadata: { source, pilotConsentVersion, ...(contextId ? { contextId } : {}) },
   });
 });
 
@@ -402,6 +403,32 @@ export const updatePilotParticipation = onCall({ region, cors, enforceAppCheck: 
     metadata: { version: pilotConsentVersion },
   });
   return pilotParticipation;
+});
+
+export const getPilotAggregateReport = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  await requireUid(request.auth);
+  const operationsRole = request.auth?.token.operationsRole;
+  if (operationsRole !== 'operator' && operationsRole !== 'admin') {
+    throw new HttpsError('permission-denied', 'Pilot operator access is required.');
+  }
+  let period: ReturnType<typeof pilotReportPeriod>;
+  try {
+    period = pilotReportPeriod(request.data?.from, request.data?.to);
+  } catch {
+    throw new HttpsError('invalid-argument', 'A completed period of at most 35 days is required.');
+  }
+  const snapshot = await db.collection('auditEvents')
+    .where('createdAt', '>=', Timestamp.fromDate(period.start))
+    .where('createdAt', '<', Timestamp.fromDate(period.end))
+    .orderBy('createdAt')
+    .limit(5001)
+    .get();
+  if (snapshot.size > 5000) throw new HttpsError('resource-exhausted', 'The pilot period contains too many records. Use a shorter period.');
+  return {
+    from: period.start.toISOString(),
+    to: period.end.toISOString(),
+    ...aggregatePilotReport(snapshot.docs.map((document) => document.data())),
+  };
 });
 
 const imageExtensionFor = (mimeType: string) => {
