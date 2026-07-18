@@ -93,6 +93,14 @@ describe('participant routines navigation', () => {
     expect(document.body.textContent).toContain('Validation: AI analysis');
     expect(document.body.textContent).toContain('Proof example');
     expect(document.body.textContent).toContain('visible glass');
+    const builtInCards = Array.from(document.body.querySelectorAll<HTMLElement>('.routine-catalog-item'));
+    expect(builtInCards).toHaveLength(4);
+    for (const card of builtInCards) {
+      const headingId = card.getAttribute('aria-labelledby');
+      expect(headingId).toBeTruthy();
+      expect(card.querySelectorAll(`#${headingId}`)).toHaveLength(1);
+      expect(card.querySelectorAll('.routine-catalog-add')).toHaveLength(1);
+    }
     const dock = document.body.querySelector('.routine-add-switcher');
     expect(dock?.querySelector('.routines-add-dock-button')?.textContent).toContain('Add a routine');
     expect(dock?.querySelector('.routine-catalog-popover')).not.toBeNull();
