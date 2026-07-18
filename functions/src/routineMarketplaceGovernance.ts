@@ -17,6 +17,22 @@ export const moderateMarketplaceStatus = (current: ModerationStatus, action: Mod
   return 'revoked';
 };
 
-export const marketplaceEntryInstallable = (entry: { visibility?: unknown; moderationStatus?: unknown; revokedAt?: unknown }) => !entry.revokedAt && (
+interface MarketplaceInstallableEntry {
+  visibility?: unknown;
+  moderationStatus?: unknown;
+  revokedAt?: unknown;
+  shareCodeHash?: unknown;
+}
+
+export const marketplaceEntryInstallable = (entry: MarketplaceInstallableEntry) => !entry.revokedAt && (
   entry.moderationStatus === 'unlisted' || (entry.visibility === 'listed' && entry.moderationStatus === 'approved') || entry.moderationStatus === undefined
+);
+
+export const marketplaceEntryAuthorizedForInstall = (
+  entry: MarketplaceInstallableEntry,
+  suppliedShareCodeHash?: string,
+) => marketplaceEntryInstallable(entry) && (
+  entry.visibility !== 'unlisted' && entry.moderationStatus !== 'unlisted'
+    ? true
+    : typeof entry.shareCodeHash === 'string' && entry.shareCodeHash === suppliedShareCodeHash
 );

@@ -160,6 +160,15 @@ interface FamilyState {
 export type MembershipRole = 'owner' | 'caregiver' | 'participant' | 'viewer';
 type MembershipStatus = 'active' | 'suspended';
 export type ProfileColorKey = 'blue' | 'indigo' | 'violet' | 'rose' | 'coral' | 'amber' | 'emerald' | 'teal';
+export type MembershipPermission =
+  | 'view'
+  | 'manageRoutines'
+  | 'requestChecks'
+  | 'submitChecks'
+  | 'reviewProofs'
+  | 'manageCaregivers'
+  | 'manageParticipant';
+export type MembershipPermissions = Record<MembershipPermission, boolean>;
 
 export interface ParticipantSummary {
   id: string;
@@ -168,10 +177,11 @@ export interface ParticipantSummary {
   selfManaged?: boolean;
 }
 
-interface MembershipSummary {
+export interface MembershipSummary {
   role: MembershipRole;
   status: MembershipStatus;
   label?: 'parent' | 'partner' | 'relative' | 'professional' | 'self' | 'other';
+  permissions?: MembershipPermissions;
 }
 
 export interface ParticipantMember extends MembershipSummary {

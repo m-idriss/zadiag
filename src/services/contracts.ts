@@ -43,7 +43,7 @@ export interface AppRepository {
   importRoutinePackage?(participantId: string, content: string, mimeType: string, conflict: 'reject' | 'copy'): Promise<RoutineDraft>;
   searchRoutineCatalog?(query: string): Promise<RoutineCatalogEntry[]>;
   resolveSharedRoutine?(shareCode: string): Promise<RoutineCatalogEntry>;
-  installCatalogRoutine?(participantId: string, entryId: string): Promise<void>;
+  installCatalogRoutine?(participantId: string, entryId: string, shareCode?: string): Promise<void>;
   sharePublishedRoutine?(participantId: string, routineId: string, version: number, visibility: 'listed' | 'unlisted'): Promise<{ entryId: string; shareCode: string }>;
   revokeSharedRoutine?(entryId: string): Promise<void>;
   reportRoutineCatalogEntry?(entryId: string, reason: 'unsafe' | 'privacy' | 'copyright' | 'other'): Promise<void>;

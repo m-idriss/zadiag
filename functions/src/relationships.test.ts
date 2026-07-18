@@ -9,6 +9,7 @@ import {
   defaultPermissionsForRole,
   hasParticipantPermission,
   membershipPermissions,
+  pushRolesForMembership,
   scheduledAggregatePaths,
 } from './relationships.js';
 
@@ -59,6 +60,12 @@ test('models self-management as a regular owner membership', () => {
   assert.equal(membership.label, 'self');
   assert.equal(hasParticipantPermission(membership, 'manageRoutines'), true);
   assert.equal(hasParticipantPermission(membership, 'submitChecks'), true);
+  assert.deepEqual(pushRolesForMembership(membership), ['child', 'parent']);
+});
+
+test('routes caregiver and viewer notifications from explicit permissions', () => {
+  assert.deepEqual(pushRolesForMembership(createMembership({ uid: 'caregiver', role: 'caregiver' })), ['parent']);
+  assert.deepEqual(pushRolesForMembership(createMembership({ uid: 'viewer', role: 'viewer' })), []);
 });
 
 test('denies permissions to suspended or incomplete memberships', () => {

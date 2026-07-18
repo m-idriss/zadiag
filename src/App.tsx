@@ -22,6 +22,7 @@ import { cleanupClientAfterReset } from './services/resetCleanup';
 import { readUiStorageString, writeUiStorageString } from './services/uiStorage';
 import { useAppUpdateController } from './hooks/useAppUpdateController';
 import type { SyncStatus } from './services/contracts';
+import { participantAccessCan } from './domain/participantAccess';
 
 const lazyScreen = <TProps extends object>(
   load: () => Promise<Record<string, ComponentType<TProps>>>,
@@ -654,20 +655,25 @@ export function App() {
     const retrySync = repository.retryRemoteSync
       ? () => runRepositoryAction(repository.retryRemoteSync!, [])
       : undefined;
-    const activeParticipant = state.participantAccess?.find((entry) => entry.participant.id === state.activeParticipantId)?.participant
-      ?? state.participantAccess?.find((entry) => entry.membership.status === 'active')?.participant;
+    const activeAccess = state.participantAccess?.find((entry) => entry.participant.id === state.activeParticipantId)
+      ?? state.participantAccess?.find((entry) => entry.membership.status === 'active');
+    const activeParticipant = activeAccess?.participant;
     const activeProfileColor = activeParticipant ? profileColorFor(activeParticipant) : undefined;
-    const canManageRoutines = role === 'parent';
+    const canManageRoutines = participantAccessCan(activeAccess, 'manageRoutines');
+    const canRequestChecks = participantAccessCan(activeAccess, 'requestChecks');
+    const canSubmitChecks = participantAccessCan(activeAccess, 'submitChecks');
+    const canReviewProofs = participantAccessCan(activeAccess, 'reviewProofs');
+    const canManageParticipant = participantAccessCan(activeAccess, 'manageParticipant');
     const screen = tab === 'history'
       ? <HistoryScreen events={state.events} locale={state.locale} t={t} />
       : routineCentricUiEnabled && tab === 'routines'
         ? <RoutinesScreen
             state={state}
-            start={role === 'child' ? () => startCapture() : undefined}
+            start={canSubmitChecks ? () => startCapture() : undefined}
             edit={canManageRoutines}
-            requestCheck={canManageRoutines ? withRepositorySync(repository.requestCheckNow) : undefined}
+            requestCheck={canRequestChecks ? withRepositorySync(repository.requestCheckNow) : undefined}
             getProofImageUrl={(eventId) => repository.getProofImageUrl(eventId)}
-            reviewCheck={canManageRoutines ? withRepositorySyncVoid(repository.reviewCheck) : undefined}
+            reviewCheck={canReviewProofs ? withRepositorySyncVoid(repository.reviewCheck) : undefined}
             onAssignRoutine={canManageRoutines ? withRepositorySync(repository.assignRoutine) : undefined}
             onDeleteRoutine={canManageRoutines ? withRepositorySync(repository.deleteRoutine) : undefined}
             onRetryRoutines={withOptionalRepositorySync(repository.retryRemoteSync)}
@@ -749,12 +755,12 @@ export function App() {
         : role === 'parent'
           ? <ParentDashboard
               state={state}
-              regenerateCode={withRepositorySync(repository.regenerateLinkCode)}
-              onCreateRoutine={() => setTab('routines')}
+              regenerateCode={canManageParticipant ? withRepositorySync(repository.regenerateLinkCode) : undefined}
+              onCreateRoutine={canManageRoutines ? () => setTab('routines') : undefined}
               getProofImageUrl={(eventId) => repository.getProofImageUrl(eventId)}
-              reviewCheck={withRepositorySyncVoid(repository.reviewCheck)}
-              requestCheck={withRepositorySync(repository.requestCheckNow)}
-              updateRoutine={async (routineId, plan) => {
+              reviewCheck={canReviewProofs ? withRepositorySyncVoid(repository.reviewCheck) : undefined}
+              requestCheck={canRequestChecks ? withRepositorySync(repository.requestCheckNow) : undefined}
+              updateRoutine={canManageRoutines ? async (routineId, plan) => {
                 setSavingRoutineId(routineId);
                 try {
                   await repository.updateRoutine(routineId, plan);
@@ -762,7 +768,7 @@ export function App() {
                 } finally {
                   setSavingRoutineId(undefined);
                 }
-              }}
+              } : undefined}
               summaryRange={dashboardSummaryRange}
               onSummaryRangeChange={setDashboardSummaryRange}
               onSelectParticipant={selectActiveParticipant}

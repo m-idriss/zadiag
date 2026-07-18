@@ -652,7 +652,7 @@ describe('participant routines navigation', () => {
       activeParticipantId: 'participant-1', routineAssignments: [], events: [], routinesLoaded: true, routinesError: false,
     };
     const search = vi.fn().mockResolvedValue([entry]);
-    const resolve = vi.fn().mockResolvedValue(entry);
+    const resolve = vi.fn().mockResolvedValue({ ...entry, visibility: 'unlisted' });
     const install = vi.fn().mockResolvedValue(undefined);
     act(() => root.render(<RoutinesScreen state={state} onAssignRoutine={async () => undefined} onSearchRoutineCatalog={search} onResolveSharedRoutine={resolve} onInstallCatalogRoutine={install} t={(key) => translate('en', key)} />));
 
@@ -680,6 +680,6 @@ describe('participant routines navigation', () => {
       Array.from(document.body.querySelectorAll('button')).find((button) => button.textContent === 'Install')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       await Promise.resolve();
     });
-    expect(install).toHaveBeenCalledWith('participant-1', 'catalog-entry');
+    expect(install).toHaveBeenCalledWith('participant-1', 'catalog-entry', 'private-code');
   });
 });
