@@ -277,6 +277,8 @@ describe('participant routines navigation', () => {
     expect(historyOpen?.getAttribute('aria-label')).toContain('Check details');
     act(() => historyOpen?.click());
     expect(container.querySelector('.history-detail-dialog')).not.toBeNull();
+    expect(container.querySelector('.history-detail-dialog dl')).toBeNull();
+    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Show all information"]')?.click());
     expect(container.querySelector('.history-detail-dialog')?.textContent).toContain('Proof sent');
     expect(container.querySelector('.history-detail-dialog')?.textContent).toContain('AI');
     expect(container.querySelector('.history-detail-dialog')?.textContent).toContain('82%');
@@ -323,6 +325,7 @@ describe('participant routines navigation', () => {
     });
 
     expect(container.querySelector('.routine-tabs button[aria-current="page"]')?.textContent).toBe('Tracking');
+    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Show all information"]')?.click());
     expect(container.querySelector('.history-detail-dialog')?.textContent).toContain('Validated from home');
     expect(consumed).toHaveBeenCalledOnce();
   });
@@ -347,7 +350,8 @@ describe('participant routines navigation', () => {
       routineAssignments: [assignment], events: [historyEvent], routinesLoaded: true, routinesError: false,
     };
     const reviewCheck = vi.fn().mockResolvedValue(undefined);
-    const getProofImageUrl = vi.fn().mockResolvedValue('data:image/png;base64,PROOF');
+    let resolveProof!: (url: string) => void;
+    const getProofImageUrl = vi.fn(() => new Promise<string>((resolve) => { resolveProof = resolve; }));
 
     await act(async () => {
       root.render(<RoutinesScreen state={state} edit focusedEventId={historyEvent.id} getProofImageUrl={getProofImageUrl} reviewCheck={reviewCheck} t={(key) => translate('en', key)} />);
@@ -358,8 +362,16 @@ describe('participant routines navigation', () => {
     const proof = dialog?.querySelector('.history-detail-proof');
     const actions = dialog?.querySelector('.history-detail-review-actions');
     expect(proof?.nextElementSibling).toBe(actions);
+    expect(proof?.querySelector('[role="status"]')?.textContent).toContain('Loading photo');
+    expect(proof?.querySelector('.button-spinner')).not.toBeNull();
     expect(actions?.querySelector('button[aria-label="Validate"]')).not.toBeNull();
     expect(dialog?.querySelector('button[aria-label="Reject"]')).not.toBeNull();
+
+    await act(async () => {
+      resolveProof('data:image/png;base64,PROOF');
+      await Promise.resolve();
+    });
+    expect(proof?.querySelector('img')?.getAttribute('src')).toBe('data:image/png;base64,PROOF');
 
     await act(async () => {
       dialog?.querySelector<HTMLButtonElement>('button[aria-label="Validate"]')?.click();
