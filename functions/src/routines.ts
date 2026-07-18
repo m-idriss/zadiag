@@ -62,6 +62,11 @@ export interface RoutineAssignmentDocument {
 export const routineFromCatalog = (routineId: string) =>
   availableRoutines.find((routine) => routine.id === routineId);
 
+export const shouldCreateDefaultRoutineAssignment = (
+  routineMigrationVersion: unknown,
+  defaultAssignmentExists: boolean,
+) => Number(routineMigrationVersion ?? 0) < 1 && !defaultAssignmentExists;
+
 export const createDefaultRoutineAssignment = (
   plan: MonitoringPlan,
   assignedAt = new Date().toISOString(),

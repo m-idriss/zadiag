@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createDefaultRoutineAssignment, createDraftRoutineAssignment, DEFAULT_ROUTINE_ID, isRoutineValidationMode, migrateCheckRoutineId } from './routines.js';
+import { createDefaultRoutineAssignment, createDraftRoutineAssignment, DEFAULT_ROUTINE_ID, isRoutineValidationMode, migrateCheckRoutineId, shouldCreateDefaultRoutineAssignment } from './routines.js';
 
 const plan = {
   checksPerDay: 1,
@@ -33,6 +33,12 @@ test('migrates legacy checks idempotently', () => {
   const migrated = migrateCheckRoutineId(legacy);
   assert.equal(migrated.routineId, DEFAULT_ROUTINE_ID);
   assert.deepEqual(migrateCheckRoutineId(migrated), migrated);
+});
+
+test('does not recreate a deliberately deleted default routine after migration', () => {
+  assert.equal(shouldCreateDefaultRoutineAssignment(0, false), true);
+  assert.equal(shouldCreateDefaultRoutineAssignment(1, false), false);
+  assert.equal(shouldCreateDefaultRoutineAssignment(1, true), false);
 });
 
 test('accepts only supported routine validation modes', () => {

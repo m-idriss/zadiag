@@ -10,7 +10,7 @@ import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, createRecoveryCode, createRelationshipInvitationCode, hashLinkCode, isFirestoreDocumentId, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, isRelationshipInvitationCode, normalizeLinkCode, sensitiveCodeAttemptState } from './helpers.js';
 import { analyzeWithGemini, parseImageDataUrl, routeAnalysisStatusForReview, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
 import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema, plannedCheckDispatchSchedule, shouldAutoDispatchCheck } from './planning.js';
-import { createDefaultRoutineAssignment, createDraftRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, isRoutineValidationMode, routineFromCatalog, type RoutineAssignmentDocument, type RoutineDocument } from './routines.js';
+import { createDefaultRoutineAssignment, createDraftRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, isRoutineValidationMode, routineFromCatalog, shouldCreateDefaultRoutineAssignment, type RoutineAssignmentDocument, type RoutineDocument } from './routines.js';
 import { buildCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription, type SyntheticReceiptPayload } from './notifications.js';
 import { isCheckRequestRateLimited } from './reminders.js';
 import { recordAuditEvent, recordJourneyEvent, type JourneyStage } from './audit.js';
@@ -461,7 +461,7 @@ const ensureFamilyRoutineMigration = async (familyRef: FirebaseFirestore.Documen
     assignmentRef.get(),
   ]);
   if (!currentFamily.exists) throw new HttpsError('not-found', 'The family could not be found.');
-  if (Number(currentFamily.data()?.routineMigrationVersion ?? 0) >= 1 && currentAssignment.exists) return currentAssignment;
+  if (!shouldCreateDefaultRoutineAssignment(currentFamily.data()?.routineMigrationVersion, currentAssignment.exists)) return currentAssignment;
 
   await db.runTransaction(async (transaction) => {
     const [family, assignment] = await Promise.all([
@@ -469,7 +469,7 @@ const ensureFamilyRoutineMigration = async (familyRef: FirebaseFirestore.Documen
       transaction.get(assignmentRef),
     ]);
     if (!family.exists) throw new HttpsError('not-found', 'The family could not be found.');
-    if (assignment.exists) return;
+    if (!shouldCreateDefaultRoutineAssignment(family.data()?.routineMigrationVersion, assignment.exists)) return;
     const legacyPlan = monitoringPlanSchema.safeParse(family.data()?.plan);
     const assignedAt = String(family.data()?.createdAt ?? new Date().toISOString());
     transaction.create(assignmentRef, createDefaultRoutineAssignment(
