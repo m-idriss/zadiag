@@ -24,7 +24,7 @@ patch, locale and installed app version; “latest” alone is not evidence.
 ## Preconditions
 
 - Production URL: `https://zadiag-22482.web.app`
-- Named application version: `0.9.63`
+- Named application version: `0.9.64`
 - Two synthetic accounts are available: responsible person and participant.
 - The responsible account can request a check and review an uncertain result.
 - The participant account is linked and assigned a synthetic routine.
@@ -40,7 +40,7 @@ close.
 | ID | Action | Pass criteria | Result/evidence |
 | --- | --- | --- | --- |
 | IOS-01 | Open production in Safari, Share → Add to Home Screen, then launch the icon | Icon is present; launch has no Safari browser chrome and uses the production origin | Pass — installed icon launches without Safari chrome (`2026-07-18T08:49:27Z`) |
-| IOS-02 | Complete or resume synthetic participant onboarding in the installed app | Correct participant dashboard opens; compact layout has no hidden primary action or horizontal overflow | Fail on 0.9.63 — built-in cards and actions overlap in Safari; see [`evidence/ios/ios-0.9.63-routine-catalog-overlap.png`](evidence/ios/ios-0.9.63-routine-catalog-overlap.png). Intrinsic-row correction requires a real-device retest. |
+| IOS-02 | Complete or resume synthetic participant onboarding in the installed app | Correct participant dashboard opens; compact layout has no hidden primary action or horizontal overflow | Pass on 0.9.64 — intrinsic card height, text and full-width action remain isolated in the scrollable catalogue (`2026-07-18T11:48:46Z`); see [`evidence/ios/ios-0.9.64-routine-catalog-pass.png`](evidence/ios/ios-0.9.64-routine-catalog-pass.png). |
 | IOS-03 | Enable reminders from an explicit button tap | Native permission sheet appears; allowing it produces a registered subscription and healthy notification diagnostics | Pass — native permission and active notification registration confirmed (`2026-07-18`) |
 | IOS-04 | Send the built-in test notification with the app backgrounded | Lock Screen/Notification Centre receives one notification with expected Zadiag title | Pass — notifications received while the app is closed (`2026-07-18T08:49:27Z`) |
 | IOS-05 | Tap that notification | Installed app opens to the intended context, not an unrelated Safari tab | Pass — notification opens the intended screen in the installed app (`2026-07-18T08:54:40Z`) |
@@ -64,10 +64,10 @@ close.
 | Device model | iPhone 16 Pro, 128 GB (`MYNF3ZD/A`) |
 | iOS patch | 26.5.2 |
 | Locale | French |
-| App version | `0.9.63` |
+| App version | `0.9.64` |
 | Focus / Low Power Mode | Pending |
-| Overall result | Fail — IOS-02 blocks release validation |
-| Follow-up issues | [#175](https://github.com/m-idriss/zadiag/issues/175), overlap reproduced on `0.9.63`; intrinsic-row correction and real-device retest pending |
+| Overall result | Pass for all completed rows; run metadata remains to be completed |
+| Follow-up issues | [#175](https://github.com/m-idriss/zadiag/issues/175), overlap reproduced on `0.9.63` and resolved by the `0.9.64` real-device retest |
 
 ## Failure handling
 
