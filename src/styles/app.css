@@ -1519,7 +1519,7 @@ button:disabled { cursor: not-allowed; }
 .routine-history-open .svg-icon { font-size: 14px; }
 .routine-history-open:focus-visible { outline: 3px solid color-mix(in srgb, var(--routine-accent) 34%, transparent); outline-offset: -3px; border-radius: 12px; }
 .routine-history-row .submission-thumb-button { position: relative; z-index: 2; }
-.history-detail-backdrop { position: fixed; z-index: 70; inset: 0; display: grid; align-items: end; padding: 12px; background: rgba(8,26,40,.48); backdrop-filter: blur(5px); }
+.history-detail-backdrop { position: fixed; z-index: 70; inset: 0; display: grid; align-items: center; padding: 12px; background: rgba(8,26,40,.48); backdrop-filter: blur(5px); }
 .history-detail-dialog { width: min(100%, 520px); max-height: 88dvh; display: grid; gap: 8px; margin: 0 auto; padding: 12px; overflow: hidden; border-radius: 22px; background: var(--color-surface-solid); box-shadow: 0 24px 70px rgba(8,26,40,.28); }
 .history-detail-dialog > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .history-detail-dialog > header small { color: var(--color-text-muted); font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
