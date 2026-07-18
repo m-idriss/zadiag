@@ -3,8 +3,19 @@ export type AiAuthoringMetricStatus = 'success' | 'provider_failure' | 'invalid_
 
 export interface AiAuthoringControlConfig {
   globalEnabled?: boolean;
-  privacyApprovalId?: string;
   capabilities?: Partial<Record<AiAuthoringCapability, boolean>>;
+  approval?: {
+    id?: string;
+    status?: 'approved' | 'rejected' | 'pending';
+    approvedAt?: string;
+    expiresAt?: string;
+    dpoApprovedBy?: string;
+    legalApprovedBy?: string;
+    securityApprovedBy?: string;
+    provider?: string;
+    dataResidency?: string;
+    capabilities?: AiAuthoringCapability[];
+  };
 }
 
 export const aiAuthoringRegistry = {
@@ -14,8 +25,19 @@ export const aiAuthoringRegistry = {
 
 export class AiAuthoringDisabledError extends Error { constructor() { super('ai_authoring_disabled'); } }
 
-export const aiAuthoringCapabilityEnabled = (config: AiAuthoringControlConfig | undefined, capability: AiAuthoringCapability) => Boolean(
-  config?.globalEnabled && config.privacyApprovalId?.trim() && config.capabilities?.[capability],
+const nonEmpty = (value: unknown) => typeof value === 'string' && value.trim().length > 0;
+
+export const aiAuthoringApprovalValid = (config: AiAuthoringControlConfig | undefined, capability: AiAuthoringCapability, now = new Date()) => {
+  const approval = config?.approval;
+  if (!approval || approval.status !== 'approved' || !approval.capabilities?.includes(capability)) return false;
+  if (![approval.id, approval.dpoApprovedBy, approval.legalApprovedBy, approval.securityApprovedBy, approval.provider, approval.dataResidency].every(nonEmpty)) return false;
+  const approvedAt = Date.parse(String(approval.approvedAt));
+  const expiresAt = Date.parse(String(approval.expiresAt));
+  return Number.isFinite(approvedAt) && Number.isFinite(expiresAt) && approvedAt <= now.getTime() && expiresAt > now.getTime();
+};
+
+export const aiAuthoringCapabilityEnabled = (config: AiAuthoringControlConfig | undefined, capability: AiAuthoringCapability, now = new Date()) => Boolean(
+  config?.globalEnabled && config.capabilities?.[capability] && aiAuthoringApprovalValid(config, capability, now),
 );
 
 export const requireAiAuthoringCapability = (config: AiAuthoringControlConfig | undefined, capability: AiAuthoringCapability) => {

@@ -2,7 +2,7 @@
 
 AI-assisted authoring is optional and separate from proof analysis. Both authoring capabilities default to disabled. The existing private routine editor and manual translation workflow remain canonical and require no provider.
 
-`AI_AUTHORING_CONFIG` is a server environment JSON value with `globalEnabled`, a non-empty `privacyApprovalId`, and per-capability booleans for `prescriptionExtraction` and `routineTranslation`. All three conditions must be true before the reusable server guard permits a capability. Missing or malformed configuration fails closed. Production configuration must remain disabled until #167 records privacy and regulatory approval.
+`AI_AUTHORING_CONFIG` is a server environment JSON value with `globalEnabled`, per-capability booleans, and a scoped approval record. The approval must be `approved`, name the DPO/privacy, legal/regulatory and security approvers, identify the provider contract and data residency, include the capability, and be within its approval/expiry dates. Missing, malformed, incomplete, out-of-scope or expired records fail closed.
 
 The server registry pins provider, model and prompt versions. Operational metrics may contain only capability, bounded status/latency, provider, model and prompt version. They must never contain prompts, outputs, prescriptions, routine text, participant data or proofs.
 
