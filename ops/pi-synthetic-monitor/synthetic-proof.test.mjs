@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { answerPendingCheck } from './synthetic-proof.mjs';
+import { answerPendingCheck, resolveSyntheticRoutineId } from './synthetic-proof.mjs';
 
 const locator = (overrides = {}) => ({
   first() { return this; },
@@ -27,8 +27,9 @@ const onboardingPage = () => {
       return locator();
     }),
     evaluate: vi.fn().mockResolvedValue(undefined),
+    waitForFunction: vi.fn().mockResolvedValue({ jsonValue: vi.fn().mockResolvedValue({ result: 'Validé' }) }),
   };
-  return { page, contact, continueButton, declinePilot };
+  return { page, contact, continueButton, declinePilot, proof };
 };
 
 describe('Pi synthetic proof onboarding recovery', () => {
@@ -61,8 +62,10 @@ describe('Pi synthetic proof onboarding recovery', () => {
 
   it('injects Raspberry Pi health evidence for generic and legacy routine ids', async () => {
     const context = { addInitScript: vi.fn().mockResolvedValue(undefined) };
-    const { page } = onboardingPage();
+    const { page, proof } = onboardingPage();
     const healthEvidence = { timestamp: '18/07/2026 20:00:00', rows: [] };
+    proof.waitFor.mockResolvedValue(undefined);
+    page.evaluate.mockResolvedValueOnce('Santé du Raspberry Pi').mockResolvedValueOnce(undefined);
 
     await expect(answerPendingCheck({
       context,
@@ -71,11 +74,23 @@ describe('Pi synthetic proof onboarding recovery', () => {
       contactEmail: 'pi@example.com',
       routineId: 'raspberry-pi-health',
       healthEvidence,
-    })).resolves.toEqual({ outcome: 'already_settled' });
+    })).resolves.toEqual({ outcome: 'Validé' });
 
     expect(page.evaluate).toHaveBeenCalledWith(expect.any(Function), {
       currentRoutineId: 'raspberry-pi-health',
       currentEvidence: healthEvidence,
     });
+  });
+});
+
+describe('Pi synthetic routine resolution', () => {
+  it('recognizes the health routine from a notification or the visible French title', () => {
+    expect(resolveSyntheticRoutineId({ routineId: 'nemu-health' })).toBe('nemu-health');
+    expect(resolveSyntheticRoutineId({ pageText: 'Contrôle · Santé du Raspberry Pi' })).toBe('raspberry-pi-health');
+  });
+
+  it('refuses unrelated and unidentified routines instead of submitting a wrong proof', () => {
+    expect(resolveSyntheticRoutineId({ routineId: 'orthodontic-elastics' })).toBeUndefined();
+    expect(resolveSyntheticRoutineId({ pageText: 'Élastiques orthodontiques' })).toBeUndefined();
   });
 });

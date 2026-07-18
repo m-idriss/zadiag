@@ -5,6 +5,7 @@ import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
 const PI_HEALTH_ROUTINE_IDS = new Set(['nemu-health', 'raspberry-pi-health']);
+const PI_HEALTH_ROUTINE_NAME_PATTERN = /Santé du Raspberry Pi|Raspberry Pi Health/i;
 const resultPattern = /Validated|Validé|Not detected|Non détecté|Needs review|À vérifier/i;
 const analyzingPattern = /Checking the photo|Analyse de la photo/i;
 const cameraEnabledContexts = new WeakSet();
@@ -56,24 +57,11 @@ const installSyntheticCamera = (context) => {
             drawing.fillText('Zadiag synthetic operational proof', 34, 458);
             return;
           }
-          drawing.fillStyle = '#c88f70';
+          drawing.fillStyle = '#eef8f5';
           drawing.fillRect(0, 0, canvas.width, canvas.height);
-          drawing.fillStyle = '#6b3029';
-          drawing.beginPath();
-          drawing.ellipse(320, 260, 155, 85, 0, 0, Math.PI * 2);
-          drawing.fill();
-          drawing.fillStyle = '#f6f1dd';
-          drawing.fillRect(205, 220, 230, 42);
-          drawing.fillStyle = '#d8d1ba';
-          for (let x = 220; x < 430; x += 30) drawing.fillRect(x, 220, 3, 42);
-          drawing.strokeStyle = '#6cc7d4';
-          drawing.lineWidth = 8;
-          drawing.beginPath();
-          drawing.moveTo(210, 242);
-          drawing.lineTo(430, 242);
-          drawing.stroke();
-          drawing.fillStyle = '#44201d';
-          drawing.fillRect(255, 292, 130, 18);
+          drawing.fillStyle = '#123b35';
+          drawing.font = 'bold 28px sans-serif';
+          drawing.fillText('No supported routine selected', 70, 245);
         };
         draw();
         const timer = window.setInterval(draw, 250);
@@ -92,6 +80,12 @@ const installSyntheticCamera = (context) => {
     },
   });
   });
+};
+
+export const resolveSyntheticRoutineId = ({ routineId, pageText = '' }) => {
+  if (PI_HEALTH_ROUTINE_IDS.has(routineId)) return routineId;
+  if (routineId) return undefined;
+  return PI_HEALTH_ROUTINE_NAME_PATTERN.test(pageText) ? 'raspberry-pi-health' : undefined;
 };
 
 const percentageStatus = (value, warning, failure) => value >= failure ? 'failure' : value >= warning ? 'warning' : 'ok';
@@ -148,19 +142,20 @@ export const answerPendingCheck = async ({ context, page, appUrl, path, contactE
   }
   await page.goto(destination.href, { waitUntil: 'domcontentloaded', timeout: 30_000 });
   await completeSyntheticOnboarding({ page, contactEmail });
-  if (PI_HEALTH_ROUTINE_IDS.has(routineId)) {
-    const evidence = healthEvidence ?? await collectNemuHealth();
-    await page.evaluate(({ currentRoutineId, currentEvidence }) => {
-      globalThis.__ZADIAG_SYNTHETIC_ROUTINE_ID__ = currentRoutineId;
-      globalThis.__ZADIAG_NEMU_HEALTH__ = currentEvidence;
-    }, { currentRoutineId: routineId, currentEvidence: evidence });
-  }
   const proofButton = page.getByRole('button', { name: /Proof|Preuve/i }).first();
   try {
     await proofButton.waitFor({ state: 'visible', timeout: proofWaitMs });
   } catch {
     return { outcome: 'already_settled' };
   }
+  const pageText = await page.evaluate(() => document.body?.innerText ?? '');
+  const resolvedRoutineId = resolveSyntheticRoutineId({ routineId, pageText });
+  if (!resolvedRoutineId) return { outcome: 'unsupported_routine' };
+  const evidence = healthEvidence ?? await collectNemuHealth();
+  await page.evaluate(({ currentRoutineId, currentEvidence }) => {
+    globalThis.__ZADIAG_SYNTHETIC_ROUTINE_ID__ = currentRoutineId;
+    globalThis.__ZADIAG_NEMU_HEALTH__ = currentEvidence;
+  }, { currentRoutineId: resolvedRoutineId, currentEvidence: evidence });
   await proofButton.click();
   await page.getByRole('button', { name: /Use photo|Utiliser la photo/i }).click({ timeout: 20_000 });
   await page.getByRole('button', { name: /Use photo|Utiliser la photo/i }).click({ timeout: 20_000 });

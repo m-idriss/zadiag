@@ -29,6 +29,7 @@ const log = (event, details = {}) => {
 const context = await chromium.launchPersistentContext(profileDir, {
   executablePath: chromiumPath,
   headless: false,
+  locale: 'fr-FR',
   viewport: { width: 430, height: 820 },
   args: [
     '--disable-gpu',
@@ -38,6 +39,17 @@ const context = await chromium.launchPersistentContext(profileDir, {
     '--no-first-run',
     '--no-default-browser-check',
   ],
+});
+
+await context.addInitScript(() => {
+  const key = 'zadiag.preferences.v1';
+  let preferences = {};
+  try {
+    preferences = JSON.parse(localStorage.getItem(key) ?? '{}');
+  } catch {
+    // Replace malformed local preferences with the monitor defaults.
+  }
+  localStorage.setItem(key, JSON.stringify({ ...preferences, locale: 'fr' }));
 });
 
 if (appCheckDebugToken) {
