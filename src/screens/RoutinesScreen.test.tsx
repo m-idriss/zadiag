@@ -107,7 +107,7 @@ describe('participant routines navigation', () => {
     expect(dock?.closest('.content-screen')).toBeNull();
   });
 
-  it('loads, opens and deletes private routine drafts without hiding built-ins', async () => {
+  it('separates built-in routines and private drafts into focused tabs', async () => {
     const assignment = createDefaultRoutineAssignment('2026-07-02T08:00:00.000Z');
     const state: AppState = {
       role: 'parent', locale: 'en', notificationsEnabled: true,
@@ -129,17 +129,18 @@ describe('participant routines navigation', () => {
     act(() => {
       root.render(<RoutinesScreen state={state} onAssignRoutine={async () => undefined} onListRoutineDrafts={listDrafts} onDeleteRoutineDraft={deleteDraft} onAssignRoutineDraft={assignDraft} t={(key) => translate('en', key)} />);
     });
+    act(() => document.body.querySelector<HTMLButtonElement>('.routines-add-dock-button')?.click());
     await act(async () => {
-      document.body.querySelector<HTMLButtonElement>('.routines-add-dock-button')?.click();
+      document.body.querySelector<HTMLButtonElement>('#routine-catalog-drafts-tab')?.click();
       await Promise.resolve();
     });
 
     expect(listDrafts).toHaveBeenCalledWith('participant-1');
-    expect(document.body.textContent).toContain('Private drafts');
+    expect(document.body.querySelector('#routine-catalog-drafts-tab')?.getAttribute('aria-selected')).toBe('true');
+    expect(document.body.querySelector('#routine-catalog-builtins-tab')?.getAttribute('aria-selected')).toBe('false');
     expect(document.body.textContent).toContain('Needs completion');
     expect(document.body.textContent).toContain('My hydration plan');
-    expect(document.body.textContent).toContain('Built-in routines');
-    expect(document.body.textContent).toContain('Hydration');
+    expect(document.body.querySelector('#routine-catalog-builtins-panel')).toBeNull();
 
     const view = Array.from(document.body.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent === 'View');
     act(() => view?.click());
@@ -157,9 +158,14 @@ describe('participant routines navigation', () => {
     });
     expect(deleteDraft).toHaveBeenCalledWith('participant-1', 'draft-1', 2);
     expect(document.body.textContent).not.toContain('My hydration plan');
+
+    act(() => document.body.querySelector<HTMLButtonElement>('#routine-catalog-builtins-tab')?.click());
+    expect(document.body.querySelector('#routine-catalog-builtins-tab')?.getAttribute('aria-selected')).toBe('true');
+    expect(document.body.querySelector('#routine-catalog-drafts-panel')).toBeNull();
+    expect(document.body.textContent).toContain('Hydration');
   });
 
-  it('keeps built-in and assigned routines visible when private drafts fail', async () => {
+  it('keeps a private draft failure inside its tab', async () => {
     const assignment = createDefaultRoutineAssignment('2026-07-02T08:00:00.000Z');
     const state: AppState = {
       role: 'parent', locale: 'en', notificationsEnabled: true,
@@ -170,13 +176,16 @@ describe('participant routines navigation', () => {
     act(() => {
       root.render(<RoutinesScreen state={state} onAssignRoutine={async () => undefined} onListRoutineDrafts={vi.fn().mockRejectedValue(new Error('offline'))} t={(key) => translate('en', key)} />);
     });
+    act(() => document.body.querySelector<HTMLButtonElement>('.routines-add-dock-button')?.click());
     await act(async () => {
-      document.body.querySelector<HTMLButtonElement>('.routines-add-dock-button')?.click();
+      document.body.querySelector<HTMLButtonElement>('#routine-catalog-drafts-tab')?.click();
       await Promise.resolve();
     });
     expect(document.body.querySelector('[role="alert"]')?.textContent).toContain('Private drafts could not be loaded');
-    expect(document.body.textContent).toContain('Hydration');
     expect(container.textContent).toContain('Orthodontic Elastics');
+    act(() => document.body.querySelector<HTMLButtonElement>('#routine-catalog-builtins-tab')?.click());
+    expect(document.body.querySelector('[role="alert"]')).toBeNull();
+    expect(document.body.textContent).toContain('Hydration');
   });
 
   it('does not request private drafts offline and keeps built-ins available', async () => {
@@ -187,12 +196,14 @@ describe('participant routines navigation', () => {
       participantAccess: [{ participant: { id: 'participant-1', displayName: 'Maya' }, membership: { role: 'owner', status: 'active' } }],
       activeParticipantId: 'participant-1', routineAssignments: [], events: [], routinesLoaded: true, routinesError: false,
     };
+    act(() => root.render(<RoutinesScreen state={state} online={false} onAssignRoutine={async () => undefined} onListRoutineDrafts={listDrafts} t={(key) => translate('en', key)} />));
     await act(async () => {
-      root.render(<RoutinesScreen state={state} online={false} onAssignRoutine={async () => undefined} onListRoutineDrafts={listDrafts} t={(key) => translate('en', key)} />);
+      document.body.querySelector<HTMLButtonElement>('#routine-catalog-drafts-tab')?.click();
       await Promise.resolve();
     });
     expect(listDrafts).not.toHaveBeenCalled();
     expect(document.body.textContent).toContain('Private drafts are unavailable offline');
+    act(() => document.body.querySelector<HTMLButtonElement>('#routine-catalog-builtins-tab')?.click());
     expect(document.body.textContent).toContain('Hydration');
   });
 
@@ -641,7 +652,10 @@ describe('participant routines navigation', () => {
     const install = vi.fn().mockResolvedValue(undefined);
     act(() => root.render(<RoutinesScreen state={state} onAssignRoutine={async () => undefined} onSearchRoutineCatalog={search} onResolveSharedRoutine={resolve} onInstallCatalogRoutine={install} t={(key) => translate('en', key)} />));
 
+    act(() => document.body.querySelector<HTMLButtonElement>('#routine-catalog-community-tab')?.click());
     await act(async () => { vi.advanceTimersByTime(250); await Promise.resolve(); });
+    expect(document.body.querySelector('#routine-catalog-community-tab')?.getAttribute('aria-selected')).toBe('true');
+    expect(document.body.querySelector('#routine-catalog-builtins-panel')).toBeNull();
     expect(document.body.textContent).toContain('Alex Martin · v3 · EN, FR');
     expect(document.body.textContent).toContain('Community hydration');
 

@@ -17,6 +17,7 @@ const RoutineDetailScreen = lazy(() => import('./RoutineDetailScreen').then((mod
 const RoutineDraftEditorScreen = lazy(() => import('./RoutineDraftEditorScreen').then((module) => ({ default: module.RoutineDraftEditorScreen })));
 
 type RequestStatus = 'idle' | 'sent' | 'active' | 'error';
+type RoutineCatalogTab = 'builtins' | 'community' | 'drafts';
 interface RequestRetryState {
   attempts: number;
   retryAt: number;
@@ -186,6 +187,7 @@ export function RoutinesScreen({
   const [catalogOpen, setCatalogOpen] = useState(() =>
     Boolean(state.role === 'parent' && onAssignRoutine && !state.routineAssignments.length)
     || (readStoredBoolean(ROUTINES_CATALOG_OPEN_KEY) ?? false));
+  const [catalogTab, setCatalogTab] = useState<RoutineCatalogTab>('builtins');
   const [assigningRoutineId, setAssigningRoutineId] = useState<string>();
   const [assignError, setAssignError] = useState(false);
   const [deletingRoutineId, setDeletingRoutineId] = useState<string>();
@@ -213,6 +215,7 @@ export function RoutinesScreen({
   const selected = state.routineAssignments.find((assignment) => assignment.id === selectedId);
   const canManageRoutines = state.role === 'parent' && Boolean(edit);
   const canAssignRoutine = state.role === 'parent' && Boolean(onAssignRoutine);
+  const catalogHasTabs = Boolean(onSearchRoutineCatalog || onListRoutineDrafts);
   const activeParticipantAccess = state.participantAccess?.find((entry) => entry.participant.id === state.activeParticipantId)
     ?? state.participantAccess?.find((entry) => entry.membership.status === 'active');
   const now = Date.now();
@@ -259,7 +262,7 @@ export function RoutinesScreen({
 
   useEffect(() => {
     const participantId = activeParticipantAccess?.participant.id;
-    if (!catalogOpen || !canAssignRoutine || !participantId || !onListRoutineDrafts || !online) return undefined;
+    if (!catalogOpen || catalogTab !== 'drafts' || !canAssignRoutine || !participantId || !onListRoutineDrafts || !online) return undefined;
     let cancelled = false;
     setDraftsStatus('loading');
     void onListRoutineDrafts(participantId).then((drafts) => {
@@ -271,22 +274,22 @@ export function RoutinesScreen({
       if (!cancelled) setDraftsStatus('error');
     });
     return () => { cancelled = true; };
-  }, [activeParticipantAccess?.participant.id, canAssignRoutine, catalogOpen, draftReloadSequence, onListRoutineDrafts, online]);
+  }, [activeParticipantAccess?.participant.id, canAssignRoutine, catalogOpen, catalogTab, draftReloadSequence, onListRoutineDrafts, online]);
 
   useEffect(() => {
     const participantId = activeParticipantAccess?.participant.id;
-    if (!catalogOpen || !participantId || !online || !onListPublishedRoutineVersions) return;
+    if (!catalogOpen || catalogTab !== 'drafts' || !participantId || !online || !onListPublishedRoutineVersions) return;
     let cancelled = false;
     void onListPublishedRoutineVersions(participantId).then((versions) => { if (!cancelled) setPublishedVersions(versions); }).catch(console.error);
     return () => { cancelled = true; };
-  }, [activeParticipantAccess?.participant.id, catalogOpen, onListPublishedRoutineVersions, online, publishingDraftId]);
+  }, [activeParticipantAccess?.participant.id, catalogOpen, catalogTab, onListPublishedRoutineVersions, online, publishingDraftId]);
   useEffect(() => {
-    if (!catalogOpen || !online || !onSearchRoutineCatalog) return;
+    if (!catalogOpen || catalogTab !== 'community' || !online || !onSearchRoutineCatalog) return;
     let cancelled = false;
     setRemoteCatalogStatus('loading');
     const timeout = window.setTimeout(() => { void onSearchRoutineCatalog(catalogQuery).then((entries) => { if (!cancelled) { setCatalogEntries(entries); setRemoteCatalogStatus('loaded'); } }).catch(() => { if (!cancelled) setRemoteCatalogStatus('error'); }); }, 250);
     return () => { cancelled = true; window.clearTimeout(timeout); };
-  }, [catalogOpen, catalogQuery, onSearchRoutineCatalog, online]);
+  }, [catalogOpen, catalogQuery, catalogTab, onSearchRoutineCatalog, online]);
 
   if (editingDraftId) {
     const participantId = activeParticipantAccess?.participant.id;
@@ -522,7 +525,7 @@ export function RoutinesScreen({
           {t('addRoutine')}
         </button>
       {catalogOpen && (
-        <section className="card routine-catalog-card routine-catalog-popover" aria-labelledby="routine-catalog-title">
+        <section className={`card routine-catalog-card routine-catalog-popover${catalogHasTabs ? ' has-tabs' : ''}`} aria-labelledby="routine-catalog-title">
           <div className="routine-catalog-heading">
             <div>
               <small>{t('routineCatalogEyebrow')}</small>
@@ -530,10 +533,15 @@ export function RoutinesScreen({
             </div>
             <button type="button" className="routine-catalog-close" onClick={() => setCatalogOpen(false)} aria-label={t('close')}><AppIcon name="close" /></button>
           </div>
+          {catalogHasTabs ? <div className="routine-catalog-tabs" role="tablist" aria-label={t('chooseRoutine')}>
+            <button id="routine-catalog-builtins-tab" type="button" role="tab" aria-selected={catalogTab === 'builtins'} aria-controls="routine-catalog-builtins-panel" onClick={() => setCatalogTab('builtins')}>{t('routineCatalogTabBuiltins')}</button>
+            {onSearchRoutineCatalog ? <button id="routine-catalog-community-tab" type="button" role="tab" aria-selected={catalogTab === 'community'} aria-controls="routine-catalog-community-panel" onClick={() => setCatalogTab('community')}>{t('routineCatalogTabCommunity')}</button> : null}
+            {onListRoutineDrafts ? <button id="routine-catalog-drafts-tab" type="button" role="tab" aria-selected={catalogTab === 'drafts'} aria-controls="routine-catalog-drafts-panel" onClick={() => setCatalogTab('drafts')}>{t('routineCatalogTabDrafts')}</button> : null}
+          </div> : null}
           <div className="routine-catalog-list">
-            {onListRoutineDrafts ? (
-              <section className="routine-library-group" aria-labelledby="routine-library-drafts-title">
-                <div className="routine-library-group-heading"><h3 id="routine-library-drafts-title">{t('routineLibraryDrafts')}</h3><div>{onImportRoutinePackage ? <label className="routine-import-button">{t('routineImport')}<input type="file" accept="application/vnd.zadiag.routine+json,.zadiag-routine" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importPackage(file); event.target.value = ''; }} /></label> : null}{onCreateRoutineDraft ? <button type="button" onClick={() => setEditingDraftId('new')}>{t('routineDraftNew')}</button> : null}</div></div>
+            {catalogTab === 'drafts' && onListRoutineDrafts ? (
+              <section id="routine-catalog-drafts-panel" className="routine-library-group" role="tabpanel" aria-labelledby="routine-catalog-drafts-tab">
+                {onImportRoutinePackage || onCreateRoutineDraft ? <div className="routine-library-group-actions">{onImportRoutinePackage ? <label className="routine-import-button">{t('routineImport')}<input type="file" accept="application/vnd.zadiag.routine+json,.zadiag-routine" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importPackage(file); event.target.value = ''; }} /></label> : null}{onCreateRoutineDraft ? <button type="button" onClick={() => setEditingDraftId('new')}>{t('routineDraftNew')}</button> : null}</div> : null}
                 {!online ? <p className="routine-library-state" role="status">{t('routineLibraryDraftsOffline')}</p> : null}
                 {online && draftsStatus === 'loading' ? <p className="routine-library-state" role="status">{t('routineLibraryLoadingDrafts')}</p> : null}
                 {online && draftsStatus === 'error' ? (
@@ -587,16 +595,16 @@ export function RoutinesScreen({
                 })}
               </section>
             ) : null}
-            {state.routineAssignments.map((assignment) => {
+            {catalogTab === 'drafts' ? state.routineAssignments.map((assignment) => {
               const target = publishedVersions.filter((version) => version.routineId === assignment.routineId && !version.archivedAt && version.version > (assignment.sourceVersion ?? 0)).sort((a, b) => b.version - a.version)[0];
               if (!target) return null;
               const current = presentRoutine(assignment.routine, state.locale);
               const next = presentRoutine(target.package.routine, state.locale);
               return <section className="routine-upgrade-card" key={`upgrade-${assignment.id}`}><small>{t('routineUpgradeAvailable')}</small><h3>{current.name} → {next.name}</h3><p>{current.description}</p><p>{next.description}</p><button type="button" disabled={upgradingRoutineId === assignment.routineId} onClick={() => { void upgradeAssignment(assignment, target); }}>{upgradingRoutineId === assignment.routineId ? t('routineUpgrading') : formatMessage(t('routineUpgradeTo'), { version: target.version })}</button></section>;
-            })}
-            {onSearchRoutineCatalog ? <section className="routine-remote-catalog"><h3>{t('routineInternalCatalog')}</h3><label><span>{t('search')}</span><input value={catalogQuery} onChange={(event) => setCatalogQuery(event.target.value)} placeholder={t('routineCatalogSearchPlaceholder')} /></label>{onResolveSharedRoutine ? <div className="routine-share-code"><input aria-label={t('routineShareCode')} value={sharedRoutineCode} onChange={(event) => setSharedRoutineCode(event.target.value)} placeholder={t('routineShareCodePlaceholder')} /><button type="button" onClick={() => { void resolveShared(); }}>{t('routineShareCodeOpen')}</button></div> : null}{remoteCatalogStatus === 'loading' ? <p role="status">{t('routineCatalogSearching')}</p> : null}{remoteCatalogStatus === 'error' ? <p role="alert">{t('routineCatalogUnavailable')}</p> : null}{catalogEntries.map((entry) => { const visual = presentRoutine(entry.package.routine, state.locale); return <article key={entry.id}><div><small>{entry.authorName} · v{entry.version} · {entry.package.availableLocales.join(', ').toUpperCase()} · {new Intl.DateTimeFormat(state.locale, { dateStyle: 'medium' }).format(new Date(entry.sharedAt))}</small><h4>{visual.name}</h4><p>{visual.description}</p></div><button type="button" disabled={installingEntryId === entry.id || assignedRoutineIds.has(entry.routineId)} onClick={() => { void installCatalogEntry(entry); }}>{assignedRoutineIds.has(entry.routineId) ? t('routineAlreadyAdded') : installingEntryId === entry.id ? t('routineInstalling') : t('routineInstall')}</button></article>; })}</section> : null}
-            {onSharePublishedRoutine && publishedVersions.length ? <section className="routine-share-versions"><h3>{t('routineShareTitle')}</h3>{publishedVersions.map((version) => <div key={`${version.routineId}-${version.version}`}><span>{presentRoutine(version.package.routine, state.locale).name} · v{version.version}</span><button type="button" onClick={() => { void shareVersion(version, 'listed'); }}>{t('routineShareListed')}</button><button type="button" onClick={() => { void shareVersion(version, 'unlisted'); }}>{t('routineShareUnlisted')}</button></div>)}{routineShare ? <div className="routine-share-result"><code>{routineShare.shareCode}</code>{onRevokeSharedRoutine ? <button type="button" onClick={() => { void onRevokeSharedRoutine(routineShare.entryId).then(() => setRoutineShare(undefined)); }}>{t('routineShareRevoke')}</button> : null}</div> : null}</section> : null}
-            <h3 className="routine-library-section-title">{t('routineLibraryBuiltins')}</h3>
+            }) : null}
+            {catalogTab === 'drafts' && onSharePublishedRoutine && publishedVersions.length ? <section className="routine-share-versions"><h3>{t('routineShareTitle')}</h3>{publishedVersions.map((version) => <div key={`${version.routineId}-${version.version}`}><span>{presentRoutine(version.package.routine, state.locale).name} · v{version.version}</span><button type="button" onClick={() => { void shareVersion(version, 'listed'); }}>{t('routineShareListed')}</button><button type="button" onClick={() => { void shareVersion(version, 'unlisted'); }}>{t('routineShareUnlisted')}</button></div>)}{routineShare ? <div className="routine-share-result"><code>{routineShare.shareCode}</code>{onRevokeSharedRoutine ? <button type="button" onClick={() => { void onRevokeSharedRoutine(routineShare.entryId).then(() => setRoutineShare(undefined)); }}>{t('routineShareRevoke')}</button> : null}</div> : null}</section> : null}
+            {catalogTab === 'community' && onSearchRoutineCatalog ? <section id="routine-catalog-community-panel" className="routine-remote-catalog" role="tabpanel" aria-labelledby="routine-catalog-community-tab"><label><span>{t('search')}</span><input value={catalogQuery} onChange={(event) => setCatalogQuery(event.target.value)} placeholder={t('routineCatalogSearchPlaceholder')} /></label>{onResolveSharedRoutine ? <div className="routine-share-code"><input aria-label={t('routineShareCode')} value={sharedRoutineCode} onChange={(event) => setSharedRoutineCode(event.target.value)} placeholder={t('routineShareCodePlaceholder')} /><button type="button" onClick={() => { void resolveShared(); }}>{t('routineShareCodeOpen')}</button></div> : null}{remoteCatalogStatus === 'loading' ? <p role="status">{t('routineCatalogSearching')}</p> : null}{remoteCatalogStatus === 'error' ? <p role="alert">{t('routineCatalogUnavailable')}</p> : null}{catalogEntries.map((entry) => { const visual = presentRoutine(entry.package.routine, state.locale); return <article key={entry.id}><div><small>{entry.authorName} · v{entry.version} · {entry.package.availableLocales.join(', ').toUpperCase()} · {new Intl.DateTimeFormat(state.locale, { dateStyle: 'medium' }).format(new Date(entry.sharedAt))}</small><h4>{visual.name}</h4><p>{visual.description}</p></div><button type="button" disabled={installingEntryId === entry.id || assignedRoutineIds.has(entry.routineId)} onClick={() => { void installCatalogEntry(entry); }}>{assignedRoutineIds.has(entry.routineId) ? t('routineAlreadyAdded') : installingEntryId === entry.id ? t('routineInstalling') : t('routineInstall')}</button></article>; })}</section> : null}
+            {catalogTab === 'builtins' ? <section id="routine-catalog-builtins-panel" className="routine-catalog-builtins" role={catalogHasTabs ? 'tabpanel' : undefined} aria-labelledby={catalogHasTabs ? 'routine-catalog-builtins-tab' : undefined}>
             {marketplace.templates.map((template) => {
               const visual = presentRoutineTemplate(template, state.locale);
               const routineId = template.routine.id;
@@ -621,9 +629,10 @@ export function RoutinesScreen({
                 </article>
               );
             })}
+            {!assignableTemplates.length && <p className="request-feedback">{t('allMarketplaceRoutinesAdded')}</p>}
+            {assignError && <p role="alert" className="request-feedback error">{t('routineAddError')}</p>}
+            </section> : null}
           </div>
-          {!assignableTemplates.length && <p className="request-feedback">{t('allMarketplaceRoutinesAdded')}</p>}
-          {assignError && <p role="alert" className="request-feedback error">{t('routineAddError')}</p>}
         </section>
       )}
         </div>,
