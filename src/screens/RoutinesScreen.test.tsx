@@ -93,6 +93,8 @@ describe('participant routines navigation', () => {
     expect(document.body.textContent).toContain('Validation: AI analysis');
     expect(document.body.textContent).toContain('Proof example');
     expect(document.body.textContent).toContain('visible glass');
+    expect(Array.from(document.body.querySelectorAll<HTMLButtonElement>('.routine-catalog-tabs button')).map((button) => button.textContent)).toEqual(['Built-in routines']);
+    expect(document.body.querySelector('.routine-catalog-tabs button[aria-selected="true"]')?.textContent).toBe('Built-in routines');
     const builtInCards = Array.from(document.body.querySelectorAll<HTMLElement>('.routine-catalog-item'));
     expect(builtInCards).toHaveLength(4);
     for (const card of builtInCards) {
@@ -133,13 +135,16 @@ describe('participant routines navigation', () => {
       document.body.querySelector<HTMLButtonElement>('.routines-add-dock-button')?.click();
       await Promise.resolve();
     });
+    await act(async () => {
+      Array.from(document.body.querySelectorAll<HTMLButtonElement>('.routine-catalog-tabs button')).find((button) => button.textContent === 'Private drafts')?.click();
+      await Promise.resolve();
+    });
 
     expect(listDrafts).toHaveBeenCalledWith('participant-1');
     expect(document.body.textContent).toContain('Private drafts');
     expect(document.body.textContent).toContain('Needs completion');
     expect(document.body.textContent).toContain('My hydration plan');
-    expect(document.body.textContent).toContain('Built-in routines');
-    expect(document.body.textContent).toContain('Hydration');
+    expect(document.body.querySelectorAll('.routine-catalog-item')).toHaveLength(0);
 
     const view = Array.from(document.body.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent === 'View');
     act(() => view?.click());
@@ -174,9 +179,14 @@ describe('participant routines navigation', () => {
       document.body.querySelector<HTMLButtonElement>('.routines-add-dock-button')?.click();
       await Promise.resolve();
     });
+    await act(async () => {
+      Array.from(document.body.querySelectorAll<HTMLButtonElement>('.routine-catalog-tabs button')).find((button) => button.textContent === 'Private drafts')?.click();
+      await Promise.resolve();
+    });
     expect(document.body.querySelector('[role="alert"]')?.textContent).toContain('Private drafts could not be loaded');
-    expect(document.body.textContent).toContain('Hydration');
     expect(container.textContent).toContain('Orthodontic Elastics');
+    act(() => Array.from(document.body.querySelectorAll<HTMLButtonElement>('.routine-catalog-tabs button')).find((button) => button.textContent === 'Built-in routines')?.click());
+    expect(document.body.textContent).toContain('Hydration');
   });
 
   it('does not request private drafts offline and keeps built-ins available', async () => {
@@ -191,8 +201,13 @@ describe('participant routines navigation', () => {
       root.render(<RoutinesScreen state={state} online={false} onAssignRoutine={async () => undefined} onListRoutineDrafts={listDrafts} t={(key) => translate('en', key)} />);
       await Promise.resolve();
     });
+    await act(async () => {
+      Array.from(document.body.querySelectorAll<HTMLButtonElement>('.routine-catalog-tabs button')).find((button) => button.textContent === 'Private drafts')?.click();
+      await Promise.resolve();
+    });
     expect(listDrafts).not.toHaveBeenCalled();
     expect(document.body.textContent).toContain('Private drafts are unavailable offline');
+    act(() => Array.from(document.body.querySelectorAll<HTMLButtonElement>('.routine-catalog-tabs button')).find((button) => button.textContent === 'Built-in routines')?.click());
     expect(document.body.textContent).toContain('Hydration');
   });
 
@@ -641,7 +656,14 @@ describe('participant routines navigation', () => {
     const install = vi.fn().mockResolvedValue(undefined);
     act(() => root.render(<RoutinesScreen state={state} onAssignRoutine={async () => undefined} onSearchRoutineCatalog={search} onResolveSharedRoutine={resolve} onInstallCatalogRoutine={install} t={(key) => translate('en', key)} />));
 
-    await act(async () => { vi.advanceTimersByTime(250); await Promise.resolve(); });
+    await act(async () => {
+      Array.from(document.body.querySelectorAll<HTMLButtonElement>('.routine-catalog-tabs button')).find((button) => button.textContent === 'Community routines')?.click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(250);
+      await Promise.resolve();
+    });
     expect(document.body.textContent).toContain('Alex Martin · v3 · EN, FR');
     expect(document.body.textContent).toContain('Community hydration');
 
