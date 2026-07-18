@@ -89,6 +89,8 @@ describe('ParentDashboard', () => {
     const openDetails = container.querySelector<HTMLButtonElement>('.history-row-open-button');
     act(() => openDetails?.click());
 
+    expect(container.querySelector('.history-detail-dialog dl')).toBeNull();
+    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Show all information"]')?.click());
     expect(container.querySelector('.history-detail-dialog')?.textContent).toContain('Visible from dashboard');
     expect(container.querySelector('.history-detail-request-actions')).toBeNull();
     expect(container.querySelector('.parent-overview-screen')).not.toBeNull();
@@ -689,6 +691,7 @@ describe('ParentDashboard', () => {
     expect(notificationConsumed).toHaveBeenCalledOnce();
     const detailDialog = container.querySelector('.history-detail-dialog');
     expect(detailDialog).not.toBeNull();
+    act(() => detailDialog?.querySelector<HTMLButtonElement>('button[aria-label="Show all information"]')?.click());
     expect(detailDialog?.textContent).toContain('The proof is unclear.');
     expect(container.textContent).toContain('Checks to verify');
     expect(Array.from(container.querySelectorAll('.dashboard-status-summary strong')).map((item) => item.textContent)).toEqual(['0', '1', '1']);

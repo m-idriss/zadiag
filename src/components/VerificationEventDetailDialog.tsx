@@ -5,6 +5,7 @@ import type { MessageKey } from '../services/i18n';
 import { languageTag } from '../services/locale';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { AppIcon } from './Icon';
+import { DisclosureToggle } from './DisclosureToggle';
 import { StatusPill } from './StatusPill';
 
 export function VerificationEventDetailDialog({ event, locale, proofUrl: providedProofUrl, getProofImageUrl, reviewCheck, requestCheck, onClose, t }: {
@@ -19,6 +20,8 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
 }) {
   const dialogRef = useModalFocus<HTMLDivElement>(true, onClose);
   const [loadedProofUrl, setLoadedProofUrl] = useState<string>();
+  const [proofError, setProofError] = useState(false);
+  const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [reviewing, setReviewing] = useState(false);
   const [reviewError, setReviewError] = useState(false);
   const [requestStatus, setRequestStatus] = useState<'sending' | 'sent' | 'error'>();
@@ -42,9 +45,10 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
   useEffect(() => {
     if (providedProofUrl || !event.proofImagePath || !getProofImageUrl) return;
     let active = true;
+    setProofError(false);
     void getProofImageUrl(event.id)
       .then((url) => { if (active) setLoadedProofUrl(url); })
-      .catch((error) => { console.error(error); });
+      .catch((error) => { console.error(error); if (active) setProofError(true); });
     return () => { active = false; };
   }, [event.id, event.proofImagePath, getProofImageUrl, providedProofUrl]);
 
@@ -75,12 +79,17 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
 
   return (
     <div className="history-detail-backdrop" onClick={onClose}>
-      <div ref={dialogRef} className={`history-detail-dialog${proofUrl ? '' : ' no-proof'}${canReview || canRequest ? ' has-actions' : ''}`} role="dialog" aria-modal="true" aria-labelledby="history-detail-title" tabIndex={-1} onClick={(clickEvent) => clickEvent.stopPropagation()}>
+      <div ref={dialogRef} className={`history-detail-dialog${event.proofImagePath ? ' has-proof' : ''}${canReview || canRequest ? ' has-actions' : ''}`} role="dialog" aria-modal="true" aria-labelledby="history-detail-title" tabIndex={-1} onClick={(clickEvent) => clickEvent.stopPropagation()}>
         <header>
           <div className="history-detail-heading"><small>{t('historyDetailTitle')}</small><h2 id="history-detail-title">{formatDateTime(event.requestedAt)}</h2><StatusPill status={event.status} t={t} /></div>
           <button type="button" data-autofocus aria-label={t('close')} onClick={onClose}><AppIcon name="close" /></button>
         </header>
-        {proofUrl ? <div className="history-detail-proof"><img src={proofUrl} alt={t('responsibleReviewImageAlt')} /></div> : null}
+        {event.proofImagePath ? <div className="history-detail-proof">{proofUrl
+          ? <img src={proofUrl} alt={t('responsibleReviewImageAlt')} />
+          : proofError
+            ? <span role="alert">{t('responsibleReviewImageError')}</span>
+            : <span className="history-detail-proof-loading" role="status"><span className="button-spinner" aria-hidden="true" />{t('loadingProofImage')}</span>}
+        </div> : null}
         {canReview ? (
           <div className="history-detail-review-actions">
             {reviewError ? <p className="request-feedback error" role="alert">{t('responsibleReviewError')}</p> : null}
@@ -99,7 +108,11 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
             {requestStatus === 'error' ? <p className="request-feedback error" role="alert">{t('requestCheckError')}</p> : null}
           </div>
         ) : null}
-        <dl>
+        <div className="history-detail-disclosure">
+          <span>{t('historyMoreDetails')}</span>
+          <DisclosureToggle expanded={detailsExpanded} showLabel={t('historyShowDetails')} hideLabel={t('historyHideDetails')} onToggle={() => setDetailsExpanded((expanded) => !expanded)} />
+        </div>
+        {detailsExpanded ? <dl>
           <div><dt>{t('historyRequestedAt')}</dt><dd>{formatDateTime(event.requestedAt)}</dd></div>
           {event.capturedAt ? <div><dt>{t('historyCapturedAt')}</dt><dd>{formatDateTime(event.capturedAt)}</dd></div> : null}
           <div><dt>{t('historyExpiresAt')}</dt><dd>{formatDateTime(event.expiresAt)}</dd></div>
@@ -116,7 +129,7 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
               <dd>{event.responsibleActions.map((action) => <span key={`${action.type}-${action.at}`}>{actionLabel(action.type)} · {action.actorName} · {formatDateTime(action.at)}</span>)}</dd>
             </div>
           ) : null}
-        </dl>
+        </dl> : null}
       </div>
     </div>
   );
