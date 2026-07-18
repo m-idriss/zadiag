@@ -46,6 +46,7 @@ export interface AppRepository {
   installCatalogRoutine?(participantId: string, entryId: string): Promise<void>;
   sharePublishedRoutine?(participantId: string, routineId: string, version: number, visibility: 'listed' | 'unlisted'): Promise<{ entryId: string; shareCode: string }>;
   revokeSharedRoutine?(entryId: string): Promise<void>;
+  reportRoutineCatalogEntry?(entryId: string, reason: 'unsafe' | 'privacy' | 'copyright' | 'other'): Promise<void>;
   requestCheckNow(routineId?: string): Promise<void>;
   updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode): Promise<void>;
   savePushSubscription(subscription: PushSubscriptionJSON): Promise<void>;

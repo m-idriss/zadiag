@@ -146,6 +146,7 @@ class LazyFirebaseRepository implements AppRepository {
   async installCatalogRoutine(participantId: string, entryId: string) { const repository = await this.load(); if (!repository.installCatalogRoutine) throw new Error('routine_catalog_unavailable'); return repository.installCatalogRoutine(participantId, entryId); }
   async sharePublishedRoutine(participantId: string, routineId: string, version: number, visibility: 'listed' | 'unlisted') { const repository = await this.load(); if (!repository.sharePublishedRoutine) throw new Error('routine_catalog_unavailable'); return repository.sharePublishedRoutine(participantId, routineId, version, visibility); }
   async revokeSharedRoutine(entryId: string) { const repository = await this.load(); if (!repository.revokeSharedRoutine) throw new Error('routine_catalog_unavailable'); return repository.revokeSharedRoutine(entryId); }
+  async reportRoutineCatalogEntry(entryId: string, reason: 'unsafe' | 'privacy' | 'copyright' | 'other') { const repository = await this.load(); if (!repository.reportRoutineCatalogEntry) throw new Error('routine_catalog_unavailable'); return repository.reportRoutineCatalogEntry(entryId, reason); }
 
   async requestCheckNow(routineId?: string) {
     return (await this.load()).requestCheckNow(routineId);

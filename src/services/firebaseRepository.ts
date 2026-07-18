@@ -521,6 +521,7 @@ export class FirebaseRepository implements AppRepository {
   async installCatalogRoutine(participantId: string, entryId: string) { const callable = httpsCallable<{ participantId: string; entryId: string }, void>(this.services.functions, 'installCatalogRoutine'); await callable({ participantId, entryId }); }
   async sharePublishedRoutine(participantId: string, routineId: string, version: number, visibility: 'listed' | 'unlisted') { const callable = httpsCallable<{ participantId: string; routineId: string; version: number; visibility: 'listed' | 'unlisted' }, { entryId: string; shareCode: string }>(this.services.functions, 'sharePublishedRoutine'); return (await callable({ participantId, routineId, version, visibility })).data; }
   async revokeSharedRoutine(entryId: string) { const callable = httpsCallable<{ entryId: string }, void>(this.services.functions, 'revokeSharedRoutine'); await callable({ entryId }); }
+  async reportRoutineCatalogEntry(entryId: string, reason: 'unsafe' | 'privacy' | 'copyright' | 'other') { const callable = httpsCallable<{ entryId: string; reason: string }, void>(this.services.functions, 'reportRoutineCatalogEntry'); await callable({ entryId, reason }); }
 
   async requestCheckNow(routineId = DEFAULT_ROUTINE_ID) {
     if (!this.state.family.id || this.state.role !== 'parent') throw new Error('permission_denied');
