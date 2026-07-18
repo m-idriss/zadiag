@@ -42,6 +42,10 @@ for (const selector of ['.settings-row', '.settings-help-center > summary']) {
   }
 }
 
+if (!cssRuleHasDeclaration('.routine-catalog-list', /grid-auto-rows\s*:\s*max-content\s*;/)) {
+  errors.push(`${relativePath(appCssPath)}: .routine-catalog-list must keep intrinsic rows so Safari cannot compress catalogue cards`);
+}
+
 const legacyTokens = ['navy', 'teal', 'mint', 'cream', 'coral', 'muted', 'line', 'surface', 'surface-solid'];
 for (const token of legacyTokens) {
   if (new RegExp(`--${token}\\b`).test(allCss) || new RegExp(`--${token}\\b`).test(allSource)) {
