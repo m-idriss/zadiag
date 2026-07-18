@@ -15,7 +15,7 @@ import { buildCheckNotificationPayload, buildReviewNotificationPayload, buildTes
 import { isCheckRequestRateLimited } from './reminders.js';
 import { recordAuditEvent, recordJourneyEvent, type JourneyStage } from './audit.js';
 import { expiredPendingCheckCleanupUpdate, shouldDeleteProofAfterReview, staleCleanupCutoffs } from './cleanup.js';
-import { reportOperationalAlert, reportOperationalEvent } from './observability.js';
+import { reportOperationalAlert, reportOperationalEvent, reportOperationalRecovery } from './observability.js';
 import { shouldRecoverSyntheticPush } from './syntheticMonitor.js';
 import { canLeaveMembership, canRemoveMembership, createMembership, hasParticipantPermission, isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, isProfileColorKey, membershipRoles, migrateLegacyFamilyRelationships, scheduledAggregatePaths, type MembershipRole } from './relationships.js';
 import { assertRoutineDraftRevision, createRoutineDraftDocument, RoutineDraftConflictError, RoutineDraftInputError, updateRoutineDraftDocument, type PublishedRoutineVersionDocument, type RoutineDraftDocument } from './routineDrafts.js';
@@ -667,6 +667,7 @@ const dispatchPushNotifications = async (
     routineId: context.routineId,
     details: { notificationType: context.notificationType, ...summary },
   });
+  if (summary.success > 0 && summary.failed === 0) reportOperationalRecovery('push_send_failed');
   return summary;
 };
 
@@ -1826,6 +1827,7 @@ export const recordSyntheticPushReceipt = onRequest({ region }, async (request, 
       ...(typeof body.kind === 'string' ? { notificationType: body.kind.slice(0, 64) } : {}),
     },
   });
+  if (stage === 'received' || stage === 'opened') reportOperationalRecovery('push_delivery_unconfirmed');
   if (renewPushSubscription) {
     reportOperationalAlert({
       kind: 'push_delivery_unconfirmed',
@@ -2685,6 +2687,7 @@ export const dispatchPlannedChecks = onSchedule({
       kind: 'scheduler_run_summary',
       details: { ...stats, durationMs: Date.now() - startedAt },
     });
+    if (stats.failures === 0 && stats.invalidPlans === 0) reportOperationalRecovery('scheduler_dispatch_failed');
   }
 });
 
@@ -2896,6 +2899,7 @@ export const analyzeCheck = onCall({
       durationMs: Date.now() - requestStartedAt,
     },
   });
+  if (analysisUpdate.analysisSource === 'ai') reportOperationalRecovery('analysis_failed');
   return response;
 });
 
@@ -3040,8 +3044,11 @@ export const cleanupExpiredProofImages = onSchedule({
     .where('proofImageExpiresAt', '<', new Date().toISOString())
     .limit(200)
     .get();
-  if (expired.empty) return;
-  await Promise.allSettled(expired.docs.map(async (check) => {
+  if (expired.empty) {
+    reportOperationalRecovery('storage_cleanup_failed');
+    return;
+  }
+  const results = await Promise.allSettled(expired.docs.map(async (check) => {
     const proofImagePath = check.data().proofImagePath;
     if (typeof proofImagePath === 'string' && proofImagePath) {
       try {
@@ -3062,6 +3069,21 @@ export const cleanupExpiredProofImages = onSchedule({
       proofImageExpiresAt: FieldValue.delete(),
     });
   }));
+  if (results.every((result) => result.status === 'fulfilled')) reportOperationalRecovery('storage_cleanup_failed');
+});
+
+export const triggerOperationalTestAlert = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  await requireUid(request.auth);
+  const operationsRole = request.auth?.token.operationsRole;
+  if (operationsRole !== 'operator' && operationsRole !== 'admin') {
+    throw new HttpsError('permission-denied', 'An operations role is required.');
+  }
+  if (request.data?.phase === 'recovery') {
+    reportOperationalRecovery('operational_test');
+    return { success: true, phase: 'recovery' as const };
+  }
+  reportOperationalAlert({ kind: 'operational_test', details: { source: 'manual_test' } });
+  return { success: true, phase: 'alert' as const };
 });
 
 export const cleanupStaleOperationalData = onSchedule({
