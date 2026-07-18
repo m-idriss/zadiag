@@ -27,6 +27,79 @@ identifiers into the working notes.
 
 These are pilot operating targets, not contractual service-level guarantees.
 
+## Operational alert definitions
+
+The [canonical alert definitions](../functions/src/observability.ts) are the
+source for thresholds, owner roles, recovery windows, deduplication keys, and
+runbook links. Before a pilot
+starts, each owner role below must be assigned to a named primary and deputy in
+the private on-call rota. Configure log-based policies from `operational_alert`
+records, group incidents by `dedupeKey`, and route them to that role. A matching
+`operational_recovery` record uses the same key; close the incident only after
+the configured recovery window remains healthy.
+
+| Signal | Threshold | Severity | Owner role | Healthy recovery |
+| --- | --- | --- | --- | --- |
+| Push dispatch failure | 5 failures in 10 minutes | SEV-2 | `pilot-operations` | Successful dispatches for 15 minutes |
+| Invalid push subscription | 10 invalidations in 60 minutes | SEV-3 | `pilot-operations` | No invalidation for 60 minutes |
+| Synthetic push not confirmed | 2 failures in 20 minutes | SEV-2 | `pilot-operations` | Received/opened receipt for 20 minutes |
+| Scheduled check dispatch | 1 failed run in 10 minutes | SEV-2 | `backend-operations` | Successful run for 10 minutes |
+| Analysis failure | 3 failures in 15 minutes | SEV-2 | `ai-reliability` | Successful AI analysis for 15 minutes |
+| Proof cleanup failure | 1 failure in 30 minutes | SEV-2 | `privacy-operations` | Successful cleanup for 30 minutes |
+| App Check rejection | 20 rejected requests in 10 minutes | SEV-2 | `security-operations` | Rejections below threshold for 20 minutes |
+
+App Check rejects requests before callable code executes. Its policy therefore
+uses the Firebase/App Check platform rejection logs and attaches the canonical
+`app_check_rejected` definition when notifying the security owner. It must not
+copy request bodies, tokens, participant identifiers, or proof data.
+
+### Push delivery
+
+Inspect the dispatch summary and provider status. Remove invalid subscriptions
+only through the existing invalidation path; do not copy push endpoints into an
+incident record. Confirm recovery with a synthetic dispatch.
+
+### Synthetic monitor
+
+Check the last expected and received synthetic receipt timestamps. A received
+or opened synthetic receipt emits recovery without participant or proof
+content. Ask the test device to renew its subscription if the heartbeat says so.
+
+### Scheduled jobs
+
+Inspect the scheduler summary and distinguish an invalid plan from an aggregate
+or transaction failure. Re-run only with synthetic data after correcting the
+cause; confirm that the next summary has no failures or invalid plans.
+
+### Analysis
+
+The user flow falls back to responsible-person review when analysis is
+unavailable. Verify provider availability and configuration without inspecting
+the submitted proof. Recovery requires a successful AI-backed analysis, not a
+self-validation or fallback result.
+
+### Proof cleanup
+
+Treat retained proof as a privacy incident until scoped. Confirm the storage
+deletion and Firestore metadata cleanup using synthetic data, then verify a
+successful scheduled cleanup run.
+
+### App Check
+
+Separate a release/configuration regression from abusive traffic using only
+aggregate platform logs. Roll back a bad enforcement/configuration change or
+contain abusive traffic, then observe the threshold for 20 minutes.
+
+### Test alert
+
+An authenticated account with the custom claim `operationsRole=operator` (or
+`admin`) can call `triggerOperationalTestAlert` with `{}` to emit an alert and
+with `{ "phase": "recovery" }` to emit its correlated recovery. The payload
+contains only `source=manual_test`, static routing metadata, and the
+`operational:operational_test` deduplication key. Run this drill before the
+pilot and after notification routing changes; remove the temporary claim when
+the operator does not otherwise need it.
+
 ## Incident procedure
 
 1. Assign an incident owner and record start time, deployed version, reporter
