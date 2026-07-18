@@ -49,3 +49,17 @@ automatically after 35 days.
 All reporting must use cohorts of sufficient size and aggregate results. Raw
 journey records are operational pilot evidence, not individual performance or
 clinical evidence.
+
+## Operator report
+
+An authenticated operator with the `operationsRole=operator` or `admin` custom
+claim can call `getPilotAggregateReport` with ISO `from` and `to` values. The
+period must be complete, cannot exceed the 35-day retention window, and is
+limited to 5,000 audit records. The response contains only aggregate actor and
+profile counts, stage totals, and funnel rates. It never returns event rows,
+identifiers, routine content, contact details, or proof data.
+
+Reports with fewer than three distinct consenting actors return
+`insufficient_data` with no counts. Keep the generated aggregate alongside the
+cohort decision record, not the contact register. Remove the temporary operator
+claim when report access is no longer required.

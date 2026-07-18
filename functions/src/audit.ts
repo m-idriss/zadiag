@@ -48,6 +48,11 @@ type AuditAction =
   | 'withdraw_pilot_participation';
 
 type AuditMetadataValue = string | number | boolean | null | undefined;
+const pilotMeasuredActions = new Set<AuditAction>([
+  'request_check',
+  'submit_proof',
+  'review_proof',
+]);
 
 interface AuditEventInput {
   action: AuditAction;
@@ -77,7 +82,14 @@ export const auditEventDocument = (input: AuditEventInput) => {
 
 export const recordAuditEvent = async (db: Firestore, input: AuditEventInput) => {
   try {
-    await db.collection('auditEvents').add(auditEventDocument(input));
+    let metadata = input.metadata;
+    if (pilotMeasuredActions.has(input.action)) {
+      const participation = (await db.collection('users').doc(input.actorUid).get()).data()?.pilotParticipation;
+      if (participation?.status === 'accepted' && typeof participation.version === 'string') {
+        metadata = { ...metadata, pilotConsentVersion: participation.version };
+      }
+    }
+    await db.collection('auditEvents').add(auditEventDocument({ ...input, metadata }));
   } catch (error) {
     console.error('Unable to record audit event', { action: input.action, familyId: input.familyId, error });
   }
