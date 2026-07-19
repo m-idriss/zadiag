@@ -104,7 +104,6 @@ export function LinkScreen({
         {busy ? <span className="button-spinner" aria-hidden="true" /> : null}
         {parent ? (mode === 'recover' ? t('recoverContinue') : t('createContinue')) : t('linkContinue')}
       </ActionButton>
-      <small className="link-version">v{import.meta.env.VITE_APP_VERSION}</small>
     </main>
   );
 }

@@ -6,6 +6,9 @@ import { initializeAppLogs } from './services/appLogs';
 
 initializeAppLogs();
 
+const rootElement = document.getElementById('root')!;
+rootElement.style.setProperty('--app-version-label', `"Zadiag · v${import.meta.env.VITE_APP_VERSION}"`);
+
 // Lock app to portrait orientation
 if (window.screen.orientation) {
   try {
@@ -15,7 +18,7 @@ if (window.screen.orientation) {
   }
 }
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>,
