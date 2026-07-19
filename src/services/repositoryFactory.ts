@@ -28,6 +28,12 @@ class LazyFirebaseRepository implements AppRepository {
     this.emit();
   }
 
+  async registerContactEmail(email: string) {
+    const repository = await this.load();
+    if (!repository.registerContactEmail) throw new Error('contact_email_registration_unavailable');
+    return repository.registerContactEmail(email);
+  }
+
   async selectRole(role: Role) {
     return (await this.load()).selectRole(role);
   }
