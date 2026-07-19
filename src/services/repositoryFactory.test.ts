@@ -38,6 +38,7 @@ class FakeFirebaseRepository implements AppRepository {
     this.listeners.forEach((listener) => listener());
   }
 
+  async registerContactEmail(email: string) { return email.trim().toLowerCase(); }
   async selectRole(role: Role) { this.state = { ...this.state, role }; }
   async selectActiveParticipant(participantId: string) { this.state.activeParticipantId = participantId; }
   async createParticipant() { return 'participant-1'; }
@@ -95,6 +96,7 @@ describe('repository factory', () => {
     expect(firebaseRepositoryLoaded).toBe(true);
     expect(repository.snapshot()).toMatchObject({ role: 'parent', family: { linked: true, childName: 'Maya' } });
     expect(listener).toHaveBeenCalled();
+    await expect(repository.registerContactEmail?.(' USER@EXAMPLE.COM ')).resolves.toBe('user@example.com');
     await expect(repository.inviteParticipantMember?.('participant-1', 'caregiver')).resolves.toMatchObject({ code: 'ZI-123456' });
     await expect(repository.createRelationshipRecovery?.('participant-1')).resolves.toMatchObject({ recoveryCode: 'PR-2345-6789-ABCD' });
     expect(repository.listRoutineDrafts).toBeTypeOf('function');
