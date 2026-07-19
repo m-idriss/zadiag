@@ -312,6 +312,7 @@ button:disabled { cursor: not-allowed; }
 .copy-code-feedback.error { background: var(--color-danger-soft); color: var(--color-danger) !important; }
 .regenerate-code { min-height: var(--height-action); display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; padding: 12px 16px; border: 1px solid var(--color-primary); border-radius: var(--radius-control); background: transparent; color: var(--color-primary); font-weight: 900; }
 .regenerate-code:disabled { opacity: .55; }
+.link-page > .regenerate-code + .action-button { margin-top: 10px; }
 .consent-row { display: flex; align-items: flex-start; gap: 12px; color: var(--color-text); line-height: 1.4; font-size: 14px; }
 .form-error { color: var(--color-danger) !important; font-weight: 800; font-size: 13px; }
 .form-warning { color: var(--color-warning-strong) !important; font-weight: 800; font-size: 13px; }
