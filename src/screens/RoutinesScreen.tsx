@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import type { AppState, MonitoringPlan, RoutineAssignment, RoutineCategory, RoutineValidationMode, ScheduleGroup, VerificationEvent } from '../domain/models';
 import { groupsFromLegacyPlan, nextPlannedWindow, summarizeWeekdaysShort } from '../domain/monitoringPlan';
@@ -207,6 +207,7 @@ export function RoutinesScreen({
   const [editingDraftId, setEditingDraftId] = useState<string | 'new'>();
   const [editingDraftTarget, setEditingDraftTarget] = useState<RoutineContentEditTarget>();
   const [forkingRoutineId, setForkingRoutineId] = useState<string>();
+  const forkingRoutineIdRef = useRef<string | undefined>(undefined);
   const [assigningDraftId, setAssigningDraftId] = useState<string>();
   const [draftAssignErrorId, setDraftAssignErrorId] = useState<string>();
   const [publishingDraftId, setPublishingDraftId] = useState<string>();
@@ -250,13 +251,15 @@ export function RoutinesScreen({
   };
   const forkAssignedRoutine = async (assignment: RoutineAssignment, target?: RoutineContentEditTarget) => {
     const participantId = activeParticipantAccess?.participant.id;
-    if (!participantId || !onForkRoutineAssignmentDraft || forkingRoutineId) return;
+    if (!participantId || !onForkRoutineAssignmentDraft || forkingRoutineIdRef.current) return;
+    forkingRoutineIdRef.current = assignment.routineId;
     setForkingRoutineId(assignment.routineId);
     try {
       const draft = await onForkRoutineAssignmentDraft(participantId, assignment.routineId, state.locale);
       setRoutineDrafts((current) => [draft, ...current.filter((item) => item.id !== draft.id)]);
       openDraftEditor(draft.id, target);
     } finally {
+      forkingRoutineIdRef.current = undefined;
       setForkingRoutineId(undefined);
     }
   };

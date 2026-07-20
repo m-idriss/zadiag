@@ -302,7 +302,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   );
 
   return (
-    <div className="content-screen routine-detail-screen" style={visual.style}>
+    <div className="content-screen routine-detail-screen" style={visual.style} aria-busy={forkingContent || undefined}>
       <div className="routine-detail-topbar">
         <button type="button" className="detail-back" onClick={back} aria-label={t('backToRoutines')}><SvgIcon icon={chevronBackOutline} /></button>
         <header className={`routine-detail-hero${canEditContent ? ' routine-content-editable' : ''}`}>
@@ -318,6 +318,8 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
       <nav className="routine-tabs" aria-label={t('routineSections')}>
         {tabs.map((item) => <button type="button" className={tab === item ? 'active' : ''} aria-current={tab === item ? 'page' : undefined} onClick={() => setTab(item)} key={item}>{t(item === 'details' ? 'infoTab' : item === 'plan' ? 'monitoringPlan' : 'trackingTab')}</button>)}
       </nav>
+
+      {forkingContent ? <div className="routine-content-loading-overlay" role="status" aria-live="polite"><div className="routine-content-loading-card"><span className="button-spinner" aria-hidden="true" /><strong>{t('routineDraftPreparing')}</strong></div></div> : null}
 
       {tab === 'details' && detailsPanel}
       {tab === 'tracking' && trackingPanel}

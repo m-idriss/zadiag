@@ -217,7 +217,8 @@ describe('participant routines navigation', () => {
       validation: { status: 'valid', issues: [] }, forkedFrom: { routineId: assignment.routineId },
       createdAt: '2026-07-20T09:00:00.000Z', updatedAt: '2026-07-20T09:00:00.000Z',
     };
-    const fork = vi.fn().mockResolvedValue(draft);
+    let resolveFork!: (value: RoutineDraft) => void;
+    const fork = vi.fn(() => new Promise<RoutineDraft>((resolve) => { resolveFork = resolve; }));
 
     localStorage.setItem(`zadiag.routineDetail.${assignment.id}.tab`, 'details');
     act(() => root.render(<RoutinesScreen state={state} edit onForkRoutineAssignmentDraft={fork} t={(key) => translate('en', key)} />));
@@ -232,12 +233,21 @@ describe('participant routines navigation', () => {
     expect(container.querySelector('button[aria-label="Edit · Responsible"]')).not.toBeNull();
     expect(container.querySelector('button[aria-label="Edit · Instructions"]')).not.toBeNull();
     expect(editContent).not.toBeNull();
+    act(() => {
+      editContent?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      editContent?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    expect(fork).toHaveBeenCalledWith('participant-1', assignment.routineId, 'en');
+    expect(fork).toHaveBeenCalledTimes(1);
+    expect(container.querySelector('.routine-detail-screen')?.getAttribute('aria-busy')).toBe('true');
+    expect(container.querySelector('[role="status"]')?.textContent).toContain('Preparing the editable draft');
+    expect(container.querySelector('.routine-content-loading-card .button-spinner')).not.toBeNull();
+
     await act(async () => {
-      editContent?.click();
+      resolveFork(draft);
       await Promise.resolve();
     });
-
-    expect(fork).toHaveBeenCalledWith('participant-1', assignment.routineId, 'en');
+    expect(container.querySelector('.routine-content-loading-overlay')).toBeNull();
     expect(container.querySelector('.routine-draft-essential')).toBeNull();
     expect(container.querySelector<HTMLTextAreaElement>('.routine-draft-targeted textarea')?.value).toBe(assignment.routine.description);
     expect(container.querySelector('.routine-draft-editor-header h1')?.textContent).toBe('Summary');
