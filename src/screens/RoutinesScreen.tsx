@@ -10,7 +10,7 @@ import { ParticipantSelector } from '../components/ParticipantSelector';
 import { presentRoutine } from '../domain/routinePresentation';
 import { assignableRoutineTemplates, marketplaceFromTemplates, presentRoutineTemplate } from '../domain/routineMarketplace';
 import { withResolvedEventStatuses } from '../domain/adherence';
-import type { PublishedRoutineVersion, RoutineCatalogEntry, RoutineDraft } from '../domain/routineDraft';
+import { routineContentChanges, type PublishedRoutineVersion, type RoutineCatalogEntry, type RoutineContentChange, type RoutineDraft } from '../domain/routineDraft';
 import { readUiStorageJson, readUiStorageString, removeUiStorageItem, writeUiStorageString } from '../services/uiStorage';
 
 const RoutineDetailScreen = lazy(() => import('./RoutineDetailScreen').then((module) => ({ default: module.RoutineDetailScreen })));
@@ -204,6 +204,7 @@ export function RoutinesScreen({
   const [assigningDraftId, setAssigningDraftId] = useState<string>();
   const [draftAssignErrorId, setDraftAssignErrorId] = useState<string>();
   const [publishingDraftId, setPublishingDraftId] = useState<string>();
+  const [reviewingPublishDraftId, setReviewingPublishDraftId] = useState<string>();
   const [publishedVersions, setPublishedVersions] = useState<Array<PublishedRoutineVersion & { routineId: string }>>([]);
   const [upgradingRoutineId, setUpgradingRoutineId] = useState<string>();
   const [catalogQuery, setCatalogQuery] = useState('');
@@ -410,13 +411,14 @@ export function RoutinesScreen({
       setDraftAssignErrorId(draft.id);
     } finally { setAssigningDraftId(undefined); }
   };
-  const publishDraft = async (draft: RoutineDraft, name: string) => {
+  const publishDraft = async (draft: RoutineDraft) => {
     const participantId = activeParticipantAccess?.participant.id;
-    if (!participantId || !onPublishRoutineDraft || draft.validation.status !== 'valid' || !window.confirm(formatMessage(t('routineDraftPublishConfirm'), { routine: name, version: draft.package.version }))) return;
+    if (!participantId || !onPublishRoutineDraft || draft.validation.status !== 'valid') return;
     setPublishingDraftId(draft.id);
     try {
       await onPublishRoutineDraft(participantId, draft.id, draft.revision);
       setRoutineDrafts((current) => current.map((item) => item.id === draft.id ? { ...item, state: 'archived', revision: item.revision + 1 } : item));
+      setReviewingPublishDraftId(undefined);
     } finally { setPublishingDraftId(undefined); }
   };
   const upgradeAssignment = async (assignment: RoutineAssignment, target: PublishedRoutineVersion & { routineId: string }) => {
@@ -577,6 +579,10 @@ export function RoutinesScreen({
                       : draft.validation.status === 'incomplete'
                         ? 'routineLibraryIncomplete'
                         : 'routineLibraryInvalid';
+                  const sourceAssignment = draft.forkedFrom ? state.routineAssignments.find((assignment) => assignment.routineId === draft.forkedFrom?.routineId) : undefined;
+                  const changes = sourceAssignment ? routineContentChanges(sourceAssignment.routine, draft.package.routine) : [];
+                  const changeLabels: Record<RoutineContentChange, MessageKey> = { identity: 'routineChangeIdentity', instructions: 'routineChangeInstructions', appearance: 'routineChangeAppearance', proof: 'routineChangeProof', analysis: 'routineChangeAnalysis', translations: 'routineChangeTranslations' };
+                  const reviewingPublication = reviewingPublishDraftId === draft.id;
                   return (
                     <article className="routine-library-draft" key={draft.id} style={visual.style}>
                       <div className="routine-library-draft-heading">
@@ -601,7 +607,8 @@ export function RoutinesScreen({
                             {(['routineDraftResponsiblePreview', 'routineDraftParticipantPreview'] as MessageKey[]).map((roleKey) => <article key={roleKey}><small>{t(roleKey)}</small><h5>{visual.name}</h5><p>{visual.instructions}</p><b>{visual.proofExample}</b></article>)}
                           </div>
                           {onAssignRoutineDraft ? <button type="button" className="routine-draft-assign" disabled={draft.validation.status !== 'valid' || draft.state !== 'active' || assigningDraftId === draft.id} onClick={() => { void assignDraft(draft); }}>{assigningDraftId === draft.id ? t('routineDraftAssigning') : t('routineDraftAssign')}</button> : null}
-                          {onPublishRoutineDraft ? <button type="button" className="routine-draft-publish" disabled={draft.validation.status !== 'valid' || draft.state !== 'active' || publishingDraftId === draft.id} onClick={() => { void publishDraft(draft, visual.name); }}>{publishingDraftId === draft.id ? t('routineDraftPublishing') : t('routineDraftPublish')}</button> : null}
+                          {reviewingPublication ? <section className="routine-publish-review" aria-label={t('routinePublishReviewTitle')}><h5>{formatMessage(t('routinePublishReviewVersion'), { version: draft.package.version })}</h5>{changes.length ? <ul>{changes.map((change) => <li key={change}>{t(changeLabels[change])}</li>)}</ul> : <p>{t(sourceAssignment ? 'routinePublishNoChanges' : 'routinePublishNewRoutine')}</p>}<p>{t('routinePublishImmutableNotice')}</p><div><button type="button" onClick={() => setReviewingPublishDraftId(undefined)}>{t('cancel')}</button><button type="button" className="routine-draft-publish" disabled={!changes.length && Boolean(sourceAssignment) || publishingDraftId === draft.id} onClick={() => { void publishDraft(draft); }}>{publishingDraftId === draft.id ? t('routineDraftPublishing') : t('routinePublishConfirm')}</button></div></section> : null}
+                          {onPublishRoutineDraft && !reviewingPublication ? <button type="button" className="routine-draft-publish" disabled={draft.validation.status !== 'valid' || draft.state !== 'active' || publishingDraftId === draft.id} onClick={() => setReviewingPublishDraftId(draft.id)}>{t('routineDraftPublish')}</button> : null}
                         </div>
                       ) : null}
                       {draftAssignErrorId === draft.id ? <p className="request-feedback error" role="alert">{t('routineDraftAssignError')}</p> : null}

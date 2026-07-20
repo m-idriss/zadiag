@@ -176,7 +176,7 @@ describe('participant routines navigation', () => {
     };
     const draft: RoutineDraft = {
       id: 'fork-1', ownerId: 'owner-1', revision: 1, state: 'active',
-      package: { schemaVersion: 1, version: 1, defaultLocale: 'en', availableLocales: ['en'], routine: { ...assignment.routine, id: 'private-fork-1' } },
+      package: { schemaVersion: 1, version: 1, defaultLocale: 'en', availableLocales: ['en'], routine: structuredClone(assignment.routine) },
       validation: { status: 'valid', issues: [] }, forkedFrom: { routineId: assignment.routineId },
       createdAt: '2026-07-20T09:00:00.000Z', updatedAt: '2026-07-20T09:00:00.000Z',
     };
@@ -199,6 +199,47 @@ describe('participant routines navigation', () => {
     expect(fork).toHaveBeenCalledWith('participant-1', assignment.routineId, 'en');
     expect(container.textContent).toContain('Routine editor');
     expect(container.querySelector<HTMLInputElement>('.routine-draft-field input')?.value).toBe(assignment.routine.name);
+  });
+
+  it('reviews fork changes before publishing the next routine version', async () => {
+    const assignment = createDefaultRoutineAssignment('2026-07-20T08:00:00.000Z');
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      participantAccess: [{ participant: { id: 'participant-1', displayName: 'Maya' }, membership: { role: 'owner', status: 'active' } }],
+      activeParticipantId: 'participant-1', routineAssignments: [assignment], events: [], routinesLoaded: true, routinesError: false,
+    };
+    const changedRoutine = structuredClone(assignment.routine);
+    changedRoutine.name = 'Updated elastics';
+    changedRoutine.analysis = { ...changedRoutine.analysis!, detectedCriteria: 'Updated visual criteria' };
+    const draft: RoutineDraft = {
+      id: 'fork-1', ownerId: 'owner-1', revision: 3, state: 'active',
+      package: { schemaVersion: 1, version: 1, defaultLocale: 'en', availableLocales: ['en'], routine: changedRoutine },
+      validation: { status: 'valid', issues: [] }, forkedFrom: { routineId: assignment.routineId },
+      createdAt: '2026-07-20T09:00:00.000Z', updatedAt: '2026-07-20T09:30:00.000Z',
+    };
+    const publish = vi.fn().mockResolvedValue(undefined);
+
+    act(() => root.render(<RoutinesScreen state={state} onAssignRoutine={vi.fn()} onListRoutineDrafts={vi.fn().mockResolvedValue([draft])} onPublishRoutineDraft={publish} t={(key) => translate('en', key)} />));
+    await act(async () => {
+      document.body.querySelector<HTMLButtonElement>('.routines-add-dock-button')?.click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      Array.from(document.body.querySelectorAll<HTMLButtonElement>('.routine-catalog-tabs button')).find((button) => button.textContent === 'Private drafts')?.click();
+      await Promise.resolve();
+    });
+    act(() => Array.from(document.body.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent === 'View')?.click());
+    act(() => Array.from(document.body.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent === 'Review publication')?.click());
+
+    expect(publish).not.toHaveBeenCalled();
+    expect(document.body.textContent).toContain('Name, description or responsible person');
+    expect(document.body.textContent).toContain('Gemini validation criteria');
+    await act(async () => {
+      Array.from(document.body.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent === 'Confirm publication')?.click();
+      await Promise.resolve();
+    });
+    expect(publish).toHaveBeenCalledWith('participant-1', 'fork-1', 3);
   });
 
   it('keeps built-in and assigned routines visible when private drafts fail', async () => {

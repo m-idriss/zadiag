@@ -2249,9 +2249,8 @@ export const forkRoutineAssignmentDraft = onCall({ region, cors, enforceAppCheck
     if (!assignment.exists) throw new HttpsError('not-found', 'The routine assignment could not be found.');
     const assignmentData = assignment.data() as RoutineAssignmentDocument;
     if (!assignmentData.routine) throw new HttpsError('failed-precondition', 'The assigned routine content is unavailable.');
-    const forkId = `private-${draftRef.id.toLowerCase()}`;
     try {
-      const routinePackage = createAssignmentForkPackage(assignmentData.routine, forkId, preferredLocale);
+      const routinePackage = createAssignmentForkPackage(assignmentData.routine, assignmentData.sourceVersion, preferredLocale);
       document = {
         ...createRoutineDraftDocument(uid, routinePackage),
         forkedFrom: { routineId, ...(assignmentData.sourceVersion ? { sourceVersion: assignmentData.sourceVersion } : {}) },
@@ -2414,6 +2413,15 @@ export const publishRoutineDraft = onCall({ region, cors, enforceAppCheck: true 
     try { assertRoutineDraftRevision(current.revision, expectedRevision); } catch (error) { routineDraftInputError(error); }
     if (current.state !== 'active' || current.validation.status !== 'valid') throw new HttpsError('failed-precondition', 'Only a valid active draft can be published.');
     const routineId = current.package.routine.id;
+    if (current.forkedFrom) {
+      if (current.forkedFrom.routineId !== routineId || current.package.version !== (current.forkedFrom.sourceVersion ?? 0) + 1) {
+        throw new HttpsError('failed-precondition', 'The routine draft version lineage is invalid.');
+      }
+      const assignment = await transaction.get(participantRef.collection('routineAssignments').doc(routineId));
+      if (!assignment.exists || (assignment.data()?.sourceVersion ?? undefined) !== current.forkedFrom.sourceVersion) {
+        throw new HttpsError('failed-precondition', 'The assigned routine changed after this draft was created. Create a new editable copy.');
+      }
+    }
     const versionRef = participantRef.collection('routinePublications').doc(routineId).collection('versions').doc(String(current.package.version));
     if ((await transaction.get(versionRef)).exists) throw new HttpsError('already-exists', 'This routine version is already published.');
     const now = new Date().toISOString();
