@@ -29,6 +29,7 @@ import {
   type PilotParticipation,
   type ParticipantNotificationSource,
   type ProfileColorKey,
+  type PushSubscriptionHealth,
   type Role,
   type RoutineAssignment,
   type RoutineAssignmentCreator,
@@ -67,6 +68,9 @@ interface PushSubscriptionDocument {
   lastDispatchResult?: 'success' | 'failed' | 'invalidated';
   lastDispatchAt?: { toDate?: () => Date } | string;
   lastDispatchError?: string;
+  lastPushReceivedAt?: { toDate?: () => Date } | string;
+  deliveryStatus?: PushSubscriptionHealth['deliveryStatus'];
+  recoveryRequired?: boolean;
 }
 interface FamilyDocument {
   childName: string;
@@ -86,6 +90,21 @@ const asPilotParticipation = (value: unknown): PilotParticipation | undefined =>
   if (typeof participation.version !== 'string' || typeof participation.recordedAt !== 'string') return undefined;
   return participation as unknown as PilotParticipation;
 };
+
+const pushTimestampIso = (value: PushSubscriptionDocument['lastSuccessfulSaveAt']) =>
+  typeof value === 'string' ? value : value?.toDate?.().toISOString();
+
+const asPushSubscriptionHealth = (data: PushSubscriptionDocument | undefined): PushSubscriptionHealth => ({
+  permission: 'Notification' in window ? Notification.permission : 'unsupported',
+  endpointPresent: Boolean(data?.endpoint),
+  lastSuccessfulSaveAt: pushTimestampIso(data?.lastSuccessfulSaveAt),
+  lastDispatchResult: data?.lastDispatchResult,
+  lastDispatchAt: pushTimestampIso(data?.lastDispatchAt),
+  lastDispatchError: data?.lastDispatchError,
+  lastPushReceivedAt: pushTimestampIso(data?.lastPushReceivedAt),
+  deliveryStatus: data?.deliveryStatus,
+  recoveryRequired: data?.recoveryRequired === true,
+});
 
 const membershipPermissionKeys: MembershipPermission[] = [
   'view',
@@ -901,16 +920,7 @@ export class FirebaseRepository implements AppRepository {
     if (this.user) {
       this.remoteSubscriptions.push(onSnapshot(doc(participantRef, 'pushSubscriptions', this.user.uid), (snapshot) => {
         const data = snapshot.data() as PushSubscriptionDocument | undefined;
-        const toIso = (value: PushSubscriptionDocument['lastSuccessfulSaveAt']) =>
-          typeof value === 'string' ? value : value?.toDate?.().toISOString();
-        this.state.pushHealth = {
-          permission: 'Notification' in window ? Notification.permission : 'unsupported',
-          endpointPresent: Boolean(data?.endpoint),
-          lastSuccessfulSaveAt: toIso(data?.lastSuccessfulSaveAt),
-          lastDispatchResult: data?.lastDispatchResult,
-          lastDispatchAt: toIso(data?.lastDispatchAt),
-          lastDispatchError: data?.lastDispatchError,
-        };
+        this.state.pushHealth = asPushSubscriptionHealth(data);
         this.emit();
       }));
     }
@@ -996,16 +1006,7 @@ export class FirebaseRepository implements AppRepository {
     if ((role === 'child' || role === 'parent') && this.user) {
       this.remoteSubscriptions.push(onSnapshot(doc(familyRef, 'pushSubscriptions', this.user.uid), (snapshot) => {
         const data = snapshot.data() as PushSubscriptionDocument | undefined;
-        const toIso = (value: PushSubscriptionDocument['lastSuccessfulSaveAt']) =>
-          typeof value === 'string' ? value : value?.toDate?.().toISOString();
-        this.state.pushHealth = {
-          permission: 'Notification' in window ? Notification.permission : 'unsupported',
-          endpointPresent: Boolean(data?.endpoint),
-          lastSuccessfulSaveAt: toIso(data?.lastSuccessfulSaveAt),
-          lastDispatchResult: data?.lastDispatchResult,
-          lastDispatchAt: toIso(data?.lastDispatchAt),
-          lastDispatchError: data?.lastDispatchError,
-        };
+        this.state.pushHealth = asPushSubscriptionHealth(data);
         this.emit();
       }, (error) => {
         console.error('Unable to load push subscription health', error);

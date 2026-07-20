@@ -9,6 +9,14 @@ export interface PushPayload {
   tag?: string;
   path?: string;
   checkId?: string;
+  deliveryReceipt?: {
+    aggregate?: string;
+    aggregateId?: string;
+    subscriptionId?: string;
+    receiptId?: string;
+    token?: string;
+    url?: string;
+  };
   syntheticReceipt?: {
     monitorId?: string;
     receiptId?: string;
@@ -16,6 +24,30 @@ export interface PushPayload {
     url?: string;
   };
 }
+
+interface DeclarativePushPayload {
+  web_push?: number;
+  notification?: {
+    title?: string;
+    body?: string;
+    tag?: string;
+    navigate?: string;
+    data?: PushPayload;
+  };
+}
+
+export const pushPayloadFromData = (input: unknown): PushPayload | undefined => {
+  if (!input || typeof input !== 'object') return undefined;
+  const candidate = input as PushPayload & DeclarativePushPayload;
+  if (candidate.web_push !== 8030 || !candidate.notification) return candidate;
+  return {
+    ...candidate.notification.data,
+    title: candidate.notification.title,
+    body: candidate.notification.body,
+    tag: candidate.notification.tag,
+    path: candidate.notification.data?.path ?? candidate.notification.navigate,
+  };
+};
 
 export const notificationOptionsForPayload = (payload?: PushPayload): NotificationOptions => ({
   body: payload?.body ?? 'You can send your proof now.',
@@ -30,6 +62,7 @@ export const notificationOptionsForPayload = (payload?: PushPayload): Notificati
     checkId: payload?.checkId,
     version: payload?.version,
     path: payload?.path ?? '/?open=verification',
+    deliveryReceipt: payload?.deliveryReceipt,
     syntheticReceipt: payload?.syntheticReceipt,
   },
 });
@@ -41,6 +74,32 @@ type NotificationWindowClient = Pick<WindowClient, 'focus' | 'postMessage' | 'vi
 type NotificationClients = {
   matchAll: (options: ClientQueryOptions) => Promise<readonly (Client | NotificationWindowClient)[]>;
   openWindow: (url: string) => Promise<WindowClient | null>;
+};
+
+export const reportPushReceipt = async (
+  payload: PushPayload | undefined,
+  stage: 'received' | 'opened',
+  fetcher: typeof fetch = fetch,
+) => {
+  const receipt = payload?.deliveryReceipt;
+  if (!['families', 'participants'].includes(receipt?.aggregate ?? '') || !receipt?.aggregateId
+    || !receipt.subscriptionId || !receipt.receiptId || !receipt.token || !receipt.url) return false;
+  let url: URL;
+  try { url = new URL(receipt.url); } catch { return false; }
+  if (url.protocol !== 'https:' || !url.hostname.endsWith('.cloudfunctions.net')) return false;
+  const response = await fetcher(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      aggregate: receipt.aggregate,
+      aggregateId: receipt.aggregateId,
+      subscriptionId: receipt.subscriptionId,
+      receiptId: receipt.receiptId,
+      token: receipt.token,
+      stage,
+    }),
+  });
+  return response.ok;
 };
 
 export const openNotificationClient = async (

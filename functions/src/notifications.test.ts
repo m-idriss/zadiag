@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription } from './notifications.js';
+import { buildCheckNotificationPayload, buildDeclarativePushPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription, notificationWindowIsOpen } from './notifications.js';
 
 test('normalizes bounded Web Push subscriptions', () => {
   const subscription = normalizePushSubscription({
@@ -27,6 +27,13 @@ test('normalizes push preference values before storage', () => {
     notificationWindowEnd: '21:00',
   });
   assert.equal(normalizePushPreferences(undefined), undefined);
+});
+
+test('evaluates notification windows in the routine time zone', () => {
+  const preferences = { notificationWindowStart: '08:00', notificationWindowEnd: '21:00' };
+  assert.equal(notificationWindowIsOpen(preferences, new Date('2026-07-20T05:59:00.000Z'), 'Europe/Paris'), false);
+  assert.equal(notificationWindowIsOpen(preferences, new Date('2026-07-20T06:00:00.000Z'), 'Europe/Paris'), true);
+  assert.equal(notificationWindowIsOpen({ notificationWindowStart: '22:00', notificationWindowEnd: '06:00' }, new Date('2026-07-20T21:00:00.000Z'), 'Europe/Paris'), true);
 });
 
 test('builds the current French check notification payload', () => {
@@ -95,4 +102,13 @@ test('builds a localized test notification payload', () => {
   assert.equal(payload.body, 'Ce téléphone peut recevoir les notifications.');
   assert.equal(payload.tag, 'test:parent');
   assert.equal(payload.path, '/?open=settings');
+});
+
+test('wraps notifications in the backwards-compatible declarative format', () => {
+  const visible = buildTestNotificationPayload({ locale: 'fr', role: 'child' });
+  const payload = buildDeclarativePushPayload(visible);
+  assert.equal(payload.web_push, 8030);
+  assert.equal(payload.notification.title, visible.title);
+  assert.equal(payload.notification.navigate, 'https://www.zadiag.com/?open=settings');
+  assert.deepEqual(payload.notification.data, visible);
 });

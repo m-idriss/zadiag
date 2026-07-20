@@ -64,5 +64,5 @@ export interface AppRepository {
 
 export interface PushGateway {
   permission(): Promise<NotificationPermission>;
-  subscribe(): Promise<PushSubscription>;
+  subscribe(options?: { forceRenewal?: boolean }): Promise<PushSubscription>;
 }

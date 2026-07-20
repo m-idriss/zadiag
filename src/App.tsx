@@ -307,12 +307,12 @@ export function App() {
     let cancelled = false;
     runWhenStartupIsIdle(() => {
       void import('./services/webPush').then(async ({ WebPushGateway }) => {
-        const subscription = await new WebPushGateway().subscribe();
+        const subscription = await new WebPushGateway().subscribe({ forceRenewal: state.pushHealth?.recoveryRequired === true });
         if (!cancelled) await repository.savePushSubscription(subscription.toJSON());
       }).catch((error) => console.error('Unable to restore push subscription', error));
     });
     return () => { cancelled = true; };
-  }, [ready, repository, state.family.id, state.role]);
+  }, [ready, repository, state.family.id, state.pushHealth?.recoveryRequired, state.role]);
 
   useEffect(() => {
     let alive = true;

@@ -24,6 +24,7 @@ describe('service worker notification helpers', () => {
         sessionId: 'session-1',
         version: 2,
         path: '/?open=verification&session=session-1',
+        deliveryReceipt: undefined,
       },
     });
   });

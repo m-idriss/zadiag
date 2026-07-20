@@ -10,6 +10,13 @@ interface NormalizedPushPreferences {
   notificationWindowEnd: string;
 }
 
+interface VisiblePushPayload {
+  title: string;
+  body: string;
+  tag: string;
+  path: string;
+}
+
 const base64UrlPattern = /^[A-Za-z0-9_-]+={0,2}$/;
 const notificationTimePattern = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 
@@ -43,6 +50,43 @@ export const normalizePushPreferences = (value: unknown): NormalizedPushPreferen
     : '21:00';
   return { notificationWindowStart, notificationWindowEnd };
 };
+
+const minuteOfDay = (value: string) => {
+  const [hour, minute] = value.split(':').map(Number);
+  return hour * 60 + minute;
+};
+
+export const notificationWindowIsOpen = (
+  preferences: NormalizedPushPreferences | undefined,
+  now: Date,
+  timeZone: string,
+) => {
+  if (!preferences) return true;
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(now);
+  const current = Number(parts.find((part) => part.type === 'hour')?.value ?? 0) * 60
+    + Number(parts.find((part) => part.type === 'minute')?.value ?? 0);
+  const start = minuteOfDay(preferences.notificationWindowStart);
+  const end = minuteOfDay(preferences.notificationWindowEnd);
+  return start <= end ? current >= start && current <= end : current >= start || current <= end;
+};
+
+export const buildDeclarativePushPayload = <T extends VisiblePushPayload>(payload: T) => ({
+  web_push: 8030,
+  notification: {
+    title: payload.title,
+    body: payload.body,
+    tag: payload.tag,
+    navigate: new URL(payload.path, 'https://www.zadiag.com').href,
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    data: payload,
+  },
+});
 
 interface CheckNotificationInput {
   sessionId: string;

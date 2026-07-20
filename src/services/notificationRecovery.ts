@@ -21,6 +21,6 @@ export const notificationSetupErrorMessageKey = (error: unknown): MessageKey => 
 export const notificationRecoveryKind = (errorKey: MessageKey): NotificationRecoveryKind => {
   if (errorKey === 'pushErrorNotInstalled' || errorKey === 'pushErrorUnsupported') return 'install';
   if (errorKey === 'pushErrorPermissionDenied') return 'permission';
-  if (errorKey === 'pushErrorPermissionReset' || errorKey === 'pushErrorSubscriptionInvalidated') return 'retry';
+  if (errorKey === 'pushErrorPermissionReset' || errorKey === 'pushErrorSubscriptionInvalidated' || errorKey === 'pushErrorDeliveryUnconfirmed') return 'retry';
   return 'connection';
 };

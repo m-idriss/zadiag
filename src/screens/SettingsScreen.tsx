@@ -386,6 +386,7 @@ export function SettingsScreen({
             {testPushStatus === 'success' ? <small>{t('settingsTestNotificationSuccess')}</small> : null}
             {testPushStatus === 'error' ? <small className="settings-action-error">{t('settingsTestNotificationError')}</small> : null}
             {testPushStatus === 'enableError' && notificationEnableErrorKey ? <NotificationRecoveryGuide errorKey={notificationEnableErrorKey} t={t} /> : null}
+            {effectivePushHealth?.recoveryRequired ? <NotificationRecoveryGuide errorKey="pushErrorDeliveryUnconfirmed" t={t} /> : null}
           </ListRow>
         </div>
       </section>
@@ -433,6 +434,8 @@ export function SettingsScreen({
                   <div><dt>{t('settingsDiagnosticsPushSaved')}</dt><dd>{pushSavedDiagnostic}</dd></div>
                   <div><dt>{t('settingsDiagnosticsPushDispatch')}</dt><dd>{effectivePushHealth?.lastDispatchResult ?? t('settingsDiagnosticsMissing')}</dd></div>
                   <div><dt>{t('settingsDiagnosticsPushDispatchAt')}</dt><dd>{formatDiagnosticDate(effectivePushHealth?.lastDispatchAt)}</dd></div>
+                  <div><dt>{t('settingsDiagnosticsPushReceivedAt')}</dt><dd>{formatDiagnosticDate(effectivePushHealth?.lastPushReceivedAt)}</dd></div>
+                  <div><dt>{t('settingsDiagnosticsPushDelivery')}</dt><dd>{effectivePushHealth?.deliveryStatus ?? t('settingsDiagnosticsMissing')}</dd></div>
                   <div><dt>{t('settingsDiagnosticsServiceWorker')}</dt><dd>{t(serviceWorkerDetailKey)}</dd></div>
                 </>
               ) : null}

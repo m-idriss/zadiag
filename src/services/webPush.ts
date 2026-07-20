@@ -54,7 +54,7 @@ export class WebPushGateway implements PushGateway {
     return Notification.requestPermission();
   }
 
-  async subscribe() {
+  async subscribe(options: { forceRenewal?: boolean } = {}) {
     const publicKey = import.meta.env.VITE_WEB_PUSH_PUBLIC_KEY;
     if (!publicKey) throw new PushSetupError('missing_web_push_public_key');
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
@@ -67,7 +67,8 @@ export class WebPushGateway implements PushGateway {
 
     const registration = await navigator.serviceWorker.ready;
     const existing = await registration.pushManager.getSubscription();
-    if (existing) return existing;
+    if (existing && !options.forceRenewal) return existing;
+    if (existing) await existing.unsubscribe().catch(() => undefined);
     const subscribe = () => registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: decodeVapidKey(publicKey),

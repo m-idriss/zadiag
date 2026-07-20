@@ -210,6 +210,9 @@ export interface PushSubscriptionHealth {
   lastDispatchResult?: 'success' | 'failed' | 'invalidated';
   lastDispatchAt?: string;
   lastDispatchError?: string;
+  lastPushReceivedAt?: string;
+  deliveryStatus?: 'ready' | 'expected' | 'received' | 'opened' | 'unconfirmed';
+  recoveryRequired?: boolean;
 }
 
 export interface AppPreferences {

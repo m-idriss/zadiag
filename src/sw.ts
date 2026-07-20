@@ -4,6 +4,8 @@ import {
   clearBadgeAndCheckNotifications,
   notificationOptionsForPayload,
   openNotificationClient,
+  pushPayloadFromData,
+  reportPushReceipt,
   reportSyntheticPushReceipt,
   type PushPayload,
 } from './services/serviceWorkerNotifications';
@@ -29,10 +31,11 @@ self.addEventListener('message', (event: ExtendableMessageEvent) => {
 });
 
 self.addEventListener('push', (event: PushEvent) => {
-  const payload = event.data?.json() as PushPayload | undefined;
+  const payload = pushPayloadFromData(event.data?.json()) as PushPayload | undefined;
   event.waitUntil(
     Promise.allSettled([
       self.registration.showNotification(payload?.title ?? 'Check ready', notificationOptionsForPayload(payload)),
+      reportPushReceipt(payload, 'received'),
       reportSyntheticPushReceipt(payload, 'received'),
     ]),
   );
@@ -42,6 +45,7 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
   event.notification.close();
   const payload = event.notification.data as PushPayload | undefined;
   event.waitUntil(Promise.allSettled([
+    reportPushReceipt(payload, 'opened'),
     reportSyntheticPushReceipt(payload, 'opened'),
     openNotificationClient(event.notification, self.clients),
   ]));

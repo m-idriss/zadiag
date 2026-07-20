@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { clearBadgeAndCheckNotifications, isCheckNotificationTag, reportSyntheticPushReceipt } from './serviceWorkerNotifications';
+import { clearBadgeAndCheckNotifications, isCheckNotificationTag, pushPayloadFromData, reportPushReceipt, reportSyntheticPushReceipt } from './serviceWorkerNotifications';
 
 describe('service worker notification helpers', () => {
   it('matches only check and reminder notification tags', () => {
@@ -71,6 +71,65 @@ describe('synthetic push receipts', () => {
     const base = { monitorId: 'monitor-1', receiptId: 'receipt-1', token: 'secret-token' };
     await expect(reportSyntheticPushReceipt({ syntheticReceipt: { ...base, url: 'http://example.com/receipt' } }, 'received', fetcher)).resolves.toBe(false);
     await expect(reportSyntheticPushReceipt({ syntheticReceipt: { ...base, url: 'https://example.com/receipt' } }, 'received', fetcher)).resolves.toBe(false);
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+});
+
+describe('device push receipts', () => {
+  it('normalizes declarative payloads for the service worker', () => {
+    expect(pushPayloadFromData({
+      web_push: 8030,
+      notification: {
+        title: 'Check ready',
+        body: 'Send proof.',
+        tag: 'verification:session-1',
+        navigate: '/?open=verification&session=session-1',
+        data: { kind: 'check-ready', sessionId: 'session-1' },
+      },
+    })).toEqual({
+      title: 'Check ready',
+      body: 'Send proof.',
+      tag: 'verification:session-1',
+      path: '/?open=verification&session=session-1',
+      kind: 'check-ready',
+      sessionId: 'session-1',
+    });
+  });
+
+  it('reports delivery with the subscription-scoped receipt', async () => {
+    const fetcher = vi.fn().mockResolvedValue({ ok: true });
+    await expect(reportPushReceipt({
+      deliveryReceipt: {
+        aggregate: 'participants',
+        aggregateId: 'participant-1',
+        subscriptionId: 'user-1',
+        receiptId: 'receipt-1',
+        token: 'receipt-secret',
+        url: 'https://europe-west1-project.cloudfunctions.net/recordPushReceipt',
+      },
+    }, 'received', fetcher)).resolves.toBe(true);
+    expect(fetcher).toHaveBeenCalledWith(
+      new URL('https://europe-west1-project.cloudfunctions.net/recordPushReceipt'),
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          aggregate: 'participants',
+          aggregateId: 'participant-1',
+          subscriptionId: 'user-1',
+          receiptId: 'receipt-1',
+          token: 'receipt-secret',
+          stage: 'received',
+        }),
+      },
+    );
+  });
+
+  it('rejects untrusted device receipt endpoints', async () => {
+    const fetcher = vi.fn();
+    await expect(reportPushReceipt({ deliveryReceipt: {
+      aggregate: 'participants', aggregateId: 'participant-1', subscriptionId: 'user-1', receiptId: 'receipt-1', token: 'secret', url: 'https://example.com/receipt',
+    } }, 'received', fetcher)).resolves.toBe(false);
     expect(fetcher).not.toHaveBeenCalled();
   });
 });

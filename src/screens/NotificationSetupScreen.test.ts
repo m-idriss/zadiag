@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, test } from 'vitest';
 import { PushSetupError } from '../services/webPush';
-import { notificationSetupErrorMessageKey } from '../services/notificationRecovery';
+import { notificationRecoveryKind, notificationSetupErrorMessageKey } from '../services/notificationRecovery';
 
 describe('notification setup errors', () => {
   it('maps iOS setup failures to actionable copy', () => {
@@ -13,4 +13,8 @@ describe('notification setup errors', () => {
   it('falls back to the generic message for unknown setup failures', () => {
     expect(notificationSetupErrorMessageKey(new Error('unexpected'))).toBe('pushError');
   });
+});
+
+test('uses the retry recovery flow for unconfirmed delivery', () => {
+  expect(notificationRecoveryKind('pushErrorDeliveryUnconfirmed')).toBe('retry');
 });

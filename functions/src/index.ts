@@ -11,7 +11,7 @@ import { assertChildName, createLinkCode, createRecoveryCode, createRelationship
 import { analyzeWithGemini, parseImageDataUrl, routeAnalysisStatusForReview, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
 import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema, plannedCheckDispatchSchedule, shouldAutoDispatchCheck } from './planning.js';
 import { createDefaultRoutineAssignment, createDraftRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, isRoutineValidationMode, routineFromCatalog, shouldCreateDefaultRoutineAssignment, type RoutineAssignmentDocument, type RoutineDocument } from './routines.js';
-import { buildCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription, type SyntheticReceiptPayload } from './notifications.js';
+import { buildCheckNotificationPayload, buildDeclarativePushPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription, notificationWindowIsOpen, type SyntheticReceiptPayload } from './notifications.js';
 import { isCheckRequestRateLimited } from './reminders.js';
 import { recordAuditEvent, recordJourneyEvent, type JourneyStage } from './audit.js';
 import { expiredPendingCheckCleanupUpdate, shouldDeleteProofAfterReview, staleCleanupCutoffs } from './cleanup.js';
@@ -24,6 +24,7 @@ import { assertExternalPackageResponse, verifyExternalRegistryIndex } from './ex
 import { marketplaceEntryAuthorizedForInstall, marketplaceEntryInstallable, marketplaceRole, moderateMarketplaceStatus, type ModerationAction, type ModerationStatus } from './routineMarketplaceGovernance.js';
 import { aiAuthoringCapabilityEnabled, aiAuthoringRegistry, parseAiAuthoringConfig } from './aiAuthoring.js';
 import { aggregatePilotReport, pilotReportPeriod } from './pilotReport.js';
+import { shouldMarkPushUnconfirmed } from './pushDelivery.js';
 
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
   ?? (process.env.GCLOUD_PROJECT ? `${process.env.GCLOUD_PROJECT}.firebasestorage.app` : undefined);
@@ -159,6 +160,36 @@ const syntheticReceiptPayload = (
       url: target.receiptUrl,
     }
   : undefined;
+
+interface DeliveryReceiptPayload {
+  aggregate: 'families' | 'participants';
+  aggregateId: string;
+  subscriptionId: string;
+  receiptId: string;
+  token: string;
+  url: string;
+}
+
+const deliveryReceiptPayload = (
+  subscriptionDocument: PushNotificationDocument,
+  receiptId: string,
+): DeliveryReceiptPayload | undefined => {
+  const data = subscriptionDocument.data();
+  const token = typeof data?.receiptToken === 'string' ? data.receiptToken : '';
+  if (token.length < 32 || token.length > 256 || data?.receiptTokenHash !== hashLinkCode(token)) return undefined;
+  const aggregateRef = subscriptionDocument.ref.parent.parent;
+  const aggregate = aggregateRef?.parent.id;
+  const projectId = process.env.GCLOUD_PROJECT;
+  if (!aggregateRef || (aggregate !== 'families' && aggregate !== 'participants') || !projectId) return undefined;
+  return {
+    aggregate,
+    aggregateId: aggregateRef.id,
+    subscriptionId: subscriptionDocument.id,
+    receiptId,
+    token,
+    url: `https://${region}-${projectId}.cloudfunctions.net/recordPushReceipt`,
+  };
+};
 
 const getRoutineAnalysisContext = (
   assignment: Partial<RoutineAssignmentDocument> | undefined,
@@ -570,15 +601,32 @@ const sendPushPayload = async (
 ): Promise<PushDispatchResult> => {
   const subscription = subscriptionDocument.data() as PushSubscription & { locale?: string } | undefined;
   if (!subscription) return 'skipped';
+  const receiptId = crypto.randomUUID();
+  const receipt = deliveryReceiptPayload(subscriptionDocument, receiptId);
+  const visiblePayload = receipt && payload && typeof payload === 'object'
+    ? { ...payload as Record<string, unknown>, deliveryReceipt: receipt }
+    : payload;
+  const outboundPayload = visiblePayload && typeof visiblePayload === 'object'
+    && typeof (visiblePayload as { title?: unknown }).title === 'string'
+    && typeof (visiblePayload as { body?: unknown }).body === 'string'
+    && typeof (visiblePayload as { tag?: unknown }).tag === 'string'
+    && typeof (visiblePayload as { path?: unknown }).path === 'string'
+    ? buildDeclarativePushPayload(visiblePayload as Parameters<typeof buildDeclarativePushPayload>[0])
+    : visiblePayload;
   const recordDispatch = async (result: 'success' | 'failed' | 'invalidated', error?: unknown) => {
     await subscriptionDocument.ref.set({
       lastDispatchResult: result,
       lastDispatchAt: FieldValue.serverTimestamp(),
+      ...(result === 'success' && receipt ? {
+        lastPushExpectedAt: FieldValue.serverTimestamp(),
+        lastExpectedReceiptId: receiptId,
+        deliveryStatus: 'expected',
+      } : {}),
       ...(error ? { lastDispatchError: String((error as { message?: string }).message ?? error).slice(0, 180) } : { lastDispatchError: FieldValue.delete() }),
     }, { merge: true });
   };
   try {
-    await webpush.sendNotification(subscription, JSON.stringify(payload), { TTL: ttl });
+    await webpush.sendNotification(subscription, JSON.stringify(outboundPayload), { TTL: ttl });
     await recordDispatch('success');
     return 'success';
   } catch (error) {
@@ -700,6 +748,43 @@ const dispatchPushNotifications = async (
   });
   if (summary.success > 0 && summary.failed === 0) reportOperationalRecovery('push_send_failed');
   return summary;
+};
+
+const firestoreTimestampMillis = (value: unknown) => (
+  value && typeof (value as { toMillis?: unknown }).toMillis === 'function'
+    ? (value as { toMillis: () => number }).toMillis()
+    : undefined
+);
+
+const markUnconfirmedPushSubscriptions = async (
+  subscriptions: FirebaseFirestore.QuerySnapshot,
+  now: Date,
+) => {
+  const updates = subscriptions.docs.filter((subscription) => {
+    const data = subscription.data();
+    return shouldMarkPushUnconfirmed({
+      expectedAtMs: firestoreTimestampMillis(data.lastPushExpectedAt),
+      receivedAtMs: firestoreTimestampMillis(data.lastPushReceivedAt),
+      expectedReceiptId: typeof data.lastExpectedReceiptId === 'string' ? data.lastExpectedReceiptId : undefined,
+      recoveryExpectedReceiptId: typeof data.recoveryExpectedReceiptId === 'string' ? data.recoveryExpectedReceiptId : undefined,
+    }, now.getTime());
+  });
+  await Promise.all(updates.map((subscription) => subscription.ref.set({
+    deliveryStatus: 'unconfirmed',
+    recoveryRequired: true,
+    recoveryExpectedReceiptId: subscription.data().lastExpectedReceiptId,
+    deliveryUnconfirmedAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true })));
+  updates.forEach((subscription) => {
+    reportOperationalAlert({
+      kind: 'push_delivery_unconfirmed',
+      familyId: subscription.ref.parent.parent?.id,
+      actorUid: subscription.id,
+      details: { recovery: 'renew_subscription' },
+    });
+  });
+  return updates.length;
 };
 
 const sendCheckPushNotifications = async (
@@ -1700,6 +1785,11 @@ export const savePushSubscription = onCall({ region, cors, enforceAppCheck: true
   const role = primaryPushRole(roles);
   const userRef = db.collection('users').doc(uid);
   const subscriptionRef = aggregateRef.collection('pushSubscriptions').doc(uid);
+  const currentSubscription = await subscriptionRef.get();
+  const currentReceiptToken = currentSubscription.data()?.receiptToken;
+  const receiptToken = typeof currentReceiptToken === 'string' && currentReceiptToken.length >= 32
+    ? currentReceiptToken
+    : randomBytes(32).toString('base64url');
   const batch = db.batch();
   batch.set(subscriptionRef, {
     ...subscription,
@@ -1707,10 +1797,14 @@ export const savePushSubscription = onCall({ region, cors, enforceAppCheck: true
     role,
     roles,
     endpointPresent: true,
+    receiptToken,
+    receiptTokenHash: hashLinkCode(receiptToken),
+    deliveryStatus: 'ready',
+    recoveryRequired: false,
     lastSuccessfulSaveAt: FieldValue.serverTimestamp(),
     ...(preferences ? { preferences } : {}),
     updatedAt: FieldValue.serverTimestamp(),
-  });
+  }, { merge: true });
   batch.set(userRef, { notificationsEnabled: true, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
   await batch.commit();
 });
@@ -1770,16 +1864,19 @@ export const sendTestPushNotification = onCall({
   }
 });
 
-const syntheticReceiptOrigins = new Set([
+const pushReceiptOrigins = new Set([
   'https://zadiag.com',
   'https://www.zadiag.com',
   'https://zadiag.vercel.app',
 ]);
 
-export const recordSyntheticPushReceipt = onRequest({ region }, async (request, response) => {
+const applyPushReceiptCors = (
+  request: { get: (name: string) => string | undefined },
+  response: { set: (name: string, value: string) => unknown },
+) => {
   const origin = request.get('origin');
   const allowedOrigin = origin && (
-    syntheticReceiptOrigins.has(origin)
+    pushReceiptOrigins.has(origin)
     || /^https:\/\/zadiag-[a-z0-9-]+\.vercel\.app$/.test(origin)
   ) ? origin : undefined;
   if (allowedOrigin) response.set('Access-Control-Allow-Origin', allowedOrigin);
@@ -1787,6 +1884,71 @@ export const recordSyntheticPushReceipt = onRequest({ region }, async (request, 
   response.set('Access-Control-Allow-Headers', 'Content-Type');
   response.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
   response.set('Cache-Control', 'no-store');
+  return allowedOrigin;
+};
+
+export const recordPushReceipt = onRequest({ region }, async (request, response) => {
+  const allowedOrigin = applyPushReceiptCors(request, response);
+  if (request.method === 'OPTIONS') {
+    response.status(allowedOrigin ? 204 : 403).send('');
+    return;
+  }
+  if (request.method !== 'POST') {
+    response.status(405).json({ error: 'method_not_allowed' });
+    return;
+  }
+  const body = request.body && typeof request.body === 'object' ? request.body as Record<string, unknown> : {};
+  const aggregate = body.aggregate === 'families' || body.aggregate === 'participants' ? body.aggregate : undefined;
+  const stage = body.stage === 'received' || body.stage === 'opened' ? body.stage : undefined;
+  const token = typeof body.token === 'string' ? body.token : '';
+  if (!aggregate || !stage || !isFirestoreDocumentId(body.aggregateId) || !isFirestoreDocumentId(body.subscriptionId)
+    || !isFirestoreDocumentId(body.receiptId) || token.length < 32 || token.length > 256) {
+    response.status(400).json({ error: 'invalid_receipt' });
+    return;
+  }
+  const subscriptionRef = db.collection(aggregate).doc(body.aggregateId).collection('pushSubscriptions').doc(body.subscriptionId);
+  let accepted = false;
+  try {
+    await db.runTransaction(async (transaction) => {
+      const subscription = await transaction.get(subscriptionRef);
+      const data = subscription.data();
+      if (!subscription.exists || data?.receiptTokenHash !== hashLinkCode(token)) {
+        throw new HttpsError('permission-denied', 'Push receipt rejected.');
+      }
+      if (data.lastExpectedReceiptId !== body.receiptId) return;
+      accepted = true;
+      const now = FieldValue.serverTimestamp();
+      transaction.set(subscriptionRef, {
+        deliveryStatus: stage,
+        recoveryRequired: false,
+        lastReceivedReceiptId: body.receiptId,
+        lastPushReceivedAt: now,
+        ...(stage === 'opened' ? { lastPushOpenedAt: now } : {}),
+        recoveryExpectedReceiptId: FieldValue.delete(),
+        updatedAt: now,
+      }, { merge: true });
+    });
+  } catch (error) {
+    if (error instanceof HttpsError && error.code === 'permission-denied') {
+      response.status(403).json({ error: 'receipt_rejected' });
+      return;
+    }
+    reportOperationalAlert({
+      kind: 'push_send_failed',
+      familyId: String(body.aggregateId ?? ''),
+      actorUid: String(body.subscriptionId ?? ''),
+      details: { phase: 'push_receipt_write' },
+      error,
+    });
+    response.status(500).json({ error: 'receipt_unavailable' });
+    return;
+  }
+  if (accepted) reportOperationalRecovery('push_delivery_unconfirmed');
+  response.status(accepted ? 204 : 202).send('');
+});
+
+export const recordSyntheticPushReceipt = onRequest({ region }, async (request, response) => {
+  const allowedOrigin = applyPushReceiptCors(request, response);
   if (request.method === 'OPTIONS') {
     response.status(allowedOrigin ? 204 : 403).send('');
     return;
@@ -2597,6 +2759,7 @@ export const dispatchPlannedChecks = onSchedule({
     pushFailed: 0,
     pushInvalidated: 0,
     pushSkipped: 0,
+    pushUnconfirmed: 0,
     failures: 0,
   };
   try {
@@ -2607,7 +2770,11 @@ export const dispatchPlannedChecks = onSchedule({
       if (!hasChild) return;
       stats.aggregatesEligible += 1;
       await ensureFamilyRoutineMigration(familyDoc.ref);
-      const assignments = await familyDoc.ref.collection('routineAssignments').where('status', '==', 'active').get();
+      const [assignments, pushSubscriptions] = await Promise.all([
+        familyDoc.ref.collection('routineAssignments').where('status', '==', 'active').get(),
+        familyDoc.ref.collection('pushSubscriptions').get(),
+      ]);
+      stats.pushUnconfirmed += await markUnconfirmedPushSubscriptions(pushSubscriptions, now);
       stats.assignmentsExamined += assignments.size;
       const recentSince = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
       const assignmentResults = await Promise.allSettled(assignments.docs.map(async (assignmentDoc) => {
@@ -2626,6 +2793,10 @@ export const dispatchPlannedChecks = onSchedule({
           return;
         }
         const plan = parsedPlan.data;
+        const childSubscriptions = pushSubscriptions.docs.filter((subscription) => pushRecipientRoles(subscription).includes('child'));
+        if (childSubscriptions.length && !childSubscriptions.every((subscription) => (
+          notificationWindowIsOpen(normalizePushPreferences(subscription.data().preferences), now, plan.timeZone)
+        ))) return;
         const recentChecksQuery = familyDoc.ref.collection('checks')
           .where('routineId', '==', routineId)
           .where('requestedAt', '>=', recentSince)

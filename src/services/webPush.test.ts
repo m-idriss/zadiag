@@ -73,4 +73,32 @@ describe('WebPushGateway iOS resilience', () => {
       code: 'notification_permission_reset',
     });
   });
+
+  it('renews an existing subscription when delivery recovery is required', async () => {
+    vi.stubEnv('VITE_WEB_PUSH_PUBLIC_KEY', 'BBBB');
+    defineNavigatorValue('userAgent', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X)');
+    defineNavigatorValue('platform', 'iPhone');
+    defineNavigatorValue('maxTouchPoints', 5);
+    mockDisplayMode(true);
+    Object.defineProperty(window, 'PushManager', { configurable: true, value: class PushManager {} });
+    Object.defineProperty(window, 'Notification', {
+      configurable: true,
+      value: { permission: 'granted', requestPermission: vi.fn() },
+    });
+    const unsubscribe = vi.fn().mockResolvedValue(true);
+    const renewed = { endpoint: 'https://web.push.apple.com/new' };
+    const subscribe = vi.fn().mockResolvedValue(renewed);
+    defineNavigatorValue('serviceWorker', {
+      ready: Promise.resolve({
+        pushManager: {
+          getSubscription: vi.fn().mockResolvedValue({ unsubscribe }),
+          subscribe,
+        },
+      }),
+    });
+
+    await expect(new WebPushGateway().subscribe({ forceRenewal: true })).resolves.toBe(renewed);
+    expect(unsubscribe).toHaveBeenCalledOnce();
+    expect(subscribe).toHaveBeenCalledOnce();
+  });
 });
