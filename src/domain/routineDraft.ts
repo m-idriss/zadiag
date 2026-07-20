@@ -175,6 +175,22 @@ export const routineDraftIsAssignable = (draft: RoutineDraft) =>
 
 export const routineDraftIsPublishable = routineDraftIsAssignable;
 
+export type RoutineContentChange = 'identity' | 'instructions' | 'appearance' | 'proof' | 'analysis' | 'translations';
+
+const sameContent = (left: unknown, right: unknown) => JSON.stringify(left) === JSON.stringify(right);
+
+export const routineContentChanges = (current: Routine, next: Routine): RoutineContentChange[] => {
+  const groups: Array<[RoutineContentChange, unknown, unknown]> = [
+    ['identity', [current.name, current.description, current.responsibleName], [next.name, next.description, next.responsibleName]],
+    ['instructions', [current.instructions, current.instructionSteps], [next.instructions, next.instructionSteps]],
+    ['appearance', [current.icon, current.accentColor, current.category], [next.icon, next.accentColor, next.category]],
+    ['proof', [current.proofType, current.proofExample], [next.proofType, next.proofExample]],
+    ['analysis', [current.recommendedValidationMode, current.analysis], [next.recommendedValidationMode, next.analysis]],
+    ['translations', current.translations, next.translations],
+  ];
+  return groups.filter(([, before, after]) => !sameContent(before, after)).map(([change]) => change);
+};
+
 export const createRoutineDraftSnapshot = (draft: RoutineDraft): Routine => {
   if (!routineDraftIsAssignable(draft)) throw new RoutineDraftError('not_assignable');
   return structuredClone(draft.package.routine);

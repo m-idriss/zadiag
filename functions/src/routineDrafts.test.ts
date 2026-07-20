@@ -72,12 +72,12 @@ test('creates owned revisions and preserves package identity on update', () => {
   assert.throws(() => updateRoutineDraftDocument(created, replaced), /immutable_identity/);
 });
 
-test('forks an assignment snapshot into an independent version-one package', () => {
+test('forks an assignment snapshot into an independent next-version package', () => {
   const source = routinePackage();
-  const fork = createAssignmentForkPackage(source.routine, 'private-fork-123', 'fr');
+  const fork = createAssignmentForkPackage(source.routine, 3, 'fr');
 
-  assert.equal(fork.version, 1);
-  assert.equal(fork.routine.id, 'private-fork-123');
+  assert.equal(fork.version, 4);
+  assert.equal(fork.routine.id, source.routine.id);
   assert.equal(fork.routine.name, source.routine.name);
   assert.notEqual(fork.routine, source.routine);
   assert.equal(source.routine.id, 'private-routine');

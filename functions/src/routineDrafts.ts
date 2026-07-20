@@ -179,7 +179,7 @@ export const createRoutineDraftDocument = (
 
 export const createAssignmentForkPackage = (
   routine: unknown,
-  forkId: string,
+  sourceVersion: number | undefined,
   preferredLocale: 'en' | 'fr',
 ): RoutineDraftPackage => {
   const clonedRoutine = structuredClone(routine) as { id?: unknown; translations?: { en?: unknown; fr?: unknown } };
@@ -191,11 +191,10 @@ export const createAssignmentForkPackage = (
     : hasEnglishTranslation && !hasFrenchTranslation
       ? 'fr'
       : preferredLocale;
-  clonedRoutine.id = forkId;
   const availableLocales = hasEnglishTranslation || hasFrenchTranslation
     ? ['en', 'fr'] as const
     : [defaultLocale] as ['en'] | ['fr'];
-  return parseRoutineDraftPackage({ schemaVersion: 1, version: 1, defaultLocale, availableLocales, routine: clonedRoutine }).package;
+  return parseRoutineDraftPackage({ schemaVersion: 1, version: (sourceVersion ?? 0) + 1, defaultLocale, availableLocales, routine: clonedRoutine }).package;
 };
 
 export const updateRoutineDraftDocument = (

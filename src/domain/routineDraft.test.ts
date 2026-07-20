@@ -10,6 +10,7 @@ import {
   routineDraftIsAssignable,
   routineDraftIsComplete,
   routineDraftIsPublishable,
+  routineContentChanges,
   updateRoutineDraft,
   type RoutineDraftValidation,
   type RoutinePackageV1,
@@ -27,6 +28,18 @@ const packageV1 = (): RoutinePackageV1 => ({
   defaultLocale: 'en',
   availableLocales: ['en'],
   routine: structuredClone(routine),
+});
+
+describe('routine content changes', () => {
+  it('reports only the user-facing groups that changed', () => {
+    const current = draft().package.routine;
+    const next = structuredClone(current);
+    next.name = 'Updated name';
+    next.instructionSteps = [{ id: 'one', icon: 'sparkles', title: 'First', description: 'Changed' }];
+    next.analysis = { ...next.analysis!, detectedCriteria: 'New criteria' };
+
+    expect(routineContentChanges(current, next)).toEqual(['identity', 'instructions', 'analysis']);
+  });
 });
 
 const valid: RoutineDraftValidation = { status: 'valid', issues: [] };
