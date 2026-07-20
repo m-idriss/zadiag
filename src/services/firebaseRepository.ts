@@ -12,7 +12,7 @@ import {
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { getDownloadURL, ref as storageRef } from 'firebase/storage';
-import type { AppRepository, JourneySource, JourneyStage } from './contracts';
+import type { AppRepository, JourneySource, JourneyStage, StartupProgressReporter } from './contracts';
 import { routineUpdatePayload } from './routineUpdate';
 import { getFirebaseServices, type FirebaseServices } from './firebaseClient';
 import {
@@ -220,7 +220,8 @@ export class FirebaseRepository implements AppRepository {
     return () => this.listeners.delete(listener);
   }
 
-  async initialize() {
+  async initialize(reportProgress?: StartupProgressReporter) {
+    reportProgress?.('account');
     this.user = await new Promise<User>((resolve, reject) => {
       const unsubscribe = onAuthStateChanged(this.services.auth, async (user) => {
         unsubscribe();
@@ -231,7 +232,8 @@ export class FirebaseRepository implements AppRepository {
         }
       }, reject);
     });
-    await this.restoreProfile();
+    reportProgress?.('profile');
+    await this.restoreProfile(reportProgress);
     this.accessSubscription?.();
     this.accessSubscription = onSnapshot(doc(this.services.db, 'userAccess', this.user.uid), (snapshot) => {
       const access = snapshot.data() as { contactEmail?: string; status?: string } | undefined;
@@ -750,7 +752,7 @@ export class FirebaseRepository implements AppRepository {
     await this.initialize();
   }
 
-  private async restoreProfile() {
+  private async restoreProfile(reportProgress?: StartupProgressReporter) {
     if (!this.user) return;
     const [profile, accessDocument] = await Promise.all([
       getDoc(doc(this.services.db, 'users', this.user.uid)),
@@ -766,12 +768,16 @@ export class FirebaseRepository implements AppRepository {
       this.emit();
       return;
     }
+    reportProgress?.('relationships');
     try { await this.loadParticipantAccess(); }
     catch (error) { console.error('Unable to load participant relationships', error); }
     if (!data) {
       const activeId = this.state.activeParticipantId;
       const access = activeId ? activeParticipantAccess(this.state.participantAccess, activeId) : undefined;
-      if (access) await this.attachParticipant(activeId!);
+      if (access) {
+        reportProgress?.('workspace');
+        await this.attachParticipant(activeId!);
+      }
       else this.emit();
       return;
     }
@@ -786,11 +792,13 @@ export class FirebaseRepository implements AppRepository {
     const activeId = this.state.activeParticipantId;
     const access = activeId ? activeParticipantAccess(this.state.participantAccess, activeId) : undefined;
     if (access) {
+      reportProgress?.('workspace');
       await this.attachParticipant(activeId!);
     }
     else if (data.familyId && data.role) {
       this.legacyFamilyId = data.familyId;
       this.legacyRole = data.role;
+      reportProgress?.('workspace');
       await this.attachFamily(data.familyId, data.role);
     }
     else {
