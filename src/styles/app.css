@@ -1335,11 +1335,11 @@ button:disabled { cursor: not-allowed; }
 .routine-draft-form { display: grid; gap: 12px; }
 .routine-draft-editor-section { display: grid; gap: 12px; padding: var(--block-padding); }
 .routine-draft-editor-section h2 { font-size: 16px; }
-.routine-draft-essential > div > p, .routine-draft-advanced-section header p { margin: 4px 0 0; color: var(--color-text-muted); font-size: 12px; line-height: 1.45; }
-.routine-draft-essential textarea { min-height: 180px; font-size: 15px; line-height: 1.5; }
-.routine-draft-advanced-section { display: grid; gap: 12px; padding: var(--block-padding); }
-.routine-draft-advanced-section > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.routine-draft-advanced-section h2, .routine-draft-advanced-section h3 { margin: 0; }
+.routine-draft-main-instruction { width: 100%; min-height: 210px; padding: 14px; border: 1px solid var(--color-border); border-radius: 14px; background: var(--color-surface-solid); color: var(--color-text); font: inherit; font-size: 15px; line-height: 1.5; resize: vertical; }
+.routine-draft-main-instruction::placeholder { color: var(--color-text-muted); }
+.routine-draft-customize { display: inline-flex; justify-self: start; align-items: center; gap: 4px; min-height: var(--height-action); padding: 4px 0; border: 0; background: transparent; color: var(--color-text-muted); font-size: 12px; font-weight: 850; }
+.routine-draft-customize .app-icon { transition: transform .2s ease; }
+.routine-draft-customize .app-icon.expanded { transform: rotate(180deg); }
 .routine-draft-advanced-content { display: grid; gap: 14px; padding-top: 12px; border-top: 1px solid var(--color-border); }
 .routine-draft-advanced-content > section { padding: 0; }
 .routine-draft-field { display: grid; gap: 6px; color: var(--color-text); font-size: 12px; font-weight: 850; }

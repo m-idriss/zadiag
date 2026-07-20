@@ -22,12 +22,13 @@ describe('private routine draft editor', () => {
   });
   afterEach(() => { act(() => root.unmount()); container.remove(); });
 
-  it('creates a complete single-language French draft from one instruction', async () => {
+  it('uses the current user language and creates a complete draft from one instruction', async () => {
     const save = vi.fn().mockImplementation(async (routinePackage) => ({ ...savedDraft(routinePackage.routine.name), package: routinePackage, validation: { status: 'valid', issues: [] } }));
-    act(() => root.render(<RoutineDraftEditorScreen locale="en" online save={save} cancel={() => undefined} reload={() => undefined} t={(key) => translate('en', key)} />));
-    const selects = container.querySelectorAll('select');
-    act(() => { (selects[0] as HTMLSelectElement).value = 'fr'; selects[0].dispatchEvent(new Event('change', { bubbles: true })); });
-    const instruction = container.querySelector<HTMLTextAreaElement>('.routine-draft-essential textarea');
+    act(() => root.render(<RoutineDraftEditorScreen locale="fr" online save={save} cancel={() => undefined} reload={() => undefined} t={(key) => translate('fr', key)} />));
+    expect(container.querySelectorAll('textarea')).toHaveLength(1);
+    expect(container.querySelector('select')).toBeNull();
+    expect(container.textContent).not.toContain('Métadonnées');
+    const instruction = container.querySelector<HTMLTextAreaElement>('.routine-draft-main-instruction');
     act(() => { if (instruction) { Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(instruction, 'Mettre les élastiques orthodontiques après le dîner.'); instruction.dispatchEvent(new Event('input', { bubbles: true })); } });
     await act(async () => { container.querySelector<HTMLFormElement>('form')?.requestSubmit(); await Promise.resolve(); });
     expect(save).toHaveBeenCalledOnce();
@@ -37,7 +38,18 @@ describe('private routine draft editor', () => {
     expect(save.mock.calls[0][0].routine.instructionSteps).toHaveLength(2);
     expect(save.mock.calls[0][0].routine.analysis.detectedCriteria).toContain('élastiques orthodontiques');
     expect(save.mock.calls[0][0].routine.translations).toBeUndefined();
-    expect(container.textContent).toContain('Draft saved · revision 1 · ready');
+    expect(container.textContent).toContain('Brouillon enregistré · révision 1 · prêt');
+  });
+
+  it('reveals optional customization only on request', () => {
+    act(() => root.render(<RoutineDraftEditorScreen locale="en" online save={vi.fn()} cancel={() => undefined} reload={() => undefined} t={(key) => translate('en', key)} />));
+    const customize = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Customize'));
+
+    expect(customize?.getAttribute('aria-expanded')).toBe('false');
+    expect(container.textContent).not.toContain('Metadata');
+    act(() => customize?.click());
+    expect(customize?.getAttribute('aria-expanded')).toBe('true');
+    expect(container.textContent).toContain('Metadata');
   });
 
   it('preserves edits after a conflict and offers recovery', async () => {
@@ -45,7 +57,7 @@ describe('private routine draft editor', () => {
     const save = vi.fn().mockRejectedValue(new Error('functions/aborted: changed on another device'));
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     act(() => root.render(<RoutineDraftEditorScreen draft={savedDraft('Original name')} locale="en" online save={save} cancel={() => undefined} reload={reload} t={(key) => translate('en', key)} />));
-    const instruction = container.querySelector<HTMLTextAreaElement>('.routine-draft-essential textarea');
+    const instruction = container.querySelector<HTMLTextAreaElement>('.routine-draft-main-instruction');
     act(() => { if (instruction) { Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(instruction, 'Unsaved local instruction'); instruction.dispatchEvent(new Event('input', { bubbles: true })); } });
     await act(async () => { container.querySelector<HTMLFormElement>('form')?.requestSubmit(); await Promise.resolve(); });
     expect(container.querySelector('[role="alert"]')?.textContent).toContain('changed on another device');

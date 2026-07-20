@@ -4,6 +4,7 @@ import {
   archiveRoutineDraft,
   createBlankRoutinePackage,
   prepareMinimalRoutinePackage,
+  routinePackageInLocale,
   createRoutineDraft,
   createRoutineDraftSnapshot,
   restoreRoutineDraft,
@@ -88,6 +89,20 @@ describe('private routine draft domain', () => {
     expect(prepared.routine.name).toBe('Mettre les élastiques orthodontiques après le dîner');
     expect(prepared.routine.instructionSteps).toHaveLength(2);
     expect(prepared.routine.analysis?.detectedCriteria).toContain('élastiques orthodontiques');
+  });
+
+  it('uses the current user locale when translated content is available', () => {
+    const source = createBlankRoutinePackage('en', 'private-evening');
+    source.availableLocales = ['en', 'fr'];
+    source.routine.name = 'Evening routine';
+    source.routine.translations = { fr: { name: 'Routine du soir', instructions: 'Mettre les élastiques après le dîner.' } };
+    const localized = routinePackageInLocale(source, 'fr');
+
+    expect(localized.defaultLocale).toBe('fr');
+    expect(localized.availableLocales).toEqual(['fr']);
+    expect(localized.routine.name).toBe('Routine du soir');
+    expect(localized.routine.instructions).toBe('Mettre les élastiques après le dîner.');
+    expect(localized.routine.translations).toBeUndefined();
   });
 
   it('creates an owned active draft at revision one without retaining mutable input', () => {

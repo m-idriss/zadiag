@@ -67,6 +67,25 @@ export const createBlankRoutinePackage = (locale: Locale, id = `private-${crypto
   },
 });
 
+export const routinePackageInLocale = (routinePackage: RoutinePackageV1, locale: Locale): RoutinePackageV1 => {
+  const next = structuredClone(routinePackage);
+  const localized = next.routine.translations?.[locale];
+  if (localized) {
+    next.routine = {
+      ...next.routine,
+      ...localized,
+      analysis: localized.analysis ? { ...next.routine.analysis, ...localized.analysis } as Routine['analysis'] : next.routine.analysis,
+      instructionSteps: localized.instructionSteps ?? next.routine.instructionSteps,
+    };
+  }
+  if (localized || next.defaultLocale === locale) {
+    next.defaultLocale = locale;
+    next.availableLocales = [locale];
+    next.routine.translations = undefined;
+  }
+  return next;
+};
+
 const minimalRoutineCopy = (instruction: string, locale: Locale) => locale === 'fr' ? {
   fallbackName: 'Nouvelle routine', responsibleName: 'Responsable', stepOneTitle: 'Réaliser l’action', stepTwoTitle: 'Prendre une photo',
   stepTwoDescription: `Prendre une photo claire après avoir réalisé cette instruction : ${instruction}`,
