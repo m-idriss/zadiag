@@ -132,6 +132,9 @@ interface RoutineTask {
 
 export interface VerificationEvent extends RoutineTask {
   sessionId: string;
+  routineSourceDraftId?: string;
+  routineSourceRevision?: number;
+  routineSourceVersion?: number;
   capturedAt?: string;
   analysisSource?: 'ai' | 'fallback' | 'self';
   automatedStatus?: Extract<VerificationStatus, 'detected' | 'not_detected' | 'uncertain'>;

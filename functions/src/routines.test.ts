@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createDefaultRoutineAssignment, createDraftRoutineAssignment, DEFAULT_ROUTINE_ID, isRoutineValidationMode, migrateCheckRoutineId, shouldCreateDefaultRoutineAssignment } from './routines.js';
+import { createDefaultRoutineAssignment, createDraftRoutineAssignment, createRoutineAssignmentVersionChange, DEFAULT_ROUTINE_ID, isRoutineValidationMode, migrateCheckRoutineId, routineAssignmentProvenance, shouldCreateDefaultRoutineAssignment } from './routines.js';
 
 const plan = {
   checksPerDay: 1,
@@ -26,6 +26,17 @@ test('creates an isolated assignment snapshot with its source revision', () => {
   assert.equal(assignment.sourceRevision, 3);
   assert.equal(assignment.sourceVersion, 1);
   assert.equal(assignment.validationMode, 'auto');
+});
+
+test('preserves the replaced assignment and exposes check provenance', () => {
+  const routine = { id: 'private-evening', name: 'Evening', description: 'Private routine' };
+  const assignment = createDraftRoutineAssignment(routine, plan, 'draft-1', 4, '2026-07-20T08:00:00.000Z', 2);
+  const change = createRoutineAssignmentVersionChange(assignment, { sourceDraftId: 'draft-2', sourceRevision: 3, sourceVersion: 3 }, 'owner-1', '2026-07-20T10:00:00.000Z');
+
+  assert.deepEqual(routineAssignmentProvenance(assignment), { routineSourceDraftId: 'draft-1', routineSourceRevision: 4, routineSourceVersion: 2 });
+  assert.equal(change.from.routine.name, assignment.routine.name);
+  assert.deepEqual(change.to, { sourceDraftId: 'draft-2', sourceRevision: 3, sourceVersion: 3 });
+  assert.equal(change.appliedBy, 'owner-1');
 });
 
 test('migrates legacy checks idempotently', () => {

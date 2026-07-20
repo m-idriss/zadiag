@@ -34,6 +34,16 @@ export interface RoutineDraft {
 export interface PublishedRoutineVersion {
   ownerId: string; sourceDraftId: string; sourceRevision: number; version: number; package: RoutinePackageV1; publishedAt: string; archivedAt?: string;
 }
+
+export const selectRoutineVersionTarget = (
+  versions: Array<PublishedRoutineVersion & { routineId: string }>,
+  routineId: string,
+  currentVersion = 0,
+) => {
+  const candidates = versions.filter((version) => version.routineId === routineId && !version.archivedAt && version.version !== currentVersion);
+  return candidates.filter((version) => version.version > currentVersion).sort((a, b) => b.version - a.version)[0]
+    ?? candidates.filter((version) => version.version < currentVersion).sort((a, b) => b.version - a.version)[0];
+};
 export interface RoutineCatalogEntry extends PublishedRoutineVersion {
   id: string; routineId: string; authorName: string; visibility: 'listed' | 'unlisted'; sharedAt: string; revokedAt?: string;
   source?: 'external'; license?: string; checksum?: string;

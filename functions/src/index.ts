@@ -10,7 +10,7 @@ import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, createRecoveryCode, createRelationshipInvitationCode, hashLinkCode, isFirestoreDocumentId, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, isRelationshipInvitationCode, normalizeLinkCode, sensitiveCodeAttemptState } from './helpers.js';
 import { analyzeWithGemini, parseImageDataUrl, routeAnalysisStatusForReview, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
 import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema, plannedCheckDispatchSchedule, shouldAutoDispatchCheck } from './planning.js';
-import { createDefaultRoutineAssignment, createDraftRoutineAssignment, createRoutineAssignment, DEFAULT_ROUTINE_ID, isRoutineValidationMode, routineFromCatalog, shouldCreateDefaultRoutineAssignment, type RoutineAssignmentDocument, type RoutineDocument } from './routines.js';
+import { createDefaultRoutineAssignment, createDraftRoutineAssignment, createRoutineAssignment, createRoutineAssignmentVersionChange, DEFAULT_ROUTINE_ID, isRoutineValidationMode, routineAssignmentProvenance, routineFromCatalog, shouldCreateDefaultRoutineAssignment, type RoutineAssignmentDocument, type RoutineDocument } from './routines.js';
 import { buildCheckNotificationPayload, buildDeclarativePushPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription, notificationWindowIsOpen, type SyntheticReceiptPayload } from './notifications.js';
 import { isCheckRequestRateLimited } from './reminders.js';
 import { recordAuditEvent, recordJourneyEvent, type JourneyStage } from './audit.js';
@@ -2181,6 +2181,7 @@ export const requestCheckNow = onCall({
     const expiresAt = checkExpiresAt(plan, now);
     const check = {
       routineId,
+      ...routineAssignmentProvenance(assignment.data() as RoutineAssignmentDocument),
       sessionId: crypto.randomUUID(),
       requestedAt: now.toISOString(),
       expiresAt: expiresAt.toISOString(),
@@ -2441,14 +2442,21 @@ export const upgradeRoutineAssignment = onCall({ region, cors, enforceAppCheck: 
   const participantRef = await requireParticipantRoutineDraftAccess(uid, participantId);
   const assignmentRef = participantRef.collection('routineAssignments').doc(routineId);
   const versionRef = participantRef.collection('routinePublications').doc(routineId).collection('versions').doc(String(targetVersion));
+  const changeRef = assignmentRef.collection('versionChanges').doc();
+  let previousVersion: number | undefined;
   await db.runTransaction(async (transaction) => {
     const [, assignment, version] = await Promise.all([requireParticipantRoutineDraftTransactionAccess(transaction, participantRef, uid), transaction.get(assignmentRef), transaction.get(versionRef)]);
     if (!assignment.exists) throw new HttpsError('not-found', 'The routine assignment could not be found.');
     if (!version.exists || version.data()?.archivedAt) throw new HttpsError('failed-precondition', 'The target routine version is unavailable.');
+    const current = assignment.data() as RoutineAssignmentDocument;
+    previousVersion = current.sourceVersion;
+    if (current.sourceVersion === targetVersion) throw new HttpsError('already-exists', 'This routine version is already applied.');
     const published = version.data() as PublishedRoutineVersionDocument;
+    const now = new Date().toISOString();
+    transaction.create(changeRef, createRoutineAssignmentVersionChange(current, { sourceDraftId: published.sourceDraftId, sourceRevision: published.sourceRevision, sourceVersion: published.version }, uid, now));
     transaction.update(assignmentRef, { routine: structuredClone(published.package.routine), sourceDraftId: published.sourceDraftId, sourceRevision: published.sourceRevision, sourceVersion: published.version, validationMode: published.package.routine.recommendedValidationMode ?? 'ai' });
   });
-  await recordAuditEvent(db, { action: 'upgrade_routine_assignment', actorUid: uid, participantId, metadata: { routineId, version: targetVersion } });
+  await recordAuditEvent(db, { action: 'upgrade_routine_assignment', actorUid: uid, participantId, metadata: { routineId, fromVersion: previousVersion, version: targetVersion, changeId: changeRef.id } });
   return { success: true };
 });
 
@@ -2909,7 +2917,7 @@ export const dispatchPlannedChecks = onSchedule({
           );
           if (!freshDecision.shouldDispatch || freshDecision.dispatchKey !== decision.dispatchKey) return false;
           transaction.update(freshAssignmentRef, { lastScheduledCheckDispatchAt: now.toISOString() });
-          transaction.create(checkRef, check);
+          transaction.create(checkRef, { ...check, ...routineAssignmentProvenance(freshAssignmentData) });
           return true;
         });
 

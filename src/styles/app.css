@@ -1555,6 +1555,8 @@ button:disabled { cursor: not-allowed; }
 .routine-publish-review h5, .routine-publish-review p { margin: 0; }
 .routine-publish-review ul { display: grid; gap: 6px; margin: 0; padding-left: 20px; }
 .routine-publish-review > div { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.routine-upgrade-card ul { display: grid; gap: 6px; margin: 0; padding-left: 20px; }
+.routine-upgrade-warning { padding: 10px 12px; border-radius: 12px; background: var(--color-warning-soft); color: var(--color-text); font-weight: 800; }
 .routine-proof-action {
   margin-top: 4px;
   border-radius: 10px;
