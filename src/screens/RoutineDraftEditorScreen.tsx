@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import type { Locale, Routine, RoutineCategory, RoutineValidationMode } from '../domain/models';
-import { createBlankRoutinePackage, DEFAULT_PRIVATE_ROUTINE_ACCENT, type RoutineDraft, type RoutinePackageV1 } from '../domain/routineDraft';
+import { createBlankRoutinePackage, DEFAULT_PRIVATE_ROUTINE_ACCENT, prepareMinimalRoutinePackage, type RoutineDraft, type RoutinePackageV1 } from '../domain/routineDraft';
 import { AppIcon } from '../components/Icon';
+import { DisclosureToggle } from '../components/DisclosureToggle';
 import { formatMessage, type MessageKey } from '../services/i18n';
 
 type RoutineStep = NonNullable<Routine['instructionSteps']>[number];
@@ -38,27 +39,23 @@ export function RoutineDraftEditorScreen({
   const [savedRevision, setSavedRevision] = useState<number>();
   const [savedValidation, setSavedValidation] = useState<RoutineDraft['validation']>();
   const [errorKind, setErrorKind] = useState<'conflict' | 'limit' | 'invalid' | 'remote'>();
+  const [advancedExpanded, setAdvancedExpanded] = useState(false);
+  const [advancedChanged, setAdvancedChanged] = useState(false);
+  const [initialInstruction] = useState(draft?.package.routine.instructions ?? '');
   const routine = routinePackage.routine;
-  const secondaryLocale: Locale = routinePackage.defaultLocale === 'en' ? 'fr' : 'en';
-  const translation = routine.translations?.[secondaryLocale];
   const updateRoutine = (patch: Partial<Routine>) => setRoutinePackage((current) => ({ ...current, routine: { ...current.routine, ...patch } }));
-  const updateAnalysis = (field: keyof NonNullable<Routine['analysis']>, value: string) => updateRoutine({ analysis: { expectedEvidence: '', detectedCriteria: '', notDetectedCriteria: '', uncertaintyCriteria: '', ...routine.analysis, [field]: value } });
-  const updateStep = (index: number, patch: Partial<RoutineStep>) => updateRoutine({ instructionSteps: (routine.instructionSteps ?? []).map((step, stepIndex) => stepIndex === index ? { ...step, ...patch } : step) });
-  const changePrimaryLocale = (defaultLocale: Locale) => setRoutinePackage((current) => ({ ...current, defaultLocale, availableLocales: [defaultLocale] }));
-  const toggleTranslation = (enabled: boolean) => setRoutinePackage((current) => ({
-    ...current,
-    availableLocales: enabled ? ['en', 'fr'] : [current.defaultLocale],
-    routine: { ...current.routine, translations: enabled ? { ...current.routine.translations, [secondaryLocale]: { name: '', description: '', instructions: '', proofExample: '', analysis: { expectedEvidence: '', detectedCriteria: '', notDetectedCriteria: '', uncertaintyCriteria: '' }, instructionSteps: (current.routine.instructionSteps ?? []).map((step) => ({ ...step, title: '', description: '' })) } } : undefined },
-  }));
-  const updateTranslation = (patch: Partial<NonNullable<Routine['translations']>[Locale]>) => updateRoutine({ translations: { ...routine.translations, [secondaryLocale]: { ...translation, ...patch } } });
-  const updateTranslationAnalysis = (field: 'expectedEvidence' | 'detectedCriteria' | 'notDetectedCriteria' | 'uncertaintyCriteria', value: string) => updateTranslation({ analysis: { ...translation?.analysis, [field]: value } });
+  const updateAdvancedRoutine = (patch: Partial<Routine>) => { setAdvancedChanged(true); updateRoutine(patch); };
+  const updateAnalysis = (field: keyof NonNullable<Routine['analysis']>, value: string) => updateAdvancedRoutine({ analysis: { expectedEvidence: '', detectedCriteria: '', notDetectedCriteria: '', uncertaintyCriteria: '', ...routine.analysis, [field]: value } });
+  const updateStep = (index: number, patch: Partial<RoutineStep>) => updateAdvancedRoutine({ instructionSteps: (routine.instructionSteps ?? []).map((step, stepIndex) => stepIndex === index ? { ...step, ...patch } : step) });
+  const changePrimaryLocale = (defaultLocale: Locale) => setRoutinePackage((current) => ({ ...current, defaultLocale, availableLocales: [defaultLocale], routine: { ...current.routine, translations: undefined } }));
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!online || saving) return;
     setSaving(true);
     setErrorKind(undefined);
     try {
-      const saved = await save(routinePackage);
+      const prepared = prepareMinimalRoutinePackage(routinePackage, !advancedChanged && routine.instructions !== initialInstruction);
+      const saved = await save(prepared);
       setRoutinePackage(structuredClone(saved.package));
       setSavedRevision(saved.revision);
       setSavedValidation(saved.validation);
@@ -86,51 +83,17 @@ export function RoutineDraftEditorScreen({
         <div><small>{t(draft ? 'routineDraftEditEyebrow' : 'routineDraftCreateEyebrow')}</small><h1>{t('routineDraftEditorTitle')}</h1></div>
       </header>
       <form className="routine-draft-form" onSubmit={(event) => { void submit(event); }}>
-        <section className="card routine-draft-editor-section">
-          <h2>{t('routineDraftMetadata')}</h2>
+        <section className="card routine-draft-editor-section routine-draft-essential">
+          <div><h2>{t('routineDraftEssentialTitle')}</h2><p>{t('routineDraftEssentialHint')}</p></div>
           <label className="routine-draft-field"><span>{t('routineDraftPrimaryLocale')}</span><select value={routinePackage.defaultLocale} onChange={(event) => changePrimaryLocale(event.target.value as Locale)}><option value="en">English</option><option value="fr">Français</option></select></label>
-          {field('routineDraftName', routine.name, (value) => updateRoutine({ name: value }), 120)}
-          {field('routineDraftDescription', routine.description, (value) => updateRoutine({ description: value }), 500, true)}
-          {field('routineDraftResponsibleName', routine.responsibleName, (value) => updateRoutine({ responsibleName: value }), 120)}
-        </section>
-        <section className="card routine-draft-editor-section">
-          <h2>{t('routineTranslationTitle')}</h2>
-          <label className="routine-draft-translation-toggle"><input type="checkbox" checked={Boolean(translation)} onChange={(event) => toggleTranslation(event.target.checked)} /><span>{formatMessage(t('routineTranslationEnable'), { locale: secondaryLocale.toUpperCase() })}</span></label>
-          {translation ? <>
-            {field('routineDraftName', translation.name, (value) => updateTranslation({ name: value }), 120)}
-            {field('routineDraftDescription', translation.description, (value) => updateTranslation({ description: value }), 500, true)}
-            {field('routineDraftInstructions', translation.instructions, (value) => updateTranslation({ instructions: value }), 2000, true)}
-            {field('routineDraftProofExample', translation.proofExample, (value) => updateTranslation({ proofExample: value }), 500, true)}
-            {field('routineDraftExpectedEvidence', translation.analysis?.expectedEvidence, (value) => updateTranslationAnalysis('expectedEvidence', value), 2000, true)}
-            {field('routineDraftDetectedCriteria', translation.analysis?.detectedCriteria, (value) => updateTranslationAnalysis('detectedCriteria', value), 2000, true)}
-            {field('routineDraftNotDetectedCriteria', translation.analysis?.notDetectedCriteria, (value) => updateTranslationAnalysis('notDetectedCriteria', value), 2000, true)}
-            {field('routineDraftUncertaintyCriteria', translation.analysis?.uncertaintyCriteria, (value) => updateTranslationAnalysis('uncertaintyCriteria', value), 2000, true)}
-            {(translation.instructionSteps ?? []).map((step, index) => <fieldset className="routine-draft-step" key={step.id}><legend>{formatMessage(t('routineDraftStep'), { number: index + 1 })}</legend>{field('routineDraftStepTitle', step.title, (value) => updateTranslation({ instructionSteps: translation.instructionSteps?.map((item, itemIndex) => itemIndex === index ? { ...item, title: value } : item) }), 120)}{field('routineDraftStepDescription', step.description, (value) => updateTranslation({ instructionSteps: translation.instructionSteps?.map((item, itemIndex) => itemIndex === index ? { ...item, description: value } : item) }), 500, true)}</fieldset>)}
-            <p className="routine-translation-hint">{t('routineTranslationHint')}</p>
-          </> : null}
-        </section>
-        <section className="card routine-draft-editor-section">
-          <h2>{t('routineDraftAppearance')}</h2>
-          {field('routineDraftIcon', routine.icon, (value) => updateRoutine({ icon: value }), 32)}
-          <label className="routine-draft-field"><span>{t('routineDraftAccentColor')}</span><input type="color" value={routine.accentColor ?? DEFAULT_PRIVATE_ROUTINE_ACCENT} onChange={(event) => updateRoutine({ accentColor: event.target.value.toUpperCase() })} /></label>
-          <label className="routine-draft-field"><span>{t('routineDraftCategory')}</span><select value={routine.category ?? 'custom'} onChange={(event) => updateRoutine({ category: event.target.value as RoutineCategory })}>{(['dental', 'wellness', 'medication', 'activity', 'custom'] as const).map((category) => <option value={category} key={category}>{t(category === 'dental' ? 'routineCategoryDental' : category === 'wellness' ? 'routineCategoryWellness' : category === 'medication' ? 'routineCategoryMedication' : category === 'activity' ? 'routineCategoryActivity' : 'routineCategoryCustom')}</option>)}</select></label>
-        </section>
-        <section className="card routine-draft-editor-section">
-          <h2>{t('routineDraftInstructions')}</h2>
           {field('routineDraftInstructions', routine.instructions, (value) => updateRoutine({ instructions: value }), 2000, true)}
-          {(routine.instructionSteps ?? []).map((step, index) => <fieldset className="routine-draft-step" key={step.id}><legend>{formatMessage(t('routineDraftStep'), { number: index + 1 })}</legend>{field('routineDraftStepIcon', step.icon, (value) => updateStep(index, { icon: value }), 32)}{field('routineDraftStepTitle', step.title, (value) => updateStep(index, { title: value }), 120)}{field('routineDraftStepDescription', step.description, (value) => updateStep(index, { description: value }), 500, true)}{(routine.instructionSteps?.length ?? 0) > 2 ? <button type="button" onClick={() => updateRoutine({ instructionSteps: routine.instructionSteps?.filter((_, stepIndex) => stepIndex !== index) })}>{t('routineDraftRemoveStep')}</button> : null}</fieldset>)}
-          {(routine.instructionSteps?.length ?? 0) < 4 ? <button type="button" className="routine-draft-secondary-action" onClick={() => updateRoutine({ instructionSteps: [...(routine.instructionSteps ?? []), blankStep(routine.instructionSteps?.length ?? 0)] })}>{t('routineDraftAddStep')}</button> : null}
         </section>
-        <section className="card routine-draft-editor-section">
-          <h2>{t('routineDraftExpectedProof')}</h2>
-          {field('routineDraftProofType', routine.proofType, (value) => updateRoutine({ proofType: value }), 50)}
-          {field('routineDraftProofExample', routine.proofExample, (value) => updateRoutine({ proofExample: value }), 500, true)}
-          {field('routineDraftExpectedEvidence', routine.analysis?.expectedEvidence, (value) => updateAnalysis('expectedEvidence', value), 2000, true)}
-          {field('routineDraftDetectedCriteria', routine.analysis?.detectedCriteria, (value) => updateAnalysis('detectedCriteria', value), 2000, true)}
-          {field('routineDraftNotDetectedCriteria', routine.analysis?.notDetectedCriteria, (value) => updateAnalysis('notDetectedCriteria', value), 2000, true)}
-          {field('routineDraftUncertaintyCriteria', routine.analysis?.uncertaintyCriteria, (value) => updateAnalysis('uncertaintyCriteria', value), 2000, true)}
-          <label className="routine-draft-field"><span>{t('routineDraftValidationMode')}</span><select value={routine.recommendedValidationMode ?? 'ai'} onChange={(event) => updateRoutine({ recommendedValidationMode: event.target.value as RoutineValidationMode })}><option value="ai">{t('validationAi')}</option><option value="auto">{t('validationAuto')}</option></select></label>
-        </section>
+        <section className="card routine-draft-advanced-section"><header><div><h2>{t('routineDraftAdvancedTitle')}</h2><p>{t('routineDraftAdvancedHint')}</p></div><DisclosureToggle expanded={advancedExpanded} showLabel={t('routineDraftShowAdvanced')} hideLabel={t('routineDraftHideAdvanced')} onToggle={() => setAdvancedExpanded((expanded) => !expanded)} /></header>{advancedExpanded ? <div className="routine-draft-advanced-content">
+          <section className="routine-draft-editor-section"><h3>{t('routineDraftMetadata')}</h3>{field('routineDraftName', routine.name, (value) => updateAdvancedRoutine({ name: value }), 120)}{field('routineDraftDescription', routine.description, (value) => updateAdvancedRoutine({ description: value }), 500, true)}{field('routineDraftResponsibleName', routine.responsibleName, (value) => updateAdvancedRoutine({ responsibleName: value }), 120)}</section>
+          <section className="routine-draft-editor-section"><h3>{t('routineDraftAppearance')}</h3>{field('routineDraftIcon', routine.icon, (value) => updateAdvancedRoutine({ icon: value }), 32)}<label className="routine-draft-field"><span>{t('routineDraftAccentColor')}</span><input type="color" value={routine.accentColor ?? DEFAULT_PRIVATE_ROUTINE_ACCENT} onChange={(event) => updateAdvancedRoutine({ accentColor: event.target.value.toUpperCase() })} /></label><label className="routine-draft-field"><span>{t('routineDraftCategory')}</span><select value={routine.category ?? 'custom'} onChange={(event) => updateAdvancedRoutine({ category: event.target.value as RoutineCategory })}>{(['dental', 'wellness', 'medication', 'activity', 'custom'] as const).map((category) => <option value={category} key={category}>{t(category === 'dental' ? 'routineCategoryDental' : category === 'wellness' ? 'routineCategoryWellness' : category === 'medication' ? 'routineCategoryMedication' : category === 'activity' ? 'routineCategoryActivity' : 'routineCategoryCustom')}</option>)}</select></label></section>
+          <section className="routine-draft-editor-section"><h3>{t('routineDraftSteps')}</h3>{(routine.instructionSteps ?? []).map((step, index) => <fieldset className="routine-draft-step" key={step.id}><legend>{formatMessage(t('routineDraftStep'), { number: index + 1 })}</legend>{field('routineDraftStepTitle', step.title, (value) => updateStep(index, { title: value }), 120)}{field('routineDraftStepDescription', step.description, (value) => updateStep(index, { description: value }), 500, true)}{(routine.instructionSteps?.length ?? 0) > 2 ? <button type="button" onClick={() => updateAdvancedRoutine({ instructionSteps: routine.instructionSteps?.filter((_, stepIndex) => stepIndex !== index) })}>{t('routineDraftRemoveStep')}</button> : null}</fieldset>)}{(routine.instructionSteps?.length ?? 0) < 4 ? <button type="button" className="routine-draft-secondary-action" onClick={() => updateAdvancedRoutine({ instructionSteps: [...(routine.instructionSteps ?? []), blankStep(routine.instructionSteps?.length ?? 0)] })}>{t('routineDraftAddStep')}</button> : null}</section>
+          <section className="routine-draft-editor-section"><h3>{t('routineDraftExpectedProof')}</h3>{field('routineDraftProofExample', routine.proofExample, (value) => updateAdvancedRoutine({ proofExample: value }), 500, true)}{field('routineDraftExpectedEvidence', routine.analysis?.expectedEvidence, (value) => updateAnalysis('expectedEvidence', value), 2000, true)}{field('routineDraftDetectedCriteria', routine.analysis?.detectedCriteria, (value) => updateAnalysis('detectedCriteria', value), 2000, true)}{field('routineDraftNotDetectedCriteria', routine.analysis?.notDetectedCriteria, (value) => updateAnalysis('notDetectedCriteria', value), 2000, true)}{field('routineDraftUncertaintyCriteria', routine.analysis?.uncertaintyCriteria, (value) => updateAnalysis('uncertaintyCriteria', value), 2000, true)}<label className="routine-draft-field"><span>{t('routineDraftValidationMode')}</span><select value={routine.recommendedValidationMode ?? 'ai'} onChange={(event) => updateAdvancedRoutine({ recommendedValidationMode: event.target.value as RoutineValidationMode })}><option value="ai">{t('validationAi')}</option><option value="auto">{t('validationAuto')}</option></select></label></section>
+        </div> : null}</section>
         {!online ? <p className="routine-draft-save-state" role="status">{t('routineDraftOffline')}</p> : null}
         {errorKind ? <div className="routine-draft-save-state error" role="alert"><p>{t(errorKind === 'conflict' ? 'routineDraftConflict' : errorKind === 'limit' ? 'routineDraftLimitError' : errorKind === 'invalid' ? 'routineDraftInvalidError' : 'routineDraftSaveError')}</p>{errorKind === 'conflict' ? <button type="button" onClick={reload}>{t('routineDraftReload')}</button> : null}</div> : null}
         {savedRevision ? <p className="routine-draft-save-state success" role="status">{formatMessage(t(savedValidation?.status === 'valid' ? 'routineDraftSavedValid' : 'routineDraftSavedIncomplete'), { revision: savedRevision, count: savedValidation?.issues.length ?? 0 })}</p> : null}

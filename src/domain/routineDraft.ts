@@ -67,6 +67,58 @@ export const createBlankRoutinePackage = (locale: Locale, id = `private-${crypto
   },
 });
 
+const minimalRoutineCopy = (instruction: string, locale: Locale) => locale === 'fr' ? {
+  fallbackName: 'Nouvelle routine', responsibleName: 'Responsable', stepOneTitle: 'Réaliser l’action', stepTwoTitle: 'Prendre une photo',
+  stepTwoDescription: `Prendre une photo claire après avoir réalisé cette instruction : ${instruction}`,
+  proofExample: `Une photo montrant clairement le résultat de cette instruction : ${instruction}`,
+  expectedEvidence: `La photo doit montrer clairement que cette instruction a été réalisée : ${instruction}`,
+  detectedCriteria: `Valider uniquement si la photo montre clairement le résultat attendu pour cette instruction : ${instruction}`,
+  notDetectedCriteria: `Refuser si la photo ne montre pas que cette instruction a été réalisée : ${instruction}`,
+  uncertaintyCriteria: `Demander une vérification humaine si la photo est floue, incomplète ou ambiguë pour cette instruction : ${instruction}`,
+} : {
+  fallbackName: 'New routine', responsibleName: 'Responsible person', stepOneTitle: 'Complete the action', stepTwoTitle: 'Take a photo',
+  stepTwoDescription: `Take a clear photo after completing this instruction: ${instruction}`,
+  proofExample: `A photo clearly showing the result of this instruction: ${instruction}`,
+  expectedEvidence: `The photo must clearly show that this instruction was completed: ${instruction}`,
+  detectedCriteria: `Validate only when the photo clearly shows the expected result for this instruction: ${instruction}`,
+  notDetectedCriteria: `Reject when the photo does not show that this instruction was completed: ${instruction}`,
+  uncertaintyCriteria: `Request human review when the photo is blurry, incomplete, or ambiguous for this instruction: ${instruction}`,
+};
+
+export const prepareMinimalRoutinePackage = (routinePackage: RoutinePackageV1, regenerateDerived = false): RoutinePackageV1 => {
+  const next = structuredClone(routinePackage);
+  const routine = next.routine;
+  const instruction = routine.instructions?.trim() ?? '';
+  const copy = minimalRoutineCopy(instruction, next.defaultLocale);
+  const generatedName = instruction.split(/[.!?\n]/)[0]?.trim().slice(0, 120) || copy.fallbackName;
+  const fit = (value: string, maximum: number) => value.slice(0, maximum).trim();
+  const shouldFill = (value: string | undefined) => regenerateDerived || !value?.trim();
+  next.availableLocales = [next.defaultLocale];
+  routine.translations = undefined;
+  if (!routine.name.trim()) routine.name = generatedName;
+  if (shouldFill(routine.description)) routine.description = fit(instruction, 500);
+  if (shouldFill(routine.responsibleName)) routine.responsibleName = copy.responsibleName;
+  routine.icon ||= 'sparkles';
+  routine.accentColor ||= DEFAULT_PRIVATE_ROUTINE_ACCENT;
+  routine.category ||= 'custom';
+  routine.proofType ||= 'photo';
+  routine.recommendedValidationMode ||= 'ai';
+  if (shouldFill(routine.proofExample)) routine.proofExample = fit(copy.proofExample, 500);
+  const stepsIncomplete = !routine.instructionSteps || routine.instructionSteps.length < 2 || routine.instructionSteps.some((step) => !step.title.trim() || !step.description.trim());
+  if (regenerateDerived || stepsIncomplete) routine.instructionSteps = [
+    { id: 'step-1', icon: routine.icon, title: copy.stepOneTitle, description: fit(instruction, 500) },
+    { id: 'step-2', icon: 'camera', title: copy.stepTwoTitle, description: fit(copy.stepTwoDescription, 500) },
+  ];
+  const analysis = routine.analysis ?? { expectedEvidence: '', detectedCriteria: '', notDetectedCriteria: '', uncertaintyCriteria: '' };
+  routine.analysis = {
+    expectedEvidence: shouldFill(analysis.expectedEvidence) ? fit(copy.expectedEvidence, 2000) : analysis.expectedEvidence,
+    detectedCriteria: shouldFill(analysis.detectedCriteria) ? fit(copy.detectedCriteria, 2000) : analysis.detectedCriteria,
+    notDetectedCriteria: shouldFill(analysis.notDetectedCriteria) ? fit(copy.notDetectedCriteria, 2000) : analysis.notDetectedCriteria,
+    uncertaintyCriteria: shouldFill(analysis.uncertaintyCriteria) ? fit(copy.uncertaintyCriteria, 2000) : analysis.uncertaintyCriteria,
+  };
+  return next;
+};
+
 type RoutineDraftErrorCode =
   | 'invalid_identity'
   | 'invalid_revision'

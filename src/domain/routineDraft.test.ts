@@ -3,6 +3,7 @@ import type { Routine } from './models';
 import {
   archiveRoutineDraft,
   createBlankRoutinePackage,
+  prepareMinimalRoutinePackage,
   createRoutineDraft,
   createRoutineDraftSnapshot,
   restoreRoutineDraft,
@@ -78,6 +79,15 @@ describe('private routine draft domain', () => {
     expect(routinePackage.availableLocales).toEqual(['fr']);
     expect(routinePackage.routine.id).toBe('private-evening');
     expect(routinePackage.routine.instructionSteps).toHaveLength(2);
+  });
+
+  it('builds a valid single-language routine from one instruction', () => {
+    const prepared = prepareMinimalRoutinePackage({ ...createBlankRoutinePackage('fr', 'private-evening'), routine: { ...createBlankRoutinePackage('fr', 'private-evening').routine, instructions: 'Mettre les élastiques orthodontiques après le dîner.' } }, true);
+    expect(prepared.availableLocales).toEqual(['fr']);
+    expect(prepared.routine.translations).toBeUndefined();
+    expect(prepared.routine.name).toBe('Mettre les élastiques orthodontiques après le dîner');
+    expect(prepared.routine.instructionSteps).toHaveLength(2);
+    expect(prepared.routine.analysis?.detectedCriteria).toContain('élastiques orthodontiques');
   });
 
   it('creates an owned active draft at revision one without retaining mutable input', () => {
