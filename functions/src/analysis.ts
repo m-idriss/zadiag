@@ -117,6 +117,16 @@ type GeminiGenerateContentResponse = {
 type AnalysisLocale = 'en' | 'fr';
 
 const GEMINI_ANALYSIS_MAX_OUTPUT_TOKENS = 768;
+const GEMINI_ANALYSIS_RESPONSE_SCHEMA = {
+  type: 'OBJECT',
+  required: ['status', 'confidence', 'imageQuality', 'reason'],
+  properties: {
+    status: { type: 'STRING', enum: ['detected', 'not_detected', 'uncertain'] },
+    confidence: { type: 'NUMBER', minimum: 0, maximum: 1 },
+    imageQuality: { type: 'NUMBER', minimum: 0, maximum: 1 },
+    reason: { type: 'STRING', maxLength: 220 },
+  },
+} as const;
 
 const defaultRoutineAnalysis: RoutineAnalysisContext = {
   routineName: 'Treatment adherence',
@@ -190,6 +200,8 @@ const requestGeminiAnalysis = async (
         temperature: 0,
         maxOutputTokens: GEMINI_ANALYSIS_MAX_OUTPUT_TOKENS,
         responseMimeType: 'application/json',
+        responseSchema: GEMINI_ANALYSIS_RESPONSE_SCHEMA,
+        thinkingConfig: { thinkingBudget: 0 },
       },
     }),
   });
