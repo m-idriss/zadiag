@@ -1341,11 +1341,14 @@ button:disabled { cursor: not-allowed; }
 .routine-draft-customize .app-icon { transition: transform .2s ease; }
 .routine-draft-customize .app-icon.expanded { transform: rotate(180deg); }
 .routine-draft-customization { display: grid; gap: 12px; padding-top: 12px; border-top: 1px solid var(--color-border); }
+.routine-draft-customization-direct { padding-top: 0; border-top: 0; }
+.routine-draft-target-fields { display: grid; gap: 12px; }
 .routine-draft-name-row { display: grid; grid-template-columns: 36px minmax(0, 1fr); align-items: end; gap: 10px; }
 .routine-draft-name-row .routine-icon { color: var(--routine-accent, var(--color-primary)); }
 .routine-draft-appearance-fields { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
 .routine-draft-field { display: grid; gap: 6px; color: var(--color-text); font-size: 12px; font-weight: 850; }
-.routine-draft-field input:not([type='color']), .routine-draft-field select { width: 100%; min-height: var(--height-control); padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface-solid); color: var(--color-text); font: inherit; font-weight: 650; }
+.routine-draft-field input:not([type='color']), .routine-draft-field select, .routine-draft-field textarea { width: 100%; min-height: var(--height-control); padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface-solid); color: var(--color-text); font: inherit; font-weight: 650; }
+.routine-draft-field textarea { min-height: 128px; line-height: 1.5; resize: vertical; }
 .routine-draft-color-field input[type='color'] { width: var(--height-control); height: var(--height-control); padding: 4px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface-solid); }
 .routine-draft-save-state { display: grid; gap: 8px; margin: 0; padding: 12px; border-radius: 12px; background: var(--color-control-surface); color: var(--color-text-muted); font-size: 12px; }
 .routine-draft-save-state p { margin: 0; }
@@ -1550,8 +1553,13 @@ button:disabled { cursor: not-allowed; }
 .routine-meta-card > div > span .svg-icon { font-size: 16px; }
 .routine-meta-card i .svg-icon { font-size: 16px; }
 .routine-edit-plan-button { min-height: var(--height-action); padding: 8px 12px; border: 0; border-radius: 999px; background: var(--color-text); color: var(--color-surface-solid); font-size: 12px; font-weight: 900; }
-.routine-content-edit-button { min-height: var(--height-action); display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 14px; border: 1px solid var(--color-primary); border-radius: 13px; background: var(--color-surface-solid); color: var(--color-primary); font-size: 12px; font-weight: 900; }
-.routine-content-edit-button:disabled { opacity: .62; }
+.routine-content-editable { position: relative; padding-right: 28px; }
+.routine-detail-hero.routine-content-editable { padding-right: 38px; }
+.routine-content-edit-overlay { position: absolute; z-index: 1; inset: 0; width: 100%; display: flex; align-items: center; justify-content: flex-end; padding: 0 5px; border: 0; border-radius: inherit; background: transparent; color: var(--color-text-muted); }
+.routine-content-edit-overlay .svg-icon { font-size: 17px; }
+.routine-content-edit-overlay:focus-visible { outline: 2px solid var(--routine-accent, var(--color-primary)); outline-offset: 2px; }
+.routine-content-edit-overlay:active { background: color-mix(in srgb, var(--routine-accent, var(--color-primary)) 6%, transparent); }
+.routine-content-edit-overlay:disabled { opacity: .5; }
 .routine-publish-review { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--color-border); border-radius: 14px; background: var(--color-surface-subtle); }
 .routine-publish-review h5, .routine-publish-review p { margin: 0; }
 .routine-publish-review ul { display: grid; gap: 6px; margin: 0; padding-left: 20px; }
@@ -1576,6 +1584,7 @@ button:disabled { cursor: not-allowed; }
 }
 .routine-instruction-list { display: grid; gap: 16px; }
 .routine-instruction-list article { display: grid; grid-template-columns: 24px 46px 1fr; align-items: center; gap: 10px; }
+.routine-instruction-list article.routine-content-editable { padding-right: 28px; }
 .routine-instruction-list article > b { width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--routine-accent) 15%, var(--color-surface-solid)); color: var(--routine-accent); font-size: 11px; }
 .routine-instruction-list article > span { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 13px; background: #f1f5f3; font-size: 23px; }
 .routine-instruction-list article > span .svg-icon { font-size: 23px; }

@@ -12,6 +12,7 @@ import { assignableRoutineTemplates, marketplaceFromTemplates, presentRoutineTem
 import { withResolvedEventStatuses } from '../domain/adherence';
 import { routineContentChanges, selectRoutineVersionTarget, type PublishedRoutineVersion, type RoutineCatalogEntry, type RoutineContentChange, type RoutineDraft } from '../domain/routineDraft';
 import { readUiStorageJson, readUiStorageString, removeUiStorageItem, writeUiStorageString } from '../services/uiStorage';
+import { routineContentEditTargetKey, type RoutineContentEditTarget } from './routineContentEditTarget';
 
 const RoutineDetailScreen = lazy(() => import('./RoutineDetailScreen').then((module) => ({ default: module.RoutineDetailScreen })));
 const RoutineDraftEditorScreen = lazy(() => import('./RoutineDraftEditorScreen').then((module) => ({ default: module.RoutineDraftEditorScreen })));
@@ -204,6 +205,7 @@ export function RoutinesScreen({
   const [deletingDraftId, setDeletingDraftId] = useState<string>();
   const [draftDeleteErrorId, setDraftDeleteErrorId] = useState<string>();
   const [editingDraftId, setEditingDraftId] = useState<string | 'new'>();
+  const [editingDraftTarget, setEditingDraftTarget] = useState<RoutineContentEditTarget>();
   const [forkingRoutineId, setForkingRoutineId] = useState<string>();
   const [assigningDraftId, setAssigningDraftId] = useState<string>();
   const [draftAssignErrorId, setDraftAssignErrorId] = useState<string>();
@@ -238,14 +240,22 @@ export function RoutinesScreen({
     setDetailInitialTab(initialTab);
     setSelectedId(assignmentId);
   };
-  const forkAssignedRoutine = async (assignment: RoutineAssignment) => {
+  const openDraftEditor = (draftId: string | 'new', target?: RoutineContentEditTarget) => {
+    setEditingDraftTarget(target);
+    setEditingDraftId(draftId);
+  };
+  const closeDraftEditor = () => {
+    setEditingDraftId(undefined);
+    setEditingDraftTarget(undefined);
+  };
+  const forkAssignedRoutine = async (assignment: RoutineAssignment, target?: RoutineContentEditTarget) => {
     const participantId = activeParticipantAccess?.participant.id;
     if (!participantId || !onForkRoutineAssignmentDraft || forkingRoutineId) return;
     setForkingRoutineId(assignment.routineId);
     try {
       const draft = await onForkRoutineAssignmentDraft(participantId, assignment.routineId, state.locale);
       setRoutineDrafts((current) => [draft, ...current.filter((item) => item.id !== draft.id)]);
-      setEditingDraftId(draft.id);
+      openDraftEditor(draft.id, target);
     } finally {
       setForkingRoutineId(undefined);
     }
@@ -325,10 +335,10 @@ export function RoutinesScreen({
       setEditingDraftId(saved.id);
       return saved;
     };
-    return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDraftEditorScreen key={draft?.id ?? 'new'} draft={draft} locale={state.locale} online={online} save={saveDraft} cancel={() => setEditingDraftId(undefined)} reload={() => { setEditingDraftId(undefined); setDraftReloadSequence((value) => value + 1); }} t={t} /></Suspense>;
+    return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDraftEditorScreen key={`${draft?.id ?? 'new'}-${routineContentEditTargetKey(editingDraftTarget)}`} draft={draft} target={editingDraftTarget} locale={state.locale} online={online} save={saveDraft} cancel={closeDraftEditor} reload={() => { closeDraftEditor(); setDraftReloadSequence((value) => value + 1); }} t={t} /></Suspense>;
   }
 
-  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={backToList} start={start} edit={canManageRoutines} initialTab={detailInitialTab} initialEventId={focusedEventId} onInitialEventConsumed={onFocusedEventConsumed} getProofImageUrl={getProofImageUrl} reviewCheck={canManageRoutines ? reviewCheck : undefined} requestCheck={canManageRoutines ? requestCheck : undefined} onSaveMonitoringPlan={canManageRoutines && onSaveMonitoringPlan ? (plan, validationMode) => onSaveMonitoringPlan(selected.routineId, plan, validationMode) : undefined} onForkContent={canManageRoutines && onForkRoutineAssignmentDraft ? () => forkAssignedRoutine(selected) : undefined} forkingContent={forkingRoutineId === selected.routineId} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
+  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={backToList} start={start} edit={canManageRoutines} initialTab={detailInitialTab} initialEventId={focusedEventId} onInitialEventConsumed={onFocusedEventConsumed} getProofImageUrl={getProofImageUrl} reviewCheck={canManageRoutines ? reviewCheck : undefined} requestCheck={canManageRoutines ? requestCheck : undefined} onSaveMonitoringPlan={canManageRoutines && onSaveMonitoringPlan ? (plan, validationMode) => onSaveMonitoringPlan(selected.routineId, plan, validationMode) : undefined} onForkContent={canManageRoutines && onForkRoutineAssignmentDraft ? (target) => forkAssignedRoutine(selected, target) : undefined} forkingContent={forkingRoutineId === selected.routineId} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
 
   const setRequestStatus = (routineId: string, status: RequestStatus) => {
     setRequestStatuses((current) => ({ ...current, [routineId]: status }));
@@ -564,7 +574,7 @@ export function RoutinesScreen({
           <div className="routine-catalog-list">
             {catalogSection === 'drafts' && onListRoutineDrafts ? (
               <section id="routine-catalog-drafts-panel" className="routine-library-group" role="tabpanel" aria-labelledby="routine-catalog-drafts-tab">
-                <div className="routine-library-group-heading"><h3 id="routine-library-drafts-title">{t('routineLibraryDrafts')}</h3><div>{onImportRoutinePackage ? <label className="routine-import-button">{t('routineImport')}<input type="file" accept="application/vnd.zadiag.routine+json,.zadiag-routine" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importPackage(file); event.target.value = ''; }} /></label> : null}{onCreateRoutineDraft ? <button type="button" onClick={() => setEditingDraftId('new')}>{t('routineDraftNew')}</button> : null}</div></div>
+                <div className="routine-library-group-heading"><h3 id="routine-library-drafts-title">{t('routineLibraryDrafts')}</h3><div>{onImportRoutinePackage ? <label className="routine-import-button">{t('routineImport')}<input type="file" accept="application/vnd.zadiag.routine+json,.zadiag-routine" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importPackage(file); event.target.value = ''; }} /></label> : null}{onCreateRoutineDraft ? <button type="button" onClick={() => openDraftEditor('new')}>{t('routineDraftNew')}</button> : null}</div></div>
                 {!online ? <p className="routine-library-state" role="status">{t('routineLibraryDraftsOffline')}</p> : null}
                 {online && draftsStatus === 'loading' ? <p className="routine-library-state" role="status">{t('routineLibraryLoadingDrafts')}</p> : null}
                 {online && draftsStatus === 'error' ? (
@@ -596,7 +606,7 @@ export function RoutinesScreen({
                           <h4>{visual.name}</h4>
                         </div>
                         <div className="routine-library-draft-actions">
-                          {onUpdateRoutineDraft && draft.state === 'active' ? <button type="button" onClick={() => setEditingDraftId(draft.id)}>{t('routineDraftResume')}</button> : <button type="button" aria-expanded={expanded} onClick={() => setOpenDraftId(expanded ? undefined : draft.id)}>{expanded ? t('routineLibraryCloseDraft') : t('routineLibraryOpenDraft')}</button>}
+                          {onUpdateRoutineDraft && draft.state === 'active' ? <button type="button" onClick={() => openDraftEditor(draft.id)}>{t('routineDraftResume')}</button> : <button type="button" aria-expanded={expanded} onClick={() => setOpenDraftId(expanded ? undefined : draft.id)}>{expanded ? t('routineLibraryCloseDraft') : t('routineLibraryOpenDraft')}</button>}
                           <button type="button" disabled={deletingDraftId === draft.id} onClick={() => { void deleteDraft(draft, visual.name); }} aria-label={formatMessage(t('routineLibraryDeleteDraft'), { routine: visual.name })}>
                             <AppIcon name="close" />
                           </button>
