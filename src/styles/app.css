@@ -1340,16 +1340,13 @@ button:disabled { cursor: not-allowed; }
 .routine-draft-customize { display: inline-flex; justify-self: start; align-items: center; gap: 4px; min-height: var(--height-action); padding: 4px 0; border: 0; background: transparent; color: var(--color-text-muted); font-size: 12px; font-weight: 850; }
 .routine-draft-customize .app-icon { transition: transform .2s ease; }
 .routine-draft-customize .app-icon.expanded { transform: rotate(180deg); }
-.routine-draft-advanced-content { display: grid; gap: 14px; padding-top: 12px; border-top: 1px solid var(--color-border); }
-.routine-draft-advanced-content > section { padding: 0; }
+.routine-draft-customization { display: grid; gap: 12px; padding-top: 12px; border-top: 1px solid var(--color-border); }
+.routine-draft-name-row { display: grid; grid-template-columns: 36px minmax(0, 1fr); align-items: end; gap: 10px; }
+.routine-draft-name-row .routine-icon { color: var(--routine-accent, var(--color-primary)); }
+.routine-draft-appearance-fields { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
 .routine-draft-field { display: grid; gap: 6px; color: var(--color-text); font-size: 12px; font-weight: 850; }
-.routine-draft-field input:not([type='color']), .routine-draft-field textarea, .routine-draft-field select { width: 100%; min-height: var(--height-control); padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface-solid); color: var(--color-text); font: inherit; font-weight: 650; }
-.routine-draft-field textarea { min-height: 92px; resize: vertical; }
-.routine-draft-field input[type='color'] { width: 100%; height: var(--height-control); padding: 4px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface-solid); }
-.routine-draft-field small { justify-self: end; color: var(--color-text-muted); font-size: 10px; font-weight: 650; }
-.routine-draft-step { display: grid; gap: 10px; margin: 0; padding: 12px; border: 1px solid var(--color-border); border-radius: 14px; }
-.routine-draft-step legend { padding: 0 6px; color: var(--color-text); font-size: 12px; font-weight: 900; }
-.routine-draft-step > button, .routine-draft-secondary-action { justify-self: start; min-height: var(--height-action); padding: 8px 12px; border: 0; border-radius: 10px; background: var(--color-control-surface); color: var(--color-text); font-weight: 850; }
+.routine-draft-field input:not([type='color']), .routine-draft-field select { width: 100%; min-height: var(--height-control); padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface-solid); color: var(--color-text); font: inherit; font-weight: 650; }
+.routine-draft-color-field input[type='color'] { width: var(--height-control); height: var(--height-control); padding: 4px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface-solid); }
 .routine-draft-save-state { display: grid; gap: 8px; margin: 0; padding: 12px; border-radius: 12px; background: var(--color-control-surface); color: var(--color-text-muted); font-size: 12px; }
 .routine-draft-save-state p { margin: 0; }
 .routine-draft-save-state button { justify-self: start; min-height: var(--height-action); padding: 8px 12px; border: 0; border-radius: 10px; background: var(--color-text); color: var(--color-surface-solid); font-weight: 850; }

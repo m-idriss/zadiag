@@ -41,15 +41,22 @@ describe('private routine draft editor', () => {
     expect(container.textContent).toContain('Brouillon enregistré · révision 1 · prêt');
   });
 
-  it('reveals optional customization only on request', () => {
-    act(() => root.render(<RoutineDraftEditorScreen locale="en" online save={vi.fn()} cancel={() => undefined} reload={() => undefined} t={(key) => translate('en', key)} />));
+  it('reveals only useful customization and derives the icon from the category', async () => {
+    const save = vi.fn().mockImplementation(async (routinePackage) => ({ ...savedDraft(routinePackage.routine.name), package: routinePackage, validation: { status: 'valid', issues: [] } }));
+    act(() => root.render(<RoutineDraftEditorScreen locale="en" online save={save} cancel={() => undefined} reload={() => undefined} t={(key) => translate('en', key)} />));
     const customize = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Customize'));
 
     expect(customize?.getAttribute('aria-expanded')).toBe('false');
-    expect(container.textContent).not.toContain('Metadata');
+    expect(container.querySelector('input')).toBeNull();
     act(() => customize?.click());
     expect(customize?.getAttribute('aria-expanded')).toBe('true');
-    expect(container.textContent).toContain('Metadata');
+    expect(container.querySelectorAll('input')).toHaveLength(2);
+    expect(container.querySelectorAll('select')).toHaveLength(1);
+    expect(container.textContent).not.toContain('Expected proof');
+    const category = container.querySelector<HTMLSelectElement>('select');
+    act(() => { if (category) { category.value = 'medication'; category.dispatchEvent(new Event('change', { bubbles: true })); } });
+    await act(async () => { container.querySelector<HTMLFormElement>('form')?.requestSubmit(); await Promise.resolve(); });
+    expect(save.mock.calls[0][0].routine).toMatchObject({ category: 'medication', icon: 'medical' });
   });
 
   it('preserves edits after a conflict and offers recovery', async () => {
