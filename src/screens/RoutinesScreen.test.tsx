@@ -380,6 +380,9 @@ describe('participant routines navigation', () => {
     expect(container.textContent).toContain('Instructions');
     expect(container.textContent).toContain('Expected proof');
     expect(container.textContent).toContain('Take a clear photo');
+    expect(container.textContent).not.toContain('Next check');
+    expect(container.textContent).not.toContain('Monitoring plan');
+    expect(container.textContent).not.toContain('Tip');
 
     const tracking = Array.from(container.querySelectorAll('.routine-tabs button')).find((button) => button.textContent === 'Tracking');
     await act(async () => {
