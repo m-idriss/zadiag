@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { cameraOutline, chevronBackOutline, chevronForwardOutline, ellipsisHorizontal, peopleOutline, timeOutline } from 'ionicons/icons';
+import { cameraOutline, chevronBackOutline, chevronForwardOutline, ellipsisHorizontal, peopleOutline } from 'ionicons/icons';
 import { adherenceSummary, withResolvedEventStatuses } from '../domain/adherence';
 import { presentRoutine } from '../domain/routinePresentation';
 import type { AppState, RoutineAssignment, RoutineValidationMode, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
 import { StatusPill } from '../components/StatusPill';
-import { dayPeriodLabelKey } from '../domain/taskTimeLabel';
 import { RoutineEditScreen } from './RoutineEditScreen';
 import { SvgIcon } from '../components/SvgIcon';
 import { ActionButton } from '../components/ui';
@@ -188,7 +187,6 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   const visual = presentRoutine(assignment.routine, state.locale);
   const next = rawEvents.find((event) => event.status === 'pending' && Date.parse(event.expiresAt) > now);
   const formatDateTime = (value: string) => new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
-  const formatTime = (value: string) => new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(new Date(value));
   const days = calendarDays(events, locale);
   const monthSections = calendarMonthSections(days, locale);
   const currentStreak = streakFor(events);
@@ -251,16 +249,13 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
 
   const detailsPanel = (
     <div className="routine-tab-panel">
-      <section className="next-check-card"><div><small>{t('nextCheck')}</small><h2>{next ? t(dayPeriodLabelKey(next.expiresAt)) : t('noPendingTask')}</h2>{next && <p>{t('before')} {formatTime(next.expiresAt)}</p>}</div><span aria-hidden="true"><SvgIcon icon={timeOutline} /></span></section>
       <section className={`routine-copy${canEditContent ? ' routine-content-editable' : ''}`}><h2>{t('routineSummary')}</h2><p>{visual.description}</p>{canEditContent ? <RoutineContentEditButton label={editLabel(t('routineSummary'))} target={{ kind: 'description' }} busy={Boolean(forkingContent)} onEdit={onForkContent!} /> : null}</section>
       <section className="routine-meta-card">
-        <div className="routine-plan-meta"><span aria-hidden="true"><SvgIcon icon={timeOutline} /></span><b>{t('monitoringPlan')}</b><p>{assignment.plan.checksPerDay} {t('checksDay')}</p>{edit && <button type="button" onClick={() => setTab('plan')} className="routine-edit-plan-button">{t('edit')}</button>}</div>
         <div className={canEditContent ? 'routine-content-editable' : undefined}><span aria-hidden="true"><SvgIcon icon={cameraOutline} /></span><b>{t('expectedProof')}</b><p>{visual.proofType}</p>{canEditContent ? <RoutineContentEditButton label={editLabel(t('expectedProof'))} target={{ kind: 'proof' }} busy={Boolean(forkingContent)} onEdit={onForkContent!} /> : null}</div>
         <div className={canEditContent ? 'routine-content-editable' : undefined}><span aria-hidden="true"><SvgIcon icon={peopleOutline} /></span><b>{t('responsible')}</b><p>{visual.responsibleName}</p>{canEditContent ? <RoutineContentEditButton label={editLabel(t('responsible'))} target={{ kind: 'responsible' }} busy={Boolean(forkingContent)} onEdit={onForkContent!} /> : null}</div>
       </section>
       <section className={`routine-copy${canEditContent ? ' routine-content-editable' : ''}`}><h2>{t('instructions')}</h2><p>{visual.instructions}</p>{canEditContent ? <RoutineContentEditButton label={editLabel(t('instructions'))} target={{ kind: 'instructions' }} busy={Boolean(forkingContent)} onEdit={onForkContent!} /> : null}</section>
       <div className="routine-instruction-list">{visual.instructionSteps.map((step, index) => <article className={canEditContent ? 'routine-content-editable' : undefined} key={step.id}><b>{index + 1}</b><span aria-hidden="true"><AppIcon name={routineIconName(step.icon)} /></span><div><h3>{step.title}</h3><p>{step.description}</p></div>{canEditContent ? <RoutineContentEditButton label={editLabel(step.title)} target={{ kind: 'step', stepId: step.id }} busy={Boolean(forkingContent)} onEdit={onForkContent!} /> : null}</article>)}</div>
-      <aside className="routine-advice"><b>{t('advice')}</b><p>{t('routineAdvice')}</p></aside>
       {next && start && <ActionButton className="routine-proof-action" onClick={start}><SvgIcon icon={cameraOutline} />{t('sendProof')}</ActionButton>}
     </div>
   );
