@@ -22,19 +22,22 @@ describe('private routine draft editor', () => {
   });
   afterEach(() => { act(() => root.unmount()); container.remove(); });
 
-  it('creates a partial French draft without assigning or activating it', async () => {
-    const save = vi.fn().mockImplementation(async (routinePackage) => ({ ...savedDraft(routinePackage.routine.name), package: routinePackage }));
+  it('creates a complete single-language French draft from one instruction', async () => {
+    const save = vi.fn().mockImplementation(async (routinePackage) => ({ ...savedDraft(routinePackage.routine.name), package: routinePackage, validation: { status: 'valid', issues: [] } }));
     act(() => root.render(<RoutineDraftEditorScreen locale="en" online save={save} cancel={() => undefined} reload={() => undefined} t={(key) => translate('en', key)} />));
     const selects = container.querySelectorAll('select');
     act(() => { (selects[0] as HTMLSelectElement).value = 'fr'; selects[0].dispatchEvent(new Event('change', { bubbles: true })); });
-    const name = Array.from(container.querySelectorAll('label')).find((label) => label.textContent?.startsWith('Name'))?.querySelector('input');
-    act(() => { if (name) { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(name, 'Routine du soir'); name.dispatchEvent(new Event('input', { bubbles: true })); } });
+    const instruction = container.querySelector<HTMLTextAreaElement>('.routine-draft-essential textarea');
+    act(() => { if (instruction) { Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(instruction, 'Mettre les élastiques orthodontiques après le dîner.'); instruction.dispatchEvent(new Event('input', { bubbles: true })); } });
     await act(async () => { container.querySelector<HTMLFormElement>('form')?.requestSubmit(); await Promise.resolve(); });
     expect(save).toHaveBeenCalledOnce();
     expect(save.mock.calls[0][0].defaultLocale).toBe('fr');
     expect(save.mock.calls[0][0].availableLocales).toEqual(['fr']);
-    expect(save.mock.calls[0][0].routine.name).toBe('Routine du soir');
-    expect(container.textContent).toContain('Draft saved · revision 1 · 1 items to complete');
+    expect(save.mock.calls[0][0].routine.name).toBe('Mettre les élastiques orthodontiques après le dîner');
+    expect(save.mock.calls[0][0].routine.instructionSteps).toHaveLength(2);
+    expect(save.mock.calls[0][0].routine.analysis.detectedCriteria).toContain('élastiques orthodontiques');
+    expect(save.mock.calls[0][0].routine.translations).toBeUndefined();
+    expect(container.textContent).toContain('Draft saved · revision 1 · ready');
   });
 
   it('preserves edits after a conflict and offers recovery', async () => {
@@ -42,11 +45,11 @@ describe('private routine draft editor', () => {
     const save = vi.fn().mockRejectedValue(new Error('functions/aborted: changed on another device'));
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     act(() => root.render(<RoutineDraftEditorScreen draft={savedDraft('Original name')} locale="en" online save={save} cancel={() => undefined} reload={reload} t={(key) => translate('en', key)} />));
-    const name = Array.from(container.querySelectorAll('label')).find((label) => label.textContent?.startsWith('Name'))?.querySelector('input');
-    act(() => { if (name) { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(name, 'Unsaved local name'); name.dispatchEvent(new Event('input', { bubbles: true })); } });
+    const instruction = container.querySelector<HTMLTextAreaElement>('.routine-draft-essential textarea');
+    act(() => { if (instruction) { Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(instruction, 'Unsaved local instruction'); instruction.dispatchEvent(new Event('input', { bubbles: true })); } });
     await act(async () => { container.querySelector<HTMLFormElement>('form')?.requestSubmit(); await Promise.resolve(); });
     expect(container.querySelector('[role="alert"]')?.textContent).toContain('changed on another device');
-    expect(name?.value).toBe('Unsaved local name');
+    expect(instruction?.value).toBe('Unsaved local instruction');
     act(() => Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Reload latest revision')?.click());
     expect(reload).toHaveBeenCalledOnce();
   });

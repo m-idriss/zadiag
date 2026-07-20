@@ -198,7 +198,7 @@ describe('participant routines navigation', () => {
 
     expect(fork).toHaveBeenCalledWith('participant-1', assignment.routineId, 'en');
     expect(container.textContent).toContain('Routine editor');
-    expect(container.querySelector<HTMLInputElement>('.routine-draft-field input')?.value).toBe(assignment.routine.name);
+    expect(container.querySelector<HTMLTextAreaElement>('.routine-draft-essential textarea')?.value).toBe(assignment.routine.instructions);
   });
 
   it('reviews fork changes before publishing the next routine version', async () => {
