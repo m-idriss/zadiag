@@ -3218,7 +3218,6 @@ export const reviewCheck = onCall({ region, cors, enforceAppCheck: true }, async
       reviewStatus: decision === 'detected' ? 'approved' : 'rejected',
       reviewedAt,
       reviewedBy: uid,
-      reviewReason: 'responsible_review',
       responsibleActions: [
         ...(Array.isArray(checkData.responsibleActions) ? checkData.responsibleActions : []),
         { type: decision === 'detected' ? 'approved' : 'rejected', at: reviewedAt, actorUid: uid, actorName },

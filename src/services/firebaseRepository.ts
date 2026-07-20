@@ -157,7 +157,7 @@ const asEvent = (id: string, data: DocumentData): VerificationEvent => ({
   reviewStatus: asReviewStatus(data.reviewStatus),
   reviewedAt: data.reviewedAt ? String(data.reviewedAt) : undefined,
   reviewedBy: data.reviewedBy ? String(data.reviewedBy) : undefined,
-  reviewReason: data.reviewReason ? String(data.reviewReason) : undefined,
+  reviewReason: data.reviewReason && data.reviewReason !== 'responsible_review' ? String(data.reviewReason) : undefined,
   responsibleActions: asResponsibleActions(data.responsibleActions),
 });
 

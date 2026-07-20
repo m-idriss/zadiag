@@ -21,7 +21,7 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
   const dialogRef = useModalFocus<HTMLDivElement>(true, onClose);
   const [loadedProofUrl, setLoadedProofUrl] = useState<string>();
   const [proofError, setProofError] = useState(false);
-  const [detailsExpanded, setDetailsExpanded] = useState(false);
+  const [detailsExpanded, setDetailsExpanded] = useState(() => ['approved', 'rejected'].includes(event.reviewStatus ?? ''));
   const [reviewing, setReviewing] = useState(false);
   const [reviewError, setReviewError] = useState(false);
   const [requestStatus, setRequestStatus] = useState<'sending' | 'sent' | 'error'>();
@@ -33,6 +33,7 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
   const formatDateTime = (value: string) => new Intl.DateTimeFormat(formatterLocale, { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
   const analysisSourceLabel = event.analysisSource ? t(event.analysisSource === 'ai' ? 'analysisSourceAi' : event.analysisSource === 'fallback' ? 'analysisSourceFallback' : 'analysisSourceSelf') : undefined;
   const reviewStatusLabel = event.reviewStatus ? t(event.reviewStatus === 'approved' ? 'historyReviewApproved' : event.reviewStatus === 'rejected' ? 'historyReviewRejected' : 'historyReviewPending') : undefined;
+  const reviewReason = event.reviewReason === 'responsible_review' ? undefined : event.reviewReason;
   const actionKeys: Record<NonNullable<VerificationEvent['responsibleActions']>[number]['type'], MessageKey> = {
     requested: 'historyActionRequested',
     reminded: 'historyActionReminded',
@@ -51,6 +52,10 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
       .catch((error) => { console.error(error); if (active) setProofError(true); });
     return () => { active = false; };
   }, [event.id, event.proofImagePath, getProofImageUrl, providedProofUrl]);
+
+  useEffect(() => {
+    if (['approved', 'rejected'].includes(event.reviewStatus ?? '')) setDetailsExpanded(true);
+  }, [event.reviewStatus]);
 
   const decide = async (decision: 'detected' | 'not_detected') => {
     if (!reviewCheck) return;
@@ -122,7 +127,7 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
           {event.reason ? <div className="wide"><dt>{t('analysisReason')}</dt><dd>{event.reason}</dd></div> : null}
           {reviewStatusLabel ? <div><dt>{t('historyReviewDecision')}</dt><dd>{reviewStatusLabel}</dd></div> : null}
           {event.reviewedAt ? <div><dt>{t('historyReviewedAt')}</dt><dd>{formatDateTime(event.reviewedAt)}</dd></div> : null}
-          {event.reviewReason ? <div className="wide"><dt>{t('historyReviewComment')}</dt><dd>{event.reviewReason}</dd></div> : null}
+          {reviewReason ? <div className="wide"><dt>{t('historyReviewComment')}</dt><dd>{reviewReason}</dd></div> : null}
           {event.responsibleActions?.length ? (
             <div className="wide history-responsible-actions">
               <dt>{t('historyResponsibleActions')}</dt>

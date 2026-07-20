@@ -277,8 +277,8 @@ describe('participant routines navigation', () => {
     expect(historyOpen?.getAttribute('aria-label')).toContain('Check details');
     act(() => historyOpen?.click());
     expect(container.querySelector('.history-detail-dialog')).not.toBeNull();
-    expect(container.querySelector('.history-detail-dialog dl')).toBeNull();
-    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Show all information"]')?.click());
+    expect(container.querySelector('.history-detail-dialog dl')).not.toBeNull();
+    expect(container.querySelector<HTMLButtonElement>('button[aria-label="Hide information"]')?.getAttribute('aria-expanded')).toBe('true');
     expect(container.querySelector('.history-detail-dialog')?.textContent).toContain('Proof sent');
     expect(container.querySelector('.history-detail-dialog')?.textContent).toContain('AI');
     expect(container.querySelector('.history-detail-dialog')?.textContent).toContain('82%');

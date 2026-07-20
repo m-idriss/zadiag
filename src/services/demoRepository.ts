@@ -590,7 +590,6 @@ export class DemoRepository implements AppRepository {
       reviewStatus: decision === 'detected' ? 'approved' : 'rejected',
       reviewedAt,
       reviewedBy: 'demo-parent',
-      reviewReason: 'responsible_review',
       responsibleActions: [...(event.responsibleActions ?? []), {
         type: decision === 'detected' ? 'approved' : 'rejected',
         at: reviewedAt, actorUid: 'demo-parent', actorName: this.state.accountDisplayName ?? 'Responsable démo',
