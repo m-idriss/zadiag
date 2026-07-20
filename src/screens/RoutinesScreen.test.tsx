@@ -126,10 +126,11 @@ describe('participant routines navigation', () => {
     const listDrafts = vi.fn().mockResolvedValue([draft]);
     const deleteDraft = vi.fn().mockResolvedValue(undefined);
     const assignDraft = vi.fn().mockResolvedValue(undefined);
+    const exportDraft = vi.fn().mockResolvedValue({ content: '{}', mimeType: 'application/vnd.zadiag.routine+json', fileName: 'routine.zadiag-routine' });
     vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     act(() => {
-      root.render(<RoutinesScreen state={state} onAssignRoutine={async () => undefined} onListRoutineDrafts={listDrafts} onDeleteRoutineDraft={deleteDraft} onAssignRoutineDraft={assignDraft} t={(key) => translate('en', key)} />);
+      root.render(<RoutinesScreen state={state} onAssignRoutine={async () => undefined} onListRoutineDrafts={listDrafts} onDeleteRoutineDraft={deleteDraft} onAssignRoutineDraft={assignDraft} onExportRoutinePackage={exportDraft} t={(key) => translate('en', key)} />);
     });
     await act(async () => {
       document.body.querySelector<HTMLButtonElement>('.routines-add-dock-button')?.click();
@@ -146,13 +147,15 @@ describe('participant routines navigation', () => {
     expect(document.body.textContent).toContain('My hydration plan');
     expect(document.body.querySelectorAll('.routine-catalog-item')).toHaveLength(0);
 
-    const view = Array.from(document.body.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent === 'View');
+    expect(document.body.textContent).toContain('Revision 2');
+    const view = document.body.querySelector<HTMLButtonElement>('button[aria-label="View"]');
     act(() => view?.click());
     expect(view?.getAttribute('aria-expanded')).toBe('true');
     expect(document.body.textContent).toContain('A private draft description');
     expect(document.body.textContent).toContain('Revision 2 · 1 issues');
     expect(document.body.textContent).toContain('Responsible view');
     expect(document.body.textContent).toContain('Participant view');
+    expect(Array.from(document.body.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent?.includes('Export'))).toBeDefined();
     expect(Array.from(document.body.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent === 'Assign this draft')?.disabled).toBe(true);
     expect(assignDraft).not.toHaveBeenCalled();
 
@@ -162,6 +165,40 @@ describe('participant routines navigation', () => {
     });
     expect(deleteDraft).toHaveBeenCalledWith('participant-1', 'draft-1', 2);
     expect(document.body.textContent).not.toContain('My hydration plan');
+  });
+
+  it('keeps loaded drafts visible without a blocking message during refresh', async () => {
+    const assignment = createDefaultRoutineAssignment('2026-07-02T08:00:00.000Z');
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      participantAccess: [{ participant: { id: 'participant-1', displayName: 'Maya' }, membership: { role: 'owner', status: 'active' } }],
+      activeParticipantId: 'participant-1', routineAssignments: [assignment], events: [], routinesLoaded: true, routinesError: false,
+    };
+    const draft: RoutineDraft = {
+      id: 'draft-1', ownerId: 'owner-1', revision: 4, state: 'active',
+      package: { schemaVersion: 1, version: 1, defaultLocale: 'en', availableLocales: ['en'], routine: { ...assignment.routine, id: 'private-hydration', name: 'My hydration plan' } },
+      validation: { status: 'valid', issues: [] }, createdAt: '2026-07-02T08:00:00.000Z', updatedAt: '2026-07-02T09:00:00.000Z',
+    };
+    const initialList = vi.fn().mockResolvedValue([draft]);
+    const render = (listDrafts: (participantId: string) => Promise<RoutineDraft[]>) => root.render(<RoutinesScreen state={state} onAssignRoutine={vi.fn()} onListRoutineDrafts={listDrafts} t={(key) => translate('en', key)} />);
+
+    act(() => render(initialList));
+    await act(async () => {
+      document.body.querySelector<HTMLButtonElement>('.routines-add-dock-button')?.click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      Array.from(document.body.querySelectorAll<HTMLButtonElement>('.routine-catalog-tabs button')).find((button) => button.textContent === 'Private drafts')?.click();
+      await Promise.resolve();
+    });
+    expect(document.body.textContent).toContain('My hydration plan');
+
+    const refreshingList = vi.fn(() => new Promise<RoutineDraft[]>(() => undefined));
+    act(() => render(refreshingList));
+    expect(document.body.querySelector('#routine-catalog-drafts-panel')?.getAttribute('aria-busy')).toBe('true');
+    expect(document.body.textContent).toContain('My hydration plan');
+    expect(document.body.textContent).not.toContain('Loading private drafts');
   });
 
   it('opens the selected routine element in a focused private draft editor', async () => {
@@ -234,7 +271,7 @@ describe('participant routines navigation', () => {
       Array.from(document.body.querySelectorAll<HTMLButtonElement>('.routine-catalog-tabs button')).find((button) => button.textContent === 'Private drafts')?.click();
       await Promise.resolve();
     });
-    act(() => Array.from(document.body.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent === 'View')?.click());
+    act(() => document.body.querySelector<HTMLButtonElement>('button[aria-label="View"]')?.click());
     act(() => Array.from(document.body.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent === 'Review publication')?.click());
 
     expect(publish).not.toHaveBeenCalled();
