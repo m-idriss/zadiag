@@ -59,6 +59,36 @@ export interface RoutineAssignmentDocument {
   sourceVersion?: number;
 }
 
+export interface RoutineAssignmentVersionChangeDocument {
+  from: { routine: RoutineDocument; sourceDraftId?: string; sourceRevision?: number; sourceVersion?: number };
+  to: { sourceDraftId: string; sourceRevision: number; sourceVersion: number };
+  appliedAt: string;
+  appliedBy: string;
+}
+
+export const routineAssignmentProvenance = (assignment: RoutineAssignmentDocument) => ({
+  ...(assignment.sourceDraftId ? { routineSourceDraftId: assignment.sourceDraftId } : {}),
+  ...(assignment.sourceRevision ? { routineSourceRevision: assignment.sourceRevision } : {}),
+  ...(assignment.sourceVersion ? { routineSourceVersion: assignment.sourceVersion } : {}),
+});
+
+export const createRoutineAssignmentVersionChange = (
+  assignment: RoutineAssignmentDocument,
+  target: { sourceDraftId: string; sourceRevision: number; sourceVersion: number },
+  appliedBy: string,
+  appliedAt = new Date().toISOString(),
+): RoutineAssignmentVersionChangeDocument => ({
+  from: {
+    routine: structuredClone(assignment.routine),
+    ...(assignment.sourceDraftId ? { sourceDraftId: assignment.sourceDraftId } : {}),
+    ...(assignment.sourceRevision ? { sourceRevision: assignment.sourceRevision } : {}),
+    ...(assignment.sourceVersion ? { sourceVersion: assignment.sourceVersion } : {}),
+  },
+  to: target,
+  appliedAt,
+  appliedBy,
+});
+
 export const routineFromCatalog = (routineId: string) =>
   availableRoutines.find((routine) => routine.id === routineId);
 

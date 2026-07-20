@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BottomNav, navigationTabs, tabAfterSwipe } from '../components/BottomNav';
 import { createDefaultRoutineAssignment, type AppState } from '../domain/models';
 import { availableRoutines } from '../domain/routineCatalog';
-import type { RoutineCatalogEntry, RoutineDraft } from '../domain/routineDraft';
+import type { PublishedRoutineVersion, RoutineCatalogEntry, RoutineDraft } from '../domain/routineDraft';
 import { translate } from '../services/i18n';
 import { RoutinesScreen } from './RoutinesScreen';
 
@@ -240,6 +240,44 @@ describe('participant routines navigation', () => {
       await Promise.resolve();
     });
     expect(publish).toHaveBeenCalledWith('participant-1', 'fork-1', 3);
+  });
+
+  it('reviews and explicitly applies a published assignment version', async () => {
+    const assignment = createDefaultRoutineAssignment('2026-07-20T08:00:00.000Z');
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      participantAccess: [{ participant: { id: 'participant-1', displayName: 'Maya' }, membership: { role: 'owner', status: 'active' } }],
+      activeParticipantId: 'participant-1', routineAssignments: [assignment], events: [], routinesLoaded: true, routinesError: false,
+    };
+    const nextRoutine = structuredClone(assignment.routine);
+    nextRoutine.name = 'Updated elastics';
+    nextRoutine.analysis = { ...nextRoutine.analysis!, detectedCriteria: 'Updated visual criteria' };
+    const published: PublishedRoutineVersion & { routineId: string } = {
+      ownerId: 'owner-1', sourceDraftId: 'fork-1', sourceRevision: 3, version: 1,
+      package: { schemaVersion: 1, version: 1, defaultLocale: 'en', availableLocales: ['en'], routine: nextRoutine },
+      publishedAt: '2026-07-20T10:00:00.000Z', routineId: assignment.routineId,
+    };
+    const upgrade = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    act(() => root.render(<RoutinesScreen state={state} onAssignRoutine={vi.fn()} onListRoutineDrafts={vi.fn().mockResolvedValue([])} onListPublishedRoutineVersions={vi.fn().mockResolvedValue([published])} onUpgradeRoutineAssignment={upgrade} t={(key) => translate('en', key)} />));
+    await act(async () => {
+      document.body.querySelector<HTMLButtonElement>('.routines-add-dock-button')?.click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      Array.from(document.body.querySelectorAll<HTMLButtonElement>('.routine-catalog-tabs button')).find((button) => button.textContent === 'Private drafts')?.click();
+      await new Promise((resolve) => window.setTimeout(resolve, 50));
+    });
+
+    expect(document.body.textContent).toContain('Current version 0 → version 1');
+    expect(document.body.textContent).toContain('Gemini validation criteria will change');
+    await act(async () => {
+      Array.from(document.body.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent === 'Apply version 1')?.click();
+      await Promise.resolve();
+    });
+    expect(upgrade).toHaveBeenCalledWith('participant-1', assignment.routineId, 1);
   });
 
   it('keeps built-in and assigned routines visible when private drafts fail', async () => {

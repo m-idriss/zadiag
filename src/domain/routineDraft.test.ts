@@ -11,6 +11,7 @@ import {
   routineDraftIsComplete,
   routineDraftIsPublishable,
   routineContentChanges,
+  selectRoutineVersionTarget,
   updateRoutineDraft,
   type RoutineDraftValidation,
   type RoutinePackageV1,
@@ -39,6 +40,16 @@ describe('routine content changes', () => {
     next.analysis = { ...next.analysis!, detectedCriteria: 'New criteria' };
 
     expect(routineContentChanges(current, next)).toEqual(['identity', 'instructions', 'analysis']);
+  });
+});
+
+describe('routine version targets', () => {
+  const version = (value: number) => ({ routineId: 'routine-1', ownerId: 'owner', sourceDraftId: `draft-${value}`, sourceRevision: 1, version: value, package: packageV1(), publishedAt: `2026-07-2${value}T10:00:00.000Z` });
+
+  it('prefers the latest update and offers the previous version for rollback', () => {
+    const versions = [version(1), version(2), version(3)];
+    expect(selectRoutineVersionTarget(versions, 'routine-1', 1)?.version).toBe(3);
+    expect(selectRoutineVersionTarget(versions, 'routine-1', 3)?.version).toBe(2);
   });
 });
 
