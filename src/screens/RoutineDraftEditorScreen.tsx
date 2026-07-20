@@ -1,12 +1,12 @@
-import { useState, type FormEvent } from 'react';
-import type { Locale, Routine, RoutineCategory, RoutineValidationMode } from '../domain/models';
+import { useState, type CSSProperties, type FormEvent } from 'react';
+import type { Locale, Routine, RoutineCategory } from '../domain/models';
 import { createBlankRoutinePackage, DEFAULT_PRIVATE_ROUTINE_ACCENT, prepareMinimalRoutinePackage, routinePackageInLocale, type RoutineDraft, type RoutinePackageV1 } from '../domain/routineDraft';
-import { AppIcon } from '../components/Icon';
+import { AppIcon, routineIconName } from '../components/Icon';
 import { formatMessage, type MessageKey } from '../services/i18n';
 
-type RoutineStep = NonNullable<Routine['instructionSteps']>[number];
-
-const blankStep = (index: number): RoutineStep => ({ id: `step-${index + 1}`, icon: 'sparkles', title: '', description: '' });
+const routineCategories = ['dental', 'wellness', 'medication', 'activity', 'custom'] as const;
+const categoryIcons: Record<RoutineCategory, string> = { dental: 'tooth', wellness: 'water', medication: 'medical', activity: 'fitness', custom: 'sparkles' };
+const categoryLabels: Record<RoutineCategory, MessageKey> = { dental: 'routineCategoryDental', wellness: 'routineCategoryWellness', medication: 'routineCategoryMedication', activity: 'routineCategoryActivity', custom: 'routineCategoryCustom' };
 
 const saveErrorKind = (error: unknown) => {
   const value = String(error).toLowerCase();
@@ -39,20 +39,17 @@ export function RoutineDraftEditorScreen({
   const [savedValidation, setSavedValidation] = useState<RoutineDraft['validation']>();
   const [errorKind, setErrorKind] = useState<'conflict' | 'limit' | 'invalid' | 'remote'>();
   const [advancedExpanded, setAdvancedExpanded] = useState(false);
-  const [advancedChanged, setAdvancedChanged] = useState(false);
   const [initialInstruction] = useState(routinePackage.routine.instructions ?? '');
   const routine = routinePackage.routine;
   const updateRoutine = (patch: Partial<Routine>) => setRoutinePackage((current) => ({ ...current, routine: { ...current.routine, ...patch } }));
-  const updateAdvancedRoutine = (patch: Partial<Routine>) => { setAdvancedChanged(true); updateRoutine(patch); };
-  const updateAnalysis = (field: keyof NonNullable<Routine['analysis']>, value: string) => updateAdvancedRoutine({ analysis: { expectedEvidence: '', detectedCriteria: '', notDetectedCriteria: '', uncertaintyCriteria: '', ...routine.analysis, [field]: value } });
-  const updateStep = (index: number, patch: Partial<RoutineStep>) => updateAdvancedRoutine({ instructionSteps: (routine.instructionSteps ?? []).map((step, stepIndex) => stepIndex === index ? { ...step, ...patch } : step) });
+  const updateCategory = (category: RoutineCategory) => updateRoutine({ category, icon: categoryIcons[category] });
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!online || saving) return;
     setSaving(true);
     setErrorKind(undefined);
     try {
-      const prepared = prepareMinimalRoutinePackage(routinePackage, !advancedChanged && routine.instructions !== initialInstruction);
+      const prepared = prepareMinimalRoutinePackage(routinePackage, routine.instructions !== initialInstruction);
       const saved = await save(prepared);
       setRoutinePackage(structuredClone(saved.package));
       setSavedRevision(saved.revision);
@@ -64,15 +61,7 @@ export function RoutineDraftEditorScreen({
       setSaving(false);
     }
   };
-  const field = (label: MessageKey, value: string | undefined, onChange: (value: string) => void, maximum: number, multiline = false) => (
-    <label className="routine-draft-field">
-      <span>{t(label)}</span>
-      {multiline
-        ? <textarea value={value ?? ''} maxLength={maximum} onChange={(event) => onChange(event.target.value)} />
-        : <input value={value ?? ''} maxLength={maximum} onChange={(event) => onChange(event.target.value)} />}
-      <small>{formatMessage(t('routineDraftCharacterCount'), { count: value?.length ?? 0, maximum })}</small>
-    </label>
-  );
+  const accentColor = /^#[0-9a-f]{6}$/i.test(routine.accentColor ?? '') ? routine.accentColor! : DEFAULT_PRIVATE_ROUTINE_ACCENT;
 
   return (
     <div className="content-screen routine-draft-editor-screen">
@@ -85,11 +74,15 @@ export function RoutineDraftEditorScreen({
           <h2>{t('routineDraftEssentialTitle')}</h2>
           <textarea className="routine-draft-main-instruction" aria-label={t('routineDraftInstructions')} placeholder={t('routineDraftInstructionPlaceholder')} value={routine.instructions ?? ''} maxLength={2000} onChange={(event) => updateRoutine({ instructions: event.target.value })} />
           <button type="button" className="routine-draft-customize" aria-expanded={advancedExpanded} onClick={() => setAdvancedExpanded((expanded) => !expanded)}>{t(advancedExpanded ? 'routineDraftHideAdvanced' : 'routineDraftCustomize')}<AppIcon name="chevron-down" className={advancedExpanded ? 'expanded' : undefined} /></button>
-          {advancedExpanded ? <div className="routine-draft-advanced-content">
-          <section className="routine-draft-editor-section"><h3>{t('routineDraftMetadata')}</h3>{field('routineDraftName', routine.name, (value) => updateAdvancedRoutine({ name: value }), 120)}{field('routineDraftDescription', routine.description, (value) => updateAdvancedRoutine({ description: value }), 500, true)}{field('routineDraftResponsibleName', routine.responsibleName, (value) => updateAdvancedRoutine({ responsibleName: value }), 120)}</section>
-          <section className="routine-draft-editor-section"><h3>{t('routineDraftAppearance')}</h3>{field('routineDraftIcon', routine.icon, (value) => updateAdvancedRoutine({ icon: value }), 32)}<label className="routine-draft-field"><span>{t('routineDraftAccentColor')}</span><input type="color" value={routine.accentColor ?? DEFAULT_PRIVATE_ROUTINE_ACCENT} onChange={(event) => updateAdvancedRoutine({ accentColor: event.target.value.toUpperCase() })} /></label><label className="routine-draft-field"><span>{t('routineDraftCategory')}</span><select value={routine.category ?? 'custom'} onChange={(event) => updateAdvancedRoutine({ category: event.target.value as RoutineCategory })}>{(['dental', 'wellness', 'medication', 'activity', 'custom'] as const).map((category) => <option value={category} key={category}>{t(category === 'dental' ? 'routineCategoryDental' : category === 'wellness' ? 'routineCategoryWellness' : category === 'medication' ? 'routineCategoryMedication' : category === 'activity' ? 'routineCategoryActivity' : 'routineCategoryCustom')}</option>)}</select></label></section>
-          <section className="routine-draft-editor-section"><h3>{t('routineDraftSteps')}</h3>{(routine.instructionSteps ?? []).map((step, index) => <fieldset className="routine-draft-step" key={step.id}><legend>{formatMessage(t('routineDraftStep'), { number: index + 1 })}</legend>{field('routineDraftStepTitle', step.title, (value) => updateStep(index, { title: value }), 120)}{field('routineDraftStepDescription', step.description, (value) => updateStep(index, { description: value }), 500, true)}{(routine.instructionSteps?.length ?? 0) > 2 ? <button type="button" onClick={() => updateAdvancedRoutine({ instructionSteps: routine.instructionSteps?.filter((_, stepIndex) => stepIndex !== index) })}>{t('routineDraftRemoveStep')}</button> : null}</fieldset>)}{(routine.instructionSteps?.length ?? 0) < 4 ? <button type="button" className="routine-draft-secondary-action" onClick={() => updateAdvancedRoutine({ instructionSteps: [...(routine.instructionSteps ?? []), blankStep(routine.instructionSteps?.length ?? 0)] })}>{t('routineDraftAddStep')}</button> : null}</section>
-          <section className="routine-draft-editor-section"><h3>{t('routineDraftExpectedProof')}</h3>{field('routineDraftProofExample', routine.proofExample, (value) => updateAdvancedRoutine({ proofExample: value }), 500, true)}{field('routineDraftExpectedEvidence', routine.analysis?.expectedEvidence, (value) => updateAnalysis('expectedEvidence', value), 2000, true)}{field('routineDraftDetectedCriteria', routine.analysis?.detectedCriteria, (value) => updateAnalysis('detectedCriteria', value), 2000, true)}{field('routineDraftNotDetectedCriteria', routine.analysis?.notDetectedCriteria, (value) => updateAnalysis('notDetectedCriteria', value), 2000, true)}{field('routineDraftUncertaintyCriteria', routine.analysis?.uncertaintyCriteria, (value) => updateAnalysis('uncertaintyCriteria', value), 2000, true)}<label className="routine-draft-field"><span>{t('routineDraftValidationMode')}</span><select value={routine.recommendedValidationMode ?? 'ai'} onChange={(event) => updateAdvancedRoutine({ recommendedValidationMode: event.target.value as RoutineValidationMode })}><option value="ai">{t('validationAi')}</option><option value="auto">{t('validationAuto')}</option></select></label></section>
+          {advancedExpanded ? <div className="routine-draft-customization" style={{ '--routine-accent': accentColor } as CSSProperties}>
+            <div className="routine-draft-name-row">
+              <span className="settings-row-icon routine-icon" aria-hidden="true"><AppIcon name={routineIconName(routine.icon)} /></span>
+              <label className="routine-draft-field"><span>{t('routineDraftName')}</span><input value={routine.name} maxLength={120} placeholder={t('routineDraftNamePlaceholder')} onChange={(event) => updateRoutine({ name: event.target.value })} /></label>
+            </div>
+            <div className="routine-draft-appearance-fields">
+              <label className="routine-draft-field"><span>{t('routineDraftCategory')}</span><select value={routine.category ?? 'custom'} onChange={(event) => updateCategory(event.target.value as RoutineCategory)}>{routineCategories.map((category) => <option value={category} key={category}>{t(categoryLabels[category])}</option>)}</select></label>
+              <label className="routine-draft-field routine-draft-color-field"><span>{t('routineDraftAccentColor')}</span><input type="color" value={accentColor} onChange={(event) => updateRoutine({ accentColor: event.target.value.toUpperCase() })} /></label>
+            </div>
           </div> : null}
         </section>
         {!online ? <p className="routine-draft-save-state" role="status">{t('routineDraftOffline')}</p> : null}
