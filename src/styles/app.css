@@ -731,7 +731,9 @@ button:disabled { cursor: not-allowed; }
   padding: max(18px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom));
   background: rgba(10, 24, 38, .82);
 }
+.proof-lightbox-content { max-width: min(100%, 860px); max-height: 86dvh; display: grid; gap: 10px; }
 .proof-lightbox img {
+  width: 100%;
   max-width: min(100%, 860px);
   max-height: 86vh;
   display: block;
@@ -739,6 +741,9 @@ button:disabled { cursor: not-allowed; }
   object-fit: contain;
   box-shadow: 0 22px 70px rgba(0,0,0,.35);
 }
+.proof-lightbox-content.has-actions img { max-height: calc(86dvh - 64px); }
+.proof-lightbox-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.proof-lightbox-actions .parent-review-button { width: 100%; min-height: 48px; box-shadow: var(--shadow-sm); }
 .proof-lightbox-close {
   position: fixed;
   top: max(14px, env(safe-area-inset-top));
