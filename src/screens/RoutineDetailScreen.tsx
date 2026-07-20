@@ -13,6 +13,7 @@ import { ActionButton } from '../components/ui';
 import { languageTag } from '../services/locale';
 import { ProofLightbox } from '../components/ProofLightbox';
 import { VerificationEventDetailDialog } from '../components/VerificationEventDetailDialog';
+import type { RoutineContentEditTarget } from './routineContentEditTarget';
 
 type DetailTab = 'details' | 'tracking' | 'plan';
 type DetailInitialTab = DetailTab | 'overview';
@@ -146,6 +147,15 @@ const streakFor = (events: VerificationEvent[]) => {
   return streak;
 };
 
+function RoutineContentEditButton({ label, target, busy, onEdit }: {
+  label: string;
+  target: RoutineContentEditTarget;
+  busy: boolean;
+  onEdit: (target: RoutineContentEditTarget) => void;
+}) {
+  return <button type="button" className="routine-content-edit-overlay" aria-label={label} aria-busy={busy} disabled={busy} onClick={() => onEdit(target)}><SvgIcon icon={chevronForwardOutline} /></button>;
+}
+
 export function RoutineDetailScreen({ assignment, state, back, start, getProofImageUrl, reviewCheck, requestCheck, t, edit, initialTab, initialEventId, onInitialEventConsumed, onSaveMonitoringPlan, onForkContent, forkingContent, routinePlanBusy }: {
   assignment: RoutineAssignment;
   state: AppState;
@@ -160,7 +170,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   initialEventId?: string;
   onInitialEventConsumed?: () => void;
   onSaveMonitoringPlan?: (plan: RoutineAssignment['plan'], validationMode?: RoutineValidationMode) => Promise<void>;
-  onForkContent?: () => void;
+  onForkContent?: (target: RoutineContentEditTarget) => void;
   forkingContent?: boolean;
   routinePlanBusy?: boolean;
 }) {
@@ -184,6 +194,8 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   const currentStreak = streakFor(events);
   const selectedHistoryEvent = events.find((event) => event.id === selectedHistoryEventId);
   const tabs: DetailTab[] = edit ? ['plan', 'details', 'tracking'] : ['details', 'tracking'];
+  const canEditContent = Boolean(edit && onForkContent);
+  const editLabel = (label: string) => `${t('edit')} · ${label}`;
 
   useEffect(() => {
     if (initialEventId) onInitialEventConsumed?.();
@@ -240,15 +252,14 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   const detailsPanel = (
     <div className="routine-tab-panel">
       <section className="next-check-card"><div><small>{t('nextCheck')}</small><h2>{next ? t(dayPeriodLabelKey(next.expiresAt)) : t('noPendingTask')}</h2>{next && <p>{t('before')} {formatTime(next.expiresAt)}</p>}</div><span aria-hidden="true"><SvgIcon icon={timeOutline} /></span></section>
-      <section className="routine-copy"><h2>{t('routineSummary')}</h2><p>{visual.description}</p></section>
+      <section className={`routine-copy${canEditContent ? ' routine-content-editable' : ''}`}><h2>{t('routineSummary')}</h2><p>{visual.description}</p>{canEditContent ? <RoutineContentEditButton label={editLabel(t('routineSummary'))} target={{ kind: 'description' }} busy={Boolean(forkingContent)} onEdit={onForkContent!} /> : null}</section>
       <section className="routine-meta-card">
         <div className="routine-plan-meta"><span aria-hidden="true"><SvgIcon icon={timeOutline} /></span><b>{t('monitoringPlan')}</b><p>{assignment.plan.checksPerDay} {t('checksDay')}</p>{edit && <button type="button" onClick={() => setTab('plan')} className="routine-edit-plan-button">{t('edit')}</button>}</div>
-        <div><span aria-hidden="true"><SvgIcon icon={cameraOutline} /></span><b>{t('expectedProof')}</b><p>{visual.proofType}</p><i><SvgIcon icon={chevronForwardOutline} /></i></div>
-        <div><span aria-hidden="true"><SvgIcon icon={peopleOutline} /></span><b>{t('responsible')}</b><p>{visual.responsibleName}</p><i><SvgIcon icon={chevronForwardOutline} /></i></div>
+        <div className={canEditContent ? 'routine-content-editable' : undefined}><span aria-hidden="true"><SvgIcon icon={cameraOutline} /></span><b>{t('expectedProof')}</b><p>{visual.proofType}</p>{canEditContent ? <RoutineContentEditButton label={editLabel(t('expectedProof'))} target={{ kind: 'proof' }} busy={Boolean(forkingContent)} onEdit={onForkContent!} /> : null}</div>
+        <div className={canEditContent ? 'routine-content-editable' : undefined}><span aria-hidden="true"><SvgIcon icon={peopleOutline} /></span><b>{t('responsible')}</b><p>{visual.responsibleName}</p>{canEditContent ? <RoutineContentEditButton label={editLabel(t('responsible'))} target={{ kind: 'responsible' }} busy={Boolean(forkingContent)} onEdit={onForkContent!} /> : null}</div>
       </section>
-      {edit && onForkContent ? <button type="button" className="routine-content-edit-button" aria-busy={forkingContent} disabled={forkingContent} onClick={onForkContent}>{forkingContent ? <span className="button-spinner" aria-hidden="true" /> : null}{forkingContent ? t('routineContentPreparing') : t('routineContentEdit')}</button> : null}
-      <section className="routine-copy"><h2>{t('instructions')}</h2><p>{visual.instructions}</p></section>
-      <div className="routine-instruction-list">{visual.instructionSteps.map((step, index) => <article key={step.id}><b>{index + 1}</b><span aria-hidden="true"><AppIcon name={routineIconName(step.icon)} /></span><div><h3>{step.title}</h3><p>{step.description}</p></div></article>)}</div>
+      <section className={`routine-copy${canEditContent ? ' routine-content-editable' : ''}`}><h2>{t('instructions')}</h2><p>{visual.instructions}</p>{canEditContent ? <RoutineContentEditButton label={editLabel(t('instructions'))} target={{ kind: 'instructions' }} busy={Boolean(forkingContent)} onEdit={onForkContent!} /> : null}</section>
+      <div className="routine-instruction-list">{visual.instructionSteps.map((step, index) => <article className={canEditContent ? 'routine-content-editable' : undefined} key={step.id}><b>{index + 1}</b><span aria-hidden="true"><AppIcon name={routineIconName(step.icon)} /></span><div><h3>{step.title}</h3><p>{step.description}</p></div>{canEditContent ? <RoutineContentEditButton label={editLabel(step.title)} target={{ kind: 'step', stepId: step.id }} busy={Boolean(forkingContent)} onEdit={onForkContent!} /> : null}</article>)}</div>
       <aside className="routine-advice"><b>{t('advice')}</b><p>{t('routineAdvice')}</p></aside>
       {next && start && <ActionButton className="routine-proof-action" onClick={start}><SvgIcon icon={cameraOutline} />{t('sendProof')}</ActionButton>}
     </div>
@@ -299,12 +310,13 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
     <div className="content-screen routine-detail-screen" style={visual.style}>
       <div className="routine-detail-topbar">
         <button type="button" className="detail-back" onClick={back} aria-label={t('backToRoutines')}><SvgIcon icon={chevronBackOutline} /></button>
-        <header className="routine-detail-hero">
+        <header className={`routine-detail-hero${canEditContent ? ' routine-content-editable' : ''}`}>
           <span className="routine-hero-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
           <div className="routine-detail-title">
             <h1>{visual.name}</h1>
             <p>{assignment.plan.checksPerDay} {t('checksDay')}</p>
           </div>
+          {canEditContent ? <RoutineContentEditButton label={editLabel(visual.name)} target={{ kind: 'identity' }} busy={Boolean(forkingContent)} onEdit={onForkContent!} /> : null}
         </header>
         <button type="button" className="more-button" aria-label={t('moreOptions')}><SvgIcon icon={ellipsisHorizontal} /></button>
       </div>

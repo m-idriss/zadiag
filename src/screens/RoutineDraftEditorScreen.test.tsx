@@ -59,6 +59,23 @@ describe('private routine draft editor', () => {
     expect(save.mock.calls[0][0].routine).toMatchObject({ category: 'medication', icon: 'medical' });
   });
 
+  it('edits only the instruction step selected from the routine detail', async () => {
+    const draft = savedDraft();
+    draft.package.routine.instructionSteps![0] = { id: 'step-1', icon: 'sparkles', title: 'First step', description: 'Original step instructions' };
+    draft.package.routine.instructionSteps![1] = { id: 'step-2', icon: 'camera', title: 'Second step', description: 'Keep these instructions unchanged' };
+    const save = vi.fn().mockImplementation(async (routinePackage) => ({ ...draft, package: routinePackage, revision: 2, validation: { status: 'valid', issues: [] } }));
+    act(() => root.render(<RoutineDraftEditorScreen draft={draft} target={{ kind: 'step', stepId: 'step-1' }} locale="en" online save={save} cancel={() => undefined} reload={() => undefined} t={(key) => translate('en', key)} />));
+
+    expect(container.querySelector('.routine-draft-essential')).toBeNull();
+    expect(container.querySelector('.routine-draft-editor-header h1')?.textContent).toBe('Step 1');
+    const description = container.querySelector<HTMLTextAreaElement>('textarea');
+    act(() => { if (description) { Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(description, 'Updated step instructions'); description.dispatchEvent(new Event('input', { bubbles: true })); } });
+    await act(async () => { container.querySelector<HTMLFormElement>('form')?.requestSubmit(); await Promise.resolve(); });
+
+    expect(save.mock.calls[0][0].routine.instructionSteps[0].description).toBe('Updated step instructions');
+    expect(save.mock.calls[0][0].routine.instructionSteps[1]).toEqual(draft.package.routine.instructionSteps![1]);
+  });
+
   it('preserves edits after a conflict and offers recovery', async () => {
     const reload = vi.fn();
     const save = vi.fn().mockRejectedValue(new Error('functions/aborted: changed on another device'));

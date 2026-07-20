@@ -164,7 +164,7 @@ describe('participant routines navigation', () => {
     expect(document.body.textContent).not.toContain('My hydration plan');
   });
 
-  it('forks assigned content into a private draft before opening the editor', async () => {
+  it('opens the selected routine element in a focused private draft editor', async () => {
     await import('./RoutineDetailScreen');
     await import('./RoutineDraftEditorScreen');
     const assignment = createDefaultRoutineAssignment('2026-07-20T08:00:00.000Z');
@@ -189,7 +189,11 @@ describe('participant routines navigation', () => {
       container.querySelector<HTMLButtonElement>('button[aria-label="Details"]')?.click();
       await new Promise((resolve) => window.setTimeout(resolve, 100));
     });
-    const editContent = container.querySelector<HTMLButtonElement>('.routine-content-edit-button');
+    const editContent = container.querySelector<HTMLButtonElement>('button[aria-label="Edit · Summary"]');
+    expect(container.querySelector('.routine-content-edit-button')).toBeNull();
+    expect(container.querySelector('button[aria-label="Edit · Expected proof"]')).not.toBeNull();
+    expect(container.querySelector('button[aria-label="Edit · Responsible"]')).not.toBeNull();
+    expect(container.querySelector('button[aria-label="Edit · Instructions"]')).not.toBeNull();
     expect(editContent).not.toBeNull();
     await act(async () => {
       editContent?.click();
@@ -197,8 +201,9 @@ describe('participant routines navigation', () => {
     });
 
     expect(fork).toHaveBeenCalledWith('participant-1', assignment.routineId, 'en');
-    expect(container.textContent).toContain('Routine editor');
-    expect(container.querySelector<HTMLTextAreaElement>('.routine-draft-essential textarea')?.value).toBe(assignment.routine.instructions);
+    expect(container.querySelector('.routine-draft-essential')).toBeNull();
+    expect(container.querySelector<HTMLTextAreaElement>('.routine-draft-targeted textarea')?.value).toBe(assignment.routine.description);
+    expect(container.querySelector('.routine-draft-editor-header h1')?.textContent).toBe('Summary');
   });
 
   it('reviews fork changes before publishing the next routine version', async () => {
