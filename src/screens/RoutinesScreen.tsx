@@ -573,10 +573,10 @@ export function RoutinesScreen({
           </div> : null}
           <div className="routine-catalog-list">
             {catalogSection === 'drafts' && onListRoutineDrafts ? (
-              <section id="routine-catalog-drafts-panel" className="routine-library-group" role="tabpanel" aria-labelledby="routine-catalog-drafts-tab">
+              <section id="routine-catalog-drafts-panel" className="routine-library-group" role="tabpanel" aria-labelledby="routine-catalog-drafts-tab" aria-busy={draftsStatus === 'loading'}>
                 <div className="routine-library-group-heading"><h3 id="routine-library-drafts-title">{t('routineLibraryDrafts')}</h3><div>{onImportRoutinePackage ? <label className="routine-import-button">{t('routineImport')}<input type="file" accept="application/vnd.zadiag.routine+json,.zadiag-routine" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importPackage(file); event.target.value = ''; }} /></label> : null}{onCreateRoutineDraft ? <button type="button" onClick={() => openDraftEditor('new')}>{t('routineDraftNew')}</button> : null}</div></div>
                 {!online ? <p className="routine-library-state" role="status">{t('routineLibraryDraftsOffline')}</p> : null}
-                {online && draftsStatus === 'loading' ? <p className="routine-library-state" role="status">{t('routineLibraryLoadingDrafts')}</p> : null}
+                {online && draftsStatus === 'loading' && !routineDrafts.length ? <p className="routine-library-state" role="status">{t('routineLibraryLoadingDrafts')}</p> : null}
                 {online && draftsStatus === 'error' ? (
                   <div className="routine-library-state" role="alert">
                     <p>{t('routineLibraryDraftsError')}</p>
@@ -601,16 +601,13 @@ export function RoutinesScreen({
                     <article className="routine-library-draft" key={draft.id} style={visual.style}>
                       <div className="routine-library-draft-heading">
                         <span className="settings-row-icon routine-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
-                        <div>
-                          <span className="routine-library-badge">{t(statusKey)}</span>
+                        <div className="routine-library-draft-copy">
+                          <div className="routine-library-draft-meta"><span className="routine-library-badge">{t(statusKey)}</span><small>{formatMessage(t('routineLibraryRevision'), { revision: draft.revision })}</small></div>
                           <h4>{visual.name}</h4>
                         </div>
                         <div className="routine-library-draft-actions">
-                          {onUpdateRoutineDraft && draft.state === 'active' ? <button type="button" onClick={() => openDraftEditor(draft.id)}>{t('routineDraftResume')}</button> : <button type="button" aria-expanded={expanded} onClick={() => setOpenDraftId(expanded ? undefined : draft.id)}>{expanded ? t('routineLibraryCloseDraft') : t('routineLibraryOpenDraft')}</button>}
-                          <button type="button" disabled={deletingDraftId === draft.id} onClick={() => { void deleteDraft(draft, visual.name); }} aria-label={formatMessage(t('routineLibraryDeleteDraft'), { routine: visual.name })}>
-                            <AppIcon name="close" />
-                          </button>
-                          {onExportRoutinePackage ? <button type="button" onClick={() => { void exportDraft(draft.id); }}>{t('routineExport')}</button> : null}
+                          {onUpdateRoutineDraft && draft.state === 'active' ? <button type="button" className="routine-library-draft-edit" onClick={() => openDraftEditor(draft.id)}>{t('routineDraftResume')}</button> : null}
+                          <DisclosureToggle expanded={expanded} showLabel={t('routineLibraryOpenDraft')} hideLabel={t('routineLibraryCloseDraft')} onToggle={() => setOpenDraftId(expanded ? undefined : draft.id)} />
                         </div>
                       </div>
                       {expanded ? (
@@ -623,6 +620,10 @@ export function RoutinesScreen({
                           {onAssignRoutineDraft ? <button type="button" className="routine-draft-assign" disabled={draft.validation.status !== 'valid' || draft.state !== 'active' || assigningDraftId === draft.id} onClick={() => { void assignDraft(draft); }}>{assigningDraftId === draft.id ? t('routineDraftAssigning') : t('routineDraftAssign')}</button> : null}
                           {reviewingPublication ? <section className="routine-publish-review" aria-label={t('routinePublishReviewTitle')}><h5>{formatMessage(t('routinePublishReviewVersion'), { version: draft.package.version })}</h5>{changes.length ? <ul>{changes.map((change) => <li key={change}>{t(routineChangeLabelKeys[change])}</li>)}</ul> : <p>{t(sourceAssignment ? 'routinePublishNoChanges' : 'routinePublishNewRoutine')}</p>}<p>{t('routinePublishImmutableNotice')}</p><div><button type="button" onClick={() => setReviewingPublishDraftId(undefined)}>{t('cancel')}</button><button type="button" className="routine-draft-publish" disabled={!changes.length && Boolean(sourceAssignment) || publishingDraftId === draft.id} onClick={() => { void publishDraft(draft); }}>{publishingDraftId === draft.id ? t('routineDraftPublishing') : t('routinePublishConfirm')}</button></div></section> : null}
                           {onPublishRoutineDraft && !reviewingPublication ? <button type="button" className="routine-draft-publish" disabled={draft.validation.status !== 'valid' || draft.state !== 'active' || publishingDraftId === draft.id} onClick={() => setReviewingPublishDraftId(draft.id)}>{t('routineDraftPublish')}</button> : null}
+                          {onExportRoutinePackage || onDeleteRoutineDraft ? <div className="routine-library-draft-secondary-actions">
+                            {onExportRoutinePackage ? <button type="button" onClick={() => { void exportDraft(draft.id); }}><AppIcon name="download" />{t('routineExport')}</button> : null}
+                            {onDeleteRoutineDraft ? <button type="button" className="danger" disabled={deletingDraftId === draft.id} onClick={() => { void deleteDraft(draft, visual.name); }} aria-label={formatMessage(t('routineLibraryDeleteDraft'), { routine: visual.name })}><AppIcon name="close" />{deletingDraftId === draft.id ? t('deleting') : t('delete')}</button> : null}
+                          </div> : null}
                         </div>
                       ) : null}
                       {draftAssignErrorId === draft.id ? <p className="request-feedback error" role="alert">{t('routineDraftAssignError')}</p> : null}
