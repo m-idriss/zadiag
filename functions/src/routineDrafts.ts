@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { z } from 'zod';
 
 const packageBytesLimit = 64 * 1024;
@@ -82,6 +83,31 @@ export interface PublishedRoutineVersionDocument {
 
 export class RoutineDraftInputError extends Error {}
 export class RoutineDraftConflictError extends Error {}
+
+export type IdentifiedRoutineDraft = RoutineDraftDocument & { id: string };
+
+export const routineDraftSessionId = (ownerId: string, routineId: string) => createHash('sha256')
+  .update(`${ownerId}:${routineId}`)
+  .digest('hex');
+
+export const selectReusableAssignmentDraft = (
+  drafts: IdentifiedRoutineDraft[],
+  ownerId: string,
+  routineId: string,
+  sourceVersion?: number,
+) => drafts
+  .filter((draft) => (
+    draft.ownerId === ownerId
+    && draft.state === 'active'
+    && draft.forkedFrom?.routineId === routineId
+    && (draft.forkedFrom?.sourceVersion ?? 0) === (sourceVersion ?? 0)
+    && draft.package.version === (sourceVersion ?? 0) + 1
+  ))
+  .sort((left, right) => (
+    right.updatedAt.localeCompare(left.updatedAt)
+    || right.revision - left.revision
+    || right.id.localeCompare(left.id)
+  ))[0];
 
 export const assertRoutineDraftRevision = (currentRevision: number, expectedRevision: number) => {
   if (currentRevision !== expectedRevision) throw new RoutineDraftConflictError('stale_revision');
