@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { assertRoutineDraftRevision, createRoutineDraftDocument, parseRoutineDraftPackage, RoutineDraftConflictError, RoutineDraftInputError, updateRoutineDraftDocument } from './routineDrafts.js';
+import { assertRoutineDraftRevision, createAssignmentForkPackage, createRoutineDraftDocument, parseRoutineDraftPackage, RoutineDraftConflictError, RoutineDraftInputError, updateRoutineDraftDocument } from './routineDrafts.js';
 
 const routinePackage = () => ({
   schemaVersion: 1,
@@ -70,6 +70,17 @@ test('creates owned revisions and preserves package identity on update', () => {
   const replaced = routinePackage();
   replaced.routine.id = 'other-routine';
   assert.throws(() => updateRoutineDraftDocument(created, replaced), /immutable_identity/);
+});
+
+test('forks an assignment snapshot into an independent version-one package', () => {
+  const source = routinePackage();
+  const fork = createAssignmentForkPackage(source.routine, 'private-fork-123', 'fr');
+
+  assert.equal(fork.version, 1);
+  assert.equal(fork.routine.id, 'private-fork-123');
+  assert.equal(fork.routine.name, source.routine.name);
+  assert.notEqual(fork.routine, source.routine);
+  assert.equal(source.routine.id, 'private-routine');
 });
 
 test('rejects stale optimistic revisions actionably', () => {

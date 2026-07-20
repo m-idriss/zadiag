@@ -29,6 +29,7 @@ export interface RoutineDraft {
   validation: RoutineDraftValidation;
   readonly createdAt: string;
   updatedAt: string;
+  forkedFrom?: { routineId: string; sourceVersion?: number };
 }
 export interface PublishedRoutineVersion {
   ownerId: string; sourceDraftId: string; sourceRevision: number; version: number; package: RoutinePackageV1; publishedAt: string; archivedAt?: string;

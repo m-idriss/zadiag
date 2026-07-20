@@ -18,7 +18,7 @@ import { expiredPendingCheckCleanupUpdate, shouldDeleteProofAfterReview, staleCl
 import { reportOperationalAlert, reportOperationalEvent, reportOperationalRecovery } from './observability.js';
 import { shouldRecoverSyntheticPush } from './syntheticMonitor.js';
 import { canLeaveMembership, canRemoveMembership, createMembership, hasParticipantPermission, isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, isProfileColorKey, membershipRoles, migrateLegacyFamilyRelationships, pushRolesForMembership, scheduledAggregatePaths, type MembershipPushRole, type MembershipRole } from './relationships.js';
-import { assertRoutineDraftRevision, createRoutineDraftDocument, RoutineDraftConflictError, RoutineDraftInputError, updateRoutineDraftDocument, type PublishedRoutineVersionDocument, type RoutineDraftDocument } from './routineDrafts.js';
+import { assertRoutineDraftRevision, createAssignmentForkPackage, createRoutineDraftDocument, RoutineDraftConflictError, RoutineDraftInputError, updateRoutineDraftDocument, type PublishedRoutineVersionDocument, type RoutineDraftDocument } from './routineDrafts.js';
 import { ROUTINE_PACKAGE_MIME, parseRoutinePackageEnvelope, serializeRoutinePackage } from './routinePackages.js';
 import { assertExternalPackageResponse, verifyExternalRegistryIndex } from './externalRoutineRegistry.js';
 import { marketplaceEntryAuthorizedForInstall, marketplaceEntryInstallable, marketplaceRole, moderateMarketplaceStatus, type ModerationAction, type ModerationStatus } from './routineMarketplaceGovernance.js';
@@ -2228,6 +2228,45 @@ export const createRoutineDraft = onCall({ region, cors, enforceAppCheck: true }
   });
   await recordAuditEvent(db, {
     action: 'create_routine_draft', actorUid: uid, participantId, metadata: { draftId: draftRef.id, revision: document.revision },
+  });
+  return { id: draftRef.id, ...document };
+});
+
+export const forkRoutineAssignmentDraft = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
+  const routineId = requireDocumentId(request.data?.routineId, 'Routine ID');
+  const preferredLocale = request.data?.locale === 'fr' ? 'fr' : 'en';
+  const participantRef = await requireParticipantRoutineDraftAccess(uid, participantId);
+  const assignmentRef = participantRef.collection('routineAssignments').doc(routineId);
+  const draftRef = participantRef.collection('routineDrafts').doc();
+  let document: RoutineDraftDocument | undefined;
+  await db.runTransaction(async (transaction) => {
+    const [, assignment] = await Promise.all([
+      requireParticipantRoutineDraftTransactionAccess(transaction, participantRef, uid),
+      transaction.get(assignmentRef),
+    ]);
+    if (!assignment.exists) throw new HttpsError('not-found', 'The routine assignment could not be found.');
+    const assignmentData = assignment.data() as RoutineAssignmentDocument;
+    if (!assignmentData.routine) throw new HttpsError('failed-precondition', 'The assigned routine content is unavailable.');
+    const forkId = `private-${draftRef.id.toLowerCase()}`;
+    try {
+      const routinePackage = createAssignmentForkPackage(assignmentData.routine, forkId, preferredLocale);
+      document = {
+        ...createRoutineDraftDocument(uid, routinePackage),
+        forkedFrom: { routineId, ...(assignmentData.sourceVersion ? { sourceVersion: assignmentData.sourceVersion } : {}) },
+      };
+    } catch (error) {
+      return routineDraftInputError(error);
+    }
+    if (!document) throw new HttpsError('internal', 'The routine draft could not be prepared.');
+    transaction.create(draftRef, document);
+  });
+  await recordAuditEvent(db, {
+    action: 'fork_routine_assignment_draft',
+    actorUid: uid,
+    participantId,
+    metadata: { draftId: draftRef.id, routineId, sourceVersion: document?.forkedFrom?.sourceVersion },
   });
   return { id: draftRef.id, ...document };
 });

@@ -514,6 +514,11 @@ export class FirebaseRepository implements AppRepository {
     return (await createRoutineDraft({ participantId, package: routinePackage })).data;
   }
 
+  async forkRoutineAssignmentDraft(participantId: string, routineId: string, locale: Locale) {
+    const callable = httpsCallable<{ participantId: string; routineId: string; locale: Locale }, RoutineDraft>(this.services.functions, 'forkRoutineAssignmentDraft');
+    return (await callable({ participantId, routineId, locale })).data;
+  }
+
   async updateRoutineDraft(participantId: string, draftId: string, expectedRevision: number, routinePackage: RoutinePackageV1) {
     const updateRoutineDraft = httpsCallable<
       { participantId: string; draftId: string; expectedRevision: number; package: RoutinePackageV1 },

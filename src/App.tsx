@@ -681,6 +681,7 @@ export function App() {
             onListRoutineDrafts={canManageRoutines ? bindOptionalRepository(repository.listRoutineDrafts) : undefined}
             onDeleteRoutineDraft={canManageRoutines ? bindOptionalRepository(repository.deleteRoutineDraft) : undefined}
             onCreateRoutineDraft={canManageRoutines ? bindOptionalRepository(repository.createRoutineDraft) : undefined}
+            onForkRoutineAssignmentDraft={canManageRoutines ? bindOptionalRepository(repository.forkRoutineAssignmentDraft) : undefined}
             onUpdateRoutineDraft={canManageRoutines ? bindOptionalRepository(repository.updateRoutineDraft) : undefined}
             onAssignRoutineDraft={canManageRoutines ? bindOptionalRepository(repository.assignRoutineDraft) : undefined}
             onPublishRoutineDraft={canManageRoutines ? bindOptionalRepository(repository.publishRoutineDraft) : undefined}
