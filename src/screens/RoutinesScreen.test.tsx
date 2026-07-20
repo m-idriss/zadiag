@@ -164,6 +164,43 @@ describe('participant routines navigation', () => {
     expect(document.body.textContent).not.toContain('My hydration plan');
   });
 
+  it('forks assigned content into a private draft before opening the editor', async () => {
+    await import('./RoutineDetailScreen');
+    await import('./RoutineDraftEditorScreen');
+    const assignment = createDefaultRoutineAssignment('2026-07-20T08:00:00.000Z');
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      participantAccess: [{ participant: { id: 'participant-1', displayName: 'Maya' }, membership: { role: 'owner', status: 'active' } }],
+      activeParticipantId: 'participant-1', routineAssignments: [assignment], events: [], routinesLoaded: true, routinesError: false,
+    };
+    const draft: RoutineDraft = {
+      id: 'fork-1', ownerId: 'owner-1', revision: 1, state: 'active',
+      package: { schemaVersion: 1, version: 1, defaultLocale: 'en', availableLocales: ['en'], routine: { ...assignment.routine, id: 'private-fork-1' } },
+      validation: { status: 'valid', issues: [] }, forkedFrom: { routineId: assignment.routineId },
+      createdAt: '2026-07-20T09:00:00.000Z', updatedAt: '2026-07-20T09:00:00.000Z',
+    };
+    const fork = vi.fn().mockResolvedValue(draft);
+
+    localStorage.setItem(`zadiag.routineDetail.${assignment.id}.tab`, 'details');
+    act(() => root.render(<RoutinesScreen state={state} edit onForkRoutineAssignmentDraft={fork} t={(key) => translate('en', key)} />));
+    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Show schedule"]')?.click());
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label="Details"]')?.click();
+      await new Promise((resolve) => window.setTimeout(resolve, 100));
+    });
+    const editContent = container.querySelector<HTMLButtonElement>('.routine-content-edit-button');
+    expect(editContent).not.toBeNull();
+    await act(async () => {
+      editContent?.click();
+      await Promise.resolve();
+    });
+
+    expect(fork).toHaveBeenCalledWith('participant-1', assignment.routineId, 'en');
+    expect(container.textContent).toContain('Routine editor');
+    expect(container.querySelector<HTMLInputElement>('.routine-draft-field input')?.value).toBe(assignment.routine.name);
+  });
+
   it('keeps built-in and assigned routines visible when private drafts fail', async () => {
     const assignment = createDefaultRoutineAssignment('2026-07-02T08:00:00.000Z');
     const state: AppState = {

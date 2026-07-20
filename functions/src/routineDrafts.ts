@@ -65,6 +65,7 @@ export interface RoutineDraftDocument {
   validation: RoutineDraftValidation;
   createdAt: string;
   updatedAt: string;
+  forkedFrom?: { routineId: string; sourceVersion?: number };
 }
 
 export interface PublishedRoutineVersionDocument {
@@ -174,6 +175,27 @@ export const createRoutineDraftDocument = (
 ): RoutineDraftDocument => {
   const parsed = parseRoutineDraftPackage(input);
   return { ownerId, revision: 1, state: 'active', ...parsed, createdAt: now, updatedAt: now };
+};
+
+export const createAssignmentForkPackage = (
+  routine: unknown,
+  forkId: string,
+  preferredLocale: 'en' | 'fr',
+): RoutineDraftPackage => {
+  const clonedRoutine = structuredClone(routine) as { id?: unknown; translations?: { en?: unknown; fr?: unknown } };
+  if (!clonedRoutine || typeof clonedRoutine !== 'object' || Array.isArray(clonedRoutine)) throw new RoutineDraftInputError('invalid_package');
+  const hasEnglishTranslation = Boolean(clonedRoutine.translations?.en);
+  const hasFrenchTranslation = Boolean(clonedRoutine.translations?.fr);
+  const defaultLocale = hasFrenchTranslation && !hasEnglishTranslation
+    ? 'en'
+    : hasEnglishTranslation && !hasFrenchTranslation
+      ? 'fr'
+      : preferredLocale;
+  clonedRoutine.id = forkId;
+  const availableLocales = hasEnglishTranslation || hasFrenchTranslation
+    ? ['en', 'fr'] as const
+    : [defaultLocale] as ['en'] | ['fr'];
+  return parseRoutineDraftPackage({ schemaVersion: 1, version: 1, defaultLocale, availableLocales, routine: clonedRoutine }).package;
 };
 
 export const updateRoutineDraftDocument = (

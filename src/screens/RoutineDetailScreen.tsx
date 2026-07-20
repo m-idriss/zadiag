@@ -146,7 +146,7 @@ const streakFor = (events: VerificationEvent[]) => {
   return streak;
 };
 
-export function RoutineDetailScreen({ assignment, state, back, start, getProofImageUrl, reviewCheck, requestCheck, t, edit, initialTab, initialEventId, onInitialEventConsumed, onSaveMonitoringPlan, routinePlanBusy }: {
+export function RoutineDetailScreen({ assignment, state, back, start, getProofImageUrl, reviewCheck, requestCheck, t, edit, initialTab, initialEventId, onInitialEventConsumed, onSaveMonitoringPlan, onForkContent, forkingContent, routinePlanBusy }: {
   assignment: RoutineAssignment;
   state: AppState;
   back: () => void;
@@ -160,6 +160,8 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   initialEventId?: string;
   onInitialEventConsumed?: () => void;
   onSaveMonitoringPlan?: (plan: RoutineAssignment['plan'], validationMode?: RoutineValidationMode) => Promise<void>;
+  onForkContent?: () => void;
+  forkingContent?: boolean;
   routinePlanBusy?: boolean;
 }) {
   const [tab, setTab] = useState<DetailTab>(() => defaultDetailTab(assignment.id, edit, initialTab));
@@ -244,6 +246,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
         <div><span aria-hidden="true"><SvgIcon icon={cameraOutline} /></span><b>{t('expectedProof')}</b><p>{visual.proofType}</p><i><SvgIcon icon={chevronForwardOutline} /></i></div>
         <div><span aria-hidden="true"><SvgIcon icon={peopleOutline} /></span><b>{t('responsible')}</b><p>{visual.responsibleName}</p><i><SvgIcon icon={chevronForwardOutline} /></i></div>
       </section>
+      {edit && onForkContent ? <button type="button" className="routine-content-edit-button" aria-busy={forkingContent} disabled={forkingContent} onClick={onForkContent}>{forkingContent ? <span className="button-spinner" aria-hidden="true" /> : null}{forkingContent ? t('routineContentPreparing') : t('routineContentEdit')}</button> : null}
       <section className="routine-copy"><h2>{t('instructions')}</h2><p>{visual.instructions}</p></section>
       <div className="routine-instruction-list">{visual.instructionSteps.map((step, index) => <article key={step.id}><b>{index + 1}</b><span aria-hidden="true"><AppIcon name={routineIconName(step.icon)} /></span><div><h3>{step.title}</h3><p>{step.description}</p></div></article>)}</div>
       <aside className="routine-advice"><b>{t('advice')}</b><p>{t('routineAdvice')}</p></aside>

@@ -1549,6 +1549,8 @@ button:disabled { cursor: not-allowed; }
 .routine-meta-card > div > span .svg-icon { font-size: 16px; }
 .routine-meta-card i .svg-icon { font-size: 16px; }
 .routine-edit-plan-button { min-height: var(--height-action); padding: 8px 12px; border: 0; border-radius: 999px; background: var(--color-text); color: var(--color-surface-solid); font-size: 12px; font-weight: 900; }
+.routine-content-edit-button { min-height: var(--height-action); display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 14px; border: 1px solid var(--color-primary); border-radius: 13px; background: var(--color-surface-solid); color: var(--color-primary); font-size: 12px; font-weight: 900; }
+.routine-content-edit-button:disabled { opacity: .62; }
 .routine-proof-action {
   margin-top: 4px;
   border-radius: 10px;

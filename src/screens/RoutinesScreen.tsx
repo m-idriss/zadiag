@@ -124,6 +124,7 @@ export function RoutinesScreen({
   onListRoutineDrafts,
   onDeleteRoutineDraft,
   onCreateRoutineDraft,
+  onForkRoutineAssignmentDraft,
   onUpdateRoutineDraft,
   onAssignRoutineDraft,
   onPublishRoutineDraft,
@@ -156,6 +157,7 @@ export function RoutinesScreen({
   onListRoutineDrafts?: (participantId: string) => Promise<RoutineDraft[]>;
   onDeleteRoutineDraft?: (participantId: string, draftId: string, expectedRevision: number) => Promise<void>;
   onCreateRoutineDraft?: (participantId: string, routinePackage: RoutineDraft['package']) => Promise<RoutineDraft>;
+  onForkRoutineAssignmentDraft?: (participantId: string, routineId: string, locale: AppState['locale']) => Promise<RoutineDraft>;
   onUpdateRoutineDraft?: (participantId: string, draftId: string, expectedRevision: number, routinePackage: RoutineDraft['package']) => Promise<RoutineDraft>;
   onAssignRoutineDraft?: (participantId: string, draftId: string, expectedRevision: number) => Promise<void>;
   onPublishRoutineDraft?: (participantId: string, draftId: string, expectedRevision: number) => Promise<unknown>;
@@ -198,6 +200,7 @@ export function RoutinesScreen({
   const [deletingDraftId, setDeletingDraftId] = useState<string>();
   const [draftDeleteErrorId, setDraftDeleteErrorId] = useState<string>();
   const [editingDraftId, setEditingDraftId] = useState<string | 'new'>();
+  const [forkingRoutineId, setForkingRoutineId] = useState<string>();
   const [assigningDraftId, setAssigningDraftId] = useState<string>();
   const [draftAssignErrorId, setDraftAssignErrorId] = useState<string>();
   const [publishingDraftId, setPublishingDraftId] = useState<string>();
@@ -228,6 +231,18 @@ export function RoutinesScreen({
   const openDetails = (assignmentId: string, initialTab?: 'overview' | 'plan') => {
     setDetailInitialTab(initialTab);
     setSelectedId(assignmentId);
+  };
+  const forkAssignedRoutine = async (assignment: RoutineAssignment) => {
+    const participantId = activeParticipantAccess?.participant.id;
+    if (!participantId || !onForkRoutineAssignmentDraft || forkingRoutineId) return;
+    setForkingRoutineId(assignment.routineId);
+    try {
+      const draft = await onForkRoutineAssignmentDraft(participantId, assignment.routineId, state.locale);
+      setRoutineDrafts((current) => [draft, ...current.filter((item) => item.id !== draft.id)]);
+      setEditingDraftId(draft.id);
+    } finally {
+      setForkingRoutineId(undefined);
+    }
   };
   const backToList = () => {
     setDetailInitialTab(undefined);
@@ -307,7 +322,7 @@ export function RoutinesScreen({
     return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDraftEditorScreen key={draft?.id ?? 'new'} draft={draft} locale={state.locale} online={online} save={saveDraft} cancel={() => setEditingDraftId(undefined)} reload={() => { setEditingDraftId(undefined); setDraftReloadSequence((value) => value + 1); }} t={t} /></Suspense>;
   }
 
-  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={backToList} start={start} edit={canManageRoutines} initialTab={detailInitialTab} initialEventId={focusedEventId} onInitialEventConsumed={onFocusedEventConsumed} getProofImageUrl={getProofImageUrl} reviewCheck={canManageRoutines ? reviewCheck : undefined} requestCheck={canManageRoutines ? requestCheck : undefined} onSaveMonitoringPlan={canManageRoutines && onSaveMonitoringPlan ? (plan, validationMode) => onSaveMonitoringPlan(selected.routineId, plan, validationMode) : undefined} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
+  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={backToList} start={start} edit={canManageRoutines} initialTab={detailInitialTab} initialEventId={focusedEventId} onInitialEventConsumed={onFocusedEventConsumed} getProofImageUrl={getProofImageUrl} reviewCheck={canManageRoutines ? reviewCheck : undefined} requestCheck={canManageRoutines ? requestCheck : undefined} onSaveMonitoringPlan={canManageRoutines && onSaveMonitoringPlan ? (plan, validationMode) => onSaveMonitoringPlan(selected.routineId, plan, validationMode) : undefined} onForkContent={canManageRoutines && onForkRoutineAssignmentDraft ? () => forkAssignedRoutine(selected) : undefined} forkingContent={forkingRoutineId === selected.routineId} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
 
   const setRequestStatus = (routineId: string, status: RequestStatus) => {
     setRequestStatuses((current) => ({ ...current, [routineId]: status }));

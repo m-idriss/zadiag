@@ -32,6 +32,7 @@ export interface AppRepository {
   deleteRoutine(routineId: string): Promise<void>;
   listRoutineDrafts?(participantId: string): Promise<RoutineDraft[]>;
   createRoutineDraft?(participantId: string, routinePackage: RoutinePackageV1): Promise<RoutineDraft>;
+  forkRoutineAssignmentDraft?(participantId: string, routineId: string, locale: Locale): Promise<RoutineDraft>;
   updateRoutineDraft?(participantId: string, draftId: string, expectedRevision: number, routinePackage: RoutinePackageV1): Promise<RoutineDraft>;
   deleteRoutineDraft?(participantId: string, draftId: string, expectedRevision: number): Promise<void>;
   assignRoutineDraft?(participantId: string, draftId: string, expectedRevision: number): Promise<void>;
