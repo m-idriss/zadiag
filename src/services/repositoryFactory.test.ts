@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { AppRepository } from './contracts';
+import type { AppRepository, StartupProgressReporter } from './contracts';
 import type { AppState, Locale, MonitoringPlan, Role, VerificationEvent } from '../domain/models';
 import { createBlankRoutinePackage, type RoutineDraft } from '../domain/routineDraft';
 
@@ -33,7 +33,8 @@ class FakeFirebaseRepository implements AppRepository {
     return () => this.listeners.delete(listener);
   }
 
-  async initialize() {
+  async initialize(reportProgress?: StartupProgressReporter) {
+    reportProgress?.('account');
     this.state = { ...this.state, role: 'parent', family: { ...this.state.family, linked: true, childName: 'Maya' } };
     this.listeners.forEach((listener) => listener());
   }
@@ -91,9 +92,11 @@ describe('repository factory', () => {
 
     const listener = vi.fn();
     repository.subscribe(listener);
-    await repository.initialize();
+    const reportProgress = vi.fn();
+    await repository.initialize(reportProgress);
 
     expect(firebaseRepositoryLoaded).toBe(true);
+    expect(reportProgress.mock.calls.map(([stage]) => stage)).toEqual(['services', 'account']);
     expect(repository.snapshot()).toMatchObject({ role: 'parent', family: { linked: true, childName: 'Maya' } });
     expect(listener).toHaveBeenCalled();
     await expect(repository.registerContactEmail?.(' USER@EXAMPLE.COM ')).resolves.toBe('user@example.com');

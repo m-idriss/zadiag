@@ -21,7 +21,7 @@ import { profileColorFor } from './domain/profileColor';
 import { cleanupClientAfterReset } from './services/resetCleanup';
 import { readUiStorageString, writeUiStorageString } from './services/uiStorage';
 import { useAppUpdateController } from './hooks/useAppUpdateController';
-import type { SyncStatus } from './services/contracts';
+import type { StartupStage, SyncStatus } from './services/contracts';
 import { participantAccessCan } from './domain/participantAccess';
 
 const lazyScreen = <TProps extends object>(
@@ -51,6 +51,13 @@ const syncStatusMessageKeys: Record<SyncStatus, MessageKey> = {
   syncing: 'syncStatusSyncing',
   offline: 'syncStatusOffline',
   failed: 'syncStatusFailed',
+};
+const startupStageMessageKeys: Record<StartupStage, MessageKey> = {
+  services: 'splashLoadingServices',
+  account: 'splashConnectingAccount',
+  profile: 'splashRestoringProfile',
+  relationships: 'splashLoadingRelationships',
+  workspace: 'splashLoadingWorkspace',
 };
 
 const readDashboardSummaryRange = (): SummaryRange => {
@@ -148,7 +155,7 @@ export function App() {
   const [ready, setReady] = useState(false);
   const [startupError, setStartupError] = useState(false);
   const [splashProgress, setSplashProgress] = useState(40);
-  const [splashMessage, setSplashMessage] = useState<MessageKey>('splashLoading');
+  const [splashMessage, setSplashMessage] = useState<MessageKey>('splashLoadingServices');
   const [tab, setTab] = useState<Tab>('home');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<VerificationEvent>();
@@ -343,7 +350,9 @@ export function App() {
         console.error(error);
       }
     };
-    repository.initialize().then(async () => {
+    repository.initialize((stage) => {
+      if (alive) setSplashMessage(startupStageMessageKeys[stage]);
+    }).then(async () => {
       if (!alive) return;
       window.clearInterval(startupProgressTicker);
       let restored = repository.snapshot();

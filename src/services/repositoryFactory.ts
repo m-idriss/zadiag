@@ -1,4 +1,4 @@
-import type { AppRepository, JourneySource, JourneyStage } from './contracts';
+import type { AppRepository, JourneySource, JourneyStage, StartupProgressReporter } from './contracts';
 import { DemoRepository } from './demoRepository';
 import { type AppPreferences, type Locale, type MembershipRole, type MonitoringPlan, type PilotParticipation, type ProfileColorKey, type Role, type RoutineValidationMode } from '../domain/models';
 import { firebaseEnabled } from './firebaseConfig';
@@ -22,9 +22,10 @@ class LazyFirebaseRepository implements AppRepository {
     return () => this.listeners.delete(listener);
   }
 
-  async initialize() {
+  async initialize(reportProgress?: StartupProgressReporter) {
+    reportProgress?.('services');
     const repository = await this.load();
-    await repository.initialize();
+    await repository.initialize(reportProgress);
     this.emit();
   }
 

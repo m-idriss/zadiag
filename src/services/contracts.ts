@@ -2,11 +2,13 @@ import type { AppPreferences, AppState, Locale, MembershipRole, MonitoringPlan, 
 import type { PublishedRoutineVersion, RoutineCatalogEntry, RoutineDraft, RoutinePackageV1 } from '../domain/routineDraft';
 
 export type SyncStatus = 'synced' | 'syncing' | 'offline' | 'failed';
+export type StartupStage = 'services' | 'account' | 'profile' | 'relationships' | 'workspace';
+export type StartupProgressReporter = (stage: StartupStage) => void;
 export type JourneyStage = 'app_ready' | 'notifications_enabled' | 'notification_opened' | 'check_opened';
 export type JourneySource = 'startup' | 'settings' | 'push' | 'notification_center' | 'dashboard' | 'history';
 
 export interface AppRepository {
-  initialize(): Promise<void>;
+  initialize(reportProgress?: StartupProgressReporter): Promise<void>;
   snapshot(): AppState;
   subscribe(listener: () => void): () => void;
   registerContactEmail?(email: string): Promise<string>;
