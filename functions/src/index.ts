@@ -18,7 +18,7 @@ import { expiredPendingCheckCleanupUpdate, shouldDeleteProofAfterReview, staleCl
 import { reportOperationalAlert, reportOperationalEvent, reportOperationalRecovery } from './observability.js';
 import { shouldRecoverSyntheticPush } from './syntheticMonitor.js';
 import { canLeaveMembership, canRemoveMembership, createMembership, hasParticipantPermission, isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, isProfileColorKey, membershipRoles, migrateLegacyFamilyRelationships, pushRolesForMembership, scheduledAggregatePaths, type MembershipPushRole, type MembershipRole } from './relationships.js';
-import { assertRoutineDraftRevision, createAssignmentForkPackage, createRoutineDraftDocument, RoutineDraftConflictError, RoutineDraftInputError, updateRoutineDraftDocument, type PublishedRoutineVersionDocument, type RoutineDraftDocument } from './routineDrafts.js';
+import { assertRoutineDraftRevision, createAssignmentForkPackage, createRoutineDraftDocument, routineDraftSessionId, RoutineDraftConflictError, RoutineDraftInputError, selectReusableAssignmentDraft, updateRoutineDraftDocument, type IdentifiedRoutineDraft, type PublishedRoutineVersionDocument, type RoutineDraftDocument } from './routineDrafts.js';
 import { ROUTINE_PACKAGE_MIME, parseRoutinePackageEnvelope, serializeRoutinePackage } from './routinePackages.js';
 import { assertExternalPackageResponse, verifyExternalRegistryIndex } from './externalRoutineRegistry.js';
 import { marketplaceEntryAuthorizedForInstall, marketplaceEntryInstallable, marketplaceRole, moderateMarketplaceStatus, type ModerationAction, type ModerationStatus } from './routineMarketplaceGovernance.js';
@@ -2240,35 +2240,60 @@ export const forkRoutineAssignmentDraft = onCall({ region, cors, enforceAppCheck
   const preferredLocale = request.data?.locale === 'fr' ? 'fr' : 'en';
   const participantRef = await requireParticipantRoutineDraftAccess(uid, participantId);
   const assignmentRef = participantRef.collection('routineAssignments').doc(routineId);
-  const draftRef = participantRef.collection('routineDrafts').doc();
-  let document: RoutineDraftDocument | undefined;
+  const ownedDraftsQuery = participantRef.collection('routineDrafts').where('ownerId', '==', uid);
+  const sessionRef = participantRef.collection('routineDraftSessions').doc(routineDraftSessionId(uid, routineId));
+  let result: IdentifiedRoutineDraft | undefined;
+  let reused = false;
   await db.runTransaction(async (transaction) => {
-    const [, assignment] = await Promise.all([
+    const [, assignment, ownedDrafts] = await Promise.all([
       requireParticipantRoutineDraftTransactionAccess(transaction, participantRef, uid),
       transaction.get(assignmentRef),
+      transaction.get(ownedDraftsQuery),
+      transaction.get(sessionRef),
     ]);
     if (!assignment.exists) throw new HttpsError('not-found', 'The routine assignment could not be found.');
     const assignmentData = assignment.data() as RoutineAssignmentDocument;
     if (!assignmentData.routine) throw new HttpsError('failed-precondition', 'The assigned routine content is unavailable.');
-    try {
-      const routinePackage = createAssignmentForkPackage(assignmentData.routine, assignmentData.sourceVersion, preferredLocale);
-      document = {
-        ...createRoutineDraftDocument(uid, routinePackage),
-        forkedFrom: { routineId, ...(assignmentData.sourceVersion ? { sourceVersion: assignmentData.sourceVersion } : {}), origin: assignmentData.sourceCatalogEntryId ? 'community' : assignmentData.sourceDraftId ? 'private' : 'builtin' },
-      };
-    } catch (error) {
-      return routineDraftInputError(error);
+    const existing = selectReusableAssignmentDraft(
+      ownedDrafts.docs.map((draft) => ({ id: draft.id, ...draft.data() } as IdentifiedRoutineDraft)),
+      uid,
+      routineId,
+      assignmentData.sourceVersion,
+    );
+    if (existing) {
+      result = existing;
+      reused = true;
+    } else {
+      const draftRef = participantRef.collection('routineDrafts').doc();
+      try {
+        const routinePackage = createAssignmentForkPackage(assignmentData.routine, assignmentData.sourceVersion, preferredLocale);
+        const document: RoutineDraftDocument = {
+          ...createRoutineDraftDocument(uid, routinePackage),
+          forkedFrom: { routineId, ...(assignmentData.sourceVersion ? { sourceVersion: assignmentData.sourceVersion } : {}), origin: assignmentData.sourceCatalogEntryId ? 'community' : assignmentData.sourceDraftId ? 'private' : 'builtin' },
+        };
+        result = { id: draftRef.id, ...document };
+        transaction.create(draftRef, document);
+      } catch (error) {
+        return routineDraftInputError(error);
+      }
     }
-    if (!document) throw new HttpsError('internal', 'The routine draft could not be prepared.');
-    transaction.create(draftRef, document);
+    if (!result) throw new HttpsError('internal', 'The routine draft could not be prepared.');
+    transaction.set(sessionRef, {
+      ownerId: uid,
+      routineId,
+      sourceVersion: assignmentData.sourceVersion ?? 0,
+      draftId: result.id,
+      updatedAt: new Date().toISOString(),
+    });
   });
+  if (!result) throw new HttpsError('internal', 'The routine draft could not be prepared.');
   await recordAuditEvent(db, {
-    action: 'fork_routine_assignment_draft',
+    action: reused ? 'resume_routine_assignment_draft' : 'fork_routine_assignment_draft',
     actorUid: uid,
     participantId,
-    metadata: { draftId: draftRef.id, routineId, sourceVersion: document?.forkedFrom?.sourceVersion },
+    metadata: { draftId: result.id, routineId, sourceVersion: result.forkedFrom?.sourceVersion },
   });
-  return { id: draftRef.id, ...document };
+  return result;
 });
 
 export const exportRoutinePackage = onCall({ region, cors, enforceAppCheck: true }, async (request) => {

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { assertRoutineDraftRevision, createAssignmentForkPackage, createRoutineDraftDocument, parseRoutineDraftPackage, RoutineDraftConflictError, RoutineDraftInputError, updateRoutineDraftDocument } from './routineDrafts.js';
+import { assertRoutineDraftRevision, createAssignmentForkPackage, createRoutineDraftDocument, parseRoutineDraftPackage, routineDraftSessionId, RoutineDraftConflictError, RoutineDraftInputError, selectReusableAssignmentDraft, updateRoutineDraftDocument } from './routineDrafts.js';
 
 const routinePackage = () => ({
   schemaVersion: 1,
@@ -81,6 +81,32 @@ test('forks an assignment snapshot into an independent next-version package', ()
   assert.equal(fork.routine.name, source.routine.name);
   assert.notEqual(fork.routine, source.routine);
   assert.equal(source.routine.id, 'private-routine');
+});
+
+test('reuses the latest compatible active assignment draft', () => {
+  const first = {
+    id: 'first',
+    ...createRoutineDraftDocument('owner-1', routinePackage(), '2026-07-20T10:00:00.000Z'),
+    forkedFrom: { routineId: 'private-routine', sourceVersion: undefined, origin: 'builtin' as const },
+  };
+  const latest = {
+    ...first,
+    id: 'latest',
+    revision: 2,
+    updatedAt: '2026-07-20T10:05:00.000Z',
+  };
+  const archived = { ...latest, id: 'archived', state: 'archived' as const, updatedAt: '2026-07-20T10:10:00.000Z' };
+  const otherOwner = { ...latest, id: 'other-owner', ownerId: 'owner-2', updatedAt: '2026-07-20T10:20:00.000Z' };
+
+  assert.equal(selectReusableAssignmentDraft([first, archived, otherOwner, latest], 'owner-1', 'private-routine')?.id, 'latest');
+  assert.equal(selectReusableAssignmentDraft([latest], 'owner-1', 'other-routine'), undefined);
+  assert.equal(selectReusableAssignmentDraft([latest], 'owner-1', 'private-routine', 1), undefined);
+});
+
+test('uses one stable edit session per owner and assigned routine', () => {
+  assert.equal(routineDraftSessionId('owner-1', 'routine-1'), routineDraftSessionId('owner-1', 'routine-1'));
+  assert.notEqual(routineDraftSessionId('owner-1', 'routine-1'), routineDraftSessionId('owner-1', 'routine-2'));
+  assert.notEqual(routineDraftSessionId('owner-1', 'routine-1'), routineDraftSessionId('owner-2', 'routine-1'));
 });
 
 test('rejects stale optimistic revisions actionably', () => {

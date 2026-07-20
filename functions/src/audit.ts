@@ -36,6 +36,7 @@ type AuditAction =
   | 'delete_routine'
   | 'create_routine_draft'
   | 'fork_routine_assignment_draft'
+  | 'resume_routine_assignment_draft'
   | 'update_routine_draft'
   | 'delete_routine_draft'
   | 'register_contact_email'
