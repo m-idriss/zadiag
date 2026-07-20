@@ -709,8 +709,11 @@ describe('ParentDashboard', () => {
     act(() => container.querySelector<HTMLElement>('.parent-review-copy')?.click());
     const reopenedDetailDialog = container.querySelector('.history-detail-dialog');
     expect(reopenedDetailDialog).not.toBeNull();
+    act(() => reopenedDetailDialog?.querySelector<HTMLButtonElement>('button[aria-label="Close"]')?.click());
+    act(() => container.querySelector<HTMLButtonElement>('.parent-review-image-button')?.click());
+    expect(container.querySelector('.proof-lightbox')).not.toBeNull();
     vi.useRealTimers();
-    const validate = reopenedDetailDialog?.querySelector<HTMLButtonElement>('button[aria-label="Validate"]');
+    const validate = container.querySelector<HTMLButtonElement>('.proof-lightbox button[aria-label="Validate"]');
 
     await act(async () => {
       validate?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -718,6 +721,7 @@ describe('ParentDashboard', () => {
     });
 
     expect(reviewCheck).toHaveBeenCalledWith('review', 'detected');
+    expect(container.querySelector('.proof-lightbox')).toBeNull();
   });
 
   it('tries to recover proof images for legacy uncertain checks without proof metadata', async () => {

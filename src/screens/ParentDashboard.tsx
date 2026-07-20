@@ -64,7 +64,7 @@ export function ParentDashboard({
   const [reviewErrorId, setReviewErrorId] = useState<string>();
   const [requestingActiveReminder, setRequestingActiveReminder] = useState(false);
   const [activeReminderStatus, setActiveReminderStatus] = useState<'sent' | 'error'>();
-  const [enlargedProofUrl, setEnlargedProofUrl] = useState<string>();
+  const [enlargedProof, setEnlargedProof] = useState<{ eventId: string; url: string }>();
   const [detailEventId, setDetailEventId] = useState<string>();
   const [dismissedAnomaly, setDismissedAnomaly] = useState<string>();
   const [planningRecommendationOpen, setPlanningRecommendationOpen] = useState(false);
@@ -183,14 +183,16 @@ export function ParentDashboard({
     }
   };
   const decide = async (eventId: string, decision: 'detected' | 'not_detected') => {
-    if (!reviewCheck) return;
+    if (!reviewCheck) return false;
     setReviewingId(eventId);
     setReviewErrorId(undefined);
     try {
       await reviewCheck(eventId, decision);
+      return true;
     } catch (error) {
       console.error(error);
       setReviewErrorId(eventId);
+      return false;
     } finally {
       setReviewingId(undefined);
     }
@@ -543,7 +545,7 @@ export function ParentDashboard({
                         type="button"
                         className="parent-review-image parent-review-image-button"
                         aria-label={t('responsibleReviewImageAlt')}
-                        onClick={() => setEnlargedProofUrl(proofUrl)}
+                        onClick={() => setEnlargedProof({ eventId: event.id, url: proofUrl })}
                       >
                         {renderImage()}
                       </button>
@@ -602,8 +604,19 @@ export function ParentDashboard({
         <UpcomingChecksSection checks={upcomingChecks} now={nowDate} locale={locale} titleId="responsible-upcoming-checks-title" t={t} />
       ) : null}
 
-      {enlargedProofUrl ? (
-        <ProofLightbox src={enlargedProofUrl} alt={t('responsibleReviewImageAlt')} closeLabel={t('close')} onClose={() => setEnlargedProofUrl(undefined)} />
+      {enlargedProof ? (
+        <ProofLightbox
+          src={enlargedProof.url}
+          alt={t('responsibleReviewImageAlt')}
+          closeLabel={t('close')}
+          onClose={() => setEnlargedProof(undefined)}
+          actions={(
+            <>
+              <button type="button" className="parent-review-button reject" aria-label={t('responsibleReviewReject')} disabled={reviewingId === enlargedProof.eventId} onClick={() => { void decide(enlargedProof.eventId, 'not_detected').then((completed) => { if (completed) setEnlargedProof(undefined); }); }}><AppIcon name="close" /></button>
+              <button type="button" className="parent-review-button approve" aria-label={t('responsibleReviewApprove')} disabled={reviewingId === enlargedProof.eventId} onClick={() => { void decide(enlargedProof.eventId, 'detected').then((completed) => { if (completed) setEnlargedProof(undefined); }); }}><AppIcon name="check" /></button>
+            </>
+          )}
+        />
       ) : null}
 
       <section className="today-section participant-history-section parent-history-section dashboard-summary-section" aria-labelledby="responsible-summary-title">
