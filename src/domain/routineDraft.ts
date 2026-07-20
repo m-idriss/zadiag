@@ -29,10 +29,10 @@ export interface RoutineDraft {
   validation: RoutineDraftValidation;
   readonly createdAt: string;
   updatedAt: string;
-  forkedFrom?: { routineId: string; sourceVersion?: number };
+  forkedFrom?: { routineId: string; sourceVersion?: number; origin?: 'builtin' | 'private' | 'community' };
 }
 export interface PublishedRoutineVersion {
-  ownerId: string; sourceDraftId: string; sourceRevision: number; version: number; package: RoutinePackageV1; publishedAt: string; archivedAt?: string;
+  ownerId: string; authorName?: string; origin?: 'builtin' | 'private' | 'community'; sourceDraftId: string; sourceRevision: number; version: number; package: RoutinePackageV1; publishedAt: string; archivedAt?: string;
 }
 
 export const selectRoutineVersionTarget = (

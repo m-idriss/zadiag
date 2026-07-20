@@ -65,11 +65,13 @@ export interface RoutineDraftDocument {
   validation: RoutineDraftValidation;
   createdAt: string;
   updatedAt: string;
-  forkedFrom?: { routineId: string; sourceVersion?: number };
+  forkedFrom?: { routineId: string; sourceVersion?: number; origin?: 'builtin' | 'private' | 'community' };
 }
 
 export interface PublishedRoutineVersionDocument {
   ownerId: string;
+  authorName?: string;
+  origin?: 'builtin' | 'private' | 'community';
   sourceDraftId: string;
   sourceRevision: number;
   version: number;

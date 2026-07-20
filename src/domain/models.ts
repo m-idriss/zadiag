@@ -120,6 +120,7 @@ export interface RoutineAssignment {
   sourceRevision?: number;
   sourceVersion?: number;
   sourceCatalogEntryId?: string;
+  contentUpdatedAt?: string;
 }
 
 interface RoutineTask {

@@ -179,9 +179,13 @@ const asRoutineAssignment = (id: string, data: DocumentData): RoutineAssignment 
       instructions: data.routine?.instructions ? String(data.routine.instructions) : undefined,
       icon: data.routine?.icon ? String(data.routine.icon) : undefined,
       accentColor: data.routine?.accentColor ? String(data.routine.accentColor) : undefined,
+      category: ['dental', 'wellness', 'medication', 'activity', 'custom'].includes(String(data.routine?.category)) ? data.routine.category : undefined,
       proofType: data.routine?.proofType ? String(data.routine.proofType) : undefined,
+      proofExample: data.routine?.proofExample ? String(data.routine.proofExample) : undefined,
+      recommendedValidationMode: ['ai', 'auto'].includes(String(data.routine?.recommendedValidationMode)) ? data.routine.recommendedValidationMode : undefined,
       responsibleName: data.routine?.responsibleName ? String(data.routine.responsibleName) : undefined,
       instructionSteps: Array.isArray(data.routine?.instructionSteps) ? data.routine.instructionSteps : undefined,
+      analysis: data.routine?.analysis,
       translations: data.routine?.translations,
     } : catalogRoutine ?? { id: routineId, name: '', description: '' },
     plan: data.plan as MonitoringPlan,
@@ -193,6 +197,7 @@ const asRoutineAssignment = (id: string, data: DocumentData): RoutineAssignment 
     sourceRevision: Number.isSafeInteger(data.sourceRevision) ? Number(data.sourceRevision) : undefined,
     sourceVersion: Number.isSafeInteger(data.sourceVersion) ? Number(data.sourceVersion) : undefined,
     sourceCatalogEntryId: data.sourceCatalogEntryId ? String(data.sourceCatalogEntryId) : undefined,
+    contentUpdatedAt: data.contentUpdatedAt ? String(data.contentUpdatedAt) : undefined,
   };
 };
 

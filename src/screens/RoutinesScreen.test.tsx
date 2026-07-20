@@ -254,7 +254,7 @@ describe('participant routines navigation', () => {
     nextRoutine.name = 'Updated elastics';
     nextRoutine.analysis = { ...nextRoutine.analysis!, detectedCriteria: 'Updated visual criteria' };
     const published: PublishedRoutineVersion & { routineId: string } = {
-      ownerId: 'owner-1', sourceDraftId: 'fork-1', sourceRevision: 3, version: 1,
+      ownerId: 'owner-1', authorName: 'Alex Martin', origin: 'private', sourceDraftId: 'fork-1', sourceRevision: 3, version: 1,
       package: { schemaVersion: 1, version: 1, defaultLocale: 'en', availableLocales: ['en'], routine: nextRoutine },
       publishedAt: '2026-07-20T10:00:00.000Z', routineId: assignment.routineId,
     };
@@ -273,6 +273,10 @@ describe('participant routines navigation', () => {
 
     expect(document.body.textContent).toContain('Current version 0 → version 1');
     expect(document.body.textContent).toContain('Gemini validation criteria will change');
+    expect(document.body.textContent).toContain('Built-in version currently applied');
+    act(() => document.body.querySelector<HTMLButtonElement>('button[aria-label="Show version history"]')?.click());
+    expect(document.body.textContent).toContain('Alex Martin');
+    expect(document.body.textContent).toContain('Private version');
     await act(async () => {
       Array.from(document.body.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent === 'Apply version 1')?.click();
       await Promise.resolve();

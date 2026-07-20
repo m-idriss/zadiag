@@ -1557,6 +1557,16 @@ button:disabled { cursor: not-allowed; }
 .routine-publish-review > div { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .routine-upgrade-card ul { display: grid; gap: 6px; margin: 0; padding-left: 20px; }
 .routine-upgrade-warning { padding: 10px 12px; border-radius: 12px; background: var(--color-warning-soft); color: var(--color-text); font-weight: 800; }
+.routine-version-history { display: grid; gap: 10px; margin: 8px 0; padding: 12px; border: 1px solid var(--color-border); border-radius: 14px; background: var(--color-surface-solid); }
+.routine-version-history > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.routine-version-history h3, .routine-version-history p { margin: 0; }
+.routine-version-history header small { color: var(--color-text-muted); font-weight: 850; text-transform: uppercase; }
+.routine-version-history header p { margin-top: 3px; color: var(--color-text-muted); font-size: 11px; }
+.routine-version-list { display: grid; gap: 7px; }
+.routine-version-list article { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 8px; padding: 9px 10px; border-radius: 11px; background: var(--color-control-surface); }
+.routine-version-list article.current { box-shadow: inset 3px 0 var(--color-primary); }
+.routine-version-list article span { color: var(--color-text-muted); font-size: 11px; }
+.routine-version-list article small { grid-column: 1 / -1; color: var(--color-text-muted); }
 .routine-proof-action {
   margin-top: 4px;
   border-radius: 10px;

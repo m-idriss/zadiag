@@ -2254,7 +2254,7 @@ export const forkRoutineAssignmentDraft = onCall({ region, cors, enforceAppCheck
       const routinePackage = createAssignmentForkPackage(assignmentData.routine, assignmentData.sourceVersion, preferredLocale);
       document = {
         ...createRoutineDraftDocument(uid, routinePackage),
-        forkedFrom: { routineId, ...(assignmentData.sourceVersion ? { sourceVersion: assignmentData.sourceVersion } : {}) },
+        forkedFrom: { routineId, ...(assignmentData.sourceVersion ? { sourceVersion: assignmentData.sourceVersion } : {}), origin: assignmentData.sourceCatalogEntryId ? 'community' : assignmentData.sourceDraftId ? 'private' : 'builtin' },
       };
     } catch (error) {
       return routineDraftInputError(error);
@@ -2405,6 +2405,7 @@ export const publishRoutineDraft = onCall({ region, cors, enforceAppCheck: true 
   const draftId = requireDocumentId(request.data?.draftId, 'Draft ID');
   const expectedRevision = requireDraftRevision(request.data?.expectedRevision);
   const participantRef = await requireParticipantRoutineDraftAccess(uid, participantId);
+  const authorName = await responsibleActorName(uid);
   const draftRef = participantRef.collection('routineDrafts').doc(draftId);
   let published: PublishedRoutineVersionDocument | undefined;
   await db.runTransaction(async (transaction) => {
@@ -2426,7 +2427,7 @@ export const publishRoutineDraft = onCall({ region, cors, enforceAppCheck: true 
     const versionRef = participantRef.collection('routinePublications').doc(routineId).collection('versions').doc(String(current.package.version));
     if ((await transaction.get(versionRef)).exists) throw new HttpsError('already-exists', 'This routine version is already published.');
     const now = new Date().toISOString();
-    published = { ownerId: uid, sourceDraftId: draftId, sourceRevision: current.revision, version: current.package.version, package: structuredClone(current.package), publishedAt: now };
+    published = { ownerId: uid, authorName, origin: current.forkedFrom?.origin ?? 'private', sourceDraftId: draftId, sourceRevision: current.revision, version: current.package.version, package: structuredClone(current.package), publishedAt: now };
     transaction.create(versionRef, published);
     transaction.update(draftRef, { state: 'archived', revision: current.revision + 1, updatedAt: now });
   });
@@ -2454,7 +2455,7 @@ export const upgradeRoutineAssignment = onCall({ region, cors, enforceAppCheck: 
     const published = version.data() as PublishedRoutineVersionDocument;
     const now = new Date().toISOString();
     transaction.create(changeRef, createRoutineAssignmentVersionChange(current, { sourceDraftId: published.sourceDraftId, sourceRevision: published.sourceRevision, sourceVersion: published.version }, uid, now));
-    transaction.update(assignmentRef, { routine: structuredClone(published.package.routine), sourceDraftId: published.sourceDraftId, sourceRevision: published.sourceRevision, sourceVersion: published.version, validationMode: published.package.routine.recommendedValidationMode ?? 'ai' });
+    transaction.update(assignmentRef, { routine: structuredClone(published.package.routine), sourceDraftId: published.sourceDraftId, sourceRevision: published.sourceRevision, sourceVersion: published.version, contentUpdatedAt: now, validationMode: published.package.routine.recommendedValidationMode ?? 'ai' });
   });
   await recordAuditEvent(db, { action: 'upgrade_routine_assignment', actorUid: uid, participantId, metadata: { routineId, fromVersion: previousVersion, version: targetVersion, changeId: changeRef.id } });
   return { success: true };
@@ -2465,8 +2466,11 @@ export const listPublishedRoutineVersions = onCall({ region, cors, enforceAppChe
   const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
   const participantRef = await requireParticipantRoutineDraftAccess(uid, participantId);
   const publications = await participantRef.collection('routinePublications').get();
-  const versions = (await Promise.all(publications.docs.map(async (publication) =>
-    (await publication.ref.collection('versions').get()).docs.map((version) => ({ routineId: publication.id, ...version.data() }))))).flat();
+  const storedVersions = (await Promise.all(publications.docs.map(async (publication) =>
+    (await publication.ref.collection('versions').get()).docs.map((version) => ({ routineId: publication.id, ...(version.data() as PublishedRoutineVersionDocument) }))))).flat();
+  const owners = [...new Set(storedVersions.map((version) => String(version.ownerId ?? '')).filter(Boolean))];
+  const authorNames = new Map(await Promise.all(owners.map(async (ownerId) => [ownerId, await responsibleActorName(ownerId)] as const)));
+  const versions = storedVersions.map((version) => ({ ...version, authorName: String(version.authorName ?? '').trim() || authorNames.get(String(version.ownerId)) || 'Responsable', origin: version.origin ?? 'private' }));
   return { versions };
 });
 

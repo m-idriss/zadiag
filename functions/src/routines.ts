@@ -57,6 +57,8 @@ export interface RoutineAssignmentDocument {
   sourceDraftId?: string;
   sourceRevision?: number;
   sourceVersion?: number;
+  sourceCatalogEntryId?: string;
+  contentUpdatedAt?: string;
 }
 
 export interface RoutineAssignmentVersionChangeDocument {
