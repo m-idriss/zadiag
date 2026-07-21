@@ -459,15 +459,7 @@ button:disabled { cursor: not-allowed; }
 .routine-card-heading p { margin: 5px 0 0; font-size: 13px; }
 .empty-state { padding: 30px 18px; text-align: center; }
 
-.app-shell {
-  position: relative;
-  height: 100dvh;
-  overflow: hidden;
-  background: var(--color-canvas);
-  transform: translateY(var(--pull-distance, 0));
-  transition: transform .24s cubic-bezier(.22, 1, .36, 1);
-}
-.app-shell.pull-active { transition: none; }
+.app-shell { position: relative; height: 100dvh; overflow: hidden; background: var(--color-canvas); }
 .app-shell > .content-screen { height: 100%; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
 .pull-update-indicator {
   position: fixed;
