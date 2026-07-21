@@ -1,9 +1,11 @@
-import { useRef, useState, type ReactNode, type TouchEvent } from 'react';
+import { useRef, useState, type CSSProperties, type ReactNode, type TouchEvent } from 'react';
 import { createPortal } from 'react-dom';
 import type { MessageKey } from '../services/i18n';
 
 const PULL_THRESHOLD = 72;
-const MAX_PULL_DISTANCE = 110;
+const MAX_PULL_DISTANCE = 160;
+const PULL_RESISTANCE = 0.65;
+const PULL_OVERSHOOT_RESISTANCE = 0.08;
 const HORIZONTAL_SWIPE_THRESHOLD = 64;
 const HORIZONTAL_SWIPE_DOMINANCE = 1.35;
 const SWIPE_NAVIGATION_EXCLUSION_SELECTOR = 'button, a, input, select, textarea, summary, [role="button"], dialog, .parent-review-card, [data-swipe-navigation="ignore"]';
@@ -19,6 +21,13 @@ type SwipeGesture = {
   startY: number;
 };
 
+const resistedPullDistance = (distance: number) => {
+  const boundedDistance = Math.max(0, Math.min(MAX_PULL_DISTANCE, distance));
+  if (boundedDistance <= PULL_THRESHOLD) return boundedDistance * PULL_RESISTANCE;
+  return PULL_THRESHOLD * PULL_RESISTANCE
+    + (boundedDistance - PULL_THRESHOLD) * PULL_OVERSHOOT_RESISTANCE;
+};
+
 export function PullToUpdate({
   children,
   onHorizontalSwipe,
@@ -32,13 +41,13 @@ export function PullToUpdate({
 }) {
   const gestureRef = useRef<PullGesture | undefined>(undefined);
   const swipeGestureRef = useRef<SwipeGesture | undefined>(undefined);
-  const distanceRef = useRef(0);
+  const thresholdReachedRef = useRef(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [updating, setUpdating] = useState(false);
 
   const resetPull = () => {
     gestureRef.current = undefined;
-    distanceRef.current = 0;
+    thresholdReachedRef.current = false;
     setPullDistance(0);
   };
 
@@ -57,7 +66,7 @@ export function PullToUpdate({
       startY: touch.clientY,
       scrollContainer,
     };
-    distanceRef.current = 0;
+    thresholdReachedRef.current = false;
     setPullDistance(0);
   };
 
@@ -75,13 +84,17 @@ export function PullToUpdate({
       resetPull();
       return;
     }
+    if (verticalDistance > 0) event.preventDefault();
     const distance = Math.max(0, Math.min(MAX_PULL_DISTANCE, verticalDistance));
-    distanceRef.current = distance;
-    setPullDistance(distance);
+    if (distance >= PULL_THRESHOLD && !thresholdReachedRef.current) {
+      thresholdReachedRef.current = true;
+      navigator.vibrate?.(10);
+    }
+    setPullDistance(resistedPullDistance(distance));
   };
 
   const endPull = (event: TouchEvent<HTMLDivElement>) => {
-    const shouldUpdate = Boolean(gestureRef.current && !updating && distanceRef.current >= PULL_THRESHOLD);
+    const shouldUpdate = Boolean(gestureRef.current && !updating && thresholdReachedRef.current);
     const swipeGesture = swipeGestureRef.current;
     const touch = event.changedTouches[0];
     swipeGestureRef.current = undefined;
@@ -107,7 +120,7 @@ export function PullToUpdate({
 
   const label = updating
     ? t('settingsPullUpdateChecking')
-    : pullDistance >= PULL_THRESHOLD
+    : thresholdReachedRef.current
       ? t('settingsPullUpdateRelease')
       : t('settingsPullUpdatePull');
   const visible = updating || pullDistance > 0;
@@ -131,7 +144,8 @@ export function PullToUpdate({
 
   return (
     <div
-      className="app-shell"
+      className={`app-shell ${pullDistance > 0 ? 'pull-active' : ''}`}
+      style={{ '--pull-distance': `${pullDistance}px` } as CSSProperties}
       onTouchStart={startPull}
       onTouchMove={movePull}
       onTouchEnd={endPull}
