@@ -1,7 +1,7 @@
 import type { AppState } from './models';
 import { currentPilotParticipation } from './pilotParticipation';
 
-export type AppRoute = 'install' | 'contact' | 'suspended' | 'invitation' | 'welcome' | 'link' | 'pilot-consent' | 'notifications' | 'app' | 'camera' | 'result' | 'routine-edit';
+export type AppRoute = 'install' | 'contact' | 'suspended' | 'invitation' | 'welcome' | 'link' | 'pilot-consent' | 'notifications' | 'app' | 'camera' | 'response' | 'result' | 'routine-edit';
 
 export interface RouteContext {
   setupPreview?: Extract<AppRoute, 'install' | 'notifications'> | null;

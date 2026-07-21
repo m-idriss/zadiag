@@ -78,8 +78,8 @@ export function ChildDashboard({
   [nowDate, state.events, state.locale, state.routineAssignments]);
   const actionableCount = pending.length + awaitingChecks.length;
   const completed = state.events.filter((event) => (
-    event.capturedAt !== undefined
-    && isToday(event.capturedAt)
+    (event.submittedAt !== undefined || event.capturedAt !== undefined)
+    && isToday(event.submittedAt ?? event.capturedAt!)
     && !['pending', 'analyzing'].includes(event.status)
   ));
   const attentionCompleted = completed
@@ -124,7 +124,7 @@ export function ChildDashboard({
   const settledToday = withResolvedEventStatuses(today, now)
     .filter((event) => !['pending', 'analyzing'].includes(event.status));
   const missedTodayCount = settledToday.filter((event) => ['missed', 'expired'].includes(event.status)).length;
-  const hasAttentionToday = settledToday.some((event) => event.status !== 'detected');
+  const hasAttentionToday = settledToday.some((event) => ['not_detected', 'uncertain', 'missed', 'expired'].includes(event.status));
   const emptyTodayTitle = hasAttentionToday ? t('keepGoing') : t('niceWork');
   const emptyTodayHint = hasAttentionToday ? t('missedTodayHint') : t('nextCheckHint');
   const missedTodayLabel = missedTodayCount > 0
@@ -162,6 +162,7 @@ export function ChildDashboard({
           const stacked = group.events.filter((event) => event.id !== main.id);
           const presentation = presentationFor(main);
           const actionable = main.status === 'pending' && Date.parse(main.expiresAt) > now;
+          const structuredResponse = ['confirmation', 'checklist'].includes(main.challenge?.response.kind ?? 'photo');
           return (
             <article className={`today-task today-routine-card ${actionable ? 'actionable' : 'expired-only'}`} style={presentation.style} key={group.routineId}>
               <div className="today-routine-main">
@@ -174,7 +175,7 @@ export function ChildDashboard({
                     </div>
                   </div>
                   {actionable
-                    ? <button type="button" className="primary-action-button today-proof-button" onClick={() => start(main)}><AppIcon name="camera" />{t('sendProofShort')}</button>
+                    ? <button type="button" className="primary-action-button today-proof-button" onClick={() => start(main)}><AppIcon name={structuredResponse ? 'check' : 'camera'} />{t(structuredResponse ? 'completeTask' : 'sendProofShort')}</button>
                     : <StatusPill status={resolvedEventStatus(main, now)} t={t} />}
                 </div>
                 {stacked.length > 0 && (

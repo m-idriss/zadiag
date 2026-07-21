@@ -3,6 +3,7 @@ import type { MessageKey } from '../services/i18n';
 
 export const statusMessageKey = (status: VerificationStatus): MessageKey => {
   if (status === 'detected') return 'validated';
+  if (status === 'answered') return 'answered';
   if (status === 'not_detected') return 'notDetected';
   if (status === 'uncertain') return 'uncertain';
   if (status === 'missed') return 'missed';

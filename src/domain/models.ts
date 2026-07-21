@@ -12,6 +12,7 @@ export type VerificationStatus =
   | 'pending'
   | 'analyzing'
   | 'detected'
+  | 'answered'
   | 'not_detected'
   | 'uncertain'
   | 'missed'
@@ -51,6 +52,24 @@ export type RoutineAssignmentCreator = 'parent' | 'child' | 'system';
 export type RoutineValidationMode = 'ai' | 'auto';
 export type RoutineCategory = 'dental' | 'wellness' | 'medication' | 'activity' | 'custom';
 
+export interface RoutineChecklistItem {
+  id: string;
+  label: string;
+}
+
+export type RoutineResponseDefinition =
+  | { kind: 'photo' }
+  | { kind: 'confirmation'; prompt: string; positiveLabel?: string; negativeLabel?: string }
+  | { kind: 'checklist'; prompt: string; items: RoutineChecklistItem[] }
+  | {
+    kind: 'quiz';
+    prompt: string;
+    topic: string;
+    mode: 'fixed' | 'generated';
+    questionCount: number;
+    choiceCount: number;
+  };
+
 interface RoutineInstructionStep {
   id: string;
   icon: string;
@@ -80,6 +99,7 @@ export interface Routine {
   icon?: string;
   accentColor?: string;
   category?: RoutineCategory;
+  response?: RoutineResponseDefinition;
   proofType?: string;
   proofExample?: string;
   recommendedValidationMode?: RoutineValidationMode;
@@ -123,6 +143,38 @@ export interface RoutineAssignment {
   contentUpdatedAt?: string;
 }
 
+export interface RoutineChallengeSnapshot {
+  routineId: string;
+  routineRevision?: number;
+  routineVersion?: number;
+  name: string;
+  instructions: string;
+  response: RoutineResponseDefinition;
+  quiz?: {
+    questions: Array<{ id: string; prompt: string; concept: string; choices: Array<{ id: string; label: string }> }>;
+    generatedAt: string;
+    provider: string;
+    model: string;
+    promptVersion: string;
+  };
+}
+
+export type RoutineResponseSubmission =
+  | { kind: 'confirmation'; value: boolean }
+  | { kind: 'checklist'; items: Array<{ id: string; value: boolean }> }
+  | { kind: 'quiz'; answers: Array<{ questionId: string; choiceId: string }> };
+
+export interface RoutineQuizResult {
+  score: number;
+  correctCount: number;
+  totalCount: number;
+  concepts: string[];
+  corrections: Array<{ questionId: string; selectedChoiceId: string; correctChoiceId: string; correct: boolean; explanation: string }>;
+  provider: string;
+  model: string;
+  promptVersion: string;
+}
+
 interface RoutineTask {
   id: string;
   routineId: string;
@@ -137,6 +189,10 @@ export interface VerificationEvent extends RoutineTask {
   routineSourceRevision?: number;
   routineSourceVersion?: number;
   capturedAt?: string;
+  submittedAt?: string;
+  challenge?: RoutineChallengeSnapshot;
+  submission?: RoutineResponseSubmission;
+  quizResult?: RoutineQuizResult;
   analysisSource?: 'ai' | 'fallback' | 'self';
   automatedStatus?: Extract<VerificationStatus, 'detected' | 'not_detected' | 'uncertain'>;
   confidence?: number;
@@ -150,6 +206,156 @@ export interface VerificationEvent extends RoutineTask {
   reviewReason?: string;
   responsibleActions?: ResponsibleAction[];
 }
+
+const legacyPhotoResponse: RoutineResponseDefinition = { kind: 'photo' };
+
+const nonEmptyString = (value: unknown, maximum: number) =>
+  typeof value === 'string' && value.trim().length > 0 && value.length <= maximum;
+
+export const parseRoutineResponse = (value: unknown): RoutineResponseDefinition | undefined => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const candidate = value as Record<string, unknown>;
+  if (candidate.kind === 'photo') return { kind: 'photo' };
+  if (candidate.kind === 'confirmation' && nonEmptyString(candidate.prompt, 500)) {
+    return {
+      kind: 'confirmation',
+      prompt: String(candidate.prompt),
+      ...(nonEmptyString(candidate.positiveLabel, 80) ? { positiveLabel: String(candidate.positiveLabel) } : {}),
+      ...(nonEmptyString(candidate.negativeLabel, 80) ? { negativeLabel: String(candidate.negativeLabel) } : {}),
+    };
+  }
+  if (candidate.kind === 'checklist' && nonEmptyString(candidate.prompt, 500) && Array.isArray(candidate.items)) {
+    const items = candidate.items.flatMap((item) => {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) return [];
+      const entry = item as Record<string, unknown>;
+      return nonEmptyString(entry.id, 64) && nonEmptyString(entry.label, 200)
+        ? [{ id: String(entry.id), label: String(entry.label) }]
+        : [];
+    });
+    if (items.length === candidate.items.length && items.length >= 1 && items.length <= 20 && new Set(items.map((item) => item.id)).size === items.length) {
+      return { kind: 'checklist', prompt: String(candidate.prompt), items };
+    }
+  }
+  if (
+    candidate.kind === 'quiz'
+    && nonEmptyString(candidate.prompt, 500)
+    && nonEmptyString(candidate.topic, 200)
+    && ['fixed', 'generated'].includes(String(candidate.mode))
+    && Number.isSafeInteger(candidate.questionCount)
+    && Number(candidate.questionCount) >= 1
+    && Number(candidate.questionCount) <= 10
+    && Number.isSafeInteger(candidate.choiceCount)
+    && Number(candidate.choiceCount) >= 2
+    && Number(candidate.choiceCount) <= 5
+  ) {
+    return {
+      kind: 'quiz',
+      prompt: String(candidate.prompt),
+      topic: String(candidate.topic),
+      mode: candidate.mode as 'fixed' | 'generated',
+      questionCount: Number(candidate.questionCount),
+      choiceCount: Number(candidate.choiceCount),
+    };
+  }
+  return undefined;
+};
+
+export const parseRoutineChallenge = (value: unknown): RoutineChallengeSnapshot | undefined => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const candidate = value as Record<string, unknown>;
+  const response = parseRoutineResponse(candidate.response);
+  if (!response || !nonEmptyString(candidate.routineId, 64) || !nonEmptyString(candidate.name, 120) || !nonEmptyString(candidate.instructions, 2_000)) return undefined;
+  const quizCandidate = candidate.quiz && typeof candidate.quiz === 'object' && !Array.isArray(candidate.quiz) ? candidate.quiz as Record<string, unknown> : undefined;
+  const questions = Array.isArray(quizCandidate?.questions) ? quizCandidate.questions.flatMap((question) => {
+    if (!question || typeof question !== 'object' || Array.isArray(question)) return [];
+    const entry = question as Record<string, unknown>;
+    if (!nonEmptyString(entry.id, 64) || !nonEmptyString(entry.prompt, 500) || !nonEmptyString(entry.concept, 100) || !Array.isArray(entry.choices)) return [];
+    const choices = entry.choices.flatMap((choice) => {
+      if (!choice || typeof choice !== 'object' || Array.isArray(choice)) return [];
+      const option = choice as Record<string, unknown>;
+      return nonEmptyString(option.id, 64) && nonEmptyString(option.label, 200) ? [{ id: String(option.id), label: String(option.label) }] : [];
+    });
+    return choices.length === entry.choices.length && choices.length >= 2 ? [{ id: String(entry.id), prompt: String(entry.prompt), concept: String(entry.concept), choices }] : [];
+  }) : [];
+  const quiz = quizCandidate && Array.isArray(quizCandidate.questions) && questions.length === quizCandidate.questions.length
+    && nonEmptyString(quizCandidate.generatedAt, 40) && nonEmptyString(quizCandidate.provider, 40)
+    && nonEmptyString(quizCandidate.model, 100) && nonEmptyString(quizCandidate.promptVersion, 100)
+    ? { questions, generatedAt: String(quizCandidate.generatedAt), provider: String(quizCandidate.provider), model: String(quizCandidate.model), promptVersion: String(quizCandidate.promptVersion) }
+    : undefined;
+  return {
+    routineId: String(candidate.routineId),
+    ...(Number.isSafeInteger(candidate.routineRevision) && Number(candidate.routineRevision) > 0 ? { routineRevision: Number(candidate.routineRevision) } : {}),
+    ...(Number.isSafeInteger(candidate.routineVersion) && Number(candidate.routineVersion) > 0 ? { routineVersion: Number(candidate.routineVersion) } : {}),
+    name: String(candidate.name),
+    instructions: String(candidate.instructions),
+    response,
+    ...(quiz ? { quiz } : {}),
+  };
+};
+
+export const parseRoutineSubmission = (value: unknown): RoutineResponseSubmission | undefined => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const candidate = value as Record<string, unknown>;
+  if (candidate.kind === 'confirmation' && typeof candidate.value === 'boolean') {
+    return { kind: 'confirmation', value: candidate.value };
+  }
+  if (candidate.kind === 'checklist' && Array.isArray(candidate.items)) {
+    const items = candidate.items.flatMap((item) => {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) return [];
+      const entry = item as Record<string, unknown>;
+      return nonEmptyString(entry.id, 64) && typeof entry.value === 'boolean'
+        ? [{ id: String(entry.id), value: entry.value }]
+        : [];
+    });
+    if (items.length === candidate.items.length && items.length >= 1 && items.length <= 20 && new Set(items.map((item) => item.id)).size === items.length) {
+      return { kind: 'checklist', items };
+    }
+  }
+  if (candidate.kind === 'quiz' && Array.isArray(candidate.answers)) {
+    const answers = candidate.answers.flatMap((answer) => {
+      if (!answer || typeof answer !== 'object' || Array.isArray(answer)) return [];
+      const entry = answer as Record<string, unknown>;
+      return nonEmptyString(entry.questionId, 64) && nonEmptyString(entry.choiceId, 64)
+        ? [{ questionId: String(entry.questionId), choiceId: String(entry.choiceId) }]
+        : [];
+    });
+    if (answers.length === candidate.answers.length && answers.length >= 1 && answers.length <= 10 && new Set(answers.map((answer) => answer.questionId)).size === answers.length) return { kind: 'quiz', answers };
+  }
+  return undefined;
+};
+
+export const parseRoutineQuizResult = (value: unknown): RoutineQuizResult | undefined => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const candidate = value as Record<string, unknown>;
+  if (!Number.isFinite(candidate.score) || Number(candidate.score) < 0 || Number(candidate.score) > 1
+    || !Number.isSafeInteger(candidate.correctCount) || !Number.isSafeInteger(candidate.totalCount)
+    || Number(candidate.totalCount) < 1 || Number(candidate.totalCount) > 10 || Number(candidate.correctCount) < 0 || Number(candidate.correctCount) > Number(candidate.totalCount)
+    || !Array.isArray(candidate.concepts) || !Array.isArray(candidate.corrections)
+    || !nonEmptyString(candidate.provider, 40) || !nonEmptyString(candidate.model, 100) || !nonEmptyString(candidate.promptVersion, 100)) return undefined;
+  const concepts = candidate.concepts.filter((concept): concept is string => nonEmptyString(concept, 100));
+  const corrections = candidate.corrections.flatMap((correction) => {
+    if (!correction || typeof correction !== 'object' || Array.isArray(correction)) return [];
+    const entry = correction as Record<string, unknown>;
+    return nonEmptyString(entry.questionId, 64) && nonEmptyString(entry.selectedChoiceId, 64) && nonEmptyString(entry.correctChoiceId, 64)
+      && typeof entry.correct === 'boolean' && nonEmptyString(entry.explanation, 500)
+      ? [{ questionId: String(entry.questionId), selectedChoiceId: String(entry.selectedChoiceId), correctChoiceId: String(entry.correctChoiceId), correct: entry.correct, explanation: String(entry.explanation) }]
+      : [];
+  });
+  if (concepts.length !== candidate.concepts.length || concepts.length > 10 || corrections.length !== candidate.corrections.length || corrections.length !== Number(candidate.totalCount)
+    || new Set(corrections.map((correction) => correction.questionId)).size !== corrections.length
+    || Math.abs(Number(candidate.score) - Number(candidate.correctCount) / Number(candidate.totalCount)) > 0.000_001) return undefined;
+  return {
+    score: Number(candidate.score), correctCount: Number(candidate.correctCount), totalCount: Number(candidate.totalCount), concepts, corrections,
+    provider: String(candidate.provider), model: String(candidate.model), promptVersion: String(candidate.promptVersion),
+  };
+};
+
+// Routine Package V1 originally stored only the presentational proofType string.
+// Persisted packages without response remain photo routines until they are saved
+// through the composer; this boundary can be removed after every active
+// assignment and importable package carries a typed response definition.
+export const responseForRoutine = (routine: Pick<Routine, 'response'>): RoutineResponseDefinition =>
+  routine.response ?? legacyPhotoResponse;
 
 interface FamilyState {
   id?: string;

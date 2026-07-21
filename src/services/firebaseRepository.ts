@@ -12,12 +12,16 @@ import {
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { getDownloadURL, ref as storageRef } from 'firebase/storage';
-import type { AppRepository, JourneySource, JourneyStage, StartupProgressReporter } from './contracts';
+import type { AiAuthoringCapabilities, AiRoutineProposal, AiRoutineResponseKind, AppRepository, JourneySource, JourneyStage, StartupProgressReporter } from './contracts';
 import { routineUpdatePayload } from './routineUpdate';
 import { getFirebaseServices, type FirebaseServices } from './firebaseClient';
 import {
   DEFAULT_ROUTINE_ID,
   normalizeAppPreferences,
+  parseRoutineChallenge,
+  parseRoutineQuizResult,
+  parseRoutineResponse,
+  parseRoutineSubmission,
   type AppPreferences,
   type Locale,
   type MembershipPermission,
@@ -33,6 +37,7 @@ import {
   type Role,
   type RoutineAssignment,
   type RoutineAssignmentCreator,
+  type RoutineResponseSubmission,
   type RoutineValidationMode,
   type VerificationEvent,
 } from '../domain/models';
@@ -149,6 +154,10 @@ const asEvent = (id: string, data: DocumentData): VerificationEvent => ({
   requestedAt: String(data.requestedAt),
   expiresAt: String(data.expiresAt),
   capturedAt: data.capturedAt ? String(data.capturedAt) : undefined,
+  submittedAt: data.submittedAt ? String(data.submittedAt) : undefined,
+  challenge: parseRoutineChallenge(data.challenge),
+  submission: parseRoutineSubmission(data.submission),
+  quizResult: parseRoutineQuizResult(data.quizResult),
   status: data.status,
   analysisSource: data.analysisSource,
   automatedStatus: ['detected', 'not_detected', 'uncertain'].includes(String(data.automatedStatus)) ? data.automatedStatus : undefined,
@@ -180,6 +189,7 @@ const asRoutineAssignment = (id: string, data: DocumentData): RoutineAssignment 
       icon: data.routine?.icon ? String(data.routine.icon) : undefined,
       accentColor: data.routine?.accentColor ? String(data.routine.accentColor) : undefined,
       category: ['dental', 'wellness', 'medication', 'activity', 'custom'].includes(String(data.routine?.category)) ? data.routine.category : undefined,
+      response: parseRoutineResponse(data.routine?.response),
       proofType: data.routine?.proofType ? String(data.routine.proofType) : undefined,
       proofExample: data.routine?.proofExample ? String(data.routine.proofExample) : undefined,
       recommendedValidationMode: ['ai', 'auto'].includes(String(data.routine?.recommendedValidationMode)) ? data.routine.recommendedValidationMode : undefined,
@@ -549,6 +559,20 @@ export class FirebaseRepository implements AppRepository {
     const assignRoutineDraft = httpsCallable<{ participantId: string; draftId: string; expectedRevision: number }, void>(this.services.functions, 'assignRoutineDraft');
     await assignRoutineDraft({ participantId, draftId, expectedRevision });
   }
+  async getAiAuthoringCapabilities() {
+    const callable = httpsCallable<void, AiAuthoringCapabilities>(this.services.functions, 'getAiAuthoringCapabilities');
+    return (await callable()).data;
+  }
+  async proposeRoutineChallenge(input: { intent: string; locale: Locale; preferredResponseKind?: AiRoutineResponseKind; refinement?: string; currentProposal?: AiRoutineProposal }) {
+    const callable = httpsCallable<typeof input, { output: AiRoutineProposal; approvalStatus: 'pending_human_review'; assignable: false }>(this.services.functions, 'proposeRoutineChallenge');
+    return (await callable(input)).data.output;
+  }
+  async reportQuizQuestion(sessionId: string, questionId: string) {
+    const event = this.state.events.find((candidate) => candidate.sessionId === sessionId);
+    if (!event || !this.state.family.id) throw new Error('quiz_report_unavailable');
+    const callable = httpsCallable<{ familyId: string; checkId: string; questionId: string }, void>(this.services.functions, 'reportQuizQuestion');
+    await callable({ familyId: this.state.family.id, checkId: event.id, questionId });
+  }
   async publishRoutineDraft(participantId: string, draftId: string, expectedRevision: number) {
     const callable = httpsCallable<{ participantId: string; draftId: string; expectedRevision: number }, PublishedRoutineVersion>(this.services.functions, 'publishRoutineDraft');
     return (await callable({ participantId, draftId, expectedRevision })).data;
@@ -579,8 +603,8 @@ export class FirebaseRepository implements AppRepository {
     const familyId = this.state.family.id;
     try {
       await coalesceInFlight(this.inFlightCallables, `requestCheckNow:${familyId}:${routineId}`, async () => {
-        const requestCheckNow = httpsCallable<{ familyId: string; routineId: string }, void>(this.services.functions, 'requestCheckNow');
-        return requestCheckNow({ familyId, routineId });
+        const requestCheckNow = httpsCallable<{ familyId: string; routineId: string; locale: Locale }, void>(this.services.functions, 'requestCheckNow');
+        return requestCheckNow({ familyId, routineId, locale: this.state.locale });
       });
     }
     catch (error) {
@@ -668,6 +692,39 @@ export class FirebaseRepository implements AppRepository {
         imageDataUrl,
         locale: this.state.locale,
       });
+    });
+    this.state.events = this.state.events.map((item) => item.id === result.data.id ? result.data : item);
+    this.emit();
+    return result.data;
+  }
+
+  async submitRoutineResponse(sessionId: string, submittedAt: Date, submission: RoutineResponseSubmission) {
+    const familyId = this.state.family.id;
+    const event = this.state.events.find((item) => item.sessionId === sessionId);
+    if (!familyId || !this.activeAccessCan('submitChecks') || !event || event.status !== 'pending' || submittedAt > new Date() || submittedAt > new Date(event.expiresAt)) {
+      throw new Error('invalid_or_replayed_response');
+    }
+    const result = await coalesceInFlight(this.inFlightCallables, `submitRoutineResponse:${familyId}:${event.id}`, async () => {
+      const submitRoutineResponse = httpsCallable<{
+        familyId: string;
+        checkId: string;
+        submittedAt: string;
+        submission: RoutineResponseSubmission;
+      }, VerificationEvent>(this.services.functions, submission.kind === 'quiz' ? 'submitQuizResponse' : 'submitRoutineResponse');
+      return submitRoutineResponse({ familyId, checkId: event.id, submittedAt: submittedAt.toISOString(), submission });
+    });
+    this.state.events = this.state.events.map((item) => item.id === result.data.id ? result.data : item);
+    this.emit();
+    return result.data;
+  }
+
+  async prepareQuizChallenge(sessionId: string) {
+    const familyId = this.state.family.id;
+    const event = this.state.events.find((item) => item.sessionId === sessionId);
+    if (!familyId || !this.activeAccessCan('submitChecks') || !event || event.status !== 'pending') throw new Error('quiz_unavailable');
+    const result = await coalesceInFlight(this.inFlightCallables, `prepareQuizChallenge:${familyId}:${event.id}`, async () => {
+      const prepareQuizChallenge = httpsCallable<{ familyId: string; checkId: string; locale: Locale }, VerificationEvent>(this.services.functions, 'prepareQuizChallenge');
+      return prepareQuizChallenge({ familyId, checkId: event.id, locale: this.state.locale });
     });
     this.state.events = this.state.events.map((item) => item.id === result.data.id ? result.data : item);
     this.emit();

@@ -11,7 +11,7 @@ import { readUiStorageJson, writeUiStorageString } from '../services/uiStorage';
 import { languageTag } from '../services/locale';
 
 const eventTimestamp = (event: VerificationEvent) =>
-  Date.parse(event.capturedAt ?? event.requestedAt);
+  Date.parse(event.submittedAt ?? event.capturedAt ?? event.requestedAt);
 
 const hiddenReasonCodes = new Set(['analysis_unavailable', 'self_validated']);
 
@@ -192,6 +192,7 @@ export function RoutineHistoryPanel({
                   detail={(
                     <>
                       {formatDateTime(event.requestedAt)}
+                      {event.quizResult ? ` · ${Math.round(event.quizResult.score * 100)}%` : ''}
                       {tag ? <span className="history-analysis-tag">{tag}</span> : null}
                       {reason ? ` · ${reason}` : ''}
                       {staleHint ? <span className="history-stale-hint"> · {staleHint}</span> : null}

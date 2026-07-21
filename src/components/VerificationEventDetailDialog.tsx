@@ -42,6 +42,15 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
   };
   const actionLabel = (type: NonNullable<VerificationEvent['responsibleActions']>[number]['type']) => t(actionKeys[type]);
   const scoreLabel = (score?: number) => score === undefined ? undefined : `${Math.round(score * 100)}%`;
+  const submissionRows = event.submission?.kind === 'confirmation'
+    ? [{ id: 'confirmation', label: event.challenge?.response.kind === 'confirmation' ? event.challenge.response.prompt : t('historyResponse'), value: event.submission.value }]
+    : event.submission?.kind === 'checklist'
+      ? event.submission.items.map((item) => ({
+        id: item.id,
+        label: event.challenge?.response.kind === 'checklist' ? event.challenge.response.items.find((definition) => definition.id === item.id)?.label ?? item.id : item.id,
+        value: item.value,
+      }))
+      : [];
 
   useEffect(() => {
     if (providedProofUrl || !event.proofImagePath || !getProofImageUrl) return;
@@ -120,6 +129,14 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
         {detailsExpanded ? <dl>
           <div><dt>{t('historyRequestedAt')}</dt><dd>{formatDateTime(event.requestedAt)}</dd></div>
           {event.capturedAt ? <div><dt>{t('historyCapturedAt')}</dt><dd>{formatDateTime(event.capturedAt)}</dd></div> : null}
+          {event.submittedAt ? <div><dt>{t('historyRespondedAt')}</dt><dd>{formatDateTime(event.submittedAt)}</dd></div> : null}
+          {submissionRows.length ? <div className="wide"><dt>{t('historyResponse')}</dt><dd className="history-structured-response">{submissionRows.map((item) => <span key={item.id}>{item.label} · <b>{t(item.value ? 'yes' : 'no')}</b></span>)}</dd></div> : null}
+          {event.quizResult ? <div><dt>{t('historyQuizScore')}</dt><dd>{Math.round(event.quizResult.score * 100)}% · {event.quizResult.correctCount}/{event.quizResult.totalCount}</dd></div> : null}
+          {event.quizResult?.concepts.length ? <div><dt>{t('historyQuizConcepts')}</dt><dd>{event.quizResult.concepts.join(' · ')}</dd></div> : null}
+          {event.quizResult?.corrections.length ? <div className="wide"><dt>{t('historyQuizCorrection')}</dt><dd className="history-structured-response">{event.quizResult.corrections.map((correction) => {
+            const question = event.challenge?.quiz?.questions.find((item) => item.id === correction.questionId);
+            return <span key={correction.questionId}><b>{question?.prompt ?? correction.questionId}</b> · {correction.explanation}</span>;
+          })}</dd></div> : null}
           <div><dt>{t('historyExpiresAt')}</dt><dd>{formatDateTime(event.expiresAt)}</dd></div>
           {analysisSourceLabel ? <div><dt>{t('analysisSource')}</dt><dd>{analysisSourceLabel}</dd></div> : null}
           {scoreLabel(event.confidence) ? <div><dt>{t('analysisConfidence')}</dt><dd>{scoreLabel(event.confidence)}</dd></div> : null}

@@ -1,11 +1,29 @@
-import type { AppPreferences, AppState, Locale, MembershipRole, MonitoringPlan, ParticipantMember, PilotParticipation, ProfileColorKey, Role, RoutineValidationMode, VerificationEvent } from '../domain/models';
+import type { AppPreferences, AppState, Locale, MembershipRole, MonitoringPlan, ParticipantMember, PilotParticipation, ProfileColorKey, Role, RoutineResponseSubmission, RoutineValidationMode, VerificationEvent } from '../domain/models';
 import type { PublishedRoutineVersion, RoutineCatalogEntry, RoutineDraft, RoutinePackageV1 } from '../domain/routineDraft';
+
+export type AiRoutineResponseKind = 'photo' | 'confirmation' | 'checklist' | 'quiz';
+export interface AiRoutineProposal {
+  name: string;
+  instructions: string;
+  description: string;
+  category: 'dental' | 'wellness' | 'medication' | 'activity' | 'custom';
+  response: { kind: AiRoutineResponseKind; prompt: string; topic?: string; items?: Array<{ id: string; label: string }> };
+  responseReason: string;
+  uncertainties: string[];
+}
+export interface AiAuthoringCapabilities {
+  prescriptionExtraction: { enabled: boolean; promptVersion: string };
+  routineTranslation: { enabled: boolean; promptVersion: string };
+  routineGeneration: { enabled: boolean; promptVersion: string };
+  dynamicQuizGeneration: { enabled: boolean; promptVersion: string };
+  manualFallback: true;
+}
 
 export type SyncStatus = 'synced' | 'syncing' | 'offline' | 'failed';
 export type StartupStage = 'services' | 'account' | 'profile' | 'relationships' | 'workspace';
 export type StartupProgressReporter = (stage: StartupStage) => void;
-export type JourneyStage = 'app_ready' | 'notifications_enabled' | 'notification_opened' | 'check_opened';
-export type JourneySource = 'startup' | 'settings' | 'push' | 'notification_center' | 'dashboard' | 'history';
+export type JourneyStage = 'app_ready' | 'notifications_enabled' | 'notification_opened' | 'check_opened' | 'routine_authoring_started' | 'routine_authoring_proposal' | 'routine_authoring_refinement' | 'routine_authoring_approved' | 'routine_authoring_activated';
+export type JourneySource = 'startup' | 'settings' | 'push' | 'notification_center' | 'dashboard' | 'history' | 'routine_composer';
 
 export interface AppRepository {
   initialize(reportProgress?: StartupProgressReporter): Promise<void>;
@@ -38,6 +56,8 @@ export interface AppRepository {
   updateRoutineDraft?(participantId: string, draftId: string, expectedRevision: number, routinePackage: RoutinePackageV1): Promise<RoutineDraft>;
   deleteRoutineDraft?(participantId: string, draftId: string, expectedRevision: number): Promise<void>;
   assignRoutineDraft?(participantId: string, draftId: string, expectedRevision: number): Promise<void>;
+  getAiAuthoringCapabilities?(): Promise<AiAuthoringCapabilities>;
+  proposeRoutineChallenge?(input: { intent: string; locale: Locale; preferredResponseKind?: AiRoutineResponseKind; refinement?: string; currentProposal?: AiRoutineProposal }): Promise<AiRoutineProposal>;
   publishRoutineDraft?(participantId: string, draftId: string, expectedRevision: number): Promise<PublishedRoutineVersion>;
   listPublishedRoutineVersions?(participantId: string): Promise<Array<PublishedRoutineVersion & { routineId: string }>>;
   upgradeRoutineAssignment?(participantId: string, routineId: string, targetVersion: number): Promise<void>;
@@ -59,6 +79,9 @@ export interface AppRepository {
   savePlan(plan: MonitoringPlan, routineId?: string): Promise<void>;
   activeSession(routineId?: string): VerificationEvent | undefined;
   submitCapture(sessionId: string, capturedAt: Date, imageDataUrl: string): Promise<VerificationEvent>;
+  submitRoutineResponse(sessionId: string, submittedAt: Date, submission: RoutineResponseSubmission): Promise<VerificationEvent>;
+  prepareQuizChallenge(sessionId: string): Promise<VerificationEvent>;
+  reportQuizQuestion(sessionId: string, questionId: string): Promise<void>;
   getProofImageUrl(eventId: string): Promise<string>;
   reviewCheck(eventId: string, decision: 'detected' | 'not_detected'): Promise<VerificationEvent>;
   retryRemoteSync?(): Promise<void>;

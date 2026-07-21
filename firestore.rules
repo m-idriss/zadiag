@@ -68,6 +68,15 @@ service cloud.firestore {
         allow create, update, delete: if false;
       }
 
+      // Quiz corrections are server-only until the callable grades a submission.
+      match /quizAnswerKeys/{checkId} {
+        allow read, write: if false;
+      }
+
+      match /quizQuestionReports/{reportId} {
+        allow read, write: if false;
+      }
+
       match /pushSubscriptions/{subscriptionId} {
         // A subscription contains a device endpoint. Members only need their
         // own registration state; notification fan-out stays server-side.
@@ -93,6 +102,14 @@ service cloud.firestore {
       match /routineAssignments/{assignmentId} {
         allow read: if canViewParticipant(participantId);
         allow write: if false;
+      }
+
+      match /quizAnswerKeys/{checkId} {
+        allow read, write: if false;
+      }
+
+      match /quizQuestionReports/{reportId} {
+        allow read, write: if false;
       }
 
       match /routineDrafts/{draftId} {

@@ -1,6 +1,6 @@
 import type { AppRepository, JourneySource, JourneyStage, StartupProgressReporter } from './contracts';
 import { DemoRepository } from './demoRepository';
-import { type AppPreferences, type Locale, type MembershipRole, type MonitoringPlan, type PilotParticipation, type ProfileColorKey, type Role, type RoutineValidationMode } from '../domain/models';
+import { type AppPreferences, type Locale, type MembershipRole, type MonitoringPlan, type PilotParticipation, type ProfileColorKey, type Role, type RoutineResponseSubmission, type RoutineValidationMode } from '../domain/models';
 import { firebaseEnabled } from './firebaseConfig';
 import { isLocalDemoEnvironment } from './browserEnvironment';
 import { initialRemoteState } from './appStateDefaults';
@@ -143,6 +143,8 @@ class LazyFirebaseRepository implements AppRepository {
   async updateRoutineDraft(participantId: string, draftId: string, expectedRevision: number, routinePackage: RoutinePackageV1) { const repository = await this.load(); if (!repository.updateRoutineDraft) throw new Error('routine_drafts_unavailable'); return repository.updateRoutineDraft(participantId, draftId, expectedRevision, routinePackage); }
   async deleteRoutineDraft(participantId: string, draftId: string, expectedRevision: number) { const repository = await this.load(); if (!repository.deleteRoutineDraft) throw new Error('routine_drafts_unavailable'); return repository.deleteRoutineDraft(participantId, draftId, expectedRevision); }
   async assignRoutineDraft(participantId: string, draftId: string, expectedRevision: number) { const repository = await this.load(); if (!repository.assignRoutineDraft) throw new Error('routine_drafts_unavailable'); return repository.assignRoutineDraft(participantId, draftId, expectedRevision); }
+  async getAiAuthoringCapabilities() { const repository = await this.load(); if (!repository.getAiAuthoringCapabilities) throw new Error('ai_authoring_unavailable'); return repository.getAiAuthoringCapabilities(); }
+  async proposeRoutineChallenge(input: Parameters<NonNullable<AppRepository['proposeRoutineChallenge']>>[0]) { const repository = await this.load(); if (!repository.proposeRoutineChallenge) throw new Error('ai_authoring_unavailable'); return repository.proposeRoutineChallenge(input); }
   async publishRoutineDraft(participantId: string, draftId: string, expectedRevision: number) { const repository = await this.load(); if (!repository.publishRoutineDraft) throw new Error('routine_publication_unavailable'); return repository.publishRoutineDraft(participantId, draftId, expectedRevision); }
   async listPublishedRoutineVersions(participantId: string) { const repository = await this.load(); if (!repository.listPublishedRoutineVersions) throw new Error('routine_publication_unavailable'); return repository.listPublishedRoutineVersions(participantId); }
   async upgradeRoutineAssignment(participantId: string, routineId: string, targetVersion: number) { const repository = await this.load(); if (!repository.upgradeRoutineAssignment) throw new Error('routine_publication_unavailable'); return repository.upgradeRoutineAssignment(participantId, routineId, targetVersion); }
@@ -194,6 +196,15 @@ class LazyFirebaseRepository implements AppRepository {
   async submitCapture(sessionId: string, capturedAt: Date, imageDataUrl: string) {
     return (await this.load()).submitCapture(sessionId, capturedAt, imageDataUrl);
   }
+
+  async submitRoutineResponse(sessionId: string, submittedAt: Date, submission: RoutineResponseSubmission) {
+    return (await this.load()).submitRoutineResponse(sessionId, submittedAt, submission);
+  }
+
+  async prepareQuizChallenge(sessionId: string) {
+    return (await this.load()).prepareQuizChallenge(sessionId);
+  }
+  async reportQuizQuestion(sessionId: string, questionId: string) { return (await this.load()).reportQuizQuestion(sessionId, questionId); }
 
   async getProofImageUrl(eventId: string) {
     return (await this.load()).getProofImageUrl(eventId);

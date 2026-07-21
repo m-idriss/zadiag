@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createDefaultRoutineAssignment, createDraftRoutineAssignment, createRoutineAssignmentVersionChange, DEFAULT_ROUTINE_ID, isRoutineValidationMode, migrateCheckRoutineId, routineAssignmentProvenance, shouldCreateDefaultRoutineAssignment } from './routines.js';
+import { challengeForAssignment, createDefaultRoutineAssignment, createDraftRoutineAssignment, createRoutineAssignmentVersionChange, DEFAULT_ROUTINE_ID, isRoutineValidationMode, migrateCheckRoutineId, parseRoutineResponseSubmission, responseForRoutine, RoutineResponseInputError, routineAssignmentProvenance, shouldCreateDefaultRoutineAssignment } from './routines.js';
 
 const plan = {
   checksPerDay: 1,
@@ -57,4 +57,28 @@ test('accepts only supported routine validation modes', () => {
   assert.equal(isRoutineValidationMode('ai'), true);
   assert.equal(isRoutineValidationMode('manual'), false);
   assert.equal(isRoutineValidationMode(undefined), false);
+});
+
+test('routes legacy routines to the photo response boundary', () => {
+  assert.deepEqual(responseForRoutine({}), { kind: 'photo' });
+  assert.deepEqual(responseForRoutine({ response: { kind: 'confirmation', prompt: 'Done?' } }), { kind: 'confirmation', prompt: 'Done?' });
+});
+
+test('freezes the assigned challenge and validates structured responses exactly', () => {
+  const assignment = createDraftRoutineAssignment({
+    id: 'medication', name: 'Morning treatment', description: 'Track each morning dose.', instructions: 'Confirm each prescribed medicine.',
+    response: { kind: 'checklist', prompt: 'Taken?', items: [{ id: 'dose-a', label: 'Medicine A' }, { id: 'dose-b', label: 'Medicine B' }] },
+  }, plan, 'draft-1', 1);
+  const challenge = challengeForAssignment(assignment);
+  assignment.routine.name = 'Changed later';
+  (assignment.routine.response as { kind: 'checklist'; items: Array<{ id: string; label: string }> }).items[0].label = 'Changed later';
+
+  assert.equal(challenge.name, 'Morning treatment');
+  assert.deepEqual(parseRoutineResponseSubmission(challenge.response, {
+    kind: 'checklist', items: [{ id: 'dose-b', value: false }, { id: 'dose-a', value: true }],
+  }), { kind: 'checklist', items: [{ id: 'dose-b', value: false }, { id: 'dose-a', value: true }] });
+  assert.throws(() => parseRoutineResponseSubmission(challenge.response, {
+    kind: 'checklist', items: [{ id: 'dose-a', value: true }],
+  }), RoutineResponseInputError);
+  assert.throws(() => parseRoutineResponseSubmission({ kind: 'photo' }, { kind: 'confirmation', value: true }), RoutineResponseInputError);
 });

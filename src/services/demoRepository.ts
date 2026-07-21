@@ -7,6 +7,7 @@ import type {
   Role,
   PilotParticipation,
   RoutineAssignment,
+  RoutineResponseSubmission,
   RoutineValidationMode,
   VerificationEvent,
 } from '../domain/models';
@@ -567,6 +568,34 @@ export class DemoRepository implements AppRepository {
     this.persist();
     return structuredClone(event);
   }
+
+  async submitRoutineResponse(sessionId: string, submittedAt: Date, submission: RoutineResponseSubmission): Promise<VerificationEvent> {
+    const event = this.state.events.find((item) => item.sessionId === sessionId);
+    if (!event || event.status !== 'pending' || submittedAt > new Date(event.expiresAt)) throw new Error('invalid_or_replayed_response');
+    const quizResult = submission.kind === 'quiz' ? {
+      score: 1, correctCount: submission.answers.length, totalCount: submission.answers.length, concepts: ['demo'],
+      corrections: submission.answers.map((answer) => ({ questionId: answer.questionId, selectedChoiceId: answer.choiceId, correctChoiceId: answer.choiceId, correct: true, explanation: 'Demo answer.' })),
+      provider: 'demo', model: 'demo', promptVersion: 'demo-v1',
+    } : undefined;
+    Object.assign(event, { status: 'answered' as const, submittedAt: submittedAt.toISOString(), submission: structuredClone(submission), ...(quizResult ? { quizResult } : {}) });
+    this.persist();
+    return structuredClone(event);
+  }
+
+  async prepareQuizChallenge(sessionId: string): Promise<VerificationEvent> {
+    const event = this.state.events.find((item) => item.sessionId === sessionId);
+    if (!event?.challenge || event.challenge.response.kind !== 'quiz') throw new Error('quiz_unavailable');
+    event.challenge.quiz ??= {
+      generatedAt: new Date().toISOString(), provider: 'demo', model: 'demo', promptVersion: 'demo-v1',
+      questions: Array.from({ length: event.challenge.response.questionCount }, (_, index) => ({
+        id: `q-${index + 1}`, prompt: `Demo question ${index + 1}`, concept: 'demo',
+        choices: Array.from({ length: event.challenge!.response.kind === 'quiz' ? event.challenge!.response.choiceCount : 3 }, (_choice, choiceIndex) => ({ id: `q-${index + 1}-c-${choiceIndex + 1}`, label: `Choice ${choiceIndex + 1}` })),
+      })),
+    };
+    this.persist();
+    return structuredClone(event);
+  }
+  async reportQuizQuestion(_sessionId: string, _questionId: string) { /* Demo reports remain local and contain no content. */ }
 
   async getProofImageUrl(eventId: string) {
     const event = this.state.events.find((item) => item.id === eventId);

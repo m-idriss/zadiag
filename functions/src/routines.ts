@@ -5,6 +5,32 @@ export const DEFAULT_ROUTINE_ID = 'orthodontic-elastics';
 const routineValidationModes = ['auto', 'ai'] as const;
 type RoutineValidationMode = typeof routineValidationModes[number];
 
+export interface RoutineChecklistItem {
+  id: string;
+  label: string;
+}
+
+export type RoutineResponseDefinition =
+  | { kind: 'photo' }
+  | { kind: 'confirmation'; prompt: string; positiveLabel?: string; negativeLabel?: string }
+  | { kind: 'checklist'; prompt: string; items: RoutineChecklistItem[] }
+  | { kind: 'quiz'; prompt: string; topic: string; mode: 'fixed' | 'generated'; questionCount: number; choiceCount: number };
+
+export interface RoutineChallengeSnapshot {
+  routineId: string;
+  routineRevision?: number;
+  routineVersion?: number;
+  name: string;
+  instructions: string;
+  response: RoutineResponseDefinition;
+}
+
+export type RoutineResponseSubmission =
+  | { kind: 'confirmation'; value: boolean }
+  | { kind: 'checklist'; items: Array<{ id: string; value: boolean }> };
+
+export class RoutineResponseInputError extends Error {}
+
 export const isRoutineValidationMode = (value: unknown): value is RoutineValidationMode =>
   routineValidationModes.includes(value as RoutineValidationMode);
 
@@ -16,6 +42,7 @@ export interface RoutineDocument {
   icon?: string;
   accentColor?: string;
   category?: string;
+  response?: RoutineResponseDefinition;
   proofType?: string;
   proofExample?: string;
   recommendedValidationMode?: RoutineValidationMode;
@@ -73,6 +100,51 @@ export const routineAssignmentProvenance = (assignment: RoutineAssignmentDocumen
   ...(assignment.sourceRevision ? { routineSourceRevision: assignment.sourceRevision } : {}),
   ...(assignment.sourceVersion ? { routineSourceVersion: assignment.sourceVersion } : {}),
 });
+
+// Legacy Routine Package V1 documents predate typed responses and always used
+// the photo capture runtime. Keep that behavior explicit at one migration edge.
+export const responseForRoutine = (routine: Pick<RoutineDocument, 'response'>): RoutineResponseDefinition =>
+  routine.response ?? { kind: 'photo' };
+
+export const challengeForAssignment = (assignment: RoutineAssignmentDocument): RoutineChallengeSnapshot => ({
+  routineId: assignment.routineId,
+  ...(assignment.sourceRevision ? { routineRevision: assignment.sourceRevision } : {}),
+  ...(assignment.sourceVersion ? { routineVersion: assignment.sourceVersion } : {}),
+  name: assignment.routine.name,
+  instructions: assignment.routine.instructions ?? assignment.routine.description,
+  response: structuredClone(responseForRoutine(assignment.routine)),
+});
+
+export const parseRoutineResponseSubmission = (definition: RoutineResponseDefinition, input: unknown): RoutineResponseSubmission => {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new RoutineResponseInputError('invalid_response');
+  const candidate = input as Record<string, unknown>;
+  if (definition.kind === 'confirmation') {
+    if (candidate.kind !== 'confirmation' || typeof candidate.value !== 'boolean' || Object.keys(candidate).some((key) => !['kind', 'value'].includes(key))) {
+      throw new RoutineResponseInputError('invalid_confirmation');
+    }
+    return { kind: 'confirmation', value: candidate.value };
+  }
+  if (definition.kind === 'checklist') {
+    if (candidate.kind !== 'checklist' || !Array.isArray(candidate.items) || Object.keys(candidate).some((key) => !['kind', 'items'].includes(key))) {
+      throw new RoutineResponseInputError('invalid_checklist');
+    }
+    const items = candidate.items.map((item) => {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) throw new RoutineResponseInputError('invalid_checklist');
+      const entry = item as Record<string, unknown>;
+      if (typeof entry.id !== 'string' || typeof entry.value !== 'boolean' || Object.keys(entry).some((key) => !['id', 'value'].includes(key))) {
+        throw new RoutineResponseInputError('invalid_checklist');
+      }
+      return { id: entry.id, value: entry.value };
+    });
+    const expectedIds = definition.items.map((item) => item.id).sort();
+    const actualIds = items.map((item) => item.id).sort();
+    if (actualIds.length !== expectedIds.length || actualIds.some((id, index) => id !== expectedIds[index]) || new Set(actualIds).size !== actualIds.length) {
+      throw new RoutineResponseInputError('incomplete_checklist');
+    }
+    return { kind: 'checklist', items };
+  }
+  throw new RoutineResponseInputError('unsupported_response');
+};
 
 export const createRoutineAssignmentVersionChange = (
   assignment: RoutineAssignmentDocument,

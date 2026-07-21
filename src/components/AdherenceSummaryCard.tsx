@@ -23,6 +23,7 @@ const ranges: Array<{
 
 const ringSegments: Array<{ status: VerificationStatus; color: string }> = [
   { status: 'detected', color: 'var(--color-primary)' },
+  { status: 'answered', color: 'var(--color-info-soft)' },
   { status: 'not_detected', color: 'var(--color-summary-not-detected)' },
   { status: 'uncertain', color: 'var(--color-summary-uncertain)' },
   { status: 'missed', color: 'var(--color-summary-missed)' },
@@ -80,7 +81,7 @@ export function AdherenceSummaryCard({
     timeStyle: 'short',
   }), [locale]);
   const completedEvents = useMemo(() => [...report.completedEvents].sort((a, b) => (
-    Date.parse(b.capturedAt ?? b.requestedAt) - Date.parse(a.capturedAt ?? a.requestedAt)
+    Date.parse(b.submittedAt ?? b.capturedAt ?? b.requestedAt) - Date.parse(a.submittedAt ?? a.capturedAt ?? a.requestedAt)
   )), [report.completedEvents]);
   const comparison = report.rateDelta === undefined
     ? t('summaryNoPreviousBaseline')
@@ -108,7 +109,7 @@ export function AdherenceSummaryCard({
     historyHeading: t('reportCheckHistory'),
     historyColumns: [t('reportDate'), t('routine'), t('reportStatus')] as [string, string, string],
     history: completedEvents.map((event) => [
-      dateTimeFormatter.format(new Date(event.capturedAt ?? event.requestedAt)),
+      dateTimeFormatter.format(new Date(event.submittedAt ?? event.capturedAt ?? event.requestedAt)),
       routineNames.get(event.routineId) ?? t('routine'),
       [
         t(statusMessageKey(event.status)),

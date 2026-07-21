@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ComponentType } from 'react';
-import { normalizeAppPreferences, type AppState, type Locale, type Role, type VerificationEvent } from './domain/models';
+import { normalizeAppPreferences, type AppState, type Locale, type Role, type RoutineResponseSubmission, type VerificationEvent } from './domain/models';
 import { routeForState, type AppRoute } from './domain/appRouting';
 import { createRepository } from './services/repositoryFactory';
 import { createTranslator, type MessageKey } from './services/i18n';
@@ -32,6 +32,8 @@ const lazyScreen = <TProps extends object>(
 const LinkScreen = lazyScreen(() => import('./screens/LinkScreen'), 'LinkScreen');
 const NotificationSetupScreen = lazyScreen(() => import('./screens/NotificationSetupScreen'), 'NotificationSetupScreen');
 const CameraScreen = lazyScreen(() => import('./screens/CameraScreen'), 'CameraScreen');
+const RoutineResponseScreen = lazyScreen(() => import('./screens/RoutineResponseScreen'), 'RoutineResponseScreen');
+const QuizResponseScreen = lazyScreen(() => import('./screens/QuizResponseScreen'), 'QuizResponseScreen');
 const ResultScreen = lazyScreen(() => import('./screens/ResultScreen'), 'ResultScreen');
 const HistoryScreen = lazyScreen(() => import('./screens/HistoryScreen'), 'HistoryScreen');
 const SettingsScreen = lazyScreen(() => import('./screens/SettingsScreen'), 'SettingsScreen');
@@ -479,11 +481,20 @@ export function App() {
     }
   };
 
+  const submitStructuredResponse = async (submission: RoutineResponseSubmission) => {
+    const session = selectedSessionId
+      ? state.events.find((event) => event.sessionId === selectedSessionId)
+      : repository.activeSession();
+    if (!session) return undefined;
+    return runRepositoryAction(repository.submitRoutineResponse, [session.sessionId, new Date(), submission]);
+  };
+
   const startCapture = (event?: VerificationEvent) => {
     const openedEvent = event ?? repository.activeSession();
     if (openedEvent) void repository.recordJourneyEvent?.('check_opened', 'dashboard', openedEvent.id).catch((error) => console.error('Journey event error:', error));
-    setSelectedSessionId(event?.sessionId);
-    setRoute('camera');
+    setSelectedSessionId(openedEvent?.sessionId);
+    const responseKind = openedEvent?.challenge?.response.kind;
+    setRoute(responseKind === 'confirmation' || responseKind === 'checklist' || responseKind === 'quiz' ? 'response' : 'camera');
   };
   const retryCapture = (event: VerificationEvent) => {
     setResult(undefined);
@@ -655,6 +666,28 @@ export function App() {
     );
   } else if (route === 'camera') {
     content = <CameraScreen busy={busy} submitError={submitError} back={() => { setSelectedSessionId(undefined); setRoute('app'); }} submit={submit} t={t} />;
+  } else if (route === 'response') {
+    const event = selectedSessionId ? state.events.find((candidate) => candidate.sessionId === selectedSessionId) : undefined;
+    const responseKind = event?.challenge?.response.kind;
+    content = event?.challenge && (responseKind === 'confirmation' || responseKind === 'checklist')
+      ? <RoutineResponseScreen
+          event={event as VerificationEvent & { challenge: NonNullable<VerificationEvent['challenge']> & { response: Extract<NonNullable<VerificationEvent['challenge']>['response'], { kind: 'confirmation' | 'checklist' }> } }}
+          submit={async (submission) => { await submitStructuredResponse(submission); }}
+          back={() => { setSelectedSessionId(undefined); setRoute('app'); }}
+          done={() => { setSelectedSessionId(undefined); setRoute('app'); }}
+          t={t}
+        />
+      : event?.challenge && responseKind === 'quiz'
+        ? <QuizResponseScreen
+            event={event as VerificationEvent & { challenge: NonNullable<VerificationEvent['challenge']> & { response: Extract<NonNullable<VerificationEvent['challenge']>['response'], { kind: 'quiz' }> } }}
+            prepare={async () => { await runRepositoryAction(repository.prepareQuizChallenge, [event.sessionId]); }}
+            submit={async (answers) => (await submitStructuredResponse({ kind: 'quiz', answers }))?.quizResult}
+            report={(questionId) => repository.reportQuizQuestion(event.sessionId, questionId)}
+            back={() => { setSelectedSessionId(undefined); setRoute('app'); }}
+            done={() => { setSelectedSessionId(undefined); setRoute('app'); }}
+            t={t}
+          />
+        : <div className="content-screen routines-state" role="status"><p>{t('noPendingTask')}</p></div>;
   } else if (route === 'result' && result) {
     const canRetake = canRetakeCapture(result, state.events);
     content = <ResultScreen event={result} retake={canRetake ? () => retryCapture(result) : undefined} done={() => { setResult(undefined); setRoute('app'); }} t={t} />;
@@ -693,6 +726,9 @@ export function App() {
             onForkRoutineAssignmentDraft={canManageRoutines ? bindOptionalRepository(repository.forkRoutineAssignmentDraft) : undefined}
             onUpdateRoutineDraft={canManageRoutines ? bindOptionalRepository(repository.updateRoutineDraft) : undefined}
             onAssignRoutineDraft={canManageRoutines ? bindOptionalRepository(repository.assignRoutineDraft) : undefined}
+            onGetAiAuthoringCapabilities={canManageRoutines ? bindOptionalRepository(repository.getAiAuthoringCapabilities) : undefined}
+            onProposeRoutineChallenge={canManageRoutines ? bindOptionalRepository(repository.proposeRoutineChallenge) : undefined}
+            onRecordAuthoringStage={canManageRoutines ? (stage) => repository.recordJourneyEvent?.(stage, 'routine_composer') ?? Promise.resolve() : undefined}
             onPublishRoutineDraft={canManageRoutines ? bindOptionalRepository(repository.publishRoutineDraft) : undefined}
             onListPublishedRoutineVersions={canManageRoutines ? bindOptionalRepository(repository.listPublishedRoutineVersions) : undefined}
             onUpgradeRoutineAssignment={canManageRoutines ? bindOptionalRepository(repository.upgradeRoutineAssignment) : undefined}

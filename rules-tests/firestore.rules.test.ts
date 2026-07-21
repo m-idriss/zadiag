@@ -54,6 +54,8 @@ beforeEach(async () => {
       uid: 'suspended', role: 'caregiver', status: 'suspended', permissions: { view: true },
     });
     await setDoc(doc(db, 'participants/participant-1/checks/check-1'), { status: 'pending' });
+    await setDoc(doc(db, 'participants/participant-1/quizAnswerKeys/check-1'), { answerKey: [{ correctChoiceId: 'secret' }] });
+    await setDoc(doc(db, 'participants/participant-1/quizQuestionReports/report-1'), { checkId: 'check-1' });
     await setDoc(doc(db, 'participants/participant-1/routineAssignments/routine-1'), { status: 'active' });
     await setDoc(doc(db, 'participants/participant-1/routineDrafts/parent-draft'), { ownerId: 'parent', revision: 1 });
     await setDoc(doc(db, 'participants/participant-1/routineDrafts/coparent-draft'), { ownerId: 'coparent', revision: 1 });
@@ -77,6 +79,8 @@ beforeEach(async () => {
     await setDoc(doc(db, 'routineRegistry/state'), { status: 'healthy' });
     await setDoc(doc(db, 'families/family-1/pushSubscriptions/parent'), { endpoint: 'legacy-parent-device' });
     await setDoc(doc(db, 'families/family-1/pushSubscriptions/child'), { endpoint: 'legacy-child-device' });
+    await setDoc(doc(db, 'families/family-1/quizAnswerKeys/check-1'), { answerKey: [{ correctChoiceId: 'secret' }] });
+    await setDoc(doc(db, 'families/family-1/quizQuestionReports/report-1'), { checkId: 'check-1' });
   });
 });
 
@@ -150,6 +154,15 @@ describe('participant relationship isolation', () => {
     }
   });
 
+  test('never exposes participant quiz answer keys to authorized members', async () => {
+    for (const uid of ['parent', 'coparent']) {
+      const memberDb = environment.authenticatedContext(uid).firestore();
+      await assertFails(getDoc(doc(memberDb, 'participants/participant-1/quizAnswerKeys/check-1')));
+      await assertFails(getDocs(collection(memberDb, 'participants/participant-1/quizAnswerKeys')));
+      await assertFails(getDoc(doc(memberDb, 'participants/participant-1/quizQuestionReports/report-1')));
+    }
+  });
+
   test('keeps marketplace, registry, share codes, and reports behind callable functions', async () => {
     const parentDb = environment.authenticatedContext('parent').firestore();
     for (const path of [
@@ -216,6 +229,16 @@ describe('family isolation', () => {
     await assertSucceeds(getDoc(doc(parentDb, 'families/family-1/pushSubscriptions/parent')));
     await assertFails(getDoc(doc(parentDb, 'families/family-1/pushSubscriptions/child')));
     await assertFails(getDocs(collection(parentDb, 'families/family-1/pushSubscriptions')));
+  });
+
+
+  test('never exposes legacy family quiz answer keys to either role', async () => {
+    for (const uid of ['parent', 'child']) {
+      const memberDb = environment.authenticatedContext(uid).firestore();
+      await assertFails(getDoc(doc(memberDb, 'families/family-1/quizAnswerKeys/check-1')));
+      await assertFails(getDocs(collection(memberDb, 'families/family-1/quizAnswerKeys')));
+      await assertFails(getDoc(doc(memberDb, 'families/family-1/quizQuestionReports/report-1')));
+    }
   });
 });
 
