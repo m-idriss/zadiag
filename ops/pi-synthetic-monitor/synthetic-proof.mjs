@@ -5,7 +5,10 @@ import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
 const PI_HEALTH_ROUTINE_IDS = new Set(['nemu-health', 'raspberry-pi-health']);
+const PI_CONNECTIVITY_ROUTINE_IDS = new Set(['raspberry-pi-connectivity']);
 const PI_HEALTH_ROUTINE_NAME_PATTERN = /Santé du Raspberry Pi|Raspberry Pi Health/i;
+const PI_CONNECTIVITY_ROUTINE_NAME_PATTERN = /Connectivité du Raspberry Pi|Raspberry Pi Connectivity/i;
+const SUPPORTED_ROUTINE_NAME_PATTERN = /Santé du Raspberry Pi|Raspberry Pi Health|Connectivité du Raspberry Pi|Raspberry Pi Connectivity/i;
 const resultPattern = /Validated|Validé|Not detected|Non détecté|Needs review|À vérifier/i;
 const analyzingPattern = /Checking the photo|Analyse de la photo|Vérification de la photo/i;
 const cameraEnabledContexts = new WeakSet();
@@ -26,17 +29,17 @@ const installSyntheticCamera = (context) => {
         const draw = () => {
           const drawing = canvas.getContext('2d');
           if (!drawing) return;
-          const health = globalThis.__ZADIAG_NEMU_HEALTH__;
-          if (['nemu-health', 'raspberry-pi-health'].includes(globalThis.__ZADIAG_SYNTHETIC_ROUTINE_ID__) && health) {
+          const evidence = globalThis.__ZADIAG_SYNTHETIC_EVIDENCE__ ?? globalThis.__ZADIAG_NEMU_HEALTH__;
+          if (['nemu-health', 'raspberry-pi-health', 'raspberry-pi-connectivity'].includes(globalThis.__ZADIAG_SYNTHETIC_ROUTINE_ID__) && evidence) {
             drawing.fillStyle = '#9fbeb6';
             drawing.fillRect(0, 0, canvas.width, canvas.height);
             drawing.fillStyle = '#123b35';
-            drawing.font = 'bold 26px sans-serif';
-            drawing.fillText('Raspberry Pi Health', 18, 48);
+            drawing.font = `bold ${evidence.title?.length > 24 ? 21 : 26}px sans-serif`;
+            drawing.fillText(evidence.title ?? 'Raspberry Pi Health', 18, 48);
             drawing.font = '15px sans-serif';
             drawing.fillStyle = '#48645f';
-            drawing.fillText(health.timestamp, 18, 76);
-            health.rows.forEach((row, index) => {
+            drawing.fillText(evidence.timestamp, 18, 76);
+            evidence.rows.forEach((row, index) => {
               const y = 102 + index * 54;
               drawing.fillStyle = '#bfd3ce';
               drawing.fillRect(14, y, 332, 44);
@@ -84,8 +87,10 @@ const installSyntheticCamera = (context) => {
 
 export const resolveSyntheticRoutineId = ({ routineId, pageText = '' }) => {
   if (PI_HEALTH_ROUTINE_IDS.has(routineId)) return routineId;
-  if (routineId) return undefined;
-  return PI_HEALTH_ROUTINE_NAME_PATTERN.test(pageText) ? 'raspberry-pi-health' : undefined;
+  if (PI_CONNECTIVITY_ROUTINE_IDS.has(routineId)) return routineId;
+  if (PI_HEALTH_ROUTINE_NAME_PATTERN.test(pageText)) return 'raspberry-pi-health';
+  if (PI_CONNECTIVITY_ROUTINE_NAME_PATTERN.test(pageText)) return 'raspberry-pi-connectivity';
+  return undefined;
 };
 
 const percentageStatus = (value, warning, failure) => value >= failure ? 'failure' : value >= warning ? 'warning' : 'ok';
@@ -105,6 +110,7 @@ export const collectNemuHealth = async () => {
     .catch(() => []);
   const unhealthyContainers = docker.filter((status) => !/^Up\b/.test(status) || /unhealthy/i.test(status)).length;
   return {
+    title: 'Raspberry Pi Health',
     timestamp: new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'medium', timeZone: 'Europe/Paris' }).format(new Date()),
     rows: [
       { label: 'Mémoire', value: `${memoryPercent}%`, status: percentageStatus(memoryPercent, 80, 92) },
@@ -116,6 +122,65 @@ export const collectNemuHealth = async () => {
     ]
   };
 };
+
+const latencyStatus = (latencyMs, warningMs, failureMs) => latencyMs >= failureMs ? 'failure' : latencyMs >= warningMs ? 'warning' : 'ok';
+const boundedLatency = (startedAt, clock) => Math.max(0, Math.min(99_999, Math.round(clock() - startedAt)));
+
+export const collectPiConnectivity = async ({
+  execFileImpl = execFileAsync,
+  fetchImpl = fetch,
+  readFileImpl = readFile,
+  clock = () => Date.now(),
+  now = new Date(),
+} = {}) => {
+  const route = await execFileImpl('ip', ['route', 'show', 'default'])
+    .then(({ stdout }) => stdout.trim())
+    .catch(() => '');
+  const interfaceName = route.match(/\bdev\s+([a-zA-Z0-9_.:-]+)/)?.[1];
+  const gateway = route.match(/\bvia\s+([0-9a-fA-F:.]+)/)?.[1];
+  const interfaceState = interfaceName
+    ? await readFileImpl(`/sys/class/net/${interfaceName}/operstate`, 'utf8').then((value) => value.trim()).catch(() => 'indisponible')
+    : 'indisponible';
+
+  const gatewayStartedAt = clock();
+  const gatewayOk = gateway
+    ? await execFileImpl('ping', ['-c', '1', '-W', '2', gateway]).then(() => true).catch(() => false)
+    : false;
+  const gatewayLatency = boundedLatency(gatewayStartedAt, clock);
+
+  const dnsStartedAt = clock();
+  const dnsOk = await execFileImpl('getent', ['ahosts', 'www.zadiag.com'])
+    .then(({ stdout }) => Boolean(stdout.trim()))
+    .catch(() => false);
+  const dnsLatency = boundedLatency(dnsStartedAt, clock);
+
+  const httpsStartedAt = clock();
+  const httpsStatus = await fetchImpl('https://www.zadiag.com/app-version.json', { signal: AbortSignal.timeout(8_000), cache: 'no-store' })
+    .then((response) => response.ok ? response.status : response.status || 0)
+    .catch(() => 0);
+  const httpsLatency = boundedLatency(httpsStartedAt, clock);
+
+  const ntpSynchronized = await execFileImpl('timedatectl', ['show', '--property=NTPSynchronized', '--value'])
+    .then(({ stdout }) => stdout.trim().toLowerCase() === 'yes')
+    .catch(() => false);
+
+  return {
+    title: 'Raspberry Pi Connectivity',
+    timestamp: new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'medium', timeZone: 'Europe/Paris' }).format(now),
+    rows: [
+      { label: 'Interface', value: interfaceName ? `${interfaceName} · ${interfaceState}` : 'indisponible', status: interfaceState === 'up' ? 'ok' : interfaceState === 'unknown' ? 'warning' : 'failure' },
+      { label: 'Passerelle', value: gatewayOk ? `${gatewayLatency} ms` : 'injoignable', status: gatewayOk ? latencyStatus(gatewayLatency, 250, 1_000) : 'failure' },
+      { label: 'DNS', value: dnsOk ? `résolu · ${dnsLatency} ms` : 'échec', status: dnsOk ? latencyStatus(dnsLatency, 500, 2_000) : 'failure' },
+      { label: 'Zadiag HTTPS', value: httpsStatus ? `HTTP ${httpsStatus} · ${httpsLatency} ms` : 'injoignable', status: httpsStatus === 200 ? latencyStatus(httpsLatency, 1_500, 4_000) : 'failure' },
+      { label: 'Horloge NTP', value: ntpSynchronized ? 'synchronisée' : 'non synchronisée', status: ntpSynchronized ? 'ok' : 'warning' },
+      { label: 'Agent', value: 'service actif', status: 'ok' },
+    ],
+  };
+};
+
+const collectEvidenceForRoutine = (routineId) => routineId === 'raspberry-pi-connectivity'
+  ? collectPiConnectivity()
+  : collectNemuHealth();
 
 const completeSyntheticOnboarding = async ({ page, contactEmail }) => {
   const contactInput = page.getByRole('textbox', { name: /Contact email|E-mail de contact/i }).first();
@@ -131,7 +196,7 @@ const completeSyntheticOnboarding = async ({ page, contactEmail }) => {
   }
 };
 
-export const answerPendingCheck = async ({ context, page, appUrl, path, contactEmail, routineId, healthEvidence, proofWaitMs = 20_000 }) => {
+export const answerPendingCheck = async ({ context, page, appUrl, path, contactEmail, routineId, evidence, healthEvidence, proofWaitMs = 20_000 }) => {
   await installSyntheticCamera(context);
   let destination = new URL('/', appUrl);
   try {
@@ -142,21 +207,24 @@ export const answerPendingCheck = async ({ context, page, appUrl, path, contactE
   }
   await page.goto(destination.href, { waitUntil: 'domcontentloaded', timeout: 30_000 });
   await completeSyntheticOnboarding({ page, contactEmail });
-  const healthCard = page.locator('.today-routine-card').filter({ hasText: PI_HEALTH_ROUTINE_NAME_PATTERN });
-  const proofButton = healthCard.getByRole('button', { name: /Proof|Preuve/i }).first();
+  const routineCard = routineId
+    ? page.locator(`.today-routine-card[data-routine-id=${JSON.stringify(routineId)}]`).first()
+    : page.locator('.today-routine-card').filter({ hasText: SUPPORTED_ROUTINE_NAME_PATTERN }).first();
+  const proofButton = routineCard.getByRole('button', { name: /Proof|Preuve/i }).first();
   try {
     await proofButton.waitFor({ state: 'visible', timeout: proofWaitMs });
   } catch {
     return { outcome: 'already_settled' };
   }
-  const pageText = await healthCard.innerText();
+  const pageText = await routineCard.innerText();
   const resolvedRoutineId = resolveSyntheticRoutineId({ routineId, pageText });
   if (!resolvedRoutineId) return { outcome: 'unsupported_routine' };
-  const evidence = healthEvidence ?? await collectNemuHealth();
+  const currentEvidence = evidence ?? healthEvidence ?? await collectEvidenceForRoutine(resolvedRoutineId);
   await page.evaluate(({ currentRoutineId, currentEvidence }) => {
     globalThis.__ZADIAG_SYNTHETIC_ROUTINE_ID__ = currentRoutineId;
+    globalThis.__ZADIAG_SYNTHETIC_EVIDENCE__ = currentEvidence;
     globalThis.__ZADIAG_NEMU_HEALTH__ = currentEvidence;
-  }, { currentRoutineId: resolvedRoutineId, currentEvidence: evidence });
+  }, { currentRoutineId: resolvedRoutineId, currentEvidence });
   await proofButton.click();
   await page.waitForFunction(() => {
     const video = document.querySelector('video');
