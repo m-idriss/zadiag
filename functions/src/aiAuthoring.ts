@@ -1,4 +1,4 @@
-export type AiAuthoringCapability = 'prescriptionExtraction' | 'routineTranslation';
+export type AiAuthoringCapability = 'prescriptionExtraction' | 'routineTranslation' | 'routineGeneration' | 'dynamicQuizGeneration';
 export type AiAuthoringMetricStatus = 'success' | 'provider_failure' | 'invalid_output' | 'disabled';
 
 export interface AiAuthoringControlConfig {
@@ -21,6 +21,8 @@ export interface AiAuthoringControlConfig {
 export const aiAuthoringRegistry = {
   prescriptionExtraction: { provider: 'gemini', model: 'gemini-2.5-flash', promptVersion: 'prescription-extraction-v1' },
   routineTranslation: { provider: 'gemini', model: 'gemini-2.5-flash', promptVersion: 'routine-translation-v1' },
+  routineGeneration: { provider: 'gemini', model: 'gemini-2.5-flash', promptVersion: 'routine-generation-v1' },
+  dynamicQuizGeneration: { provider: 'gemini', model: 'gemini-2.5-flash', promptVersion: 'dynamic-quiz-generation-v1' },
 } as const;
 
 export class AiAuthoringDisabledError extends Error { constructor() { super('ai_authoring_disabled'); } }

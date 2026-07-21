@@ -36,6 +36,22 @@ test('parses complete packages as valid and incomplete packages as resumable', (
   assert.deepEqual(result.validation.issues, [{ code: 'required_field', path: 'routine.instructions' }]);
 });
 
+test('accepts typed responses and rejects malformed response configuration', () => {
+  const confirmation = routinePackage();
+  Object.assign(confirmation.routine, { response: { kind: 'confirmation', prompt: 'Did you complete the routine?' } });
+  assert.equal(parseRoutineDraftPackage(confirmation).validation.status, 'valid');
+
+  const duplicateChecklist = routinePackage();
+  Object.assign(duplicateChecklist.routine, {
+    response: { kind: 'checklist', prompt: 'Confirm each item', items: [{ id: 'dose', label: 'First' }, { id: 'dose', label: 'Second' }] },
+  });
+  assert.equal(parseRoutineDraftPackage(duplicateChecklist).validation.status, 'invalid');
+
+  const malformedQuiz = routinePackage();
+  Object.assign(malformedQuiz.routine, { response: { kind: 'quiz', prompt: 'Quiz', topic: 'Java', mode: 'generated', questionCount: 0, choiceCount: 3 } });
+  assert.throws(() => parseRoutineDraftPackage(malformedQuiz), RoutineDraftInputError);
+});
+
 test('accepts French as the primary package locale', () => {
   const french = { ...routinePackage(), defaultLocale: 'fr', availableLocales: ['fr'] };
   assert.equal(parseRoutineDraftPackage(french).package.defaultLocale, 'fr');

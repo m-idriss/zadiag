@@ -43,7 +43,7 @@ const rangeDays: Record<SummaryRange, number> = {
 export const isSummaryRange = (value: unknown): value is SummaryRange =>
   typeof value === 'string' && Object.hasOwn(rangeDays, value);
 
-const eventTimestamp = (event: VerificationEvent) => Date.parse(event.capturedAt ?? event.requestedAt);
+const eventTimestamp = (event: VerificationEvent) => Date.parse(event.submittedAt ?? event.capturedAt ?? event.requestedAt);
 
 const startOfLocalDay = (now: number) => {
   const date = new Date(now);

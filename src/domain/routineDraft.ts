@@ -58,7 +58,7 @@ export const createBlankRoutinePackage = (locale: Locale, id = `private-${crypto
   availableLocales: [locale],
   routine: {
     id, name: '', description: '', instructions: '', icon: 'sparkles', accentColor: DEFAULT_PRIVATE_ROUTINE_ACCENT, category: 'custom',
-    proofType: 'photo', proofExample: '', recommendedValidationMode: 'ai', responsibleName: '',
+    response: { kind: 'photo' }, proofType: 'photo', proofExample: '', recommendedValidationMode: 'ai', responsibleName: '',
     instructionSteps: [
       { id: 'step-1', icon: 'sparkles', title: '', description: '' },
       { id: 'step-2', icon: 'sparkles', title: '', description: '' },
@@ -86,29 +86,36 @@ export const routinePackageInLocale = (routinePackage: RoutinePackageV1, locale:
   return next;
 };
 
-const minimalRoutineCopy = (instruction: string, locale: Locale) => locale === 'fr' ? {
-  fallbackName: 'Nouvelle routine', responsibleName: 'Responsable', stepOneTitle: 'Réaliser l’action', stepTwoTitle: 'Prendre une photo',
-  stepTwoDescription: `Prendre une photo claire après avoir réalisé cette instruction : ${instruction}`,
-  proofExample: `Une photo montrant clairement le résultat de cette instruction : ${instruction}`,
-  expectedEvidence: `La photo doit montrer clairement que cette instruction a été réalisée : ${instruction}`,
-  detectedCriteria: `Valider uniquement si la photo montre clairement le résultat attendu pour cette instruction : ${instruction}`,
-  notDetectedCriteria: `Refuser si la photo ne montre pas que cette instruction a été réalisée : ${instruction}`,
-  uncertaintyCriteria: `Demander une vérification humaine si la photo est floue, incomplète ou ambiguë pour cette instruction : ${instruction}`,
-} : {
-  fallbackName: 'New routine', responsibleName: 'Responsible person', stepOneTitle: 'Complete the action', stepTwoTitle: 'Take a photo',
-  stepTwoDescription: `Take a clear photo after completing this instruction: ${instruction}`,
-  proofExample: `A photo clearly showing the result of this instruction: ${instruction}`,
-  expectedEvidence: `The photo must clearly show that this instruction was completed: ${instruction}`,
-  detectedCriteria: `Validate only when the photo clearly shows the expected result for this instruction: ${instruction}`,
-  notDetectedCriteria: `Reject when the photo does not show that this instruction was completed: ${instruction}`,
-  uncertaintyCriteria: `Request human review when the photo is blurry, incomplete, or ambiguous for this instruction: ${instruction}`,
+const minimalRoutineCopy = (instruction: string, locale: Locale, responseKind: NonNullable<Routine['response']>['kind']) => {
+  const photo = responseKind === 'photo';
+  if (locale === 'fr') return {
+    fallbackName: 'Nouvelle routine', responsibleName: 'Responsable', stepOneTitle: 'Réaliser l’action',
+    stepTwoTitle: photo ? 'Prendre une photo' : responseKind === 'quiz' ? 'Répondre au QCM' : 'Donner sa réponse',
+    stepTwoDescription: photo ? `Prendre une photo claire après avoir réalisé cette instruction : ${instruction}` : `Répondre simplement après cette instruction : ${instruction}`,
+    proofExample: photo ? `Une photo montrant clairement le résultat de cette instruction : ${instruction}` : `Une réponse structurée enregistrée telle qu’elle est donnée pour cette instruction : ${instruction}`,
+    expectedEvidence: photo ? `La photo doit montrer clairement que cette instruction a été réalisée : ${instruction}` : `La réponse structurée doit correspondre exactement aux choix présentés pour cette instruction : ${instruction}`,
+    detectedCriteria: photo ? `Valider uniquement si la photo montre clairement le résultat attendu pour cette instruction : ${instruction}` : `Enregistrer la réponse structurée sans interpréter ni modifier le choix donné pour cette instruction : ${instruction}`,
+    notDetectedCriteria: photo ? `Refuser si la photo ne montre pas que cette instruction a été réalisée : ${instruction}` : `Ne jamais transformer une réponse négative en absence de réponse pour cette instruction : ${instruction}`,
+    uncertaintyCriteria: photo ? `Demander une vérification humaine si la photo est floue, incomplète ou ambiguë pour cette instruction : ${instruction}` : `Refuser uniquement une réponse incomplète ou structurellement invalide pour cette instruction : ${instruction}`,
+  };
+  return {
+    fallbackName: 'New routine', responsibleName: 'Responsible person', stepOneTitle: 'Complete the action',
+    stepTwoTitle: photo ? 'Take a photo' : responseKind === 'quiz' ? 'Answer the quiz' : 'Give your answer',
+    stepTwoDescription: photo ? `Take a clear photo after completing this instruction: ${instruction}` : `Respond simply after completing this instruction: ${instruction}`,
+    proofExample: photo ? `A photo clearly showing the result of this instruction: ${instruction}` : `A structured response stored exactly as given for this instruction: ${instruction}`,
+    expectedEvidence: photo ? `The photo must clearly show that this instruction was completed: ${instruction}` : `The structured response must exactly match the choices shown for this instruction: ${instruction}`,
+    detectedCriteria: photo ? `Validate only when the photo clearly shows the expected result for this instruction: ${instruction}` : `Store the structured response without interpreting or changing the choice given for this instruction: ${instruction}`,
+    notDetectedCriteria: photo ? `Reject when the photo does not show that this instruction was completed: ${instruction}` : `Never convert a negative response into a missing response for this instruction: ${instruction}`,
+    uncertaintyCriteria: photo ? `Request human review when the photo is blurry, incomplete, or ambiguous for this instruction: ${instruction}` : `Reject only an incomplete or structurally invalid response for this instruction: ${instruction}`,
+  };
 };
 
 export const prepareMinimalRoutinePackage = (routinePackage: RoutinePackageV1, regenerateDerived = false): RoutinePackageV1 => {
   const next = structuredClone(routinePackage);
   const routine = next.routine;
   const instruction = routine.instructions?.trim() ?? '';
-  const copy = minimalRoutineCopy(instruction, next.defaultLocale);
+  routine.response ||= { kind: 'photo' };
+  const copy = minimalRoutineCopy(instruction, next.defaultLocale, routine.response.kind);
   const generatedName = instruction.split(/[.!?\n]/)[0]?.trim().slice(0, 120) || copy.fallbackName;
   const fit = (value: string, maximum: number) => value.slice(0, maximum).trim();
   const shouldFill = (value: string | undefined) => regenerateDerived || !value?.trim();
@@ -120,13 +127,16 @@ export const prepareMinimalRoutinePackage = (routinePackage: RoutinePackageV1, r
   routine.icon ||= 'sparkles';
   routine.accentColor ||= DEFAULT_PRIVATE_ROUTINE_ACCENT;
   routine.category ||= 'custom';
-  routine.proofType ||= 'photo';
-  routine.recommendedValidationMode ||= 'ai';
+  const proofTypeByResponse = next.defaultLocale === 'fr'
+    ? { photo: 'photo', quiz: 'QCM', checklist: 'liste de confirmations', confirmation: 'oui / non' }
+    : { photo: 'photo', quiz: 'quiz', checklist: 'confirmation checklist', confirmation: 'yes / no' };
+  routine.proofType = proofTypeByResponse[routine.response.kind];
+  routine.recommendedValidationMode = routine.response.kind === 'photo' ? routine.recommendedValidationMode ?? 'ai' : 'auto';
   if (shouldFill(routine.proofExample)) routine.proofExample = fit(copy.proofExample, 500);
   const stepsIncomplete = !routine.instructionSteps || routine.instructionSteps.length < 2 || routine.instructionSteps.some((step) => !step.title.trim() || !step.description.trim());
   if (regenerateDerived || stepsIncomplete) routine.instructionSteps = [
     { id: 'step-1', icon: routine.icon, title: copy.stepOneTitle, description: fit(instruction, 500) },
-    { id: 'step-2', icon: 'camera', title: copy.stepTwoTitle, description: fit(copy.stepTwoDescription, 500) },
+    { id: 'step-2', icon: routine.response.kind === 'photo' ? 'camera' : routine.response.kind === 'quiz' ? 'sparkles' : 'check', title: copy.stepTwoTitle, description: fit(copy.stepTwoDescription, 500) },
   ];
   const analysis = routine.analysis ?? { expectedEvidence: '', detectedCriteria: '', notDetectedCriteria: '', uncertaintyCriteria: '' };
   routine.analysis = {
@@ -265,7 +275,7 @@ export const routineContentChanges = (current: Routine, next: Routine): RoutineC
     ['identity', [current.name, current.description, current.responsibleName], [next.name, next.description, next.responsibleName]],
     ['instructions', [current.instructions, current.instructionSteps], [next.instructions, next.instructionSteps]],
     ['appearance', [current.icon, current.accentColor, current.category], [next.icon, next.accentColor, next.category]],
-    ['proof', [current.proofType, current.proofExample], [next.proofType, next.proofExample]],
+    ['proof', [current.response, current.proofType, current.proofExample], [next.response, next.proofType, next.proofExample]],
     ['analysis', [current.recommendedValidationMode, current.analysis], [next.recommendedValidationMode, next.analysis]],
     ['translations', current.translations, next.translations],
   ];

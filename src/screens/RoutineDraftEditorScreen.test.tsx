@@ -25,7 +25,7 @@ describe('private routine draft editor', () => {
   it('uses the current user language and creates a complete draft from one instruction', async () => {
     const save = vi.fn().mockImplementation(async (routinePackage) => ({ ...savedDraft(routinePackage.routine.name), package: routinePackage, validation: { status: 'valid', issues: [] } }));
     act(() => root.render(<RoutineDraftEditorScreen locale="fr" online save={save} cancel={() => undefined} reload={() => undefined} t={(key) => translate('fr', key)} />));
-    expect(container.querySelectorAll('textarea')).toHaveLength(1);
+    expect(container.querySelector('.routine-draft-main-instruction')).not.toBeNull();
     expect(container.querySelector('select')).toBeNull();
     expect(container.textContent).not.toContain('Métadonnées');
     const instruction = container.querySelector<HTMLTextAreaElement>('.routine-draft-main-instruction');
@@ -59,21 +59,47 @@ describe('private routine draft editor', () => {
     expect(save.mock.calls[0][0].routine).toMatchObject({ category: 'medication', icon: 'medical' });
   });
 
-  it('edits only the instruction step selected from the routine detail', async () => {
-    const draft = savedDraft();
-    draft.package.routine.instructionSteps![0] = { id: 'step-1', icon: 'sparkles', title: 'First step', description: 'Original step instructions' };
-    draft.package.routine.instructionSteps![1] = { id: 'step-2', icon: 'camera', title: 'Second step', description: 'Keep these instructions unchanged' };
-    const save = vi.fn().mockImplementation(async (routinePackage) => ({ ...draft, package: routinePackage, revision: 2, validation: { status: 'valid', issues: [] } }));
-    act(() => root.render(<RoutineDraftEditorScreen draft={draft} target={{ kind: 'step', stepId: 'step-1' }} locale="en" online save={save} cancel={() => undefined} reload={() => undefined} t={(key) => translate('en', key)} />));
-
-    expect(container.querySelector('.routine-draft-essential')).toBeNull();
-    expect(container.querySelector('.routine-draft-editor-header h1')?.textContent).toBe('Step 1');
-    const description = container.querySelector<HTMLTextAreaElement>('textarea');
-    act(() => { if (description) { Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(description, 'Updated step instructions'); description.dispatchEvent(new Event('input', { bubbles: true })); } });
+  it('asks only for the intent and response mode, then previews the participant interaction', async () => {
+    const save = vi.fn().mockImplementation(async (routinePackage) => ({ ...savedDraft(routinePackage.routine.name), package: routinePackage, validation: { status: 'valid', issues: [] } }));
+    act(() => root.render(<RoutineDraftEditorScreen locale="fr" online save={save} cancel={() => undefined} reload={() => undefined} t={(key) => translate('fr', key)} />));
+    expect(container.textContent).toContain('Que faut-il vérifier ?');
+    expect(container.textContent).toContain('Comment le participant répond-il ?');
+    const instruction = container.querySelector<HTMLTextAreaElement>('.routine-draft-main-instruction');
+    act(() => { if (instruction) { Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(instruction, 'Le participant met bien ses élastiques.'); instruction.dispatchEvent(new Event('input', { bubbles: true })); } });
+    act(() => Array.from(container.querySelectorAll('button')).find((button) => button.querySelector('strong')?.textContent === 'Confirmation')?.click());
+    expect(container.querySelector('.routine-composer-preview-choices')?.textContent).toContain('Oui');
     await act(async () => { container.querySelector<HTMLFormElement>('form')?.requestSubmit(); await Promise.resolve(); });
+    expect(save.mock.calls[0][0].routine.response).toEqual({ kind: 'confirmation', prompt: 'Le participant met bien ses élastiques.' });
+    expect(save.mock.calls[0][0].routine.recommendedValidationMode).toBe('auto');
+    expect(save.mock.calls[0][0].routine.instructionSteps[1].icon).toBe('check');
+  });
 
-    expect(save.mock.calls[0][0].routine.instructionSteps[0].description).toBe('Updated step instructions');
-    expect(save.mock.calls[0][0].routine.instructionSteps[1]).toEqual(draft.package.routine.instructionSteps![1]);
+  it('applies an AI proposal locally and still requires explicit creation approval', async () => {
+    const save = vi.fn().mockImplementation(async (routinePackage) => ({ ...savedDraft(routinePackage.routine.name), package: routinePackage, validation: { status: 'valid', issues: [] } }));
+    const approve = vi.fn().mockResolvedValue(undefined);
+    const propose = vi.fn().mockResolvedValue({ name: 'Java progress', instructions: 'Answer three Java questions.', description: 'Track Java learning.', category: 'activity', response: { kind: 'quiz', prompt: 'Test your Java knowledge', topic: 'Java' }, responseReason: 'A quiz measures learning progress.', uncertainties: [] });
+    act(() => root.render(<RoutineDraftEditorScreen locale="en" online save={save} approve={approve} aiAvailable quizAvailable propose={propose} cancel={() => undefined} reload={() => undefined} t={(key) => translate('en', key)} />));
+    const instruction = container.querySelector<HTMLTextAreaElement>('.routine-draft-main-instruction');
+    act(() => { if (instruction) { Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(instruction, 'I want to track my Java learning.'); instruction.dispatchEvent(new Event('input', { bubbles: true })); } });
+    await act(async () => { Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Suggest a challenge'))?.click(); await Promise.resolve(); });
+    expect(propose).toHaveBeenCalledWith({ intent: 'I want to track my Java learning.' });
+    expect(container.textContent).toContain('Java progress');
+    expect(container.textContent).toContain('A quiz measures learning progress.');
+    expect(save).not.toHaveBeenCalled();
+    expect(approve).not.toHaveBeenCalled();
+    await act(async () => { container.querySelector<HTMLFormElement>('form')?.requestSubmit(); await Promise.resolve(); });
+    expect(save.mock.calls[0][0].routine.response).toMatchObject({ kind: 'quiz', topic: 'Java', questionCount: 3, choiceCount: 3 });
+    expect(approve).toHaveBeenCalledOnce();
+  });
+
+  it('fails closed for gated quiz and prescription capabilities while keeping manual authoring available', () => {
+    act(() => root.render(<RoutineDraftEditorScreen locale="en" online save={vi.fn()} aiAvailable={false} quizAvailable={false} cancel={() => undefined} reload={() => undefined} t={(key) => translate('en', key)} />));
+    const quiz = Array.from(container.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.querySelector('strong')?.textContent === 'Quiz');
+    const prescription = Array.from(container.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent?.includes('Photograph a prescription'));
+    expect(quiz?.disabled).toBe(true);
+    expect(prescription?.disabled).toBe(true);
+    expect(container.textContent).toContain('Manual creation remains fully available');
+    expect(Array.from(container.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent === 'Create draft')?.disabled).toBe(false);
   });
 
   it('preserves edits after a conflict and offers recovery', async () => {

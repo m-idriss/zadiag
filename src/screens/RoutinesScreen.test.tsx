@@ -79,7 +79,7 @@ describe('participant routines navigation', () => {
     expect(retry).toHaveBeenCalled();
   });
 
-  it('opens the routine catalog when the responsible view is empty', () => {
+  it('keeps creation primary and the routine library secondary when the responsible view is empty', () => {
     localStorage.setItem('zadiag.routines.catalogOpen', 'false');
     const state: AppState = {
       role: 'parent', locale: 'en', notificationsEnabled: true,
@@ -88,6 +88,9 @@ describe('participant routines navigation', () => {
     };
     act(() => root.render(<RoutinesScreen state={state} onAssignRoutine={async () => undefined} t={(key) => translate('en', key)} />));
 
+    expect(document.body.textContent).not.toContain('Choose a routine');
+    expect(document.body.querySelector('.routine-catalog-popover')).toBeNull();
+    act(() => document.body.querySelector<HTMLButtonElement>('.routine-library-dock-button')?.click());
     expect(document.body.textContent).toContain('Choose a routine');
     expect(document.body.textContent).toContain('Hydration');
     expect(document.body.textContent).toContain('Wellness');
@@ -104,7 +107,8 @@ describe('participant routines navigation', () => {
       expect(card.querySelectorAll('.routine-catalog-add')).toHaveLength(1);
     }
     const dock = document.body.querySelector('.routine-add-switcher');
-    expect(dock?.querySelector('.routines-add-dock-button')?.textContent).toContain('Add a routine');
+    expect(dock?.querySelector('.routines-add-dock-button')?.textContent).toContain('Create the routine');
+    expect(dock?.querySelector('.routine-library-dock-button')?.textContent).toContain('Library');
     expect(dock?.querySelector('.routine-catalog-popover')).not.toBeNull();
     expect(dock?.closest('.content-screen')).toBeNull();
   });
@@ -133,7 +137,7 @@ describe('participant routines navigation', () => {
       root.render(<RoutinesScreen state={state} onAssignRoutine={async () => undefined} onListRoutineDrafts={listDrafts} onDeleteRoutineDraft={deleteDraft} onAssignRoutineDraft={assignDraft} onExportRoutinePackage={exportDraft} t={(key) => translate('en', key)} />);
     });
     await act(async () => {
-      document.body.querySelector<HTMLButtonElement>('.routines-add-dock-button')?.click();
+      document.body.querySelector<HTMLButtonElement>('.routine-library-dock-button')?.click();
       await Promise.resolve();
     });
     await act(async () => {
@@ -185,7 +189,7 @@ describe('participant routines navigation', () => {
 
     act(() => render(initialList));
     await act(async () => {
-      document.body.querySelector<HTMLButtonElement>('.routines-add-dock-button')?.click();
+      document.body.querySelector<HTMLButtonElement>('.routine-library-dock-button')?.click();
       await Promise.resolve();
     });
     await act(async () => {
@@ -248,9 +252,10 @@ describe('participant routines navigation', () => {
       await Promise.resolve();
     });
     expect(container.querySelector('.routine-content-loading-overlay')).toBeNull();
-    expect(container.querySelector('.routine-draft-essential')).toBeNull();
-    expect(container.querySelector<HTMLTextAreaElement>('.routine-draft-targeted textarea')?.value).toBe(assignment.routine.description);
-    expect(container.querySelector('.routine-draft-editor-header h1')?.textContent).toBe('Summary');
+    expect(container.querySelector('.routine-draft-essential')).not.toBeNull();
+    expect(container.querySelector<HTMLTextAreaElement>('.routine-draft-main-instruction')?.value).toBe(assignment.routine.instructions);
+    expect(container.querySelector('.routine-draft-editor-header h1')?.textContent).toBe('Routine editor');
+    expect(container.textContent).toContain('current schedule preserved');
   });
 
   it('reviews fork changes before publishing the next routine version', async () => {
@@ -274,7 +279,7 @@ describe('participant routines navigation', () => {
 
     act(() => root.render(<RoutinesScreen state={state} onAssignRoutine={vi.fn()} onListRoutineDrafts={vi.fn().mockResolvedValue([draft])} onPublishRoutineDraft={publish} t={(key) => translate('en', key)} />));
     await act(async () => {
-      document.body.querySelector<HTMLButtonElement>('.routines-add-dock-button')?.click();
+      document.body.querySelector<HTMLButtonElement>('.routine-library-dock-button')?.click();
       await Promise.resolve();
     });
     await act(async () => {
@@ -315,7 +320,7 @@ describe('participant routines navigation', () => {
 
     act(() => root.render(<RoutinesScreen state={state} onAssignRoutine={vi.fn()} onListRoutineDrafts={vi.fn().mockResolvedValue([])} onListPublishedRoutineVersions={vi.fn().mockResolvedValue([published])} onUpgradeRoutineAssignment={upgrade} t={(key) => translate('en', key)} />));
     await act(async () => {
-      document.body.querySelector<HTMLButtonElement>('.routines-add-dock-button')?.click();
+      document.body.querySelector<HTMLButtonElement>('.routine-library-dock-button')?.click();
       await Promise.resolve();
     });
     await act(async () => {
@@ -348,7 +353,7 @@ describe('participant routines navigation', () => {
       root.render(<RoutinesScreen state={state} onAssignRoutine={async () => undefined} onListRoutineDrafts={vi.fn().mockRejectedValue(new Error('offline'))} t={(key) => translate('en', key)} />);
     });
     await act(async () => {
-      document.body.querySelector<HTMLButtonElement>('.routines-add-dock-button')?.click();
+      document.body.querySelector<HTMLButtonElement>('.routine-library-dock-button')?.click();
       await Promise.resolve();
     });
     await act(async () => {
@@ -371,6 +376,10 @@ describe('participant routines navigation', () => {
     };
     await act(async () => {
       root.render(<RoutinesScreen state={state} online={false} onAssignRoutine={async () => undefined} onListRoutineDrafts={listDrafts} t={(key) => translate('en', key)} />);
+      await Promise.resolve();
+    });
+    await act(async () => {
+      document.body.querySelector<HTMLButtonElement>('.routine-library-dock-button')?.click();
       await Promise.resolve();
     });
     await act(async () => {
@@ -707,7 +716,7 @@ describe('participant routines navigation', () => {
     const assignRoutine = vi.fn().mockResolvedValue(undefined);
     act(() => root.render(<RoutinesScreen state={state} onAssignRoutine={assignRoutine} t={(key) => translate('en', key)} />));
 
-    const addButton = document.body.querySelector('.routines-add-dock-button');
+    const addButton = document.body.querySelector('.routine-library-dock-button');
     act(() => addButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
 
     expect(document.body.textContent).toContain('Choose a routine');
@@ -843,6 +852,10 @@ describe('participant routines navigation', () => {
     const install = vi.fn().mockResolvedValue(undefined);
     act(() => root.render(<RoutinesScreen state={state} onAssignRoutine={async () => undefined} onSearchRoutineCatalog={search} onResolveSharedRoutine={resolve} onInstallCatalogRoutine={install} t={(key) => translate('en', key)} />));
 
+    await act(async () => {
+      document.body.querySelector<HTMLButtonElement>('.routine-library-dock-button')?.click();
+      await Promise.resolve();
+    });
     await act(async () => {
       Array.from(document.body.querySelectorAll<HTMLButtonElement>('.routine-catalog-tabs button')).find((button) => button.textContent === 'Community routines')?.click();
       await Promise.resolve();

@@ -1,6 +1,6 @@
 const supportedLocales = ['en', 'fr'];
 const requiredRoutineStrings = ['id', 'name', 'description', 'instructions', 'icon', 'accentColor', 'category', 'proofType', 'proofExample', 'recommendedValidationMode', 'responsibleName'];
-const allowedRoutineFields = new Set([...requiredRoutineStrings, 'analysis', 'instructionSteps', 'translations']);
+const allowedRoutineFields = new Set([...requiredRoutineStrings, 'response', 'analysis', 'instructionSteps', 'translations']);
 const localizedFields = ['name', 'description', 'instructions', 'proofExample'];
 const analysisFields = ['expectedEvidence', 'detectedCriteria', 'notDetectedCriteria', 'uncertaintyCriteria'];
 const stepFields = ['id', 'icon', 'title', 'description'];
@@ -31,6 +31,8 @@ export const routinePackageLimits = Object.freeze({
   analysis: 2_000,
   stepTitle: 120,
   stepDescription: 500,
+  responsePrompt: 500,
+  responseLabel: 200,
 });
 
 const byteLength = (value) => Buffer.byteLength(JSON.stringify(value), 'utf8');
@@ -72,6 +74,46 @@ export function validateRoutinePackage(file, routinePackage) {
     if (expectedIds && !ownKeysEqual(orderedIds, expectedIds)) fail(`${path} step ids and order must match the default locale`);
     return orderedIds;
   };
+  const validateResponse = (response, path) => {
+    expectObject(response, path);
+    if (response.kind === 'photo') {
+      expectKeys(response, new Set(['kind']), path);
+      return;
+    }
+    if (response.kind === 'confirmation') {
+      expectKeys(response, new Set(['kind', 'prompt', 'positiveLabel', 'negativeLabel']), path);
+      expectString(response.prompt, `${path}.prompt`, { max: routinePackageLimits.responsePrompt });
+      if (response.positiveLabel !== undefined) expectString(response.positiveLabel, `${path}.positiveLabel`, { max: 80 });
+      if (response.negativeLabel !== undefined) expectString(response.negativeLabel, `${path}.negativeLabel`, { max: 80 });
+      return;
+    }
+    if (response.kind === 'checklist') {
+      expectKeys(response, new Set(['kind', 'prompt', 'items']), path);
+      expectString(response.prompt, `${path}.prompt`, { max: routinePackageLimits.responsePrompt });
+      if (!Array.isArray(response.items) || response.items.length < 1 || response.items.length > 20) fail(`${path}.items must contain 1 to 20 items`);
+      const ids = new Set();
+      response.items.forEach((item, index) => {
+        const itemPath = `${path}.items[${index}]`;
+        expectObject(item, itemPath);
+        expectKeys(item, new Set(['id', 'label']), itemPath);
+        expectString(item.id, `${itemPath}.id`, { max: routinePackageLimits.id });
+        if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(item.id) || ids.has(item.id)) fail(`${itemPath}.id must be unique kebab-case`);
+        ids.add(item.id);
+        expectString(item.label, `${itemPath}.label`, { max: routinePackageLimits.responseLabel });
+      });
+      return;
+    }
+    if (response.kind === 'quiz') {
+      expectKeys(response, new Set(['kind', 'prompt', 'topic', 'mode', 'questionCount', 'choiceCount']), path);
+      expectString(response.prompt, `${path}.prompt`, { max: routinePackageLimits.responsePrompt });
+      expectString(response.topic, `${path}.topic`, { max: 200 });
+      if (!['fixed', 'generated'].includes(response.mode)) fail(`${path}.mode is invalid`);
+      if (!Number.isSafeInteger(response.questionCount) || response.questionCount < 1 || response.questionCount > 10) fail(`${path}.questionCount is invalid`);
+      if (!Number.isSafeInteger(response.choiceCount) || response.choiceCount < 2 || response.choiceCount > 5) fail(`${path}.choiceCount is invalid`);
+      return;
+    }
+    fail(`${path}.kind is invalid`);
+  };
 
   expectObject(routinePackage, 'package');
   expectKeys(routinePackage, new Set(['schemaVersion', 'version', 'defaultLocale', 'availableLocales', 'routine']), 'package');
@@ -91,6 +133,7 @@ export function validateRoutinePackage(file, routinePackage) {
   if (!/^#[0-9a-fA-F]{6}$/.test(routine.accentColor)) fail('routine.accentColor must be a six-digit hex color');
   if (!['dental', 'wellness', 'medication', 'activity', 'custom'].includes(routine.category)) fail('routine.category is invalid');
   if (!['ai', 'auto'].includes(routine.recommendedValidationMode)) fail('routine.recommendedValidationMode is invalid');
+  if (routine.response !== undefined) validateResponse(routine.response, 'routine.response');
   validateAnalysis(routine.analysis, 'routine.analysis');
   const stepIds = validateSteps(routine.instructionSteps, 'routine.instructionSteps');
 

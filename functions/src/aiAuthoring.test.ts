@@ -7,6 +7,7 @@ const approval = { id: 'approval-1', status: 'approved' as const, approvedAt: '2
 test('defaults every provider path to disabled and requires privacy approval', () => {
   assert.equal(aiAuthoringCapabilityEnabled(undefined, 'routineTranslation'), false);
   assert.equal(aiAuthoringCapabilityEnabled({ globalEnabled: true, capabilities: { routineTranslation: true } }, 'routineTranslation'), false);
+  assert.equal(aiAuthoringCapabilityEnabled(undefined, 'dynamicQuizGeneration'), false);
   assert.throws(() => requireAiAuthoringCapability({ globalEnabled: false, approval, capabilities: { routineTranslation: true } }, 'routineTranslation'), AiAuthoringDisabledError);
   assert.equal(requireAiAuthoringCapability({ globalEnabled: true, approval, capabilities: { routineTranslation: true } }, 'routineTranslation').promptVersion, 'routine-translation-v1');
 });

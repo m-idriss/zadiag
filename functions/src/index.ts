@@ -10,7 +10,7 @@ import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, createRecoveryCode, createRelationshipInvitationCode, hashLinkCode, isFirestoreDocumentId, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, isRelationshipInvitationCode, normalizeLinkCode, sensitiveCodeAttemptState } from './helpers.js';
 import { analyzeWithGemini, parseImageDataUrl, routeAnalysisStatusForReview, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
 import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema, plannedCheckDispatchSchedule, shouldAutoDispatchCheck } from './planning.js';
-import { createDefaultRoutineAssignment, createDraftRoutineAssignment, createRoutineAssignment, createRoutineAssignmentVersionChange, DEFAULT_ROUTINE_ID, isRoutineValidationMode, routineAssignmentProvenance, routineFromCatalog, shouldCreateDefaultRoutineAssignment, type RoutineAssignmentDocument, type RoutineDocument } from './routines.js';
+import { challengeForAssignment, createDefaultRoutineAssignment, createDraftRoutineAssignment, createRoutineAssignment, createRoutineAssignmentVersionChange, DEFAULT_ROUTINE_ID, isRoutineValidationMode, parseRoutineResponseSubmission, routineAssignmentProvenance, routineFromCatalog, RoutineResponseInputError, shouldCreateDefaultRoutineAssignment, type RoutineAssignmentDocument, type RoutineDocument, type RoutineResponseDefinition } from './routines.js';
 import { buildCheckNotificationPayload, buildDeclarativePushPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription, notificationWindowIsOpen, type SyntheticReceiptPayload } from './notifications.js';
 import { isCheckRequestRateLimited } from './reminders.js';
 import { recordAuditEvent, recordJourneyEvent, type JourneyStage } from './audit.js';
@@ -22,7 +22,9 @@ import { assertRoutineDraftRevision, createAssignmentForkPackage, createRoutineD
 import { ROUTINE_PACKAGE_MIME, parseRoutinePackageEnvelope, serializeRoutinePackage } from './routinePackages.js';
 import { assertExternalPackageResponse, verifyExternalRegistryIndex } from './externalRoutineRegistry.js';
 import { marketplaceEntryAuthorizedForInstall, marketplaceEntryInstallable, marketplaceRole, moderateMarketplaceStatus, type ModerationAction, type ModerationStatus } from './routineMarketplaceGovernance.js';
-import { aiAuthoringCapabilityEnabled, aiAuthoringRegistry, parseAiAuthoringConfig } from './aiAuthoring.js';
+import { AiAuthoringDisabledError, aiAuthoringCapabilityEnabled, aiAuthoringRegistry, parseAiAuthoringConfig, requireAiAuthoringCapability, unapprovedAiDraft } from './aiAuthoring.js';
+import { generateQuizWithGemini, gradeQuizSubmission, type GeneratedQuiz, type PublicQuizQuestion, type QuizAnswerKeyEntry } from './quizGeneration.js';
+import { generateRoutineProposalWithGemini, parseRoutineProposal, type ProposedResponseKind } from './routineGeneration.js';
 import { aggregatePilotReport, pilotReportPeriod } from './pilotReport.js';
 import { shouldMarkPushUnconfirmed } from './pushDelivery.js';
 
@@ -43,6 +45,12 @@ const geminiAuth = new GoogleAuth({
   scopes: ['https://www.googleapis.com/auth/generative-language'],
 });
 const geminiModel = process.env.GEMINI_MODEL ?? 'gemini-2.5-flash';
+const assertActivatableAiRoutine = (routine: RoutineDocument) => {
+  if (routine.response?.kind === 'quiz' && routine.response.mode === 'generated'
+    && !aiAuthoringCapabilityEnabled(parseAiAuthoringConfig(process.env.AI_AUTHORING_CONFIG), 'dynamicQuizGeneration')) {
+    throw new HttpsError('failed-precondition', 'Dynamic quiz generation is disabled.');
+  }
+};
 const cors = [
   'https://zadiag.vercel.app',
   'https://zadiag.com',
@@ -378,8 +386,8 @@ const pushRolesForAggregate = async (uid: string, aggregateRef: FirebaseFirestor
 
 const primaryPushRole = (roles: PushRecipientRole[]): PushRecipientRole => roles.includes('child') ? 'child' : 'parent';
 
-const journeyStages = new Set<JourneyStage>(['app_ready', 'notifications_enabled', 'notification_opened', 'check_opened']);
-const journeySources = new Set(['startup', 'settings', 'push', 'notification_center', 'dashboard', 'history']);
+const journeyStages = new Set<JourneyStage>(['app_ready', 'notifications_enabled', 'notification_opened', 'check_opened', 'routine_authoring_started', 'routine_authoring_proposal', 'routine_authoring_refinement', 'routine_authoring_approved', 'routine_authoring_activated']);
+const journeySources = new Set(['startup', 'settings', 'push', 'notification_center', 'dashboard', 'history', 'routine_composer']);
 
 export const recordClientJourney = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = await requireUid(request.auth);
@@ -2126,6 +2134,7 @@ export const requestCheckNow = onCall({
     expiresAt: string;
     status: string;
     requestedBy?: string;
+    challenge?: { response?: { kind?: string }; quiz?: { questions?: unknown[] } };
   };
   type RequestCheckResult = { check: RequestedCheck; resend: boolean };
   const uid = await requireUid(request.auth);
@@ -2141,7 +2150,7 @@ export const requestCheckNow = onCall({
     .where('status', '==', 'pending')
     .limit(10);
 
-  const { check, resend } = await db.runTransaction(async (transaction): Promise<RequestCheckResult> => {
+  let { check, resend } = await db.runTransaction(async (transaction): Promise<RequestCheckResult> => {
     const [family, assignment, pending] = await Promise.all([
       transaction.get(familyRef),
       transaction.get(assignmentRef),
@@ -2182,6 +2191,7 @@ export const requestCheckNow = onCall({
     const check = {
       routineId,
       ...routineAssignmentProvenance(assignment.data() as RoutineAssignmentDocument),
+      challenge: challengeForAssignment(assignment.data() as RoutineAssignmentDocument),
       sessionId: crypto.randomUUID(),
       requestedAt: now.toISOString(),
       expiresAt: expiresAt.toISOString(),
@@ -2194,6 +2204,14 @@ export const requestCheckNow = onCall({
     transaction.create(checkRef, check);
     return { check: { id: checkRef.id, ...check }, resend: false };
   });
+
+  if (check.challenge?.response?.kind === 'quiz' && !check.challenge.quiz?.questions?.length) {
+    try {
+      check = await prepareQuizForCheck(familyRef, check.id, request.data?.locale === 'fr' ? 'fr' : 'en') as RequestedCheck;
+    } catch {
+      reportOperationalAlert({ kind: 'analysis_failed', familyId, checkId: check.id, routineId, actorUid: uid, details: { capability: 'dynamicQuizGeneration', phase: 'request_check' } });
+    }
+  }
 
   const assignment = await assignmentRef.get();
   const routineNames = getRoutineNotificationNames(assignment.data(), routineId);
@@ -2415,6 +2433,7 @@ export const assignRoutineDraft = onCall({ region, cors, enforceAppCheck: true }
     const current = draft.data() as RoutineDraftDocument;
     try { assertRoutineDraftRevision(current.revision, expectedRevision); } catch (error) { routineDraftInputError(error); }
     if (current.state !== 'active' || current.validation.status !== 'valid') throw new HttpsError('failed-precondition', 'Only a valid active draft can be assigned.');
+    assertActivatableAiRoutine(current.package.routine as RoutineDocument);
     routineId = current.package.routine.id;
     const assignmentRef = participantRef.collection('routineAssignments').doc(routineId);
     if ((await transaction.get(assignmentRef)).exists) throw new HttpsError('already-exists', 'This routine is already assigned.');
@@ -2478,6 +2497,7 @@ export const upgradeRoutineAssignment = onCall({ region, cors, enforceAppCheck: 
     previousVersion = current.sourceVersion;
     if (current.sourceVersion === targetVersion) throw new HttpsError('already-exists', 'This routine version is already applied.');
     const published = version.data() as PublishedRoutineVersionDocument;
+    assertActivatableAiRoutine(published.package.routine as RoutineDocument);
     const now = new Date().toISOString();
     transaction.create(changeRef, createRoutineAssignmentVersionChange(current, { sourceDraftId: published.sourceDraftId, sourceRevision: published.sourceRevision, sourceVersion: published.version }, uid, now));
     transaction.update(assignmentRef, { routine: structuredClone(published.package.routine), sourceDraftId: published.sourceDraftId, sourceRevision: published.sourceRevision, sourceVersion: published.version, contentUpdatedAt: now, validationMode: published.package.routine.recommendedValidationMode ?? 'ai' });
@@ -2579,8 +2599,37 @@ export const getAiAuthoringCapabilities = onCall({ region, cors, enforceAppCheck
   return {
     prescriptionExtraction: { enabled: aiAuthoringCapabilityEnabled(config, 'prescriptionExtraction'), promptVersion: aiAuthoringRegistry.prescriptionExtraction.promptVersion },
     routineTranslation: { enabled: aiAuthoringCapabilityEnabled(config, 'routineTranslation'), promptVersion: aiAuthoringRegistry.routineTranslation.promptVersion },
+    routineGeneration: { enabled: aiAuthoringCapabilityEnabled(config, 'routineGeneration'), promptVersion: aiAuthoringRegistry.routineGeneration.promptVersion },
+    dynamicQuizGeneration: { enabled: aiAuthoringCapabilityEnabled(config, 'dynamicQuizGeneration'), promptVersion: aiAuthoringRegistry.dynamicQuizGeneration.promptVersion },
     manualFallback: true,
   };
+});
+
+export const proposeRoutineChallenge = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const startedAt = Date.now();
+  const uid = await requireUid(request.auth);
+  const intent = typeof request.data?.intent === 'string' ? request.data.intent.trim() : '';
+  const refinement = typeof request.data?.refinement === 'string' ? request.data.refinement.trim() : undefined;
+  const responseKinds = new Set<ProposedResponseKind>(['photo', 'confirmation', 'checklist', 'quiz']);
+  const preferredResponseKind = responseKinds.has(request.data?.preferredResponseKind) ? request.data.preferredResponseKind as ProposedResponseKind : undefined;
+  if (intent.length < 2 || intent.length > 2_000 || (refinement && refinement.length > 1_000)) throw new HttpsError('invalid-argument', 'The routine intent or refinement is invalid.');
+  let currentProposal;
+  try {
+    const currentInput = request.data?.currentProposal ? structuredClone(request.data.currentProposal) : undefined;
+    if (Array.isArray(currentInput?.response?.items)) currentInput.response.items = currentInput.response.items.map((item: unknown) => typeof item === 'object' && item !== null ? (item as { label?: unknown }).label : item);
+    currentProposal = currentInput ? parseRoutineProposal(currentInput, preferredResponseKind) : undefined;
+  }
+  catch { throw new HttpsError('invalid-argument', 'The current proposal is invalid.'); }
+  try {
+    const registry = requireAiAuthoringCapability(parseAiAuthoringConfig(process.env.AI_AUTHORING_CONFIG), 'routineGeneration');
+    const output = await generateRoutineProposalWithGemini({ intent, locale: request.data?.locale === 'fr' ? 'fr' : 'en', preferredResponseKind, refinement, currentProposal }, { model: registry.model, getAccessToken: () => geminiAuth.getAccessToken() });
+    reportOperationalEvent({ kind: 'analysis_completed', actorUid: uid, details: { capability: 'routineGeneration', status: 'success', durationMs: Date.now() - startedAt, refined: Boolean(refinement) } });
+    return unapprovedAiDraft('routineGeneration', output);
+  } catch (error) {
+    if (error instanceof AiAuthoringDisabledError) throw new HttpsError('failed-precondition', 'AI routine authoring is disabled. Manual authoring remains available.');
+    reportOperationalAlert({ kind: 'analysis_failed', actorUid: uid, details: { capability: 'routineGeneration', durationMs: Date.now() - startedAt } });
+    throw new HttpsError('unavailable', 'The proposal could not be generated. Manual authoring remains available.');
+  }
 });
 
 export const resolveSharedRoutine = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
@@ -2610,6 +2659,7 @@ export const installCatalogRoutine = onCall({ region, cors, enforceAppCheck: tru
       throw new HttpsError('failed-precondition', 'This routine is no longer available for installation.');
     }
     const data = entry.data() as { routineId: string; version: number; package: PublishedRoutineVersionDocument['package'] };
+    assertActivatableAiRoutine(data.package.routine as RoutineDocument);
     routineId = requireDocumentId(data.routineId, 'Routine ID');
     const assignmentRef = participantRef.collection('routineAssignments').doc(routineId);
     if ((await transaction.get(assignmentRef)).exists) throw new HttpsError('already-exists', 'This routine is already installed.');
@@ -2671,6 +2721,7 @@ export const assignRoutine = onCall({
   const routineId = requireDocumentId(request.data?.routineId, 'Routine ID');
   const routine = routineFromCatalog(routineId);
   if (!routine) throw new HttpsError('invalid-argument', 'Unknown routine.');
+  assertActivatableAiRoutine(routine);
 
   const familyRef = await requireAggregatePermission(uid, familyId, 'manageRoutines', 'parent');
   const assignmentRef = familyRef.collection('routineAssignments').doc(routine.id);
@@ -2946,12 +2997,24 @@ export const dispatchPlannedChecks = onSchedule({
           );
           if (!freshDecision.shouldDispatch || freshDecision.dispatchKey !== decision.dispatchKey) return false;
           transaction.update(freshAssignmentRef, { lastScheduledCheckDispatchAt: now.toISOString() });
-          transaction.create(checkRef, { ...check, ...routineAssignmentProvenance(freshAssignmentData) });
+          transaction.create(checkRef, {
+            ...check,
+            ...routineAssignmentProvenance(freshAssignmentData),
+            challenge: challengeForAssignment(freshAssignmentData),
+          });
           return true;
         });
 
         if (!created) return;
         stats.checksCreated += 1;
+        if (assignmentData.routine.response?.kind === 'quiz') {
+          try {
+            const locale = childSubscriptions.find((subscription) => subscription.data().locale === 'fr') ? 'fr' : 'en';
+            await prepareQuizForCheck(familyDoc.ref, checkRef.id, locale);
+          } catch {
+            reportOperationalAlert({ kind: 'analysis_failed', familyId: familyDoc.id, checkId: checkRef.id, routineId, details: { capability: 'dynamicQuizGeneration', phase: 'scheduled_check' } });
+          }
+        }
         const dispatch = await sendCheckPushNotifications(familyDoc.ref, {
           checkId: checkRef.id,
           sessionId: check.sessionId,
@@ -3017,6 +3080,185 @@ export const updatePlan = onCall({ region, cors, enforceAppCheck: true }, async 
   await assignmentRef.update({ plan: parsedPlan.data, updatedAt: FieldValue.serverTimestamp() });
 });
 
+const prepareQuizForCheck = async (
+  aggregateRef: FirebaseFirestore.DocumentReference,
+  checkId: string,
+  locale: 'en' | 'fr',
+): Promise<Record<string, unknown>> => {
+  const checkRef = aggregateRef.collection('checks').doc(checkId);
+  const initial = await checkRef.get();
+  const initialData = initial.data();
+  if (!initial.exists || !initialData || initialData.status !== 'pending') throw new HttpsError('failed-precondition', 'This quiz is no longer available.');
+  if (initialData.challenge?.quiz?.questions?.length) return { id: initial.id, ...initialData };
+  const definition = initialData.challenge?.response as RoutineResponseDefinition | undefined;
+  if (!definition || definition.kind !== 'quiz' || definition.mode !== 'generated') throw new HttpsError('failed-precondition', 'This check is not a generated quiz.');
+  const config = parseAiAuthoringConfig(process.env.AI_AUTHORING_CONFIG);
+  const registry = requireAiAuthoringCapability(config, 'dynamicQuizGeneration');
+  const recent = await aggregateRef.collection('checks').where('routineId', '==', String(initialData.routineId ?? definition.topic)).orderBy('requestedAt', 'desc').limit(10).get();
+  const recentQuestions = recent.docs.flatMap((document) => {
+    const questions = document.data().challenge?.quiz?.questions;
+    return Array.isArray(questions) ? questions.flatMap((question) => typeof question?.prompt === 'string' ? [question.prompt.slice(0, 500)] : []) : [];
+  }).slice(0, 10);
+  const weakConcepts = recent.docs.flatMap((document) => {
+    const result = document.data().quizResult;
+    if (!result || !Array.isArray(result.corrections)) return [];
+    return result.corrections.flatMap((correction: { correct?: unknown; questionId?: unknown }) => correction?.correct === false
+      ? document.data().challenge?.quiz?.questions?.flatMap((question: { id?: unknown; concept?: unknown }) => question.id === correction.questionId && typeof question.concept === 'string' ? [question.concept] : []) ?? []
+      : []);
+  }).filter((concept): concept is string => typeof concept === 'string').slice(0, 10);
+  const generatedAt = new Date().toISOString();
+  const generated: GeneratedQuiz = await generateQuizWithGemini({
+    topic: definition.topic,
+    questionCount: definition.questionCount,
+    choiceCount: definition.choiceCount,
+    locale,
+    recentQuestions,
+    weakConcepts,
+  }, { model: registry.model, getAccessToken: () => geminiAuth.getAccessToken() });
+  const publicQuiz = {
+    questions: generated.questions,
+    generatedAt,
+    provider: registry.provider,
+    model: registry.model,
+    promptVersion: registry.promptVersion,
+  };
+  const answerKeyRef = aggregateRef.collection('quizAnswerKeys').doc(checkId);
+  return db.runTransaction(async (transaction) => {
+    const [fresh, existingKey] = await Promise.all([transaction.get(checkRef), transaction.get(answerKeyRef)]);
+    const freshData = fresh.data();
+    if (!fresh.exists || !freshData || freshData.status !== 'pending') throw new HttpsError('failed-precondition', 'This quiz is no longer available.');
+    if (freshData.challenge?.quiz?.questions?.length) return { id: fresh.id, ...freshData };
+    if (existingKey.exists) throw new HttpsError('aborted', 'The quiz is already being prepared. Retry shortly.');
+    transaction.create(answerKeyRef, {
+      checkId,
+      routineId: String(freshData.routineId ?? ''),
+      answerKey: generated.answerKey,
+      questions: generated.questions,
+      provider: registry.provider,
+      model: registry.model,
+      promptVersion: registry.promptVersion,
+      generatedAt,
+      expiresAt: freshData.expiresAt,
+    });
+    transaction.update(checkRef, { 'challenge.quiz': publicQuiz });
+    return { id: fresh.id, ...freshData, challenge: { ...freshData.challenge, quiz: publicQuiz } };
+  });
+};
+
+export const prepareQuizChallenge = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const startedAt = Date.now();
+  const uid = await requireUid(request.auth);
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
+  const checkId = requireDocumentId(request.data?.checkId, 'Check ID');
+  const locale = request.data?.locale === 'fr' ? 'fr' : 'en';
+  const aggregateRef = await requireFamilyRole(uid, familyId, 'child');
+  try {
+    const prepared = await prepareQuizForCheck(aggregateRef, checkId, locale);
+    reportOperationalEvent({ kind: 'analysis_completed', familyId, checkId, actorUid: uid, details: { capability: 'dynamicQuizGeneration', status: 'success', durationMs: Date.now() - startedAt } });
+    return prepared;
+  } catch (error) {
+    reportOperationalAlert({ kind: 'analysis_failed', familyId, checkId, actorUid: uid, details: { capability: 'dynamicQuizGeneration', durationMs: Date.now() - startedAt } });
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError('unavailable', 'The quiz could not be prepared. Retry shortly.');
+  }
+});
+
+export const submitRoutineResponse = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
+  const checkId = requireDocumentId(request.data?.checkId, 'Check ID');
+  const submittedAt = String(request.data?.submittedAt ?? '');
+  const aggregateRef = await requireFamilyRole(uid, familyId, 'child');
+  const checkRef = aggregateRef.collection('checks').doc(checkId);
+  let responseKind = '';
+  let itemCount = 0;
+  let routineId = DEFAULT_ROUTINE_ID;
+  const response = await db.runTransaction(async (transaction) => {
+    const check = await transaction.get(checkRef);
+    const checkData = check.data();
+    if (!check.exists || !checkData || !isFreshCheckSubmission(checkData, submittedAt)) {
+      throw new HttpsError('failed-precondition', 'This check is expired, completed, or invalid.');
+    }
+    const definition = checkData.challenge?.response as RoutineResponseDefinition | undefined;
+    if (!definition || !['confirmation', 'checklist'].includes(definition.kind)) {
+      throw new HttpsError('failed-precondition', 'This check does not accept a structured response.');
+    }
+    let submission;
+    try {
+      submission = parseRoutineResponseSubmission(definition, request.data?.submission);
+    } catch (error) {
+      if (error instanceof RoutineResponseInputError) throw new HttpsError('invalid-argument', 'The structured response is invalid or incomplete.');
+      throw error;
+    }
+    responseKind = submission.kind;
+    itemCount = submission.kind === 'checklist' ? submission.items.length : 1;
+    routineId = typeof checkData.routineId === 'string' && checkData.routineId ? checkData.routineId : DEFAULT_ROUTINE_ID;
+    const update = { status: 'answered', submittedAt, submission };
+    transaction.update(checkRef, update);
+    return { id: check.id, ...checkData, ...update };
+  });
+  await recordAuditEvent(db, {
+    action: 'submit_proof',
+    actorUid: uid,
+    familyId,
+    role: 'child',
+    metadata: { checkId, routineId, responseKind, itemCount },
+  });
+  return response;
+});
+
+export const submitQuizResponse = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
+  const checkId = requireDocumentId(request.data?.checkId, 'Check ID');
+  const submittedAt = String(request.data?.submittedAt ?? '');
+  const aggregateRef = await requireFamilyRole(uid, familyId, 'child');
+  const checkRef = aggregateRef.collection('checks').doc(checkId);
+  const answerKeyRef = aggregateRef.collection('quizAnswerKeys').doc(checkId);
+  let routineId = DEFAULT_ROUTINE_ID;
+  let questionCount = 0;
+  const response = await db.runTransaction(async (transaction) => {
+    const [check, secret] = await Promise.all([transaction.get(checkRef), transaction.get(answerKeyRef)]);
+    const checkData = check.data();
+    const secretData = secret.data();
+    if (!check.exists || !checkData || !isFreshCheckSubmission(checkData, submittedAt)) throw new HttpsError('failed-precondition', 'This quiz is expired, completed, or invalid.');
+    if (!secret.exists || !secretData || !Array.isArray(checkData.challenge?.quiz?.questions) || !Array.isArray(secretData.answerKey)) throw new HttpsError('failed-precondition', 'This quiz has not been prepared.');
+    let graded;
+    try {
+      graded = gradeQuizSubmission(checkData.challenge.quiz.questions as PublicQuizQuestion[], secretData.answerKey as QuizAnswerKeyEntry[], request.data?.submission);
+    } catch {
+      throw new HttpsError('invalid-argument', 'Every quiz question must have one valid answer.');
+    }
+    routineId = typeof checkData.routineId === 'string' && checkData.routineId ? checkData.routineId : DEFAULT_ROUTINE_ID;
+    questionCount = graded.result.totalCount;
+    const quizResult = {
+      ...graded.result,
+      provider: String(secretData.provider),
+      model: String(secretData.model),
+      promptVersion: String(secretData.promptVersion),
+    };
+    const update = { status: 'answered', submittedAt, submission: graded.submission, quizResult };
+    transaction.update(checkRef, update);
+    transaction.delete(answerKeyRef);
+    return { id: check.id, ...checkData, ...update };
+  });
+  await recordAuditEvent(db, { action: 'submit_proof', actorUid: uid, familyId, role: 'child', metadata: { checkId, routineId, responseKind: 'quiz', questionCount } });
+  return response;
+});
+
+export const reportQuizQuestion = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
+  const checkId = requireDocumentId(request.data?.checkId, 'Check ID');
+  const questionId = requireDocumentId(request.data?.questionId, 'Question ID');
+  const aggregateRef = await requireFamilyRole(uid, familyId, 'child');
+  const check = await aggregateRef.collection('checks').doc(checkId).get();
+  const questionExists = check.data()?.challenge?.quiz?.questions?.some((question: { id?: unknown }) => question.id === questionId);
+  if (!check.exists || check.data()?.status !== 'answered' || !questionExists) throw new HttpsError('not-found', 'The quiz question could not be found.');
+  await aggregateRef.collection('quizQuestionReports').doc(`${checkId}_${questionId}_${uid}`).set({ checkId, questionId, routineId: String(check.data()?.routineId ?? ''), reporterUid: uid, createdAt: new Date().toISOString(), status: 'open' });
+  return { success: true };
+});
+
 export const analyzeCheck = onCall({
   region,
   cors,
@@ -3040,6 +3282,10 @@ export const analyzeCheck = onCall({
     const checkData = check.data();
     if (!check.exists || !checkData || !isFreshCheckSubmission(checkData, capturedAt)) {
       throw new HttpsError('failed-precondition', 'This check is expired, completed, or invalid.');
+    }
+    const responseKind = String(checkData.challenge?.response?.kind ?? 'photo');
+    if (responseKind !== 'photo') {
+      throw new HttpsError('failed-precondition', 'This check does not accept a photo response.');
     }
     if (checkData.status === 'analyzing') {
       throw new HttpsError('already-exists', 'This check is already being analyzed.');
@@ -3458,6 +3704,8 @@ export const cleanupStaleOperationalData = onSchedule({
     if (touchedPaths.has(document.ref.path)) return;
     touchedPaths.add(document.ref.path);
     operations.push((batch) => batch.update(document.ref, missedUpdate));
+    const aggregateRef = document.ref.parent.parent;
+    if (aggregateRef) operations.push((batch) => batch.delete(aggregateRef.collection('quizAnswerKeys').doc(document.id)));
   });
   if (!operations.length) return;
   const batchSize = 400;

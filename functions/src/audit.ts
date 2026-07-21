@@ -45,6 +45,11 @@ type AuditAction =
   | 'notifications_enabled'
   | 'notification_opened'
   | 'check_opened'
+  | 'routine_authoring_started'
+  | 'routine_authoring_proposal'
+  | 'routine_authoring_refinement'
+  | 'routine_authoring_approved'
+  | 'routine_authoring_activated'
   | 'accept_pilot_participation'
   | 'decline_pilot_participation'
   | 'withdraw_pilot_participation';
@@ -97,7 +102,7 @@ export const recordAuditEvent = async (db: Firestore, input: AuditEventInput) =>
   }
 };
 
-export type JourneyStage = Extract<AuditAction, 'app_ready' | 'notifications_enabled' | 'notification_opened' | 'check_opened'>;
+export type JourneyStage = Extract<AuditAction, 'app_ready' | 'notifications_enabled' | 'notification_opened' | 'check_opened' | 'routine_authoring_started' | 'routine_authoring_proposal' | 'routine_authoring_refinement' | 'routine_authoring_approved' | 'routine_authoring_activated'>;
 
 export const journeyEventId = (actorUid: string, stage: JourneyStage, contextId: string | undefined, day: string) =>
   createHash('sha256').update(`${actorUid}:${stage}:${contextId ?? day}`).digest('hex');

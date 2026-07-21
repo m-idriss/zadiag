@@ -2,6 +2,7 @@ import type { RoutineAssignment, VerificationEvent } from './models';
 
 const finalStatuses = new Set([
   'detected',
+  'answered',
   'not_detected',
   'uncertain',
   'missed',
@@ -17,7 +18,7 @@ export const isReviewableVerification = (event: VerificationEvent) =>
 export function adherenceSummary(events: VerificationEvent[]) {
   const completed = events.filter(isCompletedVerification);
   const successful = completed.filter((event) => event.status === 'detected');
-  const attention = completed.filter((event) => event.status !== 'detected');
+  const attention = completed.filter((event) => ['not_detected', 'uncertain', 'missed', 'expired'].includes(event.status));
   const statusCounts = completed.reduce<Record<string, number>>((counts, event) => ({
     ...counts,
     [event.status]: (counts[event.status] ?? 0) + 1,

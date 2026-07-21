@@ -79,6 +79,7 @@ describe('private routine draft domain', () => {
     expect(routinePackage.defaultLocale).toBe('fr');
     expect(routinePackage.availableLocales).toEqual(['fr']);
     expect(routinePackage.routine.id).toBe('private-evening');
+    expect(routinePackage.routine.response).toEqual({ kind: 'photo' });
     expect(routinePackage.routine.instructionSteps).toHaveLength(2);
   });
 
@@ -88,6 +89,7 @@ describe('private routine draft domain', () => {
     expect(prepared.routine.translations).toBeUndefined();
     expect(prepared.routine.name).toBe('Mettre les élastiques orthodontiques après le dîner');
     expect(prepared.routine.instructionSteps).toHaveLength(2);
+    expect(prepared.routine.proofType).toBe('photo');
     expect(prepared.routine.analysis?.detectedCriteria).toContain('élastiques orthodontiques');
   });
 

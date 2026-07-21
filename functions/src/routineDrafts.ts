@@ -17,6 +17,33 @@ const instructionStepSchema = z.strictObject({
   description: boundedString(500),
 });
 const instructionStepsSchema = z.array(instructionStepSchema).max(4).optional();
+const responsePrompt = boundedString(500);
+const checklistItemSchema = z.strictObject({
+  id: z.string().min(1).max(64).regex(idPattern),
+  label: z.string().min(1).max(200),
+});
+const routineResponseSchema = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('photo') }),
+  z.strictObject({
+    kind: z.literal('confirmation'),
+    prompt: responsePrompt,
+    positiveLabel: boundedString(80).optional(),
+    negativeLabel: boundedString(80).optional(),
+  }),
+  z.strictObject({
+    kind: z.literal('checklist'),
+    prompt: responsePrompt,
+    items: z.array(checklistItemSchema).min(1).max(20),
+  }),
+  z.strictObject({
+    kind: z.literal('quiz'),
+    prompt: responsePrompt,
+    topic: z.string().min(1).max(200),
+    mode: z.enum(['fixed', 'generated']),
+    questionCount: z.number().int().min(1).max(10),
+    choiceCount: z.number().int().min(2).max(5),
+  }),
+]);
 const localizedContentSchema = z.strictObject({
   name: boundedString(120).optional(),
   description: boundedString(500).optional(),
@@ -33,6 +60,7 @@ const routineSchema = z.strictObject({
   icon: boundedString(32).optional(),
   accentColor: z.string().max(7).regex(/^#[0-9a-fA-F]{6}$/).optional(),
   category: z.enum(['dental', 'wellness', 'medication', 'activity', 'custom']).optional(),
+  response: routineResponseSchema.optional(),
   proofType: boundedString(50).optional(),
   proofExample: boundedString(500).optional(),
   recommendedValidationMode: z.enum(['ai', 'auto']).optional(),
@@ -129,6 +157,10 @@ const completenessIssues = (routinePackage: RoutineDraftPackage): RoutineDraftVa
   requireText(routine.proofType, 'routine.proofType');
   requireText(routine.proofExample, 'routine.proofExample', 10);
   requireText(routine.responsibleName, 'routine.responsibleName');
+  if (routine.response?.kind === 'checklist') {
+    const ids = routine.response.items.map((item) => item.id);
+    if (new Set(ids).size !== ids.length) issues.push({ code: 'invalid_package', path: 'routine.response.items' });
+  }
   ['expectedEvidence', 'detectedCriteria', 'notDetectedCriteria', 'uncertaintyCriteria'].forEach((field) => {
     requireText(routine.analysis?.[field as keyof NonNullable<typeof routine.analysis>], `routine.analysis.${field}`, 20);
   });

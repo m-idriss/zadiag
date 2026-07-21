@@ -2,7 +2,7 @@
 
 Status: **NOT APPROVED — all production provider paths must remain disabled.**
 
-Last engineering review: 2026-07-18. This is a readiness checklist, not legal advice, an AIPD, an HDS certification, or a medical-device classification decision.
+Last engineering review: 2026-07-21. This is a readiness checklist, not legal advice, an AIPD, an HDS certification, or a medical-device classification decision.
 
 ## Processing scope and boundaries
 
@@ -10,6 +10,8 @@ Last engineering review: 2026-07-18. This is a readiness checklist, not legal ad
 | --- | --- | --- | --- | --- |
 | Prescription extraction | Explicitly consented prescription image and bounded extracted fields | Prepare an editable private draft for human transcription | Diagnosis, prescription validation, dose calculation, treatment substitution, publishing, assignment, training | Original: deletion on confirm/cancel and hard maximum 24 hours; derived extraction: deletion after copy/cancel and hard maximum 7 days |
 | Routine translation | User-selected private routine text | Suggest a reviewable translation diff | Silent replacement, publishing, assignment, participant/proof/prescription processing, training | Provider payload/output transient and hard maximum 24 hours; only explicitly approved text becomes ordinary private draft content |
+| Routine proposal/refinement | Bounded user intent, selected response mode and explicitly submitted refinement | Suggest a private challenge proposal pending explicit human approval | Silent draft mutation, assignment, activation, prescription interpretation, training | Provider payload/output transient; only the explicitly approved proposal becomes ordinary private draft content |
+| Dynamic quiz generation | Bounded learning topic, recent question text and weak concept labels | Create a frozen question set and private correction for one check | Profiling beyond quiz progress, diagnosis, answer-key exposure before submission, training | Provider payload/output transient; server-only answer key deleted on submission or check expiry; frozen result follows check-history retention |
 
 Data controller, processors/subprocessors, lawful basis under GDPR Article 6, special-category condition under Article 9, contractual purpose limitation, transfer mechanism and exact retention jobs remain **undecided**. Consent UX alone is not treated as sufficient legal approval.
 
@@ -31,7 +33,12 @@ Example structure (not an approval):
 ```json
 {
   "globalEnabled": false,
-  "capabilities": { "prescriptionExtraction": false, "routineTranslation": false },
+  "capabilities": {
+    "prescriptionExtraction": false,
+    "routineTranslation": false,
+    "routineGeneration": false,
+    "dynamicQuizGeneration": false
+  },
   "approval": {
     "id": "REPLACE_AFTER_FORMAL_REVIEW",
     "status": "pending",
@@ -61,4 +68,4 @@ Before activation, implementation must prove access/information, correction duri
 
 ## Exit criteria
 
-This document may move to **APPROVED** only when the decisions and evidence above are linked, the named approval record is reviewed, deletion/security tests pass, and a production smoke test first confirms both capabilities disabled. Approval is capability-specific; translation approval cannot activate prescription extraction.
+This document may move to **APPROVED** only when the decisions and evidence above are linked, the named approval record is reviewed, deletion/security tests pass, and a production smoke test first confirms every capability disabled. Approval is capability-specific; approval of one capability cannot activate another.

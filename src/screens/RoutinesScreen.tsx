@@ -12,7 +12,8 @@ import { assignableRoutineTemplates, marketplaceFromTemplates, presentRoutineTem
 import { withResolvedEventStatuses } from '../domain/adherence';
 import { routineContentChanges, selectRoutineVersionTarget, type PublishedRoutineVersion, type RoutineCatalogEntry, type RoutineContentChange, type RoutineDraft } from '../domain/routineDraft';
 import { readUiStorageJson, readUiStorageString, removeUiStorageItem, writeUiStorageString } from '../services/uiStorage';
-import { routineContentEditTargetKey, type RoutineContentEditTarget } from './routineContentEditTarget';
+import type { AiAuthoringCapabilities, AiRoutineProposal, AiRoutineResponseKind } from '../services/contracts';
+import type { JourneyStage } from '../services/contracts';
 
 const RoutineDetailScreen = lazy(() => import('./RoutineDetailScreen').then((module) => ({ default: module.RoutineDetailScreen })));
 const RoutineDraftEditorScreen = lazy(() => import('./RoutineDraftEditorScreen').then((module) => ({ default: module.RoutineDraftEditorScreen })));
@@ -132,6 +133,9 @@ export function RoutinesScreen({
   onForkRoutineAssignmentDraft,
   onUpdateRoutineDraft,
   onAssignRoutineDraft,
+  onGetAiAuthoringCapabilities,
+  onProposeRoutineChallenge,
+  onRecordAuthoringStage,
   onPublishRoutineDraft,
   onListPublishedRoutineVersions,
   onUpgradeRoutineAssignment,
@@ -165,6 +169,9 @@ export function RoutinesScreen({
   onForkRoutineAssignmentDraft?: (participantId: string, routineId: string, locale: AppState['locale']) => Promise<RoutineDraft>;
   onUpdateRoutineDraft?: (participantId: string, draftId: string, expectedRevision: number, routinePackage: RoutineDraft['package']) => Promise<RoutineDraft>;
   onAssignRoutineDraft?: (participantId: string, draftId: string, expectedRevision: number) => Promise<void>;
+  onGetAiAuthoringCapabilities?: () => Promise<AiAuthoringCapabilities>;
+  onProposeRoutineChallenge?: (input: { intent: string; locale: AppState['locale']; preferredResponseKind?: AiRoutineResponseKind; refinement?: string; currentProposal?: AiRoutineProposal }) => Promise<AiRoutineProposal>;
+  onRecordAuthoringStage?: (stage: Extract<JourneyStage, `routine_authoring_${string}`>) => Promise<void>;
   onPublishRoutineDraft?: (participantId: string, draftId: string, expectedRevision: number) => Promise<unknown>;
   onListPublishedRoutineVersions?: (participantId: string) => Promise<Array<PublishedRoutineVersion & { routineId: string }>>;
   onUpgradeRoutineAssignment?: (participantId: string, routineId: string, targetVersion: number) => Promise<void>;
@@ -190,9 +197,7 @@ export function RoutinesScreen({
   const [requestRetries, setRequestRetries] = useState<Record<string, RequestRetryState>>({});
   const [retryTick, setRetryTick] = useState(Date.now());
   const [retryingRoutines, setRetryingRoutines] = useState(false);
-  const [catalogOpen, setCatalogOpen] = useState(() =>
-    Boolean(state.role === 'parent' && onAssignRoutine && !state.routineAssignments.length)
-    || (readStoredBoolean(ROUTINES_CATALOG_OPEN_KEY) ?? false));
+  const [catalogOpen, setCatalogOpen] = useState(() => readStoredBoolean(ROUTINES_CATALOG_OPEN_KEY) ?? false);
   const [assigningRoutineId, setAssigningRoutineId] = useState<string>();
   const [assignError, setAssignError] = useState(false);
   const [catalogSection, setCatalogSection] = useState<'builtins' | 'drafts' | 'community'>('builtins');
@@ -205,11 +210,11 @@ export function RoutinesScreen({
   const [deletingDraftId, setDeletingDraftId] = useState<string>();
   const [draftDeleteErrorId, setDraftDeleteErrorId] = useState<string>();
   const [editingDraftId, setEditingDraftId] = useState<string | 'new'>();
-  const [editingDraftTarget, setEditingDraftTarget] = useState<RoutineContentEditTarget>();
   const [forkingRoutineId, setForkingRoutineId] = useState<string>();
   const forkingRoutineIdRef = useRef<string | undefined>(undefined);
   const [assigningDraftId, setAssigningDraftId] = useState<string>();
   const [draftAssignErrorId, setDraftAssignErrorId] = useState<string>();
+  const [aiCapabilities, setAiCapabilities] = useState<AiAuthoringCapabilities>();
   const [publishingDraftId, setPublishingDraftId] = useState<string>();
   const [reviewingPublishDraftId, setReviewingPublishDraftId] = useState<string>();
   const [publishedVersions, setPublishedVersions] = useState<Array<PublishedRoutineVersion & { routineId: string }>>([]);
@@ -241,15 +246,14 @@ export function RoutinesScreen({
     setDetailInitialTab(initialTab);
     setSelectedId(assignmentId);
   };
-  const openDraftEditor = (draftId: string | 'new', target?: RoutineContentEditTarget) => {
-    setEditingDraftTarget(target);
+  const openDraftEditor = (draftId: string | 'new') => {
     setEditingDraftId(draftId);
+    void onRecordAuthoringStage?.('routine_authoring_started').catch(() => undefined);
   };
   const closeDraftEditor = () => {
     setEditingDraftId(undefined);
-    setEditingDraftTarget(undefined);
   };
-  const forkAssignedRoutine = async (assignment: RoutineAssignment, target?: RoutineContentEditTarget) => {
+  const forkAssignedRoutine = async (assignment: RoutineAssignment) => {
     const participantId = activeParticipantAccess?.participant.id;
     if (!participantId || !onForkRoutineAssignmentDraft || forkingRoutineIdRef.current) return;
     forkingRoutineIdRef.current = assignment.routineId;
@@ -257,7 +261,9 @@ export function RoutinesScreen({
     try {
       const draft = await onForkRoutineAssignmentDraft(participantId, assignment.routineId, state.locale);
       setRoutineDrafts((current) => [draft, ...current.filter((item) => item.id !== draft.id)]);
-      openDraftEditor(draft.id, target);
+      // Content edits intentionally reopen the same complete composer. The
+      // existing fork/version lifecycle remains the persistence boundary.
+      openDraftEditor(draft.id);
     } finally {
       forkingRoutineIdRef.current = undefined;
       setForkingRoutineId(undefined);
@@ -311,6 +317,13 @@ export function RoutinesScreen({
   }, [activeParticipantAccess?.participant.id, canAssignRoutine, catalogOpen, catalogSection, draftReloadSequence, onListRoutineDrafts, online]);
 
   useEffect(() => {
+    if (!editingDraftId || !online || !onGetAiAuthoringCapabilities) return;
+    let cancelled = false;
+    void onGetAiAuthoringCapabilities().then((capabilities) => { if (!cancelled) setAiCapabilities(capabilities); }).catch(() => { if (!cancelled) setAiCapabilities(undefined); });
+    return () => { cancelled = true; };
+  }, [editingDraftId, onGetAiAuthoringCapabilities, online]);
+
+  useEffect(() => {
     const participantId = activeParticipantAccess?.participant.id;
     if (!catalogOpen || catalogSection !== 'drafts' || !participantId || !online || !onListPublishedRoutineVersions) return;
     let cancelled = false;
@@ -328,6 +341,10 @@ export function RoutinesScreen({
   if (editingDraftId) {
     const participantId = activeParticipantAccess?.participant.id;
     const draft = routineDrafts.find((item) => item.id === editingDraftId);
+    const sourceAssignment = draft?.forkedFrom ? state.routineAssignments.find((assignment) => assignment.routineId === draft.forkedFrom?.routineId) : undefined;
+    const planSummary = sourceAssignment
+      ? formatMessage(t('routineComposerPreservedPlan'), { checks: sourceAssignment.plan.checksPerDay })
+      : undefined;
     const saveDraft = async (routinePackage: RoutineDraft['package']) => {
       if (!participantId) throw new Error('participant_unavailable');
       const saved = draft
@@ -338,10 +355,16 @@ export function RoutinesScreen({
       setEditingDraftId(saved.id);
       return saved;
     };
-    return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDraftEditorScreen key={`${draft?.id ?? 'new'}-${routineContentEditTargetKey(editingDraftTarget)}`} draft={draft} target={editingDraftTarget} locale={state.locale} online={online} save={saveDraft} cancel={closeDraftEditor} reload={() => { closeDraftEditor(); setDraftReloadSequence((value) => value + 1); }} t={t} /></Suspense>;
+    const approve = !draft && onAssignRoutineDraft ? async (saved: RoutineDraft) => {
+      if (saved.validation.status !== 'valid') throw new Error('draft_not_ready');
+      await onRecordAuthoringStage?.('routine_authoring_approved').catch(() => undefined);
+      await onAssignRoutineDraft(participantId!, saved.id, saved.revision);
+      await onRecordAuthoringStage?.('routine_authoring_activated').catch(() => undefined);
+    } : undefined;
+    return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDraftEditorScreen key={draft?.id ?? 'new'} draft={draft} locale={state.locale} online={online} save={saveDraft} approve={approve} aiAvailable={aiCapabilities?.routineGeneration.enabled} quizAvailable={aiCapabilities?.dynamicQuizGeneration.enabled} planSummary={planSummary} propose={onProposeRoutineChallenge ? async (input) => { const proposal = await onProposeRoutineChallenge({ ...input, locale: state.locale }); void onRecordAuthoringStage?.(input.refinement ? 'routine_authoring_refinement' : 'routine_authoring_proposal').catch(() => undefined); return proposal; } : undefined} cancel={closeDraftEditor} reload={() => { closeDraftEditor(); setDraftReloadSequence((value) => value + 1); }} t={t} /></Suspense>;
   }
 
-  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={backToList} start={start} edit={canManageRoutines} initialTab={detailInitialTab} initialEventId={focusedEventId} onInitialEventConsumed={onFocusedEventConsumed} getProofImageUrl={getProofImageUrl} reviewCheck={canManageRoutines ? reviewCheck : undefined} requestCheck={canManageRoutines ? requestCheck : undefined} onSaveMonitoringPlan={canManageRoutines && onSaveMonitoringPlan ? (plan, validationMode) => onSaveMonitoringPlan(selected.routineId, plan, validationMode) : undefined} onForkContent={canManageRoutines && onForkRoutineAssignmentDraft ? (target) => forkAssignedRoutine(selected, target) : undefined} forkingContent={forkingRoutineId === selected.routineId} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
+  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={backToList} start={start} edit={canManageRoutines} initialTab={detailInitialTab} initialEventId={focusedEventId} onInitialEventConsumed={onFocusedEventConsumed} getProofImageUrl={getProofImageUrl} reviewCheck={canManageRoutines ? reviewCheck : undefined} requestCheck={canManageRoutines ? requestCheck : undefined} onSaveMonitoringPlan={canManageRoutines && onSaveMonitoringPlan ? (plan, validationMode) => onSaveMonitoringPlan(selected.routineId, plan, validationMode) : undefined} onForkContent={canManageRoutines && onForkRoutineAssignmentDraft ? () => forkAssignedRoutine(selected) : undefined} forkingContent={forkingRoutineId === selected.routineId} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
 
   const setRequestStatus = (routineId: string, status: RequestStatus) => {
     setRequestStatuses((current) => ({ ...current, [routineId]: status }));
@@ -551,15 +574,10 @@ export function RoutinesScreen({
       />
       {canAssignRoutine ? createPortal(
         <div className="routine-add-switcher" data-swipe-navigation="ignore">
-        <button
-          type="button"
-          className="primary-action-button routines-add-dock-button"
-          aria-expanded={catalogOpen}
-          onClick={() => setCatalogOpen((open) => !open)}
-        >
-          <AppIcon name="add" />
-          {t('addRoutine')}
-        </button>
+        <div className="routine-add-actions">
+          <button type="button" className="routine-library-dock-button" aria-expanded={catalogOpen} onClick={() => setCatalogOpen((open) => !open)}><AppIcon name="routines" />{t('routineBrowseLibrary')}</button>
+          <button type="button" className="primary-action-button routines-add-dock-button" onClick={() => openDraftEditor('new')}><AppIcon name="add" />{t('routineComposerCreate')}</button>
+        </div>
       {catalogOpen && (
         <section className={`card routine-catalog-card routine-catalog-popover${catalogHasTabs ? ' has-tabs' : ''}`} aria-labelledby="routine-catalog-title">
           <div className="routine-catalog-heading">
