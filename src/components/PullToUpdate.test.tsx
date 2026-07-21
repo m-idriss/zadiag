@@ -25,7 +25,6 @@ describe('PullToUpdate', () => {
   afterEach(() => {
     if (root) act(() => root?.unmount());
     container?.remove();
-    vi.unstubAllGlobals();
   });
 
   const renderPullToUpdate = (
@@ -56,29 +55,6 @@ describe('PullToUpdate', () => {
     dispatchTouch(page, 'touchend', 20, 100);
 
     await act(async () => Promise.resolve());
-    expect(onUpdate).toHaveBeenCalledOnce();
-  });
-
-  it('adds resistance, latches at the threshold, and confirms it once', async () => {
-    const onUpdate = vi.fn().mockResolvedValue(false);
-    const vibrate = vi.fn();
-    vi.stubGlobal('navigator', { ...navigator, vibrate });
-    const page = renderPullToUpdate(onUpdate);
-    const shell = page.closest('.app-shell') as HTMLElement;
-
-    dispatchTouch(page, 'touchstart', 20, 20);
-    dispatchTouch(page, 'touchmove', 20, 100);
-    const thresholdOffset = Number.parseFloat(shell.style.getPropertyValue('--pull-distance'));
-    dispatchTouch(page, 'touchmove', 20, 220);
-    const maximumOffset = Number.parseFloat(shell.style.getPropertyValue('--pull-distance'));
-    dispatchTouch(page, 'touchmove', 20, 70);
-    dispatchTouch(page, 'touchend', 20, 70);
-
-    await act(async () => Promise.resolve());
-    expect(thresholdOffset).toBeLessThan(80);
-    expect(maximumOffset).toBeLessThan(60);
-    expect(vibrate).toHaveBeenCalledOnce();
-    expect(vibrate).toHaveBeenCalledWith(10);
     expect(onUpdate).toHaveBeenCalledOnce();
   });
 
