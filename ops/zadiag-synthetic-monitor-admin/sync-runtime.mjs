@@ -8,7 +8,7 @@ const project = process.env.ZADIAG_FIREBASE_PROJECT || 'zadiag-22482';
 const monitorId = process.env.ZADIAG_MONITOR_ID;
 const receiptToken = process.env.ZADIAG_MONITOR_RECEIPT_TOKEN;
 const receiptUrl = process.env.ZADIAG_MONITOR_RECEIPT_URL;
-if (!monitorId || !receiptToken || !receiptUrl) throw new Error('Source .pi-monitor/env before running sync-runtime.mjs');
+if (!monitorId || !receiptToken || !receiptUrl) throw new Error('Source the monitor runtime environment before running sync-runtime.mjs');
 
 const account = firebaseAuth.getGlobalDefaultAccount();
 const accessToken = (await firebaseAuth.getAccessToken(account.tokens.refresh_token, account.tokens.scopes || [])).access_token;

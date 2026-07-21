@@ -26,12 +26,12 @@ export const ensureMonitorAppCheckDebugToken = async ({
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      displayName: 'Raspberry Pi synthetic monitor',
+      displayName: 'Zadiag synthetic monitor',
       token,
     }),
   });
   if (!response.ok && response.status !== 409) {
-    throw new Error(`Unable to register the Pi App Check debug token: ${response.status} ${await response.text()}`);
+    throw new Error(`Unable to register the synthetic monitor App Check debug token: ${response.status} ${await response.text()}`);
   }
   if (!existingToken) {
     const temporaryPath = `${environmentPath}.tmp`;

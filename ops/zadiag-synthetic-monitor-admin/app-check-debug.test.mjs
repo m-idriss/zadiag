@@ -10,7 +10,7 @@ afterEach(async () => {
   await Promise.all(temporaryDirectories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })));
 });
 
-describe('Pi App Check debug token configuration', () => {
+describe('synthetic monitor App Check debug token configuration', () => {
   it('registers one generated token and persists it without exposing the secret', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'zadiag-pi-app-check-'));
     temporaryDirectories.push(directory);
@@ -36,7 +36,7 @@ describe('Pi App Check debug token configuration', () => {
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({
-          displayName: 'Raspberry Pi synthetic monitor',
+          displayName: 'Zadiag synthetic monitor',
           token: '123e4567-e89b-42d3-a456-426614174000',
         }),
       }),
