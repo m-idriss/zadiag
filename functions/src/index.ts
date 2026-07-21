@@ -2,7 +2,7 @@ import { initializeApp } from 'firebase-admin/app';
 import { FieldPath, FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { HttpsError, onCall, onRequest } from 'firebase-functions/v2/https';
-import { defineSecret } from 'firebase-functions/params';
+import { defineSecret, defineString } from 'firebase-functions/params';
 import { GoogleAuth } from 'google-auth-library';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { randomBytes } from 'node:crypto';
@@ -22,7 +22,7 @@ import { assertRoutineDraftRevision, createAssignmentForkPackage, createRoutineD
 import { ROUTINE_PACKAGE_MIME, parseRoutinePackageEnvelope, serializeRoutinePackage } from './routinePackages.js';
 import { assertExternalPackageResponse, verifyExternalRegistryIndex } from './externalRoutineRegistry.js';
 import { marketplaceEntryAuthorizedForInstall, marketplaceEntryInstallable, marketplaceRole, moderateMarketplaceStatus, type ModerationAction, type ModerationStatus } from './routineMarketplaceGovernance.js';
-import { AiAuthoringDisabledError, aiAuthoringCapabilityEnabled, aiAuthoringRegistry, parseAiAuthoringConfig, requireAiAuthoringCapability, unapprovedAiDraft } from './aiAuthoring.js';
+import { AiAuthoringDisabledError, aiAuthoringCapabilityEnabled, aiAuthoringRegistry, defaultAiAuthoringConfig, parseAiAuthoringConfig, requireAiAuthoringCapability, unapprovedAiDraft } from './aiAuthoring.js';
 import { generateQuizWithGemini, gradeQuizSubmission, type GeneratedQuiz, type PublicQuizQuestion, type QuizAnswerKeyEntry } from './quizGeneration.js';
 import { generateRoutineProposalWithGemini, parseRoutineProposal, type ProposedResponseKind } from './routineGeneration.js';
 import { aggregatePilotReport, pilotReportPeriod } from './pilotReport.js';
@@ -40,6 +40,11 @@ const vapidPublicKey = defineSecret('WEB_PUSH_VAPID_PUBLIC_KEY');
 const resendApiKey = defineSecret('RESEND_API_KEY');
 const moderationEmail = defineSecret('USER_MODERATION_EMAIL');
 const moderationFromEmail = defineSecret('USER_MODERATION_FROM_EMAIL');
+const aiAuthoringConfig = defineString('AI_AUTHORING_CONFIG', {
+  default: JSON.stringify(defaultAiAuthoringConfig),
+  description: 'Global and per-capability AI authoring switches plus approvals for sensitive capabilities.',
+});
+const currentAiAuthoringConfig = () => parseAiAuthoringConfig(aiAuthoringConfig.value());
 const pilotConsentVersion = '2026-07-17';
 const geminiAuth = new GoogleAuth({
   scopes: ['https://www.googleapis.com/auth/generative-language'],
@@ -47,7 +52,7 @@ const geminiAuth = new GoogleAuth({
 const geminiModel = process.env.GEMINI_MODEL ?? 'gemini-2.5-flash';
 const assertActivatableAiRoutine = (routine: RoutineDocument) => {
   if (routine.response?.kind === 'quiz' && routine.response.mode === 'generated'
-    && !aiAuthoringCapabilityEnabled(parseAiAuthoringConfig(process.env.AI_AUTHORING_CONFIG), 'dynamicQuizGeneration')) {
+    && !aiAuthoringCapabilityEnabled(currentAiAuthoringConfig(), 'dynamicQuizGeneration')) {
     throw new HttpsError('failed-precondition', 'Dynamic quiz generation is disabled.');
   }
 };
@@ -2595,7 +2600,7 @@ export const getExternalRoutineRegistryStatus = onCall({ region, cors, enforceAp
 
 export const getAiAuthoringCapabilities = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   await requireUid(request.auth);
-  const config = parseAiAuthoringConfig(process.env.AI_AUTHORING_CONFIG);
+  const config = currentAiAuthoringConfig();
   return {
     prescriptionExtraction: { enabled: aiAuthoringCapabilityEnabled(config, 'prescriptionExtraction'), promptVersion: aiAuthoringRegistry.prescriptionExtraction.promptVersion },
     routineTranslation: { enabled: aiAuthoringCapabilityEnabled(config, 'routineTranslation'), promptVersion: aiAuthoringRegistry.routineTranslation.promptVersion },
@@ -2621,7 +2626,7 @@ export const proposeRoutineChallenge = onCall({ region, cors, enforceAppCheck: t
   }
   catch { throw new HttpsError('invalid-argument', 'The current proposal is invalid.'); }
   try {
-    const registry = requireAiAuthoringCapability(parseAiAuthoringConfig(process.env.AI_AUTHORING_CONFIG), 'routineGeneration');
+    const registry = requireAiAuthoringCapability(currentAiAuthoringConfig(), 'routineGeneration');
     const output = await generateRoutineProposalWithGemini({ intent, locale: request.data?.locale === 'fr' ? 'fr' : 'en', preferredResponseKind, refinement, currentProposal }, { model: registry.model, getAccessToken: () => geminiAuth.getAccessToken() });
     reportOperationalEvent({ kind: 'analysis_completed', actorUid: uid, details: { capability: 'routineGeneration', status: 'success', durationMs: Date.now() - startedAt, refined: Boolean(refinement) } });
     return unapprovedAiDraft('routineGeneration', output);
@@ -3092,7 +3097,7 @@ const prepareQuizForCheck = async (
   if (initialData.challenge?.quiz?.questions?.length) return { id: initial.id, ...initialData };
   const definition = initialData.challenge?.response as RoutineResponseDefinition | undefined;
   if (!definition || definition.kind !== 'quiz' || definition.mode !== 'generated') throw new HttpsError('failed-precondition', 'This check is not a generated quiz.');
-  const config = parseAiAuthoringConfig(process.env.AI_AUTHORING_CONFIG);
+  const config = currentAiAuthoringConfig();
   const registry = requireAiAuthoringCapability(config, 'dynamicQuizGeneration');
   const recent = await aggregateRef.collection('checks').where('routineId', '==', String(initialData.routineId ?? definition.topic)).orderBy('requestedAt', 'desc').limit(10).get();
   const recentQuestions = recent.docs.flatMap((document) => {

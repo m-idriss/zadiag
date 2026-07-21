@@ -18,12 +18,24 @@ export interface AiAuthoringControlConfig {
   };
 }
 
+export const defaultAiAuthoringConfig = {
+  globalEnabled: true,
+  capabilities: {
+    prescriptionExtraction: false,
+    routineTranslation: false,
+    routineGeneration: true,
+    dynamicQuizGeneration: false,
+  },
+} satisfies AiAuthoringControlConfig;
+
 export const aiAuthoringRegistry = {
   prescriptionExtraction: { provider: 'gemini', model: 'gemini-2.5-flash', promptVersion: 'prescription-extraction-v1' },
   routineTranslation: { provider: 'gemini', model: 'gemini-2.5-flash', promptVersion: 'routine-translation-v1' },
   routineGeneration: { provider: 'gemini', model: 'gemini-2.5-flash', promptVersion: 'routine-generation-v1' },
   dynamicQuizGeneration: { provider: 'gemini', model: 'gemini-2.5-flash', promptVersion: 'dynamic-quiz-generation-v1' },
 } as const;
+
+const operatorControlledCapabilities = new Set<AiAuthoringCapability>(['routineGeneration']);
 
 export class AiAuthoringDisabledError extends Error { constructor() { super('ai_authoring_disabled'); } }
 
@@ -38,9 +50,10 @@ export const aiAuthoringApprovalValid = (config: AiAuthoringControlConfig | unde
   return Number.isFinite(approvedAt) && Number.isFinite(expiresAt) && approvedAt <= now.getTime() && expiresAt > now.getTime();
 };
 
-export const aiAuthoringCapabilityEnabled = (config: AiAuthoringControlConfig | undefined, capability: AiAuthoringCapability, now = new Date()) => Boolean(
-  config?.globalEnabled && config.capabilities?.[capability] && aiAuthoringApprovalValid(config, capability, now),
-);
+export const aiAuthoringCapabilityEnabled = (config: AiAuthoringControlConfig | undefined, capability: AiAuthoringCapability, now = new Date()) => {
+  if (!config?.globalEnabled || !config.capabilities?.[capability]) return false;
+  return operatorControlledCapabilities.has(capability) || aiAuthoringApprovalValid(config, capability, now);
+};
 
 export const requireAiAuthoringCapability = (config: AiAuthoringControlConfig | undefined, capability: AiAuthoringCapability) => {
   if (!aiAuthoringCapabilityEnabled(config, capability)) throw new AiAuthoringDisabledError();

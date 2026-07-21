@@ -83,6 +83,7 @@ describe('private routine draft editor', () => {
     act(() => { if (instruction) { Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(instruction, 'I want to track my Java learning.'); instruction.dispatchEvent(new Event('input', { bubbles: true })); } });
     await act(async () => { Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Suggest a challenge'))?.click(); await Promise.resolve(); });
     expect(propose).toHaveBeenCalledWith({ intent: 'I want to track my Java learning.' });
+    expect(container.textContent).toContain('Do not include health or identifying information.');
     expect(container.textContent).toContain('Java progress');
     expect(container.textContent).toContain('A quiz measures learning progress.');
     expect(save).not.toHaveBeenCalled();
