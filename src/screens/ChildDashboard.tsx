@@ -164,7 +164,7 @@ export function ChildDashboard({
           const actionable = main.status === 'pending' && Date.parse(main.expiresAt) > now;
           const structuredResponse = ['confirmation', 'checklist'].includes(main.challenge?.response.kind ?? 'photo');
           return (
-            <article className={`today-task today-routine-card ${actionable ? 'actionable' : 'expired-only'}`} style={presentation.style} key={group.routineId}>
+            <article className={`today-task today-routine-card ${actionable ? 'actionable' : 'expired-only'}`} data-routine-id={group.routineId} style={presentation.style} key={group.routineId}>
               <div className="today-routine-main">
                 <div className="today-routine-primary">
                   <div className="today-task-copy">

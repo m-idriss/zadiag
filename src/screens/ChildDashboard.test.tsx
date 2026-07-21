@@ -81,6 +81,7 @@ describe('participant Today screen', () => {
     expect(container.textContent).not.toContain('Completed today');
     expect(container.textContent).not.toContain('This week');
     expect(container.querySelectorAll('.today-task')).toHaveLength(1);
+    expect(container.querySelector('.today-routine-card')?.getAttribute('data-routine-id')).toBe(pending.routineId);
 
     const complete = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Proof'));
     act(() => complete?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
