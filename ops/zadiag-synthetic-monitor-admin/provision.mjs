@@ -4,7 +4,7 @@ import { randomBytes } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import process from 'node:process';
 import { createMembership } from '../../functions/lib/relationships.js';
-import { createDefaultRoutineAssignment, DEFAULT_ROUTINE_ID } from '../../functions/lib/routines.js';
+import { createRoutineAssignment, routineFromCatalog } from '../../functions/lib/routines.js';
 import { ensureMonitorAppCheckDebugToken } from './app-check-debug.mjs';
 
 const require = createRequire(import.meta.url);
@@ -14,6 +14,8 @@ const ownerUid = process.argv[2]?.trim();
 const monitorUid = process.argv[3]?.trim();
 const contactEmail = process.env.ZADIAG_MONITOR_CONTACT_EMAIL?.trim();
 const environmentPath = process.env.ZADIAG_MONITOR_ENV_PATH?.trim();
+const displayName = process.env.ZADIAG_MONITOR_DISPLAY_NAME?.trim() || 'Synthetic monitor';
+const healthRoutineId = 'synthetic-monitor-health';
 if (!ownerUid || !monitorUid || !contactEmail || !environmentPath) {
   throw new Error('Set ZADIAG_MONITOR_CONTACT_EMAIL and ZADIAG_MONITOR_ENV_PATH, then run: node ops/zadiag-synthetic-monitor-admin/provision.mjs OWNER_UID MONITOR_UID');
 }
@@ -56,7 +58,6 @@ const participantId = randomBytes(18).toString('base64url').slice(0, 20);
 const auditId = randomBytes(18).toString('base64url').slice(0, 20);
 const receiptToken = randomBytes(32).toString('base64url');
 const receiptTokenHash = (await import('node:crypto')).createHash('sha256').update(receiptToken.trim().toUpperCase()).digest('hex');
-const displayName = 'Nemu';
 const ownerMembership = createMembership({ uid: ownerUid, role: 'owner', now });
 const participantMembership = createMembership({ uid: monitorUid, role: 'participant', invitedBy: ownerUid, now });
 const plan = {
@@ -66,7 +67,9 @@ const plan = {
   expiryMinutes: 120,
   timeZone: 'Europe/Paris',
 };
-const assignment = createDefaultRoutineAssignment(plan, now);
+const healthRoutine = routineFromCatalog(healthRoutineId);
+if (!healthRoutine) throw new Error(`Missing synthetic monitor routine ${healthRoutineId}`);
+const assignment = createRoutineAssignment(healthRoutine, plan, now);
 
 const writes = [
   update(`participants/${participantId}`, {
@@ -84,7 +87,7 @@ const writes = [
   }),
   update(`participants/${participantId}/memberships/${ownerUid}`, ownerMembership),
   update(`participants/${participantId}/memberships/${monitorUid}`, participantMembership),
-  update(`participants/${participantId}/routineAssignments/${DEFAULT_ROUTINE_ID}`, assignment),
+  update(`participants/${participantId}/routineAssignments/${healthRoutineId}`, assignment),
   update(`users/${ownerUid}/participantRefs/${participantId}`, {
     participantId,
     role: 'owner',

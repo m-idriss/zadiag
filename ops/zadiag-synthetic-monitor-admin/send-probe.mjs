@@ -9,7 +9,7 @@ const webpush = require('../../functions/node_modules/web-push');
 const project = process.env.ZADIAG_FIREBASE_PROJECT || 'zadiag-22482';
 const participantId = process.env.ZADIAG_MONITOR_PARTICIPANT_ID;
 const monitorId = process.env.ZADIAG_MONITOR_ID;
-if (!participantId || !monitorId) throw new Error('Source Mayuri .zadiag-monitor/env before running send-probe.mjs');
+if (!participantId || !monitorId) throw new Error('Source the monitor runtime environment before running send-probe.mjs');
 
 const account = firebaseAuth.getGlobalDefaultAccount();
 const accessToken = (await firebaseAuth.getAccessToken(account.tokens.refresh_token, account.tokens.scopes || [])).access_token;

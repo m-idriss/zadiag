@@ -7,7 +7,7 @@ const firebaseAuth = require('../../node_modules/firebase-tools/lib/auth');
 const account = firebaseAuth.getGlobalDefaultAccount();
 const accessToken = (await firebaseAuth.getAccessToken(account.tokens.refresh_token, account.tokens.scopes || [])).access_token;
 const environmentPath = process.env.ZADIAG_MONITOR_ENV_PATH?.trim();
-if (!environmentPath) throw new Error('Set ZADIAG_MONITOR_ENV_PATH to the Mayuri .zadiag-monitor/env file');
+if (!environmentPath) throw new Error('Set ZADIAG_MONITOR_ENV_PATH to the monitor runtime environment file');
 const result = await ensureMonitorAppCheckDebugToken({
   accessToken,
   environmentPath,
