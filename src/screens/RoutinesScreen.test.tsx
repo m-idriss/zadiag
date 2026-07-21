@@ -258,6 +258,51 @@ describe('participant routines navigation', () => {
     expect(container.textContent).toContain('current schedule preserved');
   });
 
+  it('loads AI capabilities once when an unstable repository callback is recreated', async () => {
+    await import('./RoutineDraftEditorScreen');
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      participantAccess: [{ participant: { id: 'participant-1', displayName: 'Maya' }, membership: { role: 'owner', status: 'active' } }],
+      activeParticipantId: 'participant-1', routineAssignments: [], events: [], routinesLoaded: true, routinesError: false,
+    };
+    const getCapabilities = vi.fn().mockResolvedValue({
+      prescriptionExtraction: { enabled: false, promptVersion: 'prescription-extraction-v1' },
+      routineTranslation: { enabled: false, promptVersion: 'routine-translation-v1' },
+      routineGeneration: { enabled: true, promptVersion: 'routine-generation-v1' },
+      dynamicQuizGeneration: { enabled: false, promptVersion: 'dynamic-quiz-generation-v1' },
+      manualFallback: true as const,
+    });
+    const render = () => root.render(<RoutinesScreen
+      state={state}
+      online
+      onAssignRoutine={vi.fn().mockResolvedValue(undefined)}
+      onGetAiAuthoringCapabilities={() => getCapabilities()}
+      t={(key) => translate('en', key)}
+    />);
+
+    act(render);
+    await act(async () => {
+      document.body.querySelector<HTMLButtonElement>('.routines-add-dock-button')?.click();
+      await Promise.resolve();
+    });
+    expect(getCapabilities).toHaveBeenCalledTimes(1);
+    expect(container.textContent).toContain('Do not include health or identifying information.');
+
+    act(render);
+    await act(async () => { await Promise.resolve(); });
+    expect(getCapabilities).toHaveBeenCalledTimes(1);
+
+    const instruction = container.querySelector<HTMLTextAreaElement>('.routine-draft-main-instruction');
+    act(() => {
+      if (instruction) {
+        Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(instruction, 'Track my Java learning.');
+        instruction.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+    expect(Array.from(container.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent?.includes('Suggest a challenge'))?.disabled).toBe(false);
+  });
+
   it('reviews fork changes before publishing the next routine version', async () => {
     const assignment = createDefaultRoutineAssignment('2026-07-20T08:00:00.000Z');
     const state: AppState = {
