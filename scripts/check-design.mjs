@@ -58,6 +58,12 @@ for (const [path, css] of [[tokensPath, tokens], [appCssPath, appCss]]) {
   for (const match of css.matchAll(/(--[\w-]+)\s*:/g)) definitions.set(match[1], path);
 }
 const references = new Set([...`${allCss}\n${allSource}`.matchAll(/var\((--[\w-]+)/g)].map((match) => match[1]));
+const runtimeDefinitions = new Set([...allSource.matchAll(/['"](--[\w-]+)['"]/g)].map((match) => match[1]));
+for (const reference of references) {
+  if (!definitions.has(reference) && !runtimeDefinitions.has(reference)) {
+    errors.push(`undefined CSS custom property ${reference}`);
+  }
+}
 for (const [definition, path] of definitions) {
   if (!references.has(definition)) errors.push(`${relativePath(path)}: unused CSS custom property ${definition}`);
 }
