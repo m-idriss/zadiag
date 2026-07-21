@@ -180,7 +180,17 @@ button:disabled { cursor: not-allowed; }
 .app-splash-card strong { font-size: 24px; font-weight: 900; color: var(--color-text); }
 .app-splash-card span { color: var(--color-text-muted); font-size: 13px; font-weight: 700; }
 .app-splash-progress { width: min(240px, 70vw); height: 7px; border-radius: 999px; background: #e4ece8; overflow: hidden; }
-.app-splash-progress > div { width: var(--splash-progress); height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--color-primary), #41b6a2); transition: width .2s ease; }
+.app-splash-progress > div {
+  width: var(--splash-progress);
+  height: 100%;
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--color-primary) 0 6px,
+    color-mix(in srgb, var(--color-primary) 68%, var(--color-primary-soft)) 6px 12px
+  );
+  transition: width .2s ease;
+}
 .startup-recovery-page {
   display: grid;
   place-items: center;
