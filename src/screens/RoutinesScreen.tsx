@@ -212,6 +212,8 @@ export function RoutinesScreen({
   const [editingDraftId, setEditingDraftId] = useState<string | 'new'>();
   const [forkingRoutineId, setForkingRoutineId] = useState<string>();
   const forkingRoutineIdRef = useRef<string | undefined>(undefined);
+  const getAiAuthoringCapabilitiesRef = useRef(onGetAiAuthoringCapabilities);
+  getAiAuthoringCapabilitiesRef.current = onGetAiAuthoringCapabilities;
   const [assigningDraftId, setAssigningDraftId] = useState<string>();
   const [draftAssignErrorId, setDraftAssignErrorId] = useState<string>();
   const [aiCapabilities, setAiCapabilities] = useState<AiAuthoringCapabilities>();
@@ -317,11 +319,13 @@ export function RoutinesScreen({
   }, [activeParticipantAccess?.participant.id, canAssignRoutine, catalogOpen, catalogSection, draftReloadSequence, onListRoutineDrafts, online]);
 
   useEffect(() => {
-    if (!editingDraftId || !online || !onGetAiAuthoringCapabilities) return;
+    const getCapabilities = getAiAuthoringCapabilitiesRef.current;
+    if (!editingDraftId || !online || !getCapabilities) return;
     let cancelled = false;
-    void onGetAiAuthoringCapabilities().then((capabilities) => { if (!cancelled) setAiCapabilities(capabilities); }).catch(() => { if (!cancelled) setAiCapabilities(undefined); });
+    setAiCapabilities(undefined);
+    void getCapabilities().then((capabilities) => { if (!cancelled) setAiCapabilities(capabilities); }).catch(() => { if (!cancelled) setAiCapabilities(undefined); });
     return () => { cancelled = true; };
-  }, [editingDraftId, onGetAiAuthoringCapabilities, online]);
+  }, [editingDraftId, online, Boolean(onGetAiAuthoringCapabilities)]);
 
   useEffect(() => {
     const participantId = activeParticipantAccess?.participant.id;
