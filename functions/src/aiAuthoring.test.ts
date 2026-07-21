@@ -1,15 +1,28 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { AiAuthoringDisabledError, aiAuthoringApprovalValid, aiAuthoringCapabilityEnabled, aiAuthoringMetric, parseAiAuthoringConfig, requireAiAuthoringCapability, unapprovedAiDraft } from './aiAuthoring.js';
+import { AiAuthoringDisabledError, aiAuthoringApprovalValid, aiAuthoringCapabilityEnabled, aiAuthoringMetric, defaultAiAuthoringConfig, parseAiAuthoringConfig, requireAiAuthoringCapability, unapprovedAiDraft } from './aiAuthoring.js';
 
 const approval = { id: 'approval-1', status: 'approved' as const, approvedAt: '2026-07-01T00:00:00.000Z', expiresAt: '2027-01-01T00:00:00.000Z', dpoApprovedBy: 'DPO Name', legalApprovedBy: 'Legal Name', securityApprovedBy: 'Security Name', provider: 'provider-contract-1', dataResidency: 'eu', capabilities: ['routineTranslation' as const] };
 
-test('defaults every provider path to disabled and requires privacy approval', () => {
+test('keeps sensitive provider paths disabled until their privacy approval is valid', () => {
   assert.equal(aiAuthoringCapabilityEnabled(undefined, 'routineTranslation'), false);
   assert.equal(aiAuthoringCapabilityEnabled({ globalEnabled: true, capabilities: { routineTranslation: true } }, 'routineTranslation'), false);
   assert.equal(aiAuthoringCapabilityEnabled(undefined, 'dynamicQuizGeneration'), false);
   assert.throws(() => requireAiAuthoringCapability({ globalEnabled: false, approval, capabilities: { routineTranslation: true } }, 'routineTranslation'), AiAuthoringDisabledError);
   assert.equal(requireAiAuthoringCapability({ globalEnabled: true, approval, capabilities: { routineTranslation: true } }, 'routineTranslation').promptVersion, 'routine-translation-v1');
+});
+
+test('allows standard routine generation through explicit operator switches without medical approval', () => {
+  assert.equal(aiAuthoringCapabilityEnabled(undefined, 'routineGeneration'), false);
+  assert.equal(aiAuthoringCapabilityEnabled({}, 'routineGeneration'), false);
+  assert.equal(aiAuthoringCapabilityEnabled({ globalEnabled: false, capabilities: { routineGeneration: true } }, 'routineGeneration'), false);
+  assert.equal(aiAuthoringCapabilityEnabled({ globalEnabled: true, capabilities: { routineGeneration: false } }, 'routineGeneration'), false);
+  assert.equal(aiAuthoringCapabilityEnabled({ globalEnabled: true, capabilities: { routineGeneration: true } }, 'routineGeneration'), true);
+  assert.equal(requireAiAuthoringCapability({ globalEnabled: true, capabilities: { routineGeneration: true } }, 'routineGeneration').promptVersion, 'routine-generation-v1');
+  assert.equal(aiAuthoringCapabilityEnabled(defaultAiAuthoringConfig, 'routineGeneration'), true);
+  assert.equal(aiAuthoringCapabilityEnabled(defaultAiAuthoringConfig, 'prescriptionExtraction'), false);
+  assert.equal(aiAuthoringCapabilityEnabled(defaultAiAuthoringConfig, 'routineTranslation'), false);
+  assert.equal(aiAuthoringCapabilityEnabled(defaultAiAuthoringConfig, 'dynamicQuizGeneration'), false);
 });
 
 test('requires named unexpired approvals scoped to the capability', () => {

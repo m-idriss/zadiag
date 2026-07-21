@@ -1,6 +1,6 @@
 # AI authoring privacy and regulatory readiness gate
 
-Status: **NOT APPROVED — all production provider paths must remain disabled.**
+Status: **NOT APPROVED — prescription extraction, assisted translation and dynamic quiz generation must remain disabled. Standard routine proposals use the separate operator-controlled boundary documented in `ai-authoring-controls.md`.**
 
 Last engineering review: 2026-07-21. This is a readiness checklist, not legal advice, an AIPD, an HDS certification, or a medical-device classification decision.
 
@@ -10,7 +10,7 @@ Last engineering review: 2026-07-21. This is a readiness checklist, not legal ad
 | --- | --- | --- | --- | --- |
 | Prescription extraction | Explicitly consented prescription image and bounded extracted fields | Prepare an editable private draft for human transcription | Diagnosis, prescription validation, dose calculation, treatment substitution, publishing, assignment, training | Original: deletion on confirm/cancel and hard maximum 24 hours; derived extraction: deletion after copy/cancel and hard maximum 7 days |
 | Routine translation | User-selected private routine text | Suggest a reviewable translation diff | Silent replacement, publishing, assignment, participant/proof/prescription processing, training | Provider payload/output transient and hard maximum 24 hours; only explicitly approved text becomes ordinary private draft content |
-| Routine proposal/refinement | Bounded user intent, selected response mode and explicitly submitted refinement | Suggest a private challenge proposal pending explicit human approval | Silent draft mutation, assignment, activation, prescription interpretation, training | Provider payload/output transient; only the explicitly approved proposal becomes ordinary private draft content |
+| Routine proposal/refinement | Bounded non-medical, non-identifying user intent, selected response mode and explicitly submitted refinement | Suggest a private challenge proposal pending explicit user creation | Silent draft mutation, prescription interpretation, training | Provider payload/output transient; only the explicitly created proposal becomes ordinary private draft content |
 | Dynamic quiz generation | Bounded learning topic, recent question text and weak concept labels | Create a frozen question set and private correction for one check | Profiling beyond quiz progress, diagnosis, answer-key exposure before submission, training | Provider payload/output transient; server-only answer key deleted on submission or check expiry; frozen result follows check-history retention |
 
 Data controller, processors/subprocessors, lawful basis under GDPR Article 6, special-category condition under Article 9, contractual purpose limitation, transfer mechanism and exact retention jobs remain **undecided**. Consent UX alone is not treated as sufficient legal approval.
@@ -26,17 +26,17 @@ Data controller, processors/subprocessors, lawful basis under GDPR Article 6, sp
 
 ## Approval record enforced by Functions
 
-Production activation requires an `AI_AUTHORING_CONFIG.approval` record containing an ID, `approved` status, approval and expiry timestamps, named DPO, legal and security approvers, provider contract identifier, data residency, and exact approved capabilities. The server rejects missing names, expired records and capability mismatch even when kill switches are enabled.
+Production activation of prescription extraction, assisted translation or dynamic quizzes requires an `AI_AUTHORING_CONFIG.approval` record containing an ID, `approved` status, approval and expiry timestamps, named DPO, legal and security approvers, provider contract identifier, data residency, and exact approved capabilities. The server rejects missing names, expired records and capability mismatch even when those switches are enabled. Standard routine generation is intentionally excluded from this medical-readiness approval and remains controlled by the global and dedicated operator switches.
 
-Example structure (not an approval):
+Default operator structure (not an approval of any sensitive capability):
 
 ```json
 {
-  "globalEnabled": false,
+  "globalEnabled": true,
   "capabilities": {
     "prescriptionExtraction": false,
     "routineTranslation": false,
-    "routineGeneration": false,
+    "routineGeneration": true,
     "dynamicQuizGeneration": false
   },
   "approval": {
@@ -68,4 +68,4 @@ Before activation, implementation must prove access/information, correction duri
 
 ## Exit criteria
 
-This document may move to **APPROVED** only when the decisions and evidence above are linked, the named approval record is reviewed, deletion/security tests pass, and a production smoke test first confirms every capability disabled. Approval is capability-specific; approval of one capability cannot activate another.
+This document may move to **APPROVED** only when the decisions and evidence above are linked, the named approval record is reviewed, deletion/security tests pass, and a production smoke test first confirms every sensitive capability disabled. Approval is capability-specific; approval of one capability cannot activate another, and the routine-generation operator switch cannot activate a sensitive capability.

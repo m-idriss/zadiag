@@ -196,6 +196,7 @@ export function RoutineDraftEditorScreen({
           <div className="routine-composer-ai-actions">
             <button type="button" disabled={!aiAvailable || !online || aiBusy || !routine.instructions?.trim()} onClick={() => { void requestAiProposal(false); }}><AppIcon name="sparkles" />{aiBusy ? t('routineComposerAiWorking') : t('routineComposerAiPropose')}</button>
             {!aiAvailable ? <small>{t('routineComposerAiDisabled')}</small> : null}
+            {aiAvailable ? <small>{t('routineComposerAiPrivacyNote')}</small> : null}
             {aiError ? <small role="alert">{t('routineComposerAiError')}</small> : null}
           </div>
           <div className="routine-composer-response">
