@@ -189,6 +189,8 @@ button:disabled { cursor: not-allowed; }
     var(--color-primary) 0 6px,
     color-mix(in srgb, var(--color-primary) 68%, var(--color-primary-soft)) 6px 12px
   );
+  background-size: 17px 17px;
+  animation: splash-progress-stripes .7s linear infinite;
   transition: width .2s ease;
 }
 .startup-recovery-page {
@@ -2299,6 +2301,9 @@ button:disabled { cursor: not-allowed; }
 @keyframes brand-breathe {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.035); }
+}
+@keyframes splash-progress-stripes {
+  to { background-position: 17px 0; }
 }
 @keyframes brand-dot {
   0%, 55%, 100% { transform: translateY(0); }
