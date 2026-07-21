@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
+import { dirname, join } from 'node:path';
 import process from 'node:process';
 import { createMembership } from '../../functions/lib/relationships.js';
 import { createDefaultRoutineAssignment, DEFAULT_ROUTINE_ID } from '../../functions/lib/routines.js';
@@ -12,8 +13,9 @@ const project = process.env.ZADIAG_FIREBASE_PROJECT || 'zadiag-22482';
 const ownerUid = process.argv[2]?.trim();
 const monitorUid = process.argv[3]?.trim();
 const contactEmail = process.env.ZADIAG_MONITOR_CONTACT_EMAIL?.trim();
-if (!ownerUid || !monitorUid || !contactEmail) {
-  throw new Error('Set ZADIAG_MONITOR_CONTACT_EMAIL and run: node ops/pi-synthetic-monitor/provision.mjs OWNER_UID MONITOR_UID');
+const environmentPath = process.env.ZADIAG_MONITOR_ENV_PATH?.trim();
+if (!ownerUid || !monitorUid || !contactEmail || !environmentPath) {
+  throw new Error('Set ZADIAG_MONITOR_CONTACT_EMAIL and ZADIAG_MONITOR_ENV_PATH, then run: node ops/zadiag-synthetic-monitor-admin/provision.mjs OWNER_UID MONITOR_UID');
 }
 
 const account = firebaseAuth.getGlobalDefaultAccount();
@@ -126,9 +128,9 @@ const writes = [
 
 await request(commitUrl, { method: 'POST', body: JSON.stringify({ writes }) });
 
-const runtimeDirectory = new URL('../../.pi-monitor/', import.meta.url);
+const runtimeDirectory = dirname(environmentPath);
 await mkdir(runtimeDirectory, { recursive: true, mode: 0o700 });
-const profileDirectory = new URL('chromium/', runtimeDirectory).pathname;
+const profileDirectory = join(runtimeDirectory, 'chromium');
 const environment = [
   `ZADIAG_MONITOR_ID=${monitorUid}`,
   `ZADIAG_MONITOR_PARTICIPANT_ID=${participantId}`,
@@ -139,11 +141,10 @@ const environment = [
   'ZADIAG_MONITOR_APP_URL=https://www.zadiag.com',
   'ZADIAG_MONITOR_DEBUG_PORT=9223',
 ].join('\n');
-const environmentUrl = new URL('env', runtimeDirectory);
-await writeFile(environmentUrl, `${environment}\n`, { mode: 0o600 });
+await writeFile(environmentPath, `${environment}\n`, { mode: 0o600 });
 await ensureMonitorAppCheckDebugToken({
   accessToken,
-  environmentPath: environmentUrl.pathname,
+  environmentPath,
   projectNumber: process.env.ZADIAG_FIREBASE_PROJECT_NUMBER,
   appId: process.env.ZADIAG_FIREBASE_APP_ID,
 });

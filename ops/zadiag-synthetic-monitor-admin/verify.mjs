@@ -6,7 +6,7 @@ const firebaseAuth = require('../../node_modules/firebase-tools/lib/auth');
 const project = process.env.ZADIAG_FIREBASE_PROJECT || 'zadiag-22482';
 const participantId = process.env.ZADIAG_MONITOR_PARTICIPANT_ID;
 const monitorId = process.env.ZADIAG_MONITOR_ID;
-if (!participantId || !monitorId) throw new Error('Source .pi-monitor/env before running verify.mjs');
+if (!participantId || !monitorId) throw new Error('Source Mayuri .zadiag-monitor/env before running verify.mjs');
 
 const account = firebaseAuth.getGlobalDefaultAccount();
 const accessToken = (await firebaseAuth.getAccessToken(account.tokens.refresh_token, account.tokens.scopes || [])).access_token;
