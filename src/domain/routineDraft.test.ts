@@ -91,6 +91,7 @@ describe('private routine draft domain', () => {
     expect(prepared.routine.instructionSteps).toHaveLength(2);
     expect(prepared.routine.proofType).toBe('photo');
     expect(prepared.routine.analysis?.detectedCriteria).toContain('élastiques orthodontiques');
+    expect(Object.hasOwn(prepared.routine, 'translations')).toBe(false);
   });
 
   it('uses the current user locale when translated content is available', () => {
@@ -105,6 +106,7 @@ describe('private routine draft domain', () => {
     expect(localized.routine.name).toBe('Routine du soir');
     expect(localized.routine.instructions).toBe('Mettre les élastiques après le dîner.');
     expect(localized.routine.translations).toBeUndefined();
+    expect(Object.hasOwn(localized.routine, 'translations')).toBe(false);
   });
 
   it('creates an owned active draft at revision one without retaining mutable input', () => {

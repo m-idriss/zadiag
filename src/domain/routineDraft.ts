@@ -81,7 +81,7 @@ export const routinePackageInLocale = (routinePackage: RoutinePackageV1, locale:
   if (localized || next.defaultLocale === locale) {
     next.defaultLocale = locale;
     next.availableLocales = [locale];
-    next.routine.translations = undefined;
+    delete next.routine.translations;
   }
   return next;
 };
@@ -120,7 +120,7 @@ export const prepareMinimalRoutinePackage = (routinePackage: RoutinePackageV1, r
   const fit = (value: string, maximum: number) => value.slice(0, maximum).trim();
   const shouldFill = (value: string | undefined) => regenerateDerived || !value?.trim();
   next.availableLocales = [next.defaultLocale];
-  routine.translations = undefined;
+  delete routine.translations;
   if (!routine.name.trim()) routine.name = generatedName;
   if (shouldFill(routine.description)) routine.description = fit(instruction, 500);
   if (shouldFill(routine.responsibleName)) routine.responsibleName = copy.responsibleName;

@@ -38,6 +38,7 @@ describe('private routine draft editor', () => {
     expect(save.mock.calls[0][0].routine.instructionSteps).toHaveLength(2);
     expect(save.mock.calls[0][0].routine.analysis.detectedCriteria).toContain('élastiques orthodontiques');
     expect(save.mock.calls[0][0].routine.translations).toBeUndefined();
+    expect(Object.hasOwn(save.mock.calls[0][0].routine, 'translations')).toBe(false);
     expect(container.textContent).toContain('Brouillon enregistré · révision 1 · prêt');
   });
 
