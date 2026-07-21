@@ -60,14 +60,19 @@ close.
 | --- | --- |
 | Run ID | `IOS-20260718-01` |
 | Tester | Mohamady |
-| Started/completed UTC | Pending |
+| Started/completed UTC | Exact interval not recorded; observations completed on `2026-07-18` |
 | Device model | iPhone 16 Pro, 128 GB (`MYNF3ZD/A`) |
 | iOS patch | 26.5.2 |
 | Locale | French |
 | App version | `0.9.64` |
-| Focus / Low Power Mode | Pending |
-| Overall result | Pass for all completed rows; run metadata remains to be completed |
+| Focus / Low Power Mode | Not recorded; accepted as a known evidence limitation on `2026-07-21` |
+| Overall result | Accepted on `2026-07-21`; every functional row passed on a real device, with the two retrospective metadata limitations recorded above |
 | Follow-up issues | [#175](https://github.com/m-idriss/zadiag/issues/175), overlap reproduced on `0.9.63` and resolved by the `0.9.64` real-device retest |
+
+The project owner accepted this run on `2026-07-21` as the release evidence for
+the initial cohort. The missing exact interval and device-state metadata do not
+invalidate the observed functional results, but future runs must record them at
+the start and end of the matrix.
 
 ## Failure handling
 
