@@ -4,7 +4,7 @@ import type { MessageKey } from '../services/i18n';
 import { presentRoutine } from '../domain/routinePresentation';
 import { AppIcon, routineIconName } from './Icon';
 import { StatusPill, statusMessageKey } from './StatusPill';
-import { canRetakeCapture, stalePendingCheckReason, withResolvedEventStatuses } from '../domain/adherence';
+import { canRetakeCapture, isSuccessfulVerification, stalePendingCheckReason, withResolvedEventStatuses } from '../domain/adherence';
 import { coalesceActivePendingEventsByRoutine } from '../domain/dashboardChecks';
 import { EmptyState, ListRow } from './ui';
 import { readUiStorageJson, writeUiStorageString } from '../services/uiStorage';
@@ -35,6 +35,15 @@ const analysisTag = (event: VerificationEvent, locale: Locale) => {
   if (event.analysisSource === 'ai') return locale === 'fr' ? 'IA' : 'AI';
   if (event.analysisSource === 'self' || event.reason === 'self_validated') return 'Auto';
   return undefined;
+};
+
+export const groupedVerificationStatuses = (statuses: VerificationStatus[]) => {
+  const groups = new Map<VerificationStatus, VerificationStatus[]>();
+  statuses.forEach((eventStatus) => {
+    const status = isSuccessfulVerification({ status: eventStatus }) ? 'detected' : eventStatus;
+    groups.set(status, [...(groups.get(status) ?? []), eventStatus]);
+  });
+  return Array.from(groups, ([status, eventStatuses]) => ({ status, eventStatuses }));
 };
 
 export function RoutineHistoryPanel({
@@ -90,8 +99,8 @@ export function RoutineHistoryPanel({
     });
     return ids;
   }, [sortedEvents]);
-  const statuses = useMemo<VerificationStatus[]>(
-    () => Array.from(new Set(sortedEvents.map((event) => event.status))),
+  const statusFilters = useMemo(
+    () => groupedVerificationStatuses(Array.from(new Set(sortedEvents.map((event) => event.status)))),
     [sortedEvents],
   );
   const excludedStatusSet = useMemo(() => new Set(excludedStatuses), [excludedStatuses]);
@@ -108,11 +117,13 @@ export function RoutineHistoryPanel({
         ? current.filter((item) => item !== routineId)
         : [...current, routineId]);
   };
-  const toggleStatusFilter = (status: VerificationStatus) => {
-    setExcludedStatuses((current) =>
-      current.includes(status)
-        ? current.filter((item) => item !== status)
-        : [...current, status]);
+  const toggleStatusFilter = (eventStatuses: VerificationStatus[]) => {
+    setExcludedStatuses((current) => {
+      const allActive = eventStatuses.every((status) => !current.includes(status));
+      return allActive
+        ? Array.from(new Set([...current, ...eventStatuses]))
+        : current.filter((status) => !eventStatuses.includes(status));
+    });
   };
   const filtered = useMemo(() => sortedEvents.filter((event) =>
     !excludedStatusSet.has(event.status)
@@ -157,9 +168,9 @@ export function RoutineHistoryPanel({
             <div className="filter-group">
               <span>{t('filterByStatus')}</span>
               <div className="filter-chips">
-                {statuses.map((status) => {
-                  const active = !excludedStatuses.includes(status);
-                  return <button type="button" key={status} aria-pressed={active} className={`filter-status-${status} ${active ? 'active' : ''}`} onClick={() => toggleStatusFilter(status)}>{t(statusMessageKey(status))}</button>;
+                {statusFilters.map(({ status, eventStatuses }) => {
+                  const active = eventStatuses.every((eventStatus) => !excludedStatuses.includes(eventStatus));
+                  return <button type="button" key={status} aria-pressed={active} className={`filter-status-${status} ${active ? 'active' : ''}`} onClick={() => toggleStatusFilter(eventStatuses)}>{t(statusMessageKey(status))}</button>;
                 })}
               </div>
             </div>

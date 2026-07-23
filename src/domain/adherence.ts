@@ -12,12 +12,15 @@ const retakeWindowMs = 15 * 60_000;
 
 export const isCompletedVerification = (event: VerificationEvent) => finalStatuses.has(event.status);
 
+export const isSuccessfulVerification = (event: Pick<VerificationEvent, 'status'>) =>
+  event.status === 'detected' || event.status === 'answered';
+
 export const isReviewableVerification = (event: VerificationEvent) =>
   event.status === 'uncertain' && !['approved', 'rejected'].includes(event.reviewStatus ?? '');
 
 export function adherenceSummary(events: VerificationEvent[]) {
   const completed = events.filter(isCompletedVerification);
-  const successful = completed.filter((event) => event.status === 'detected');
+  const successful = completed.filter(isSuccessfulVerification);
   const attention = completed.filter((event) => ['not_detected', 'uncertain', 'missed', 'expired'].includes(event.status));
   const statusCounts = completed.reduce<Record<string, number>>((counts, event) => ({
     ...counts,

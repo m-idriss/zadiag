@@ -9,7 +9,7 @@ import { DisclosureToggle } from '../components/DisclosureToggle';
 import { ParticipantSelector } from '../components/ParticipantSelector';
 import { presentRoutine } from '../domain/routinePresentation';
 import { assignableRoutineTemplates, marketplaceFromTemplates, presentRoutineTemplate } from '../domain/routineMarketplace';
-import { withResolvedEventStatuses } from '../domain/adherence';
+import { isCompletedVerification, isSuccessfulVerification, withResolvedEventStatuses } from '../domain/adherence';
 import { routineContentChanges, selectRoutineVersionTarget, type PublishedRoutineVersion, type RoutineCatalogEntry, type RoutineContentChange, type RoutineDraft } from '../domain/routineDraft';
 import { readUiStorageJson, readUiStorageString, removeUiStorageItem, writeUiStorageString } from '../services/uiStorage';
 import type { AiAuthoringCapabilities, AiRoutineProposal, AiRoutineResponseKind } from '../services/contracts';
@@ -47,10 +47,10 @@ const readStoredStringSet = (key: string) => {
 const routineCompletionRatesById = (events: VerificationEvent[]) => {
   const stats = new Map<string, { completed: number; successful: number }>();
   events.forEach((event) => {
-    if (event.status === 'pending' || event.status === 'analyzing') return;
+    if (!isCompletedVerification(event)) return;
     const current = stats.get(event.routineId) ?? { completed: 0, successful: 0 };
     current.completed += 1;
-    if (event.status === 'detected') current.successful += 1;
+    if (isSuccessfulVerification(event)) current.successful += 1;
     stats.set(event.routineId, current);
   });
   return new Map([...stats].map(([routineId, item]) => [

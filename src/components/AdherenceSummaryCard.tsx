@@ -23,7 +23,7 @@ const ranges: Array<{
 
 const ringSegments: Array<{ status: VerificationStatus; color: string }> = [
   { status: 'detected', color: 'var(--color-primary)' },
-  { status: 'answered', color: 'var(--color-info-soft)' },
+  { status: 'answered', color: 'var(--color-primary)' },
   { status: 'not_detected', color: 'var(--color-summary-not-detected)' },
   { status: 'uncertain', color: 'var(--color-summary-uncertain)' },
   { status: 'missed', color: 'var(--color-summary-missed)' },

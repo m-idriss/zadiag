@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { cameraOutline, chevronBackOutline, chevronForwardOutline, ellipsisHorizontal, peopleOutline } from 'ionicons/icons';
-import { adherenceSummary, withResolvedEventStatuses } from '../domain/adherence';
+import { adherenceSummary, isSuccessfulVerification, withResolvedEventStatuses } from '../domain/adherence';
 import { presentRoutine } from '../domain/routinePresentation';
 import type { AppState, RoutineAppearance, RoutineAssignment, RoutineValidationMode, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
@@ -68,7 +68,7 @@ export const calendarDays = (events: VerificationEvent[], locale: string, refere
     const dayStart = new Date(day);
     dayStart.setHours(0, 0, 0, 0);
     const dayEvents = events.filter((event) => sameLocalDay(event.requestedAt, day));
-    const successful = dayEvents.filter((event) => event.status === 'detected').length;
+    const successful = dayEvents.filter(isSuccessfulVerification).length;
     const attention = dayEvents.filter((event) => ['not_detected', 'uncertain'].includes(event.status)).length;
     const missed = dayEvents.filter((event) => ['missed', 'expired'].includes(event.status)).length;
     const total = successful + attention + missed;
@@ -140,7 +140,7 @@ const streakFor = (events: VerificationEvent[]) => {
   let streak = 0;
   const day = new Date();
   day.setHours(0, 0, 0, 0);
-  while (events.some((event) => event.status === 'detected' && sameLocalDay(event.requestedAt, day))) {
+  while (events.some((event) => isSuccessfulVerification(event) && sameLocalDay(event.requestedAt, day))) {
     streak += 1;
     day.setDate(day.getDate() - 1);
   }
