@@ -1,6 +1,34 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { analyzeGeminiResponse, analyzeWithGemini, extractJsonPayload, localizeAnalysisReason, normalizeAnalysisResult, routeAnalysisStatusForReview } from './analysis.js';
+import {
+  analyzeGeminiResponse,
+  analyzePhotoChecklistWithGemini,
+  analyzeWithGemini,
+  extractJsonPayload,
+  isCurrentAnalysisAttempt,
+  localizeAnalysisReason,
+  normalizeAnalysisResult,
+  normalizePhotoChecklistAnalysis,
+  routeAnalysisStatusForReview,
+  unavailablePhotoChecklistAnalysis,
+} from './analysis.js';
+import type { RoutinePhotoChecklistCriterion } from './routines.js';
+
+const photoChecklistCriteria: RoutinePhotoChecklistCriterion[] = [
+  { id: 'required-elastic', label: 'Required elastic', criterion: 'The required elastic is attached.', required: true },
+  { id: 'optional-case', label: 'Optional case', criterion: 'The storage case is visible.', required: false },
+];
+
+const checklistPayload = (
+  requiredStatus: 'detected' | 'not_detected' | 'uncertain' = 'detected',
+  optionalStatus: 'detected' | 'not_detected' | 'uncertain' = 'detected',
+) => ({
+  imageQuality: 0.91,
+  items: [
+    { criterionId: 'required-elastic', status: requiredStatus, confidence: 0.94, reason: 'Required elastic is visible.' },
+    { criterionId: 'optional-case', status: optionalStatus, confidence: 0.88, reason: 'Case result is visible.' },
+  ],
+});
 
 test('routes every negative AI verdict with proof to responsible review', () => {
   assert.deepEqual(routeAnalysisStatusForReview('not_detected', true), {
@@ -15,6 +43,99 @@ test('routes every negative AI verdict with proof to responsible review', () => 
   assert.deepEqual(routeAnalysisStatusForReview('not_detected', false), {
     status: 'not_detected', automatedStatus: 'not_detected', reviewRequired: false,
   });
+});
+
+test('accepts exactly one result per frozen criterion and derives the aggregate on the server', () => {
+  assert.deepEqual(normalizePhotoChecklistAnalysis(
+    checklistPayload('detected', 'not_detected'),
+    photoChecklistCriteria,
+    { model: 'gemini-test-model' },
+  ), {
+    status: 'detected',
+    imageQuality: 0.91,
+    items: [
+      {
+        criterionId: 'required-elastic',
+        status: 'detected',
+        confidence: 0.94,
+        reason: 'Required elastic is visible.',
+        decision: { source: 'ai' },
+      },
+      {
+        criterionId: 'optional-case',
+        status: 'not_detected',
+        confidence: 0.88,
+        reason: 'Case result is visible.',
+        decision: { source: 'ai' },
+      },
+    ],
+    provider: 'gemini',
+    model: 'gemini-test-model',
+    promptVersion: 'photo-checklist-v1',
+  });
+  assert.equal(normalizePhotoChecklistAnalysis(
+    checklistPayload('not_detected'),
+    photoChecklistCriteria,
+    { model: 'gemini-test-model' },
+  ).status, 'not_detected');
+  assert.equal(normalizePhotoChecklistAnalysis(
+    checklistPayload('uncertain'),
+    photoChecklistCriteria,
+    { model: 'gemini-test-model' },
+  ).status, 'uncertain');
+});
+
+test('rejects missing, duplicate, unknown, malformed, oversized, and model aggregate checklist output', () => {
+  const valid = checklistPayload();
+  const invalid: unknown[] = [
+    { ...valid, items: valid.items.slice(0, 1) },
+    { ...valid, items: [valid.items[0], valid.items[0]] },
+    { ...valid, items: [valid.items[0], { ...valid.items[1], criterionId: 'unknown' }] },
+    { ...valid, items: [valid.items[0], { ...valid.items[1], confidence: 2 }] },
+    { ...valid, items: [valid.items[0], { ...valid.items[1], reason: 'x'.repeat(221) }] },
+    { ...valid, items: Array.from({ length: 7 }, (_, index) => ({ ...valid.items[0], criterionId: `item-${index}` })) },
+    { ...valid, status: 'detected' },
+  ];
+  for (const candidate of invalid) {
+    assert.throws(
+      () => normalizePhotoChecklistAnalysis(candidate, photoChecklistCriteria, { model: 'gemini-test-model' }),
+    );
+  }
+});
+
+test('forces ambiguous required criteria to review when image quality is low', () => {
+  const result = normalizePhotoChecklistAnalysis(
+    { ...checklistPayload(), imageQuality: 0.49 },
+    photoChecklistCriteria,
+    { model: 'gemini-test-model' },
+  );
+  assert.equal(result.status, 'uncertain');
+  assert.equal(result.items[0].status, 'uncertain');
+  assert.equal(result.items[1].status, 'detected');
+});
+
+test('returns a complete privacy-safe fallback after provider or structural failure', () => {
+  assert.deepEqual(unavailablePhotoChecklistAnalysis(photoChecklistCriteria, 'gemini-test-model'), {
+    status: 'uncertain',
+    imageQuality: 0,
+    items: photoChecklistCriteria.map((criterion) => ({
+      criterionId: criterion.id,
+      status: 'uncertain',
+      confidence: 0,
+      reason: 'analysis_unavailable',
+      decision: { source: 'fallback' },
+    })),
+    provider: 'gemini',
+    model: 'gemini-test-model',
+    promptVersion: 'photo-checklist-v1',
+  });
+});
+
+test('only allows the matching in-flight attempt to write analysis results', () => {
+  assert.equal(isCurrentAnalysisAttempt({ status: 'analyzing', capturedAt: 'capture-1' }, 'capture-1'), true);
+  assert.equal(isCurrentAnalysisAttempt({ status: 'analyzing', capturedAt: 'capture-2' }, 'capture-1'), false);
+  assert.equal(isCurrentAnalysisAttempt({ status: 'detected', capturedAt: 'capture-1' }, 'capture-1'), false);
+  assert.equal(isCurrentAnalysisAttempt(undefined, 'capture-1'), false);
 });
 
 test('extracts and normalizes a Gemini JSON payload', () => {
@@ -106,6 +227,83 @@ test('calls Gemini with the expected payload and returns a conforming analysis r
     imageQuality: 0.95,
     reason: 'clear',
   });
+});
+
+test('asks Gemini for criterion-only checklist output and preserves analysis metadata', async () => {
+  let sentBody: {
+    contents?: Array<{ parts?: Array<{ text?: string }> }>;
+    generationConfig?: {
+      maxOutputTokens?: number;
+      responseSchema?: {
+        required?: string[];
+        properties?: { items?: { minItems?: number; maxItems?: number; items?: { properties?: { criterionId?: { enum?: string[] } } } } };
+      };
+    };
+  } = {};
+  const result = await analyzePhotoChecklistWithGemini('data:image/png;base64,AAAA', {
+    model: 'gemini-test-model',
+    locale: 'fr',
+    prompt: 'Photographie les élastiques.',
+    criteria: photoChecklistCriteria,
+    getAccessToken: async () => 'token-123',
+    fetchImpl: async (_input, init) => {
+      sentBody = JSON.parse(String(init?.body));
+      return new Response(JSON.stringify({
+        candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify(checklistPayload()) }] } }],
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    },
+  });
+
+  const prompt = sentBody.contents?.[0]?.parts?.[0]?.text ?? '';
+  assert.match(prompt, /Photographie les élastiques/);
+  assert.match(prompt, /Criterion ID: required-elastic/);
+  assert.match(prompt, /Do not return an aggregate or global status/);
+  assert.match(prompt, /natural French/);
+  assert.equal(sentBody.generationConfig?.maxOutputTokens, 1_536);
+  assert.deepEqual(sentBody.generationConfig?.responseSchema?.required, ['imageQuality', 'items']);
+  assert.equal(sentBody.generationConfig?.responseSchema?.properties?.items?.minItems, 2);
+  assert.equal(sentBody.generationConfig?.responseSchema?.properties?.items?.maxItems, 2);
+  assert.deepEqual(
+    sentBody.generationConfig?.responseSchema?.properties?.items?.items?.properties?.criterionId?.enum,
+    ['required-elastic', 'optional-case'],
+  );
+  assert.equal(result.provider, 'gemini');
+  assert.equal(result.model, 'gemini-test-model');
+  assert.equal(result.promptVersion, 'photo-checklist-v1');
+});
+
+test('retries a negative checklist verdict and keeps the first complete result if retry fails', async () => {
+  let callCount = 0;
+  const result = await analyzePhotoChecklistWithGemini('data:image/png;base64,AAAA', {
+    model: 'gemini-test-model',
+    prompt: 'Take a photo.',
+    criteria: photoChecklistCriteria,
+    getAccessToken: async () => 'token-123',
+    fetchImpl: async () => {
+      callCount += 1;
+      if (callCount === 2) return new Response('provider unavailable', { status: 503 });
+      return new Response(JSON.stringify({
+        candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify(checklistPayload('not_detected')) }] } }],
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    },
+  });
+
+  assert.equal(callCount, 2);
+  assert.equal(result.status, 'not_detected');
+  assert.equal(result.items.length, photoChecklistCriteria.length);
+});
+
+test('surfaces an initial provider failure for the callable to convert into review', async () => {
+  await assert.rejects(
+    analyzePhotoChecklistWithGemini('data:image/png;base64,AAAA', {
+      model: 'gemini-test-model',
+      prompt: 'Take a photo.',
+      criteria: photoChecklistCriteria,
+      getAccessToken: async () => 'token-123',
+      fetchImpl: async () => new Response('provider unavailable', { status: 503 }),
+    }),
+    /status 503/,
+  );
 });
 
 test('asks Gemini to answer in the requested locale', async () => {

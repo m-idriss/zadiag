@@ -27,6 +27,7 @@ export type RoutineResponseDefinition =
 export type PhotoChecklistItemStatus = 'detected' | 'not_detected' | 'uncertain';
 export type PhotoChecklistDecision =
   | { source: 'ai' }
+  | { source: 'fallback' }
   | { source: 'responsible'; actorUid: string; decidedAt: string };
 export interface PhotoChecklistItemResult {
   criterionId: string;

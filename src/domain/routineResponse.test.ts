@@ -50,6 +50,13 @@ describe('routine response definitions', () => {
       { criterionId: 'lower-elastic', status: 'uncertain', confidence: 0.45, reason: 'Partly hidden.', decision: { source: 'responsible', actorUid: 'owner-1', decidedAt: '2026-07-23T18:00:00.000Z' } },
     ];
     expect(parsePhotoChecklistItemResults(results)).toEqual(results);
+    expect(parsePhotoChecklistItemResults([
+      results[0],
+      { ...results[1], decision: { source: 'fallback' } },
+    ])).toEqual([
+      results[0],
+      { ...results[1], decision: { source: 'fallback' } },
+    ]);
     expect(parsePhotoChecklistItemResults([results[0], { ...results[1], criterionId: 'upper-elastic' }])).toBeUndefined();
     expect(parsePhotoChecklistItemResults([results[0], { ...results[1], confidence: 2 }])).toBeUndefined();
   });

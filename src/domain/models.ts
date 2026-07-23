@@ -185,6 +185,7 @@ export type RoutineResponseSubmission =
 export type PhotoChecklistItemStatus = 'detected' | 'not_detected' | 'uncertain';
 export type PhotoChecklistDecision =
   | { source: 'ai' }
+  | { source: 'fallback' }
   | { source: 'responsible'; actorUid: string; decidedAt: string };
 export interface PhotoChecklistItemResult {
   criterionId: string;
@@ -225,6 +226,9 @@ export interface VerificationEvent extends RoutineTask {
   quizResult?: RoutineQuizResult;
   photoChecklistItems?: PhotoChecklistItemResult[];
   analysisSource?: 'ai' | 'fallback' | 'self';
+  analysisProvider?: string;
+  analysisModel?: string;
+  analysisPromptVersion?: string;
   automatedStatus?: Extract<VerificationStatus, 'detected' | 'not_detected' | 'uncertain'>;
   confidence?: number;
   imageQuality?: number;
@@ -326,6 +330,9 @@ export const parsePhotoChecklistItemResults = (value: unknown): PhotoChecklistIt
     const decision = entry.decision as Record<string, unknown>;
     if (decision.source === 'ai' && exactKeys(decision, ['source'])) {
       return [{ criterionId: String(entry.criterionId), status: entry.status as PhotoChecklistItemStatus, confidence: Number(entry.confidence), reason: String(entry.reason), decision: { source: 'ai' as const } }];
+    }
+    if (decision.source === 'fallback' && exactKeys(decision, ['source'])) {
+      return [{ criterionId: String(entry.criterionId), status: entry.status as PhotoChecklistItemStatus, confidence: Number(entry.confidence), reason: String(entry.reason), decision: { source: 'fallback' as const } }];
     }
     if (decision.source === 'responsible' && exactKeys(decision, ['source', 'actorUid', 'decidedAt'])
       && nonEmptyString(decision.actorUid, 128) && nonEmptyString(decision.decidedAt, 40)
