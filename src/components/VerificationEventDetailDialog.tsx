@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { Locale, VerificationEvent } from '../domain/models';
+import type { Locale, ReviewCheckDecision, VerificationEvent } from '../domain/models';
 import { isReviewableVerification } from '../domain/adherence';
 import type { MessageKey } from '../services/i18n';
 import { languageTag } from '../services/locale';
@@ -14,7 +14,7 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
   locale: Locale;
   proofUrl?: string;
   getProofImageUrl?: (eventId: string) => Promise<string>;
-  reviewCheck?: (eventId: string, decision: 'detected' | 'not_detected') => Promise<void>;
+  reviewCheck?: (eventId: string, decision: ReviewCheckDecision) => Promise<void>;
   requestCheck?: (routineId: string) => Promise<void>;
   onClose: () => void;
   t: (key: MessageKey) => string;
@@ -25,6 +25,7 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
   const [detailsExpanded, setDetailsExpanded] = useState(() => ['approved', 'rejected'].includes(event.reviewStatus ?? ''));
   const [reviewing, setReviewing] = useState(false);
   const [reviewError, setReviewError] = useState(false);
+  const [itemReviews, setItemReviews] = useState<Record<string, { status?: 'detected' | 'not_detected'; reason: string }>>({});
   const [requestStatus, setRequestStatus] = useState<'sending' | 'sent' | 'error'>();
   const proofUrl = providedProofUrl ?? loadedProofUrl;
   const canReview = Boolean(reviewCheck) && isReviewableVerification(event);
@@ -55,6 +56,11 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
   const photoChecklist = event.challenge?.response.kind === 'photo_checklist'
     ? event.challenge.response
     : undefined;
+  const unresolvedChecklistItems = event.photoChecklistItems?.filter((item) => item.status === 'uncertain') ?? [];
+  const checklistReviewComplete = unresolvedChecklistItems.length > 0 && unresolvedChecklistItems.every((item) => {
+    const review = itemReviews[item.criterionId];
+    return review?.status && review.reason.trim().length > 0 && review.reason.trim().length <= 220;
+  });
 
   useEffect(() => {
     if (providedProofUrl || !event.proofImagePath || !getProofImageUrl) return;
@@ -83,6 +89,25 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
       setReviewing(false);
     }
   };
+  const decideChecklist = async () => {
+    if (!reviewCheck || !checklistReviewComplete) return;
+    setReviewing(true);
+    setReviewError(false);
+    try {
+      await reviewCheck(event.id, {
+        itemDecisions: unresolvedChecklistItems.map((item) => ({
+          criterionId: item.criterionId,
+          status: itemReviews[item.criterionId].status!,
+          reason: itemReviews[item.criterionId].reason.trim(),
+        })),
+      });
+    } catch (error) {
+      console.error(error);
+      setReviewError(true);
+    } finally {
+      setReviewing(false);
+    }
+  };
   const request = async () => {
     if (!requestCheck) return;
     setRequestStatus('sending');
@@ -103,15 +128,47 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
           <button type="button" data-autofocus aria-label={t('close')} onClick={onClose}><AppIcon name="close" /></button>
         </header>
         {photoChecklist && event.photoChecklistItems ? (
-          <PhotoChecklistSummary criteria={photoChecklist.criteria} results={event.photoChecklistItems} title={t('photoChecklistHistoryItems')} t={t} />
-        ) : null}
-        {event.proofImagePath ? <div className="history-detail-proof">{proofUrl
+          <div className="history-detail-review-context">
+            <PhotoChecklistSummary criteria={photoChecklist.criteria} results={event.photoChecklistItems} title={t('photoChecklistHistoryItems')} t={t} />
+            {event.proofImagePath ? <div className="history-detail-proof">{proofUrl
+              ? <img src={proofUrl} alt={t('responsibleReviewImageAlt')} />
+              : proofError
+                ? <span role="alert">{t('responsibleReviewImageError')}</span>
+                : <span className="history-detail-proof-loading" role="status"><span className="button-spinner" aria-hidden="true" />{t('loadingProofImage')}</span>}
+            </div> : null}
+          </div>
+        ) : event.proofImagePath ? <div className="history-detail-proof">{proofUrl
           ? <img src={proofUrl} alt={t('responsibleReviewImageAlt')} />
           : proofError
             ? <span role="alert">{t('responsibleReviewImageError')}</span>
             : <span className="history-detail-proof-loading" role="status"><span className="button-spinner" aria-hidden="true" />{t('loadingProofImage')}</span>}
         </div> : null}
-        {canReview ? (
+        {canReview && photoChecklist && unresolvedChecklistItems.length ? (
+          <div className="photo-checklist-review">
+            <p>{t('photoChecklistReviewHint')}</p>
+            {reviewError ? <p className="request-feedback error" role="alert">{t('responsibleReviewError')}</p> : null}
+            {unresolvedChecklistItems.map((item) => {
+              const criterion = photoChecklist.criteria.find((candidate) => candidate.id === item.criterionId);
+              const review = itemReviews[item.criterionId] ?? { reason: '' };
+              return (
+                <fieldset key={item.criterionId} disabled={reviewing}>
+                  <legend>{criterion?.label ?? item.criterionId}</legend>
+                  <div>
+                    <button type="button" aria-pressed={review.status === 'not_detected'} onClick={() => setItemReviews((current) => ({ ...current, [item.criterionId]: { ...review, status: 'not_detected' } }))}>{t('photoChecklistReviewMissing')}</button>
+                    <button type="button" aria-pressed={review.status === 'detected'} onClick={() => setItemReviews((current) => ({ ...current, [item.criterionId]: { ...review, status: 'detected' } }))}>{t('photoChecklistReviewDetected')}</button>
+                  </div>
+                  <label>
+                    <span>{t('photoChecklistReviewReason')}</span>
+                    <textarea maxLength={220} value={review.reason} onChange={(changeEvent) => setItemReviews((current) => ({ ...current, [item.criterionId]: { ...review, reason: changeEvent.target.value } }))} />
+                  </label>
+                </fieldset>
+              );
+            })}
+            <button type="button" className="photo-checklist-review-submit" disabled={reviewing || !checklistReviewComplete} onClick={() => { void decideChecklist(); }}>
+              {reviewing ? t('saving') : t('photoChecklistReviewSubmit')}
+            </button>
+          </div>
+        ) : canReview && !photoChecklist ? (
           <div className="history-detail-review-actions">
             {reviewError ? <p className="request-feedback error" role="alert">{t('responsibleReviewError')}</p> : null}
             <div>

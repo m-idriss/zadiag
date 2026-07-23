@@ -4,6 +4,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['rules-tests/**/*.test.ts'],
+    fileParallelism: false,
     testTimeout: 15_000,
     hookTimeout: 15_000,
   },

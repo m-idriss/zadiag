@@ -1,7 +1,7 @@
 {
   "name": "zadiag-pwa",
   "private": true,
-  "version": "0.10.22",
+  "version": "0.10.23",
   "type": "module",
   "packageManager": "pnpm@11.7.0",
   "engines": {
@@ -21,7 +21,7 @@
     "icons": "node scripts/generate-icons.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest run",
-    "test:rules": "firebase emulators:exec --only firestore \"vitest run --config vitest.rules.config.ts\"",
+    "test:rules": "firebase emulators:exec --only firestore,storage \"vitest run --config vitest.rules.config.ts\"",
     "test:watch": "vitest"
   },
   "dependencies": {

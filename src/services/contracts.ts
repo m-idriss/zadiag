@@ -1,4 +1,4 @@
-import type { AppPreferences, AppState, Locale, MembershipRole, MonitoringPlan, ParticipantMember, PilotParticipation, ProfileColorKey, Role, RoutineAppearance, RoutineResponseSubmission, RoutineValidationMode, VerificationEvent } from '../domain/models';
+import type { AppPreferences, AppState, Locale, MembershipRole, MonitoringPlan, ParticipantMember, PilotParticipation, ProfileColorKey, ReviewCheckDecision, Role, RoutineAppearance, RoutineResponseSubmission, RoutineValidationMode, VerificationEvent } from '../domain/models';
 import type { PublishedRoutineVersion, RoutineCatalogEntry, RoutineDraft, RoutinePackageV1 } from '../domain/routineDraft';
 
 export type AiRoutineResponseKind = 'photo' | 'confirmation' | 'checklist' | 'quiz';
@@ -84,7 +84,7 @@ export interface AppRepository {
   prepareQuizChallenge(sessionId: string): Promise<VerificationEvent>;
   reportQuizQuestion(sessionId: string, questionId: string): Promise<void>;
   getProofImageUrl(eventId: string): Promise<string>;
-  reviewCheck(eventId: string, decision: 'detected' | 'not_detected'): Promise<VerificationEvent>;
+  reviewCheck(eventId: string, decision: ReviewCheckDecision): Promise<VerificationEvent>;
   retryRemoteSync?(): Promise<void>;
   reset(): Promise<void>;
 }

@@ -28,6 +28,13 @@ export function PhotoChecklistSummary({
         {criteria.map((criterion) => {
           const result = resultById.get(criterion.id);
           const statusLabel = result ? t(itemStatusKey(result.status)) : undefined;
+          const decisionLabel = result
+            ? t(result.decision.source === 'responsible'
+              ? 'photoChecklistDecisionResponsible'
+              : result.decision.source === 'fallback'
+                ? 'photoChecklistDecisionFallback'
+                : 'photoChecklistDecisionAi')
+            : undefined;
           return (
             <li
               key={criterion.id}
@@ -40,6 +47,7 @@ export function PhotoChecklistSummary({
               <span className="photo-checklist-item-copy">
                 <strong>{criterion.label}</strong>
                 {statusLabel ? <small>{statusLabel}</small> : null}
+                {decisionLabel ? <small>{decisionLabel}</small> : null}
               </span>
             </li>
           );

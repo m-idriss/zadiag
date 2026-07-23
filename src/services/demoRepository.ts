@@ -655,10 +655,41 @@ export class DemoRepository implements AppRepository {
     ].join(''));
   }
 
-  async reviewCheck(eventId: string, decision: 'detected' | 'not_detected') {
+  async reviewCheck(eventId: string, decision: import('../domain/models').ReviewCheckDecision) {
     const event = this.state.events.find((item) => item.id === eventId);
-    if (!event || event.status !== 'uncertain') throw new Error('check_not_reviewable');
+    if (!event) throw new Error('check_not_reviewable');
     const reviewedAt = new Date().toISOString();
+    if (typeof decision !== 'string') {
+      if (event.status !== 'uncertain') {
+        const repeated = decision.itemDecisions.every((reviewed) => {
+          const item = event.photoChecklistItems?.find((candidate) => candidate.criterionId === reviewed.criterionId);
+          return item?.decision.source === 'responsible'
+            && item.status === reviewed.status
+            && item.reason === reviewed.reason.trim();
+        });
+        if (repeated) return structuredClone(event);
+        throw new Error('check_not_reviewable');
+      }
+      const decisions = new Map(decision.itemDecisions.map((item) => [item.criterionId, item]));
+      event.photoChecklistItems = event.photoChecklistItems?.map((item) => {
+        const reviewed = decisions.get(item.criterionId);
+        if (!reviewed) return item;
+        if (item.status !== 'uncertain') throw new Error('check_not_reviewable');
+        const reason = reviewed.reason.trim();
+        if (!reason || reason.length > 220) throw new Error('invalid_review_reason');
+        return { ...item, status: reviewed.status, confidence: 1, reason, decision: { source: 'responsible', actorUid: 'demo-parent', decidedAt: reviewedAt } };
+      });
+      if (event.photoChecklistItems?.some((item) => item.status === 'uncertain')) {
+        this.persist();
+        return structuredClone(event);
+      }
+      const criteria = event.challenge?.response.kind === 'photo_checklist' ? event.challenge.response.criteria : [];
+      decision = criteria.some((criterion) => criterion.required
+        && event.photoChecklistItems?.find((item) => item.criterionId === criterion.id)?.status === 'not_detected')
+        ? 'not_detected'
+        : 'detected';
+    }
+    if (event.status !== 'uncertain') throw new Error('check_not_reviewable');
     Object.assign(event, {
       status: decision,
       reviewStatus: decision === 'detected' ? 'approved' : 'rejected',
@@ -669,6 +700,8 @@ export class DemoRepository implements AppRepository {
         at: reviewedAt, actorUid: 'demo-parent', actorName: this.state.accountDisplayName ?? 'Responsable démo',
       }],
     });
+    delete event.proofImagePath;
+    delete event.proofImageExpiresAt;
     this.persist();
     return structuredClone(event);
   }

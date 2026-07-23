@@ -9,7 +9,7 @@ import {
 import { collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, setDoc, updateDoc, where } from 'firebase/firestore';
 import { afterAll, beforeAll, beforeEach, describe, test } from 'vitest';
 
-const projectId = 'zadiag-rules-test';
+const projectId = 'zadiag-22482';
 let environment: RulesTestEnvironment;
 
 beforeAll(async () => {

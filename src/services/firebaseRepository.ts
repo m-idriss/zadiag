@@ -11,7 +11,6 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
-import { getDownloadURL, ref as storageRef } from 'firebase/storage';
 import type { AiAuthoringCapabilities, AiRoutineProposal, AiRoutineResponseKind, AppRepository, JourneySource, JourneyStage, StartupProgressReporter } from './contracts';
 import { routineUpdatePayload } from './routineUpdate';
 import { getFirebaseServices, type FirebaseServices } from './firebaseClient';
@@ -751,43 +750,33 @@ export class FirebaseRepository implements AppRepository {
   }
 
   async getProofImageUrl(eventId: string) {
-    if (!this.state.family.id || !this.activeAccessCan('view')) throw new Error('permission_denied');
+    if (!this.state.family.id || !this.activeAccessCan('reviewProofs')) throw new Error('permission_denied');
     const getProofImageUrl = httpsCallable<{ familyId: string; checkId: string }, { url: string }>(
       this.services.functions,
       'getProofImageUrl',
     );
-    try {
-      const result = await getProofImageUrl({ familyId: this.state.family.id, checkId: eventId });
-      return result.data.url;
-    } catch (error) {
-      const event = this.state.events.find((item) => item.id === eventId);
-      const candidatePaths = [
-        ...(event?.proofImagePath ? [event.proofImagePath] : []),
-        `families/${this.state.family.id}/checks/${eventId}/proof.jpg`,
-        `families/${this.state.family.id}/checks/${eventId}/proof.png`,
-        `families/${this.state.family.id}/checks/${eventId}/proof.webp`,
-      ];
-      for (const candidatePath of [...new Set(candidatePaths)]) {
-        try {
-          return await getDownloadURL(storageRef(this.services.storage, candidatePath));
-        } catch {
-          // Try the next known proof image extension.
-        }
-      }
-      throw error;
-    }
+    const result = await getProofImageUrl({ familyId: this.state.family.id, checkId: eventId });
+    return result.data.url;
   }
 
-  async reviewCheck(eventId: string, decision: 'detected' | 'not_detected') {
+  async reviewCheck(eventId: string, decision: import('../domain/models').ReviewCheckDecision) {
     if (!this.state.family.id || !this.activeAccessCan('reviewProofs')) throw new Error('permission_denied');
     const familyId = this.state.family.id;
-    const result = await coalesceInFlight(this.inFlightCallables, `reviewCheck:${familyId}:${eventId}:${decision}`, async () => {
+    const decisionKey = typeof decision === 'string'
+      ? decision
+      : decision.itemDecisions.map((item) => `${item.criterionId}:${item.status}:${item.reason}`).join('|');
+    const result = await coalesceInFlight(this.inFlightCallables, `reviewCheck:${familyId}:${eventId}:${decisionKey}`, async () => {
       const reviewCheck = httpsCallable<{
         familyId: string;
         checkId: string;
-        decision: 'detected' | 'not_detected';
+        decision?: 'detected' | 'not_detected';
+        itemDecisions?: Extract<import('../domain/models').ReviewCheckDecision, object>['itemDecisions'];
       }, VerificationEvent>(this.services.functions, 'reviewCheck');
-      return reviewCheck({ familyId, checkId: eventId, decision });
+      return reviewCheck({
+        familyId,
+        checkId: eventId,
+        ...(typeof decision === 'string' ? { decision } : decision),
+      });
     });
     this.state.events = this.state.events.map((item) => item.id === result.data.id ? result.data : item);
     this.emit();

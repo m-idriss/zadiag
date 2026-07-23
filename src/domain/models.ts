@@ -195,6 +195,17 @@ export interface PhotoChecklistItemResult {
   decision: PhotoChecklistDecision;
 }
 
+export type ReviewCheckDecision =
+  | 'detected'
+  | 'not_detected'
+  | {
+      itemDecisions: Array<{
+        criterionId: string;
+        status: 'detected' | 'not_detected';
+        reason: string;
+      }>;
+    };
+
 export interface RoutineQuizResult {
   score: number;
   correctCount: number;
