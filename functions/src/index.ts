@@ -2817,7 +2817,10 @@ export const updateRoutineAssignment = onCall({
       throw new HttpsError('invalid-argument', 'The validation mode is invalid.');
     }
     const validationMode = isRoutineValidationMode(rawValidationMode) ? rawValidationMode : undefined;
-    const appearanceIcons = new Set(['sparkles', 'tooth', 'water', 'medical', 'fitness', 'camera', 'pulse', 'star']);
+    const appearanceIcons = new Set([
+      'sparkles', 'tooth', 'water', 'medical', 'fitness', 'camera', 'pulse',
+      'star', 'check', 'eye', 'calendar', 'time', 'today', 'send', 'home', 'notifications',
+    ]);
     const appearance = rawAppearance && typeof rawAppearance === 'object' && !Array.isArray(rawAppearance)
       && typeof rawAppearance.name === 'string' && rawAppearance.name.trim().length > 0 && rawAppearance.name.trim().length <= 120
       && typeof rawAppearance.icon === 'string' && appearanceIcons.has(rawAppearance.icon)

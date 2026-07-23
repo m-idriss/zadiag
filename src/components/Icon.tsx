@@ -114,5 +114,10 @@ export const routineIconName = (icon?: string): AppIconName => {
   if (normalizedIcon === 'pulse') return 'pulse';
   if (normalizedIcon === 'eye') return 'eye';
   if (normalizedIcon === 'star') return 'star';
+  if (normalizedIcon === 'calendar') return 'calendar';
+  if (normalizedIcon === 'time') return 'time';
+  if (normalizedIcon === 'today') return 'today';
+  if (normalizedIcon === 'home') return 'home';
+  if (normalizedIcon === 'notifications') return 'notifications';
   return 'sparkles';
 };
