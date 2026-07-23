@@ -16,6 +16,8 @@ describe('routine icons', () => {
     expect(routineIconName('eye')).toBe('eye');
     expect(routineIconName('send')).toBe('send');
     expect(routineIconName('fitness')).toBe('fitness');
+    expect(routineIconName('calendar')).toBe('calendar');
+    expect(routineIconName('notifications')).toBe('notifications');
     expect(routineIconName('unknown-community-icon')).toBe('sparkles');
   });
 });

@@ -4,7 +4,7 @@ import { adherenceSummary, isSuccessfulVerification, withResolvedEventStatuses }
 import { presentRoutine } from '../domain/routinePresentation';
 import type { AppState, RoutineAppearance, RoutineAssignment, RoutineValidationMode, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
-import { AppIcon, routineIconName } from '../components/Icon';
+import { AppIcon, routineIconName, type AppIconName } from '../components/Icon';
 import { StatusPill } from '../components/StatusPill';
 import { RoutineEditScreen } from './RoutineEditScreen';
 import { SvgIcon } from '../components/SvgIcon';
@@ -156,7 +156,10 @@ function RoutineContentEditButton({ label, target, busy, onEdit }: {
   return <button type="button" className="routine-content-edit-overlay" aria-label={label} aria-busy={busy} disabled={busy} onClick={() => onEdit(target)}><SvgIcon icon={chevronForwardOutline} /></button>;
 }
 
-const routineAppearanceIcons = ['sparkles', 'tooth', 'water', 'medical', 'fitness', 'camera', 'pulse', 'star'] as const;
+const routineAppearanceIcons: AppIconName[] = [
+  'sparkles', 'tooth', 'water', 'medical', 'fitness', 'camera', 'pulse',
+  'star', 'check', 'eye', 'calendar', 'time', 'today', 'send', 'home', 'notifications',
+];
 
 export function RoutineDetailScreen({ assignment, state, back, start, getProofImageUrl, reviewCheck, requestCheck, t, edit, initialTab, initialEventId, onInitialEventConsumed, onSaveMonitoringPlan, onSaveAppearance, onForkContent, forkingContent, routinePlanBusy }: {
   assignment: RoutineAssignment;
@@ -188,6 +191,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
     accentColor: /^#[0-9a-f]{6}$/i.test(assignment.routine.accentColor ?? '') ? assignment.routine.accentColor! : DEFAULT_PRIVATE_ROUTINE_ACCENT,
   }));
   const [appearanceStatus, setAppearanceStatus] = useState<'saving' | 'saved' | 'error'>();
+  const [appearanceEditing, setAppearanceEditing] = useState(false);
   const todayHeatmapRef = useRef<HTMLSpanElement | null>(null);
   const now = Date.now();
   const rawEvents = state.events.filter((event) => event.routineId === assignment.routineId);
@@ -210,6 +214,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
     try {
       await onSaveAppearance({ ...appearance, name: appearance.name.trim(), accentColor: appearance.accentColor.toUpperCase() });
       setAppearanceStatus('saved');
+      setAppearanceEditing(false);
     } catch {
       setAppearanceStatus('error');
     }
@@ -269,14 +274,6 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
 
   const detailsPanel = (
     <div className="routine-tab-panel">
-      {edit && onSaveAppearance ? <section className="card routine-appearance-editor">
-        <h2>{t('routineAppearanceTitle')}</h2>
-        <label className="native-input-field"><span>{t('routineDraftName')}</span><input value={appearance.name} maxLength={120} onChange={(event) => { setAppearance((current) => ({ ...current, name: event.target.value })); setAppearanceStatus(undefined); }} /></label>
-        <fieldset><legend>{t('routineIcon')}</legend><div className="routine-icon-options">{routineAppearanceIcons.map((icon) => <button type="button" key={icon} className={appearance.icon === icon ? 'selected' : ''} aria-pressed={appearance.icon === icon} aria-label={`${t('routineIcon')} · ${icon}`} onClick={() => { setAppearance((current) => ({ ...current, icon })); setAppearanceStatus(undefined); }}><AppIcon name={icon} /></button>)}</div></fieldset>
-        <label className="routine-appearance-color"><span>{t('routineDraftAccentColor')}</span><input type="color" value={appearance.accentColor} onChange={(event) => { setAppearance((current) => ({ ...current, accentColor: event.target.value.toUpperCase() })); setAppearanceStatus(undefined); }} /></label>
-        <button type="button" className="primary-action-button" disabled={!appearance.name.trim() || appearanceStatus === 'saving'} onClick={() => { void saveAppearance(); }}>{t(appearanceStatus === 'saving' ? 'saving' : 'save')}</button>
-        {appearanceStatus === 'saved' ? <p role="status">{t('routineAppearanceSaved')}</p> : appearanceStatus === 'error' ? <p role="alert" className="form-error">{t('routineAppearanceError')}</p> : null}
-      </section> : null}
       <section className={`routine-copy${canEditContent ? ' routine-content-editable' : ''}`}><h2>{t('routineSummary')}</h2><p>{visual.description}</p>{canEditContent ? <RoutineContentEditButton label={editLabel(t('routineSummary'))} target={{ kind: 'description' }} busy={Boolean(forkingContent)} onEdit={onForkContent!} /> : null}</section>
       <section className="routine-meta-card">
         <div className={canEditContent ? 'routine-content-editable' : undefined}><span aria-hidden="true"><SvgIcon icon={cameraOutline} /></span><b>{t('expectedProof')}</b><p>{visual.proofType}</p>{canEditContent ? <RoutineContentEditButton label={editLabel(t('expectedProof'))} target={{ kind: 'proof' }} busy={Boolean(forkingContent)} onEdit={onForkContent!} /> : null}</div>
@@ -333,16 +330,25 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
     <div className="content-screen routine-detail-screen" style={visual.style} aria-busy={forkingContent || undefined}>
       <div className="routine-detail-topbar">
         <button type="button" className="detail-back" onClick={back} aria-label={t('backToRoutines')}><SvgIcon icon={chevronBackOutline} /></button>
-        <header className={`routine-detail-hero${canEditContent ? ' routine-content-editable' : ''}`}>
+        {edit && onSaveAppearance ? <button type="button" className="routine-detail-hero routine-appearance-trigger" aria-expanded={appearanceEditing} aria-label={t('routineAppearanceEdit')} onClick={() => setAppearanceEditing((editing) => !editing)}>
           <span className="routine-hero-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
           <div className="routine-detail-title">
             <h1>{visual.name}</h1>
             <p>{assignment.plan.checksPerDay} {t('checksDay')}</p>
           </div>
-          {canEditContent ? <RoutineContentEditButton label={editLabel(visual.name)} target={{ kind: 'identity' }} busy={Boolean(forkingContent)} onEdit={onForkContent!} /> : null}
-        </header>
+        </button> : <header className="routine-detail-hero">
+          <span className="routine-hero-icon" aria-hidden="true"><AppIcon name={routineIconName(visual.icon)} /></span>
+          <div className="routine-detail-title"><h1>{visual.name}</h1><p>{assignment.plan.checksPerDay} {t('checksDay')}</p></div>
+        </header>}
         <button type="button" className="more-button" aria-label={t('moreOptions')}><SvgIcon icon={ellipsisHorizontal} /></button>
       </div>
+      {appearanceEditing && edit && onSaveAppearance ? <section className="card routine-appearance-editor routine-appearance-top-editor">
+        <label className="native-input-field"><span>{t('routineDraftName')}</span><input value={appearance.name} maxLength={120} onChange={(event) => { setAppearance((current) => ({ ...current, name: event.target.value })); setAppearanceStatus(undefined); }} /></label>
+        <fieldset><legend>{t('routineIcon')}</legend><div className="routine-icon-options">{routineAppearanceIcons.map((icon) => <button type="button" key={icon} className={appearance.icon === icon ? 'selected' : ''} aria-pressed={appearance.icon === icon} aria-label={`${t('routineIcon')} · ${icon}`} onClick={() => { setAppearance((current) => ({ ...current, icon })); setAppearanceStatus(undefined); }}><AppIcon name={icon} /></button>)}</div></fieldset>
+        <label className="routine-appearance-color"><span>{t('routineDraftAccentColor')}</span><input type="color" value={appearance.accentColor} onChange={(event) => { setAppearance((current) => ({ ...current, accentColor: event.target.value.toUpperCase() })); setAppearanceStatus(undefined); }} /></label>
+        <div className="routine-appearance-actions"><button type="button" onClick={() => setAppearanceEditing(false)}>{t('cancel')}</button><button type="button" className="primary-action-button" disabled={!appearance.name.trim() || appearanceStatus === 'saving'} onClick={() => { void saveAppearance(); }}>{t(appearanceStatus === 'saving' ? 'saving' : 'save')}</button></div>
+        {appearanceStatus === 'saved' ? <p role="status">{t('routineAppearanceSaved')}</p> : appearanceStatus === 'error' ? <p role="alert" className="form-error">{t('routineAppearanceError')}</p> : null}
+      </section> : null}
       <nav className="routine-tabs" aria-label={t('routineSections')}>
         {tabs.map((item) => <button type="button" className={tab === item ? 'active' : ''} aria-current={tab === item ? 'page' : undefined} onClick={() => setTab(item)} key={item}>{t(item === 'details' ? 'infoTab' : item === 'plan' ? 'monitoringPlan' : 'trackingTab')}</button>)}
       </nav>
