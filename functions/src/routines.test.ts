@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { challengeForAssignment, createDefaultRoutineAssignment, createDraftRoutineAssignment, createRoutineAssignmentVersionChange, DEFAULT_ROUTINE_ID, derivePhotoChecklistStatus, isRoutineValidationMode, migrateCheckRoutineId, parseRoutineResponseSubmission, responseForRoutine, RoutineResponseInputError, routineAssignmentProvenance, shouldCreateDefaultRoutineAssignment } from './routines.js';
+import { applyPhotoChecklistReview, challengeForAssignment, createDefaultRoutineAssignment, createDraftRoutineAssignment, createRoutineAssignmentVersionChange, DEFAULT_ROUTINE_ID, derivePhotoChecklistStatus, isRoutineValidationMode, migrateCheckRoutineId, parseRoutineResponseSubmission, responseForRoutine, RoutineResponseInputError, routineAssignmentProvenance, shouldCreateDefaultRoutineAssignment } from './routines.js';
 
 const plan = {
   checksPerDay: 1,
@@ -141,4 +141,55 @@ test('derives photo checklist status only from required criteria', () => {
     { criterionId: 'required-b', status: 'detected' },
     { criterionId: 'unknown', status: 'detected' },
   ]), /invalid_photo_checklist_results/);
+});
+
+test('reviews unresolved photo checklist items and finalizes only after every item is resolved', () => {
+  const criteria = [
+    { id: 'required', label: 'Required', criterion: 'Visible.', required: true },
+    { id: 'optional', label: 'Optional', criterion: 'Visible.', required: false },
+  ];
+  const results = [
+    { criterionId: 'required', status: 'uncertain' as const, confidence: 0.4, reason: 'Unclear.', decision: { source: 'ai' as const } },
+    { criterionId: 'optional', status: 'uncertain' as const, confidence: 0.3, reason: 'Unclear.', decision: { source: 'ai' as const } },
+  ];
+  const reviewer = { actorUid: 'owner-1', decidedAt: '2026-07-23T20:00:00.000Z' };
+  const partial = applyPhotoChecklistReview(criteria, results, [
+    { criterionId: 'required', status: 'detected', reason: 'Visible on the retained proof.' },
+  ], reviewer);
+  assert.equal(partial.complete, false);
+  assert.equal(partial.status, 'uncertain');
+  assert.deepEqual(partial.items[0].decision, { source: 'responsible', ...reviewer });
+  assert.equal(partial.items[1].status, 'uncertain');
+
+  const complete = applyPhotoChecklistReview(criteria, partial.items, [
+    { criterionId: 'optional', status: 'not_detected', reason: 'The optional case is absent.' },
+  ], reviewer);
+  assert.equal(complete.complete, true);
+  assert.equal(complete.status, 'detected');
+});
+
+test('keeps repeated photo checklist reviews idempotent and rejects conflicts or clear AI overrides', () => {
+  const criteria = [
+    { id: 'required', label: 'Required', criterion: 'Visible.', required: true },
+    { id: 'optional', label: 'Optional', criterion: 'Visible.', required: false },
+  ];
+  const reviewer = { actorUid: 'owner-1', decidedAt: '2026-07-23T20:00:00.000Z' };
+  const resolved = [
+    { criterionId: 'required', status: 'detected' as const, confidence: 1, reason: 'Visible.', decision: { source: 'responsible' as const, ...reviewer } },
+    { criterionId: 'optional', status: 'detected' as const, confidence: 0.9, reason: 'Visible.', decision: { source: 'ai' as const } },
+  ];
+  const repeated = applyPhotoChecklistReview(criteria, resolved, [
+    { criterionId: 'required', status: 'detected', reason: 'Visible.' },
+  ], { actorUid: 'owner-2', decidedAt: '2026-07-23T20:01:00.000Z' });
+  assert.equal(repeated.changed, false);
+  assert.deepEqual(repeated.items, resolved);
+  assert.throws(() => applyPhotoChecklistReview(criteria, resolved, [
+    { criterionId: 'required', status: 'not_detected', reason: 'Missing.' },
+  ], reviewer), /photo_checklist_item_already_resolved/);
+  assert.throws(() => applyPhotoChecklistReview(criteria, resolved, [
+    { criterionId: 'optional', status: 'not_detected', reason: 'Missing.' },
+  ], reviewer), /photo_checklist_item_already_resolved/);
+  assert.throws(() => applyPhotoChecklistReview(criteria, resolved, [
+    { criterionId: 'unknown', status: 'detected', reason: 'Visible.' },
+  ], reviewer), /invalid_photo_checklist_review/);
 });

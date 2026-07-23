@@ -289,7 +289,7 @@ class LazyFirebaseRepository implements AppRepository {
     return (await this.load()).getProofImageUrl(eventId);
   }
 
-  async reviewCheck(eventId: string, decision: 'detected' | 'not_detected') {
+  async reviewCheck(eventId: string, decision: import('../domain/models').ReviewCheckDecision) {
     return (await this.load()).reviewCheck(eventId, decision);
   }
 

@@ -10,7 +10,7 @@ import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, createRecoveryCode, createRelationshipInvitationCode, hashLinkCode, isFirestoreDocumentId, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, isRelationshipInvitationCode, normalizeLinkCode, sensitiveCodeAttemptState } from './helpers.js';
 import { analyzePhotoChecklistWithGemini, analyzeWithGemini, isCurrentAnalysisAttempt, parseImageDataUrl, routeAnalysisStatusForReview, unavailablePhotoChecklistAnalysis, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
 import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema, plannedCheckDispatchSchedule, shouldAutoDispatchCheck } from './planning.js';
-import { challengeForAssignment, createDefaultRoutineAssignment, createDraftRoutineAssignment, createRoutineAssignment, createRoutineAssignmentVersionChange, DEFAULT_ROUTINE_ID, isRoutineValidationMode, parseRoutineResponseSubmission, routineAssignmentProvenance, routineFromCatalog, RoutineResponseInputError, shouldCreateDefaultRoutineAssignment, type RoutineAssignmentDocument, type RoutineDocument, type RoutineResponseDefinition } from './routines.js';
+import { applyPhotoChecklistReview, challengeForAssignment, createDefaultRoutineAssignment, createDraftRoutineAssignment, createRoutineAssignment, createRoutineAssignmentVersionChange, DEFAULT_ROUTINE_ID, isRoutineValidationMode, parseRoutineResponseSubmission, routineAssignmentProvenance, routineFromCatalog, RoutineResponseInputError, shouldCreateDefaultRoutineAssignment, type PhotoChecklistItemResult, type PhotoChecklistReviewDecision, type RoutineAssignmentDocument, type RoutineDocument, type RoutineResponseDefinition } from './routines.js';
 import { buildCheckNotificationPayload, buildDeclarativePushPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription, notificationWindowIsOpen, type SyntheticReceiptPayload } from './notifications.js';
 import { isCheckRequestRateLimited } from './reminders.js';
 import { recordAuditEvent, recordJourneyEvent, type JourneyStage } from './audit.js';
@@ -292,7 +292,6 @@ const defaultPlan = {
 const recoveryLifetimeMs = 90 * 24 * 60 * 60 * 1000;
 const relationshipInvitationLifetimeMs = 24 * 60 * 60 * 1000;
 const maxImageDataUrlLength = 5 * 1024 * 1024;
-const proofImageSignedUrlMinutes = 5;
 const proofImageRetentionDays = 30;
 const createRecoveryRecord = (familyId: string, expiresAt: Date) => ({
   familyId,
@@ -3589,7 +3588,7 @@ export const getProofImageUrl = onCall({ region, cors, enforceAppCheck: true }, 
   const uid = await requireUid(request.auth);
   const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const checkId = requireDocumentId(request.data?.checkId, 'Check ID');
-  const aggregateRef = await requireFamilyMember(uid, familyId);
+  const aggregateRef = await requireFamilyRole(uid, familyId, 'parent');
   const checkRef = aggregateRef.collection('checks').doc(checkId);
   const check = await checkRef.get();
   if (!check.exists) {
@@ -3622,30 +3621,14 @@ export const getProofImageUrl = onCall({ region, cors, enforceAppCheck: true }, 
     });
   }
   const proofFile = bucket.file(proofImagePath);
-  try {
-    const [url] = await proofFile.getSignedUrl({
-      action: 'read',
-      expires: Date.now() + proofImageSignedUrlMinutes * 60 * 1000,
-    });
-    return { url };
-  } catch (error) {
-    reportOperationalEvent({
-      kind: 'proof_image_fallback',
-      familyId,
-      checkId,
-      actorUid: uid,
-      details: { fallback: 'inline_data_url' },
-      error,
-    });
-    const [[buffer], [metadata]] = await Promise.all([
-      proofFile.download(),
-      proofFile.getMetadata(),
-    ]);
-    const contentType = typeof metadata.contentType === 'string' && metadata.contentType
-      ? metadata.contentType
-      : 'image/jpeg';
-    return { url: `data:${contentType};base64,${buffer.toString('base64')}` };
-  }
+  const [[buffer], [metadata]] = await Promise.all([
+    proofFile.download(),
+    proofFile.getMetadata(),
+  ]);
+  const contentType = typeof metadata.contentType === 'string' && metadata.contentType
+    ? metadata.contentType
+    : 'image/jpeg';
+  return { url: `data:${contentType};base64,${buffer.toString('base64')}` };
 });
 
 export const reviewCheck = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
@@ -3653,7 +3636,18 @@ export const reviewCheck = onCall({ region, cors, enforceAppCheck: true }, async
   const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
   const checkId = requireDocumentId(request.data?.checkId, 'Check ID');
   const decision = String(request.data?.decision ?? '');
-  if (!['detected', 'not_detected'].includes(decision)) {
+  const itemDecisions = Array.isArray(request.data?.itemDecisions)
+    ? request.data.itemDecisions.map((candidate: unknown) => {
+      if (!candidate || typeof candidate !== 'object') throw new HttpsError('invalid-argument', 'Valid item decisions are required.');
+      const value = candidate as Record<string, unknown>;
+      return {
+        criterionId: String(value.criterionId ?? ''),
+        status: String(value.status ?? '') as PhotoChecklistReviewDecision['status'],
+        reason: String(value.reason ?? ''),
+      };
+    })
+    : undefined;
+  if (!itemDecisions && !['detected', 'not_detected'].includes(decision)) {
     throw new HttpsError('invalid-argument', 'A valid review decision is required.');
   }
   const aggregateRef = await requireFamilyRole(uid, familyId, 'parent');
@@ -3664,24 +3658,69 @@ export const reviewCheck = onCall({ region, cors, enforceAppCheck: true }, async
     const check = await transaction.get(checkRef);
     const checkData = check.data();
     if (!check.exists || !checkData) throw new HttpsError('not-found', 'The check could not be found.');
-    if (checkData.status !== 'uncertain' || ['approved', 'rejected'].includes(String(checkData.reviewStatus ?? ''))) {
-      throw new HttpsError('failed-precondition', 'This check is not waiting for responsible review.');
+    const photoChecklist = checkData.challenge?.response?.kind === 'photo_checklist'
+      ? checkData.challenge.response
+      : undefined;
+    let update: Record<string, unknown>;
+    if (photoChecklist && itemDecisions) {
+      if (!Array.isArray(photoChecklist.criteria) || !Array.isArray(checkData.photoChecklistItems)) {
+        throw new HttpsError('failed-precondition', 'This checklist result cannot be reviewed safely.');
+      }
+      try {
+        const review = applyPhotoChecklistReview(
+          photoChecklist.criteria,
+          checkData.photoChecklistItems as PhotoChecklistItemResult[],
+          itemDecisions,
+          { actorUid: uid, decidedAt: reviewedAt },
+        );
+        if (!review.changed) return { id: check.id, ...checkData };
+        update = {
+          photoChecklistItems: review.items,
+          status: review.status,
+          reviewStatus: review.complete ? (review.status === 'detected' ? 'approved' : 'rejected') : 'pending',
+          ...(review.complete ? {
+            reviewedAt,
+            reviewedBy: uid,
+            responsibleActions: [
+              ...(Array.isArray(checkData.responsibleActions) ? checkData.responsibleActions : []),
+              { type: review.status === 'detected' ? 'approved' : 'rejected', at: reviewedAt, actorUid: uid, actorName },
+            ].slice(-20),
+          } : {}),
+        };
+      } catch (error) {
+        if (error instanceof RoutineResponseInputError) {
+          throw new HttpsError(
+            error.message === 'photo_checklist_item_already_resolved' ? 'failed-precondition' : 'invalid-argument',
+            error.message,
+          );
+        }
+        throw error;
+      }
+    } else {
+      if (photoChecklist || itemDecisions || checkData.status !== 'uncertain' || ['approved', 'rejected'].includes(String(checkData.reviewStatus ?? ''))) {
+        throw new HttpsError('failed-precondition', 'This check is not waiting for this responsible review.');
+      }
+      update = {
+        status: decision as 'detected' | 'not_detected',
+        reviewStatus: decision === 'detected' ? 'approved' : 'rejected',
+        reviewedAt,
+        reviewedBy: uid,
+        responsibleActions: [
+          ...(Array.isArray(checkData.responsibleActions) ? checkData.responsibleActions : []),
+          { type: decision === 'detected' ? 'approved' : 'rejected', at: reviewedAt, actorUid: uid, actorName },
+        ].slice(-20),
+      };
     }
-    const update = {
-      status: decision as 'detected' | 'not_detected',
-      reviewStatus: decision === 'detected' ? 'approved' : 'rejected',
-      reviewedAt,
-      reviewedBy: uid,
-      responsibleActions: [
-        ...(Array.isArray(checkData.responsibleActions) ? checkData.responsibleActions : []),
-        { type: decision === 'detected' ? 'approved' : 'rejected', at: reviewedAt, actorUid: uid, actorName },
-      ].slice(-20),
-    };
     transaction.update(checkRef, update);
     return { id: check.id, ...checkData, ...update };
   });
   const proofImagePath = reviewedCheck.proofImagePath;
-  if (shouldDeleteProofAfterReview(decision) && typeof proofImagePath === 'string' && proofImagePath) {
+  const finalDecision = reviewedCheck.reviewStatus === 'approved'
+    ? 'detected'
+    : reviewedCheck.reviewStatus === 'rejected'
+      ? 'not_detected'
+      : 'uncertain';
+  if (shouldDeleteProofAfterReview(finalDecision) && typeof proofImagePath === 'string' && proofImagePath) {
     try {
       await bucket.file(proofImagePath).delete({ ignoreNotFound: true });
       await checkRef.update({
@@ -3709,8 +3748,9 @@ export const reviewCheck = onCall({ region, cors, enforceAppCheck: true }, async
     role: 'parent',
     metadata: {
       checkId,
-      decision,
+      decision: finalDecision,
       reviewStatus: reviewedCheck.reviewStatus as string,
+      ...(itemDecisions ? { itemCount: itemDecisions.length } : {}),
     },
   });
   return reviewedCheck;

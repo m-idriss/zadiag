@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type TouchEvent } from 'react';
-import type { AppState, MonitoringPlan, VerificationEvent } from '../domain/models';
+import type { AppState, MonitoringPlan, ReviewCheckDecision, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
 import { CodeBox } from '../components/CodeBox';
@@ -43,7 +43,7 @@ export function ParentDashboard({
   regenerateCode?: () => Promise<void>;
   onCreateRoutine?: () => void;
   getProofImageUrl?: (eventId: string) => Promise<string>;
-  reviewCheck?: (eventId: string, decision: 'detected' | 'not_detected') => Promise<void>;
+  reviewCheck?: (eventId: string, decision: ReviewCheckDecision) => Promise<void>;
   requestCheck?: (routineId: string) => Promise<void>;
   updateRoutine?: (routineId: string, plan: MonitoringPlan) => Promise<void>;
   summaryRange?: SummaryRange;

@@ -1,6 +1,6 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { VerificationEvent } from '../domain/models';
 import { translate } from '../services/i18n';
 import { VerificationEventDetailDialog } from './VerificationEventDetailDialog';
@@ -68,7 +68,7 @@ describe('VerificationEventDetailDialog', () => {
       },
       photoChecklistItems: [
         { criterionId: 'required', status: 'detected', confidence: 0.9, reason: 'Visible.', decision: { source: 'ai' } },
-        { criterionId: 'optional', status: 'not_detected', confidence: 0.8, reason: 'Missing.', decision: { source: 'ai' } },
+        { criterionId: 'optional', status: 'not_detected', confidence: 1, reason: 'Missing.', decision: { source: 'responsible', actorUid: 'owner-1', decidedAt: '2026-07-20T12:18:00.000Z' } },
       ],
     };
     act(() => root.render(<VerificationEventDetailDialog event={event} locale="en" onClose={() => undefined} t={(key) => translate('en', key)} />));
@@ -76,5 +76,56 @@ describe('VerificationEventDetailDialog', () => {
     expect(container.textContent).toContain('Visual checklist');
     expect(container.textContent).toContain('Required itemClearly visible');
     expect(container.textContent).toContain('Optional itemNot clearly visible');
+    expect(container.textContent).toContain('Automated result');
+    expect(container.textContent).toContain('Decided by a responsible person');
+  });
+
+  it('submits decisions only for unresolved checklist items with a bounded reason', async () => {
+    const reviewCheck = vi.fn().mockResolvedValue(undefined);
+    const event: VerificationEvent = {
+      ...reviewedEvent,
+      status: 'uncertain',
+      reviewStatus: 'pending',
+      reviewedAt: undefined,
+      challenge: {
+        routineId: 'routine',
+        name: 'Visual routine',
+        instructions: 'Show both items.',
+        response: {
+          kind: 'photo_checklist',
+          prompt: 'Show both items.',
+          criteria: [
+            { id: 'clear', label: 'Clear AI item', criterion: 'Visible.', required: true },
+            { id: 'uncertain', label: 'Item to review', criterion: 'Visible.', required: true },
+          ],
+        },
+      },
+      photoChecklistItems: [
+        { criterionId: 'clear', status: 'detected', confidence: 0.9, reason: 'Visible.', decision: { source: 'ai' } },
+        { criterionId: 'uncertain', status: 'uncertain', confidence: 0.4, reason: 'Unclear.', decision: { source: 'ai' } },
+      ],
+    };
+    await act(async () => root.render(<VerificationEventDetailDialog event={event} locale="en" reviewCheck={reviewCheck} onClose={() => undefined} t={(key) => translate('en', key)} />));
+
+    expect(container.querySelectorAll('.photo-checklist-review fieldset')).toHaveLength(1);
+    const submit = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Save item decisions')!;
+    expect(submit.disabled).toBe(true);
+    const visible = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Visible')!;
+    await act(async () => visible.click());
+    const reason = container.querySelector('.photo-checklist-review textarea') as HTMLTextAreaElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(reason, 'Clearly visible on the retained proof.');
+      reason.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(submit.disabled).toBe(false);
+    await act(async () => submit.click());
+
+    expect(reviewCheck).toHaveBeenCalledWith(event.id, {
+      itemDecisions: [{
+        criterionId: 'uncertain',
+        status: 'detected',
+        reason: 'Clearly visible on the retained proof.',
+      }],
+    });
   });
 });

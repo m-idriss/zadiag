@@ -37,6 +37,12 @@ export interface PhotoChecklistItemResult {
   decision: PhotoChecklistDecision;
 }
 
+export interface PhotoChecklistReviewDecision {
+  criterionId: string;
+  status: Exclude<PhotoChecklistItemStatus, 'uncertain'>;
+  reason: string;
+}
+
 export const derivePhotoChecklistStatus = (
   criteria: RoutinePhotoChecklistCriterion[],
   results: Array<Pick<PhotoChecklistItemResult, 'criterionId' | 'status'>>,
@@ -54,6 +60,58 @@ export const derivePhotoChecklistStatus = (
   if (criteria.some((criterion) => criterion.required && resultById.get(criterion.id) === 'not_detected')) return 'not_detected';
   if (criteria.some((criterion) => criterion.required && resultById.get(criterion.id) === 'uncertain')) return 'uncertain';
   return 'detected';
+};
+
+export const applyPhotoChecklistReview = (
+  criteria: RoutinePhotoChecklistCriterion[],
+  results: PhotoChecklistItemResult[],
+  decisions: PhotoChecklistReviewDecision[],
+  reviewer: { actorUid: string; decidedAt: string },
+) => {
+  derivePhotoChecklistStatus(criteria, results);
+  if (decisions.length < 1 || decisions.length > criteria.length
+    || new Set(decisions.map((decision) => decision.criterionId)).size !== decisions.length) {
+    throw new RoutineResponseInputError('invalid_photo_checklist_review');
+  }
+  const decisionById = new Map(decisions.map((decision) => {
+    const reason = decision.reason.trim();
+    if (!criteria.some((criterion) => criterion.id === decision.criterionId)
+      || !['detected', 'not_detected'].includes(decision.status)
+      || reason.length < 1 || reason.length > 220) {
+      throw new RoutineResponseInputError('invalid_photo_checklist_review');
+    }
+    return [decision.criterionId, { ...decision, reason }] as const;
+  }));
+  let changed = false;
+  const items = results.map((result) => {
+    const decision = decisionById.get(result.criterionId);
+    if (!decision) return result;
+    if (result.status !== 'uncertain') {
+      if (result.decision.source === 'responsible'
+        && result.status === decision.status
+        && result.reason === decision.reason) return result;
+      throw new RoutineResponseInputError('photo_checklist_item_already_resolved');
+    }
+    changed = true;
+    return {
+      criterionId: result.criterionId,
+      status: decision.status,
+      confidence: 1,
+      reason: decision.reason,
+      decision: {
+        source: 'responsible' as const,
+        actorUid: reviewer.actorUid,
+        decidedAt: reviewer.decidedAt,
+      },
+    };
+  });
+  const complete = items.every((item) => item.status !== 'uncertain');
+  return {
+    items,
+    status: complete ? derivePhotoChecklistStatus(criteria, items) : 'uncertain' as const,
+    complete,
+    changed,
+  };
 };
 
 export interface RoutineChallengeSnapshot {

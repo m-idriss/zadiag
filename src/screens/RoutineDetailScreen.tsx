@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { cameraOutline, chevronBackOutline, chevronForwardOutline, ellipsisHorizontal, peopleOutline } from 'ionicons/icons';
 import { adherenceSummary, isSuccessfulVerification, withResolvedEventStatuses } from '../domain/adherence';
 import { presentRoutine } from '../domain/routinePresentation';
-import type { AppState, RoutineAppearance, RoutineAssignment, RoutineValidationMode, VerificationEvent } from '../domain/models';
+import type { AppState, ReviewCheckDecision, RoutineAppearance, RoutineAssignment, RoutineValidationMode, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
 import { RoutineAppearanceFields } from '../components/RoutineAppearanceFields';
@@ -163,7 +163,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   back: () => void;
   start?: () => void;
   getProofImageUrl?: (eventId: string) => Promise<string>;
-  reviewCheck?: (eventId: string, decision: 'detected' | 'not_detected') => Promise<void>;
+  reviewCheck?: (eventId: string, decision: ReviewCheckDecision) => Promise<void>;
   requestCheck?: (routineId: string) => Promise<void>;
   t: (key: MessageKey) => string;
   edit?: boolean;

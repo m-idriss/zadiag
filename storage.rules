@@ -1,0 +1,42 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function notSuspended() {
+      return signedIn()
+        && (!firestore.exists(/databases/(default)/documents/userAccess/$(request.auth.uid))
+          || firestore.get(/databases/(default)/documents/userAccess/$(request.auth.uid)).data.status != 'suspended');
+    }
+
+    function canReviewFamily(familyId) {
+      return notSuspended()
+        && firestore.exists(/databases/(default)/documents/families/$(familyId))
+        && request.auth.uid in firestore.get(/databases/(default)/documents/families/$(familyId)).data.members
+        && firestore.get(/databases/(default)/documents/families/$(familyId)).data.members[request.auth.uid] == 'parent';
+    }
+
+    function canReviewParticipant(participantId) {
+      return notSuspended()
+        && firestore.exists(/databases/(default)/documents/participants/$(participantId)/memberships/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/participants/$(participantId)/memberships/$(request.auth.uid)).data.status == 'active'
+        && firestore.get(/databases/(default)/documents/participants/$(participantId)/memberships/$(request.auth.uid)).data.permissions.reviewProofs == true;
+    }
+
+    match /families/{familyId}/checks/{checkId}/{fileName} {
+      allow read: if canReviewFamily(familyId);
+      allow write: if false;
+    }
+
+    match /participants/{participantId}/checks/{checkId}/{fileName} {
+      allow read: if canReviewParticipant(participantId);
+      allow write: if false;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

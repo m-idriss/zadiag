@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
-import type { AppState, MonitoringPlan, RoutineAppearance, RoutineAssignment, RoutineCategory, RoutineValidationMode, ScheduleGroup, VerificationEvent } from '../domain/models';
+import type { AppState, MonitoringPlan, ReviewCheckDecision, RoutineAppearance, RoutineAssignment, RoutineCategory, RoutineValidationMode, ScheduleGroup, VerificationEvent } from '../domain/models';
 import { groupsFromLegacyPlan, nextPlannedWindow, summarizeWeekdaysShort } from '../domain/monitoringPlan';
 import { formatMessage, type MessageKey } from '../services/i18n';
 import { languageTag } from '../services/locale';
@@ -159,7 +159,7 @@ export function RoutinesScreen({
   edit?: boolean;
   requestCheck?: (routineId: string) => Promise<void>;
   getProofImageUrl?: (eventId: string) => Promise<string>;
-  reviewCheck?: (eventId: string, decision: 'detected' | 'not_detected') => Promise<void>;
+  reviewCheck?: (eventId: string, decision: ReviewCheckDecision) => Promise<void>;
   onAssignRoutine?: (routineId: string) => Promise<void>;
   onDeleteRoutine?: (routineId: string) => Promise<void>;
   onRetryRoutines?: () => Promise<void>;
