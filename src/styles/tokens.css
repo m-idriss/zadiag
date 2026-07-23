@@ -2,7 +2,8 @@
   --color-text: #102a43;
   --color-text-strong: #15324b;
   --color-text-muted: #687783;
-  --color-primary: #087f6d;
+  --color-brand-primary: #087f6d;
+  --color-primary: var(--color-brand-primary);
   --color-primary-soft: #e8f6f2;
   --color-danger: #c64d40;
   --color-danger-soft: #fdebe7;
