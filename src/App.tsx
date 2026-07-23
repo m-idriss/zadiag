@@ -789,6 +789,7 @@ export function App() {
             activeParticipantId={state.activeParticipantId}
             accountDisplayName={state.accountDisplayName}
             updateAccountProfile={withOptionalRepositorySync(repository.updateAccountProfile)}
+            renameParticipant={withOptionalRepositorySync(repository.renameParticipant)}
             updateParticipantColor={withOptionalRepositorySync(repository.updateParticipantColor)}
             selectParticipant={selectActiveParticipant}
             createParticipant={withOptionalRepositorySync(repository.createParticipant)}

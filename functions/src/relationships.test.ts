@@ -3,12 +3,14 @@ import test from 'node:test';
 import {
   canGrantPermissions,
   canLeaveMembership,
+  canRenameParticipant,
   canRemoveMembership,
   createMembership,
   isProfileColorKey,
   defaultPermissionsForRole,
   hasParticipantPermission,
   membershipPermissions,
+  participantRenameUpdates,
   pushRolesForMembership,
   scheduledAggregatePaths,
 } from './relationships.js';
@@ -73,6 +75,32 @@ test('denies permissions to suspended or incomplete memberships', () => {
   assert.equal(hasParticipantPermission(caregiver, 'reviewProofs'), true);
   assert.equal(hasParticipantPermission({ ...caregiver, status: 'suspended' }, 'reviewProofs'), false);
   assert.equal(hasParticipantPermission(undefined, 'view'), false);
+});
+
+test('allows participant renaming only for active owners and the linked self-managed account', () => {
+  const owner = createMembership({ uid: 'owner', role: 'owner' });
+  const participant = createMembership({ uid: 'self', role: 'participant' });
+  const caregiver = createMembership({ uid: 'caregiver', role: 'caregiver' });
+  const profile = { status: 'active', userId: 'self' };
+
+  assert.equal(canRenameParticipant(profile, owner, 'owner'), true);
+  assert.equal(canRenameParticipant(profile, participant, 'self'), true);
+  assert.equal(canRenameParticipant(profile, participant, 'other'), false);
+  assert.equal(canRenameParticipant(profile, caregiver, 'caregiver'), false);
+  assert.equal(canRenameParticipant(profile, { ...owner, status: 'suspended' }, 'owner'), false);
+  assert.equal(canRenameParticipant({ ...profile, status: 'archived' }, owner, 'owner'), false);
+});
+
+test('keeps the explicit legacy family source synchronized with a participant rename', () => {
+  const updatedAt = '2026-07-23T10:00:00.000Z';
+  assert.deepEqual(participantRenameUpdates({ sourceFamilyId: 'legacy-family' }, 'Maya Martin', updatedAt), {
+    participant: { displayName: 'Maya Martin', updatedAt },
+    legacyFamily: {
+      familyId: 'legacy-family',
+      data: { childName: 'Maya Martin', updatedAt },
+    },
+  });
+  assert.equal(participantRenameUpdates({}, 'Maya Martin', updatedAt).legacyFamily, undefined);
 });
 
 test('prevents permission escalation when inviting another member', () => {

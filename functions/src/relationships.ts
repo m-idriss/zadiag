@@ -94,6 +94,28 @@ export const hasParticipantPermission = (
   permission: MembershipPermission,
 ) => membership?.status === 'active' && membership.permissions?.[permission] === true;
 
+export const canRenameParticipant = (
+  participant: { userId?: unknown; status?: unknown } | undefined,
+  membership: Partial<MembershipDocument> | undefined,
+  actorUid: string,
+) => participant?.status === 'active'
+  && membership?.status === 'active'
+  && (
+    membership.permissions?.manageParticipant === true
+    || (participant.userId === actorUid && (membership.role === 'owner' || membership.role === 'participant'))
+  );
+
+export const participantRenameUpdates = (
+  participant: { sourceFamilyId?: unknown },
+  displayName: string,
+  updatedAt: string,
+) => ({
+  participant: { displayName, updatedAt },
+  legacyFamily: typeof participant.sourceFamilyId === 'string' && participant.sourceFamilyId
+    ? { familyId: participant.sourceFamilyId, data: { childName: displayName, updatedAt } }
+    : undefined,
+});
+
 export const pushRolesForMembership = (
   membership: Partial<MembershipDocument> | undefined,
 ): MembershipPushRole[] => {

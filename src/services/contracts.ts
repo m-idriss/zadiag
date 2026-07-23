@@ -33,6 +33,7 @@ export interface AppRepository {
   selectRole(role: Role): Promise<void>;
   selectActiveParticipant?(participantId: string): Promise<void>;
   updateAccountProfile?(displayName: string): Promise<string>;
+  renameParticipant?(participantId: string, displayName: string): Promise<string>;
   updateParticipantColor?(participantId: string, profileColor: ProfileColorKey): Promise<ProfileColorKey>;
   createParticipant?(displayName: string, selfManaged?: boolean): Promise<string>;
   inviteParticipantMember?(participantId: string, role: MembershipRole): Promise<{ code: string; expiresAt: string }>;

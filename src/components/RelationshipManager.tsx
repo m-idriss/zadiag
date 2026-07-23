@@ -8,6 +8,7 @@ import { relationshipInvitationUrl } from '../services/browserEnvironment';
 import { AppIcon } from './Icon';
 import { CopyableText } from './CopyableText';
 import { copyTextToClipboard } from '../services/clipboard';
+import { participantAccessCan } from '../domain/participantAccess';
 
 type InviteRole = MembershipRole;
 
@@ -48,11 +49,12 @@ function InvitationOutput({ code, t }: { code: string; t: (key: MessageKey) => s
   );
 }
 
-export function RelationshipManager({ access, activeParticipantId, accountDisplayName, onUpdateAccountDisplayName, onUpdateParticipantColor, onSelect, onCreate, onInvite, onAccept, onLeave, onRemoveMember, onDeleteParticipant, onCreateRecovery, onRecover, hideHeading = false, t }: {
+export function RelationshipManager({ access, activeParticipantId, accountDisplayName, onUpdateAccountDisplayName, onRenameParticipant, onUpdateParticipantColor, onSelect, onCreate, onInvite, onAccept, onLeave, onRemoveMember, onDeleteParticipant, onCreateRecovery, onRecover, hideHeading = false, t }: {
   access: ParticipantAccess[] | undefined;
   activeParticipantId?: string;
   accountDisplayName?: string;
   onUpdateAccountDisplayName?: (displayName: string) => Promise<string>;
+  onRenameParticipant?: (participantId: string, displayName: string) => Promise<string>;
   onUpdateParticipantColor?: (participantId: string, profileColor: ProfileColorKey) => Promise<ProfileColorKey>;
   onSelect?: (participantId: string) => Promise<void>;
   onCreate?: (displayName: string, selfManaged: boolean) => Promise<string>;
@@ -68,13 +70,14 @@ export function RelationshipManager({ access, activeParticipantId, accountDispla
 }) {
   const [name, setName] = useState('');
   const [accountName, setAccountName] = useState(accountDisplayName ?? '');
+  const [participantName, setParticipantName] = useState('');
   const [selfManaged, setSelfManaged] = useState(false);
   const [inviteRole, setInviteRole] = useState<InviteRole>('caregiver');
   const [joinCode, setJoinCode] = useState('');
   const [invitationCode, setInvitationCode] = useState<string>();
   const [recoveryCode, setRecoveryCode] = useState<string>();
   const [recoverCode, setRecoverCode] = useState('');
-  const [busy, setBusy] = useState<'account' | 'color' | 'create' | 'invite' | 'accept' | 'recovery' | 'remove' | 'delete'>();
+  const [busy, setBusy] = useState<'account' | 'participant' | 'color' | 'create' | 'invite' | 'accept' | 'recovery' | 'remove' | 'delete'>();
   const [removingUid, setRemovingUid] = useState<string>();
   const [error, setError] = useState<MessageKey>();
   const [open, setOpen] = useState(false);
@@ -84,8 +87,11 @@ export function RelationshipManager({ access, activeParticipantId, accountDispla
   const isOwner = selectedAccess?.membership.role === 'owner';
   const teamMembers = selectedAccess?.members?.filter((member) => member.status === 'active') ?? [];
   const canLeaveSelectedAccess = !isOwner || (selectedAccess?.members?.filter((member) => member.role === 'owner' && member.status === 'active').length ?? 0) > 1;
+  const canRenameSelectedParticipant = participantAccessCan(selectedAccess, 'manageParticipant')
+    || (selectedAccess?.participant.selfManaged === true && ['owner', 'participant'].includes(selectedAccess.membership.role));
 
   useEffect(() => { setAccountName(accountDisplayName ?? ''); }, [accountDisplayName]);
+  useEffect(() => { setParticipantName(selectedAccess?.participant.displayName ?? ''); }, [selectedParticipantId, selectedAccess?.participant.displayName]);
 
   const run = async (kind: NonNullable<typeof busy>, action: () => Promise<void>, errorKey?: (error: unknown) => MessageKey) => {
     setError(undefined);
@@ -122,6 +128,14 @@ export function RelationshipManager({ access, activeParticipantId, accountDispla
     void run('account', async () => {
       const savedName = await onUpdateAccountDisplayName(accountName.trim());
       setAccountName(savedName);
+    });
+  };
+  const saveParticipantName = (event: FormEvent) => {
+    event.preventDefault();
+    if (!onRenameParticipant || !selectedParticipantId || !participantName.trim()) return;
+    void run('participant', async () => {
+      const savedName = await onRenameParticipant(selectedParticipantId, participantName.trim());
+      setParticipantName(savedName);
     });
   };
 
@@ -172,6 +186,19 @@ export function RelationshipManager({ access, activeParticipantId, accountDispla
                 {entry.participant.selfManaged ? <small>{t('relationshipSelfManaged')}</small> : null}
               </summary>
               {entrySelected ? <div className="relationship-profile-actions-body">
+
+        {selectedParticipantId && selectedAccess && onRenameParticipant && canRenameSelectedParticipant ? (
+          <form className="relationship-account-form" onSubmit={saveParticipantName}>
+            <div className="relationship-subsection-heading">
+              <h3>{t('participantProfileNameTitle')}</h3>
+              <small>{t('participantProfileNameHint')}</small>
+            </div>
+            <div className="relationship-account-controls">
+              <input aria-label={t('participantProfileNameLabel')} value={participantName} maxLength={40} autoComplete="name" autoCapitalize="words" enterKeyHint="done" onChange={(event) => setParticipantName(event.target.value)} />
+              <button type="submit" aria-busy={busy === 'participant'} disabled={Boolean(busy) || !participantName.trim() || participantName.trim() === selectedAccess.participant.displayName.trim()}>{busy === 'participant' ? <span className="button-spinner" aria-hidden="true" /> : null}{busy === 'participant' ? t('relationshipWorking') : t('participantProfileNameSave')}</button>
+            </div>
+          </form>
+        ) : null}
 
         {selectedParticipantId && selectedAccess && onUpdateParticipantColor && ['owner', 'participant'].includes(selectedAccess.membership.role) ? (
           <section className="relationship-color-picker" aria-labelledby="relationship-color-title">
