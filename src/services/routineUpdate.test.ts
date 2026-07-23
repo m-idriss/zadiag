@@ -16,4 +16,15 @@ describe('routine update payload', () => {
       validationMode: 'ai',
     });
   });
+
+  it('includes the active routine name, icon and color customization', () => {
+    const appearance = { name: 'Routine du soir', icon: 'star', accentColor: '#7C3AED' };
+
+    expect(routineUpdatePayload('family-1', 'routine-1', defaultPlan, undefined, appearance)).toEqual({
+      familyId: 'family-1',
+      routineId: 'routine-1',
+      plan: defaultPlan,
+      appearance,
+    });
+  });
 });

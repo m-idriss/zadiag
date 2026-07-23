@@ -37,6 +37,7 @@ import {
   type Role,
   type RoutineAssignment,
   type RoutineAssignmentCreator,
+  type RoutineAppearance,
   type RoutineResponseSubmission,
   type RoutineValidationMode,
   type VerificationEvent,
@@ -613,13 +614,13 @@ export class FirebaseRepository implements AppRepository {
     }
   }
 
-  async updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode) {
+  async updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode, appearance?: RoutineAppearance) {
     if (!this.state.family.id || !this.activeAccessCan('manageRoutines')) throw new Error('permission_denied');
     const familyId = this.state.family.id;
     try {
       await coalesceInFlight(this.inFlightCallables, `updateRoutine:${familyId}:${routineId}`, async () => {
-        const updateRoutine = httpsCallable<{ familyId: string; routineId: string; plan: MonitoringPlan; validationMode?: RoutineValidationMode }, void>(this.services.functions, 'updateRoutineAssignment');
-        return updateRoutine(routineUpdatePayload(familyId, routineId, plan, validationMode));
+        const updateRoutine = httpsCallable<{ familyId: string; routineId: string; plan: MonitoringPlan; validationMode?: RoutineValidationMode; appearance?: RoutineAppearance }, void>(this.services.functions, 'updateRoutineAssignment');
+        return updateRoutine(routineUpdatePayload(familyId, routineId, plan, validationMode, appearance));
       });
     }
     catch (error) { throw error; }

@@ -1,6 +1,6 @@
 import type { AppRepository, JourneySource, JourneyStage, StartupProgressReporter } from './contracts';
 import { DemoRepository } from './demoRepository';
-import { type AppPreferences, type Locale, type MembershipRole, type MonitoringPlan, type PilotParticipation, type ProfileColorKey, type Role, type RoutineResponseSubmission, type RoutineValidationMode } from '../domain/models';
+import { type AppPreferences, type Locale, type MembershipRole, type MonitoringPlan, type PilotParticipation, type ProfileColorKey, type Role, type RoutineAppearance, type RoutineResponseSubmission, type RoutineValidationMode } from '../domain/models';
 import { firebaseEnabled } from './firebaseConfig';
 import { isLocalDemoEnvironment } from './browserEnvironment';
 import { initialRemoteState } from './appStateDefaults';
@@ -162,8 +162,8 @@ class LazyFirebaseRepository implements AppRepository {
     return (await this.load()).requestCheckNow(routineId);
   }
 
-  async updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode) {
-    return (await this.load()).updateRoutine(routineId, plan, validationMode);
+  async updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode, appearance?: RoutineAppearance) {
+    return (await this.load()).updateRoutine(routineId, plan, validationMode, appearance);
   }
 
   async savePushSubscription(subscription: PushSubscriptionJSON) {

@@ -2811,11 +2811,22 @@ export const updateRoutineAssignment = onCall({
     const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
     const routineId = requireDocumentId(request.data?.routineId ?? DEFAULT_ROUTINE_ID, 'Routine ID');
     const plan = request.data?.plan;
+    const rawAppearance = request.data?.appearance;
     const rawValidationMode = request.data?.validationMode;
     if (rawValidationMode !== undefined && rawValidationMode !== null && !isRoutineValidationMode(rawValidationMode)) {
       throw new HttpsError('invalid-argument', 'The validation mode is invalid.');
     }
     const validationMode = isRoutineValidationMode(rawValidationMode) ? rawValidationMode : undefined;
+    const appearanceIcons = new Set(['sparkles', 'tooth', 'water', 'medical', 'fitness', 'camera', 'pulse', 'star']);
+    const appearance = rawAppearance && typeof rawAppearance === 'object' && !Array.isArray(rawAppearance)
+      && typeof rawAppearance.name === 'string' && rawAppearance.name.trim().length > 0 && rawAppearance.name.trim().length <= 120
+      && typeof rawAppearance.icon === 'string' && appearanceIcons.has(rawAppearance.icon)
+      && typeof rawAppearance.accentColor === 'string' && /^#[0-9A-F]{6}$/i.test(rawAppearance.accentColor)
+      ? { name: rawAppearance.name.trim(), icon: rawAppearance.icon, accentColor: rawAppearance.accentColor.toUpperCase() }
+      : undefined;
+    if (rawAppearance !== undefined && !appearance) {
+      throw new HttpsError('invalid-argument', 'The routine appearance is invalid.');
+    }
 
     if (!plan || typeof plan !== 'object') {
       throw new HttpsError('invalid-argument', 'Plan is required and must be an object.');
@@ -2844,6 +2855,14 @@ export const updateRoutineAssignment = onCall({
       updatedAt: new Date().toISOString(),
     };
     if (validationMode) update.validationMode = validationMode;
+    if (appearance) {
+      const routine = assignment.data()?.routine ?? {};
+      const translations = Object.fromEntries(Object.entries(routine.translations ?? {}).map(([locale, content]) => [
+        locale,
+        { ...(content as Record<string, unknown>), name: appearance.name },
+      ]));
+      update.routine = { ...routine, ...appearance, ...(Object.keys(translations).length ? { translations } : {}) };
+    }
     await assignmentRef.update(update);
 
     return { success: true };

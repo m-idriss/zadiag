@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
-import type { AppState, MonitoringPlan, RoutineAssignment, RoutineCategory, RoutineValidationMode, ScheduleGroup, VerificationEvent } from '../domain/models';
+import type { AppState, MonitoringPlan, RoutineAppearance, RoutineAssignment, RoutineCategory, RoutineValidationMode, ScheduleGroup, VerificationEvent } from '../domain/models';
 import { groupsFromLegacyPlan, nextPlannedWindow, summarizeWeekdaysShort } from '../domain/monitoringPlan';
 import { formatMessage, type MessageKey } from '../services/i18n';
 import { languageTag } from '../services/locale';
@@ -148,6 +148,7 @@ export function RoutinesScreen({
   onRevokeSharedRoutine,
   onSelectParticipant,
   onSaveMonitoringPlan,
+  onSaveRoutineAppearance,
   savingRoutineId,
   focusedEventId,
   onFocusedEventConsumed,
@@ -184,6 +185,7 @@ export function RoutinesScreen({
   onRevokeSharedRoutine?: (entryId: string) => Promise<void>;
   onSelectParticipant?: (participantId: string) => void;
   onSaveMonitoringPlan?: (routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode) => Promise<void>;
+  onSaveRoutineAppearance?: (routineId: string, appearance: RoutineAppearance) => Promise<void>;
   savingRoutineId?: string;
   focusedEventId?: string;
   onFocusedEventConsumed?: () => void;
@@ -368,7 +370,7 @@ export function RoutinesScreen({
     return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDraftEditorScreen key={draft?.id ?? 'new'} draft={draft} locale={state.locale} online={online} save={saveDraft} approve={approve} aiAvailable={aiCapabilities?.routineGeneration.enabled} quizAvailable={aiCapabilities?.dynamicQuizGeneration.enabled} planSummary={planSummary} propose={onProposeRoutineChallenge ? async (input) => { const proposal = await onProposeRoutineChallenge({ ...input, locale: state.locale }); void onRecordAuthoringStage?.(input.refinement ? 'routine_authoring_refinement' : 'routine_authoring_proposal').catch(() => undefined); return proposal; } : undefined} cancel={closeDraftEditor} reload={() => { closeDraftEditor(); setDraftReloadSequence((value) => value + 1); }} t={t} /></Suspense>;
   }
 
-  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={backToList} start={start} edit={canManageRoutines} initialTab={detailInitialTab} initialEventId={focusedEventId} onInitialEventConsumed={onFocusedEventConsumed} getProofImageUrl={getProofImageUrl} reviewCheck={canManageRoutines ? reviewCheck : undefined} requestCheck={canManageRoutines ? requestCheck : undefined} onSaveMonitoringPlan={canManageRoutines && onSaveMonitoringPlan ? (plan, validationMode) => onSaveMonitoringPlan(selected.routineId, plan, validationMode) : undefined} onForkContent={canManageRoutines && onForkRoutineAssignmentDraft ? () => forkAssignedRoutine(selected) : undefined} forkingContent={forkingRoutineId === selected.routineId} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
+  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={backToList} start={start} edit={canManageRoutines} initialTab={detailInitialTab} initialEventId={focusedEventId} onInitialEventConsumed={onFocusedEventConsumed} getProofImageUrl={getProofImageUrl} reviewCheck={canManageRoutines ? reviewCheck : undefined} requestCheck={canManageRoutines ? requestCheck : undefined} onSaveMonitoringPlan={canManageRoutines && onSaveMonitoringPlan ? (plan, validationMode) => onSaveMonitoringPlan(selected.routineId, plan, validationMode) : undefined} onSaveAppearance={canManageRoutines && onSaveRoutineAppearance ? (appearance) => onSaveRoutineAppearance(selected.routineId, appearance) : undefined} onForkContent={canManageRoutines && onForkRoutineAssignmentDraft ? () => forkAssignedRoutine(selected) : undefined} forkingContent={forkingRoutineId === selected.routineId} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
 
   const setRequestStatus = (routineId: string, status: RequestStatus) => {
     setRequestStatuses((current) => ({ ...current, [routineId]: status }));

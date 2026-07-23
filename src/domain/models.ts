@@ -143,6 +143,12 @@ export interface RoutineAssignment {
   contentUpdatedAt?: string;
 }
 
+export interface RoutineAppearance {
+  name: string;
+  icon: string;
+  accentColor: string;
+}
+
 export interface RoutineChallengeSnapshot {
   routineId: string;
   routineRevision?: number;

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { cameraOutline, chevronBackOutline, chevronForwardOutline, ellipsisHorizontal, peopleOutline } from 'ionicons/icons';
 import { adherenceSummary, withResolvedEventStatuses } from '../domain/adherence';
 import { presentRoutine } from '../domain/routinePresentation';
-import type { AppState, RoutineAssignment, RoutineValidationMode, VerificationEvent } from '../domain/models';
+import type { AppState, RoutineAppearance, RoutineAssignment, RoutineValidationMode, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
 import { StatusPill } from '../components/StatusPill';
@@ -13,6 +13,7 @@ import { languageTag } from '../services/locale';
 import { ProofLightbox } from '../components/ProofLightbox';
 import { VerificationEventDetailDialog } from '../components/VerificationEventDetailDialog';
 import type { RoutineContentEditTarget } from './routineContentEditTarget';
+import { DEFAULT_PRIVATE_ROUTINE_ACCENT } from '../domain/routineDraft';
 
 type DetailTab = 'details' | 'tracking' | 'plan';
 type DetailInitialTab = DetailTab | 'overview';
@@ -155,7 +156,9 @@ function RoutineContentEditButton({ label, target, busy, onEdit }: {
   return <button type="button" className="routine-content-edit-overlay" aria-label={label} aria-busy={busy} disabled={busy} onClick={() => onEdit(target)}><SvgIcon icon={chevronForwardOutline} /></button>;
 }
 
-export function RoutineDetailScreen({ assignment, state, back, start, getProofImageUrl, reviewCheck, requestCheck, t, edit, initialTab, initialEventId, onInitialEventConsumed, onSaveMonitoringPlan, onForkContent, forkingContent, routinePlanBusy }: {
+const routineAppearanceIcons = ['sparkles', 'tooth', 'water', 'medical', 'fitness', 'camera', 'pulse', 'star'] as const;
+
+export function RoutineDetailScreen({ assignment, state, back, start, getProofImageUrl, reviewCheck, requestCheck, t, edit, initialTab, initialEventId, onInitialEventConsumed, onSaveMonitoringPlan, onSaveAppearance, onForkContent, forkingContent, routinePlanBusy }: {
   assignment: RoutineAssignment;
   state: AppState;
   back: () => void;
@@ -169,6 +172,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   initialEventId?: string;
   onInitialEventConsumed?: () => void;
   onSaveMonitoringPlan?: (plan: RoutineAssignment['plan'], validationMode?: RoutineValidationMode) => Promise<void>;
+  onSaveAppearance?: (appearance: RoutineAppearance) => Promise<void>;
   onForkContent?: (target: RoutineContentEditTarget) => void;
   forkingContent?: boolean;
   routinePlanBusy?: boolean;
@@ -178,6 +182,12 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   const [proofErrors, setProofErrors] = useState<Record<string, boolean>>({});
   const [enlargedProofUrl, setEnlargedProofUrl] = useState<string>();
   const [selectedHistoryEventId, setSelectedHistoryEventId] = useState<string | undefined>(initialEventId);
+  const [appearance, setAppearance] = useState<RoutineAppearance>(() => ({
+    name: presentRoutine(assignment.routine, state.locale).name,
+    icon: routineIconName(assignment.routine.icon),
+    accentColor: /^#[0-9a-f]{6}$/i.test(assignment.routine.accentColor ?? '') ? assignment.routine.accentColor! : DEFAULT_PRIVATE_ROUTINE_ACCENT,
+  }));
+  const [appearanceStatus, setAppearanceStatus] = useState<'saving' | 'saved' | 'error'>();
   const todayHeatmapRef = useRef<HTMLSpanElement | null>(null);
   const now = Date.now();
   const rawEvents = state.events.filter((event) => event.routineId === assignment.routineId);
@@ -194,6 +204,16 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   const tabs: DetailTab[] = edit ? ['plan', 'details', 'tracking'] : ['details', 'tracking'];
   const canEditContent = Boolean(edit && onForkContent);
   const editLabel = (label: string) => `${t('edit')} · ${label}`;
+  const saveAppearance = async () => {
+    if (!onSaveAppearance || !appearance.name.trim()) return;
+    setAppearanceStatus('saving');
+    try {
+      await onSaveAppearance({ ...appearance, name: appearance.name.trim(), accentColor: appearance.accentColor.toUpperCase() });
+      setAppearanceStatus('saved');
+    } catch {
+      setAppearanceStatus('error');
+    }
+  };
 
   useEffect(() => {
     if (initialEventId) onInitialEventConsumed?.();
@@ -249,6 +269,14 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
 
   const detailsPanel = (
     <div className="routine-tab-panel">
+      {edit && onSaveAppearance ? <section className="card routine-appearance-editor">
+        <h2>{t('routineAppearanceTitle')}</h2>
+        <label className="native-input-field"><span>{t('routineDraftName')}</span><input value={appearance.name} maxLength={120} onChange={(event) => { setAppearance((current) => ({ ...current, name: event.target.value })); setAppearanceStatus(undefined); }} /></label>
+        <fieldset><legend>{t('routineIcon')}</legend><div className="routine-icon-options">{routineAppearanceIcons.map((icon) => <button type="button" key={icon} className={appearance.icon === icon ? 'selected' : ''} aria-pressed={appearance.icon === icon} aria-label={`${t('routineIcon')} · ${icon}`} onClick={() => { setAppearance((current) => ({ ...current, icon })); setAppearanceStatus(undefined); }}><AppIcon name={icon} /></button>)}</div></fieldset>
+        <label className="routine-appearance-color"><span>{t('routineDraftAccentColor')}</span><input type="color" value={appearance.accentColor} onChange={(event) => { setAppearance((current) => ({ ...current, accentColor: event.target.value.toUpperCase() })); setAppearanceStatus(undefined); }} /></label>
+        <button type="button" className="primary-action-button" disabled={!appearance.name.trim() || appearanceStatus === 'saving'} onClick={() => { void saveAppearance(); }}>{t(appearanceStatus === 'saving' ? 'saving' : 'save')}</button>
+        {appearanceStatus === 'saved' ? <p role="status">{t('routineAppearanceSaved')}</p> : appearanceStatus === 'error' ? <p role="alert" className="form-error">{t('routineAppearanceError')}</p> : null}
+      </section> : null}
       <section className={`routine-copy${canEditContent ? ' routine-content-editable' : ''}`}><h2>{t('routineSummary')}</h2><p>{visual.description}</p>{canEditContent ? <RoutineContentEditButton label={editLabel(t('routineSummary'))} target={{ kind: 'description' }} busy={Boolean(forkingContent)} onEdit={onForkContent!} /> : null}</section>
       <section className="routine-meta-card">
         <div className={canEditContent ? 'routine-content-editable' : undefined}><span aria-hidden="true"><SvgIcon icon={cameraOutline} /></span><b>{t('expectedProof')}</b><p>{visual.proofType}</p>{canEditContent ? <RoutineContentEditButton label={editLabel(t('expectedProof'))} target={{ kind: 'proof' }} busy={Boolean(forkingContent)} onEdit={onForkContent!} /> : null}</div>
