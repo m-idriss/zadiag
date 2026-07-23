@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adherenceSummary, canRetakeCapture, isFreshCapture, isReviewableVerification, resolvedEventStatus, stalePendingCheckReason } from './adherence';
+import { adherenceSummary, canRetakeCapture, isFreshCapture, isReviewableVerification, isSuccessfulVerification, resolvedEventStatus, stalePendingCheckReason } from './adherence';
 import type { VerificationEvent } from './models';
 
 const event = (status: VerificationEvent['status']): VerificationEvent => ({
@@ -14,10 +14,18 @@ const event = (status: VerificationEvent['status']): VerificationEvent => ({
 describe('adherenceSummary', () => {
   it('excludes pending checks and calculates a supportive completion rate', () => {
     const result = adherenceSummary([
-      event('detected'), event('detected'), event('uncertain'), event('pending'),
+      event('detected'), event('answered'), event('uncertain'), event('pending'),
     ]);
     expect(result).toMatchObject({ completed: 3, successful: 2, attention: 1 });
     expect(result.rate).toBeCloseTo(2 / 3);
+  });
+});
+
+describe('isSuccessfulVerification', () => {
+  it('treats photo validations and completed structured responses as successes', () => {
+    expect(isSuccessfulVerification(event('detected'))).toBe(true);
+    expect(isSuccessfulVerification(event('answered'))).toBe(true);
+    expect(isSuccessfulVerification(event('uncertain'))).toBe(false);
   });
 });
 

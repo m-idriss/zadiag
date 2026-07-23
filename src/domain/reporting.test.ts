@@ -76,7 +76,7 @@ describe('weeklyInsight', () => {
     assignment.plan.timeZone = 'UTC';
     const events: VerificationEvent[] = [
       { id: 'one', routineId: assignment.routineId, sessionId: 'one', requestedAt: '2026-07-17T12:15:00.000Z', expiresAt: '2026-07-17T14:00:00.000Z', status: 'detected', responsibleActions: [{ type: 'approved', at: '2026-07-17T13:00:00.000Z', actorUid: 'owner', actorName: 'Idriss' }] },
-      { id: 'two', routineId: assignment.routineId, sessionId: 'two', requestedAt: '2026-07-16T12:15:00.000Z', expiresAt: '2026-07-16T14:00:00.000Z', status: 'detected' },
+      { id: 'two', routineId: assignment.routineId, sessionId: 'two', requestedAt: '2026-07-16T12:15:00.000Z', expiresAt: '2026-07-16T14:00:00.000Z', status: 'answered' },
       { id: 'three', routineId: assignment.routineId, sessionId: 'three', requestedAt: '2026-07-15T07:45:00.000Z', expiresAt: '2026-07-15T09:30:00.000Z', status: 'missed' },
       { id: 'previous', routineId: assignment.routineId, sessionId: 'previous', requestedAt: '2026-07-08T12:15:00.000Z', expiresAt: '2026-07-08T14:00:00.000Z', status: 'detected' },
     ];

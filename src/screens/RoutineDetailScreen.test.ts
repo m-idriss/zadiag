@@ -36,7 +36,7 @@ describe('routine progress heatmap', () => {
   it('maps routine events to daily heatmap states and intensity levels', () => {
     const days = calendarDays([
       { id: 'done-1', routineId: 'routine', sessionId: 'one', requestedAt: '2026-07-02T08:00:00.000Z', expiresAt: '2026-07-02T09:00:00.000Z', status: 'detected' },
-      { id: 'done-2', routineId: 'routine', sessionId: 'two', requestedAt: '2026-07-02T10:00:00.000Z', expiresAt: '2026-07-02T11:00:00.000Z', status: 'detected' },
+      { id: 'done-2', routineId: 'routine', sessionId: 'two', requestedAt: '2026-07-02T10:00:00.000Z', expiresAt: '2026-07-02T11:00:00.000Z', status: 'answered' },
       { id: 'review', routineId: 'routine', sessionId: 'three', requestedAt: '2026-07-03T08:00:00.000Z', expiresAt: '2026-07-03T09:00:00.000Z', status: 'uncertain' },
       { id: 'missed', routineId: 'routine', sessionId: 'four', requestedAt: '2026-07-04T08:00:00.000Z', expiresAt: '2026-07-04T09:00:00.000Z', status: 'missed' },
     ], 'en-US', new Date(2026, 6, 5));

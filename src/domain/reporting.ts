@@ -1,4 +1,4 @@
-import { adherenceSummary, isCompletedVerification } from './adherence';
+import { adherenceSummary, isCompletedVerification, isSuccessfulVerification } from './adherence';
 import type { MonitoringPlan, RoutineAssignment, VerificationEvent } from './models';
 import { buildMonitoringPlanFromGroups, groupsFromLegacyPlan } from './monitoringPlan';
 
@@ -156,7 +156,7 @@ export const planningRecommendation = (
 
   events.filter((event) => event.routineId === assignment.routineId
     && eventTimestamp(event) >= cutoff && eventTimestamp(event) <= now
-    && ['detected', 'missed', 'expired'].includes(event.status)).forEach((event) => {
+    && (isSuccessfulVerification(event) || ['missed', 'expired'].includes(event.status))).forEach((event) => {
     const schedule = eventScheduleParts(event.requestedAt, assignment.plan.timeZone);
     groups.forEach((group) => {
       if (!group.weekdays.includes(schedule.weekday)) return;
@@ -164,7 +164,7 @@ export const planningRecommendation = (
         if (schedule.minute < timeMinutes(window.start) || schedule.minute > timeMinutes(window.end)) return;
         const key = `${group.id}:${window.id}`;
         const current = performance.get(key) ?? { failures: 0, successes: 0 };
-        if (event.status === 'detected') current.successes += 1;
+        if (isSuccessfulVerification(event)) current.successes += 1;
         else current.failures += 1;
         performance.set(key, current);
       });
@@ -210,7 +210,7 @@ export const weeklyInsight = (
   const windowScores = new Map<string, { start: string; end: string; successes: number }>();
   const currentEvents = eventsForReportingPeriods(events, 'week', now).current;
 
-  currentEvents.filter((event) => event.status === 'detected').forEach((event) => {
+  currentEvents.filter(isSuccessfulVerification).forEach((event) => {
     const assignment = assignments.find((item) => item.routineId === event.routineId);
     if (!assignment) return;
     const schedule = eventScheduleParts(event.requestedAt, assignment.plan.timeZone);

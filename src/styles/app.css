@@ -719,14 +719,16 @@ button:disabled { cursor: not-allowed; }
 .filter-chips::-webkit-scrollbar { display: none; }
 .filter-chips button { flex: 0 1 auto; min-height: var(--height-action); max-width: 100%; padding: 6px 12px; border: 1px solid transparent; border-radius: 11px; background: var(--color-control-surface); color: var(--color-text-muted); font-size: 12px; font-weight: 800; line-height: 1.05; white-space: normal; }
 .filter-chips button.active { background: var(--color-text); color: var(--color-surface-solid); box-shadow: 0 4px 12px rgba(16,42,67,.16); }
-.filter-chips .filter-status-detected { background: var(--color-primary-soft); color: var(--color-primary); }
+.filter-chips .filter-status-detected,
+.filter-chips .filter-status-answered { background: var(--color-primary-soft); color: var(--color-primary); }
 .filter-chips .filter-status-uncertain { background: var(--color-warning-soft); color: var(--color-warning-strong); }
 .filter-chips .filter-status-missed,
 .filter-chips .filter-status-expired,
 .filter-chips .filter-status-analyzing { background: var(--color-disabled-surface); color: var(--color-disabled-text); }
 .filter-chips .filter-status-pending { background: var(--color-info-soft); color: var(--color-text); }
 .filter-chips .filter-status-not_detected { background: var(--color-danger-soft); color: var(--color-danger); }
-.filter-chips .filter-status-detected.active { background: var(--color-primary); color: var(--color-surface-solid); }
+.filter-chips .filter-status-detected.active,
+.filter-chips .filter-status-answered.active { background: var(--color-primary); color: var(--color-surface-solid); }
 .filter-chips .filter-status-uncertain.active { background: var(--color-warning-strong); color: var(--color-surface-solid); }
 .filter-chips .filter-status-missed.active,
 .filter-chips .filter-status-expired.active,
@@ -952,12 +954,11 @@ button:disabled { cursor: not-allowed; }
   .planning-recommendation { grid-column: 1 / -1; }
 }
 .status-pill { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; white-space: nowrap; padding: 7px 10px; border-radius: 99px; background: #eef2f4; color: var(--color-text); font-weight: 900; font-size: 11px; text-transform: capitalize; }
-.status-detected { background: var(--color-primary-soft); color: var(--color-primary); }
+.status-detected, .status-answered { background: var(--color-primary-soft); color: var(--color-primary); }
 .status-uncertain { background: var(--color-warning-soft); color: var(--color-warning-strong); }
 .status-pending { background: var(--color-info-soft); color: var(--color-text); }
 .status-missed, .status-expired { background: var(--color-disabled-surface); color: var(--color-disabled-text); }
 .status-not_detected { background: var(--color-danger-soft); color: var(--color-danger); }
-.status-answered { background: var(--color-info-soft); color: var(--color-text); }
 
 .check-card { color: var(--color-surface-solid); padding: 25px; border-radius: 29px; background: linear-gradient(135deg, #187e70, #35a18f); box-shadow: 0 18px 36px rgba(29,138,122,.2); }
 .check-card h2 { color: var(--color-surface-solid); font-size: 28px; margin-top: 16px; }
