@@ -665,7 +665,8 @@ export function App() {
       />
     );
   } else if (route === 'camera') {
-    content = <CameraScreen busy={busy} submitError={submitError} back={() => { setSelectedSessionId(undefined); setRoute('app'); }} submit={submit} t={t} />;
+    const event = selectedSessionId ? state.events.find((candidate) => candidate.sessionId === selectedSessionId) : undefined;
+    content = <CameraScreen event={event} busy={busy} submitError={submitError} back={() => { setSelectedSessionId(undefined); setRoute('app'); }} submit={submit} t={t} />;
   } else if (route === 'response') {
     const event = selectedSessionId ? state.events.find((candidate) => candidate.sessionId === selectedSessionId) : undefined;
     const responseKind = event?.challenge?.response.kind;

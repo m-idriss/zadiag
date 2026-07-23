@@ -8,11 +8,11 @@ import { pilotParticipationRecord } from '../domain/pilotParticipation';
 let fakeRepository: AppRepository;
 
 vi.mock('../screens/ChildDashboard', () => ({
-  ChildDashboard: ({ start, state }: { start: () => void; state: { family: { childName: string } } }) => (
+  ChildDashboard: ({ active, start, state }: { active?: VerificationEvent; start: (event: VerificationEvent) => void; state: { family: { childName: string } } }) => (
     <div>
       <h1>Hi {state.family.childName} 👋</h1>
       <p>Ready for a quick photo?</p>
-      <button type="button" onClick={start}>Start check</button>
+      <button type="button" onClick={() => { if (active) start(active); }}>Start check</button>
     </div>
   ),
 }));
@@ -22,21 +22,25 @@ vi.mock('../screens/LinkScreen', () => ({
 }));
 
 vi.mock('../screens/CameraScreen', () => ({
-  CameraScreen: ({ submit }: { submit: (capturedAt: Date, imageDataUrl: string) => Promise<void> }) => (
+  CameraScreen: ({ event, submit }: { event?: VerificationEvent; submit: (capturedAt: Date, imageDataUrl: string) => Promise<void> }) => (
     <div>
       <h1>Guided photo</h1>
+      {event?.challenge?.response.kind === 'photo_checklist'
+        ? <div>{event.challenge.response.prompt}{event.challenge.response.criteria.map((criterion) => <span key={criterion.id}>{criterion.label}</span>)}</div>
+        : null}
       <button type="button" onClick={() => { void submit(new Date('2026-07-02T10:00:00.000Z'), 'data:image/png;base64,TEST_IMAGE'); }}>Use test photo</button>
     </div>
   ),
 }));
 
 vi.mock('../screens/ResultScreen', () => ({
-  ResultScreen: ({ done, event }: { done: () => void; event: { status: string; analysisSource?: string; reason?: string } }) => (
+  ResultScreen: ({ done, event }: { done: () => void; event: VerificationEvent }) => (
     <div>
       <h1>All set!</h1>
       <p>Elastics visible</p>
       <p>{event.analysisSource ?? ''}</p>
       <p>{event.reason ?? ''}</p>
+      {event.photoChecklistItems?.map((item) => <span key={item.criterionId}>{item.criterionId}:{item.status}</span>)}
       <button type="button" onClick={done}>Back to today</button>
     </div>
   ),
@@ -79,6 +83,25 @@ const makeActiveEvent = (): VerificationEvent => ({
   requestedAt: new Date(Date.now() - 60_000).toISOString(),
   expiresAt: new Date(Date.now() + 15 * 60_000).toISOString(),
   status: 'pending',
+});
+
+const makePhotoChecklistEvent = (): VerificationEvent => ({
+  ...makeActiveEvent(),
+  id: 'visual-check',
+  sessionId: 'visual-session',
+  challenge: {
+    routineId: DEFAULT_ROUTINE_ID,
+    name: 'Visual setup',
+    instructions: 'Prepare both items.',
+    response: {
+      kind: 'photo_checklist',
+      prompt: 'Show the complete setup.',
+      criteria: [
+        { id: 'required-item', label: 'Required item', criterion: 'Visible.', required: true },
+        { id: 'optional-item', label: 'Optional item', criterion: 'Visible.', required: false },
+      ],
+    },
+  },
 });
 
 const makeState = (): AppState => ({
@@ -157,6 +180,9 @@ const createFakeRepository = (initialState = makeState()): AppRepository => {
     async submitCapture(sessionId: string, capturedAt: Date, imageDataUrl: string) {
       const event = state.events.find((item) => item.sessionId === sessionId);
       if (!event) throw new Error('missing_session');
+      const checklist = event.challenge?.response.kind === 'photo_checklist'
+        ? event.challenge.response
+        : undefined;
       Object.assign(event, {
         capturedAt: capturedAt.toISOString(),
         status: 'detected',
@@ -164,6 +190,15 @@ const createFakeRepository = (initialState = makeState()): AppRepository => {
         confidence: 0.93,
         imageQuality: 0.97,
         reason: `image:${imageDataUrl.slice(0, 18)}`,
+        ...(checklist ? {
+          photoChecklistItems: checklist.criteria.map((criterion) => ({
+            criterionId: criterion.id,
+            status: 'detected' as const,
+            confidence: 0.93,
+            reason: 'Visible.',
+            decision: { source: 'ai' as const },
+          })),
+        } : {}),
       });
       emit();
       return structuredClone(event);
@@ -266,6 +301,28 @@ describe('Zadiag smoke flow', () => {
 
     backButton?.click();
     await waitForText('Ready for a quick photo?');
+  }, 15000);
+
+  it('routes one frozen photo checklist through capture and item-level results', async () => {
+    fakeRepository = createFakeRepository({ ...makeState(), events: [makePhotoChecklistEvent()] });
+    const { App } = await import('../App');
+    root.render(<App />);
+
+    await waitForText('Ready for a quick photo?');
+    const startButton = Array.from(document.querySelectorAll('button'))
+      .find((button) => button.textContent?.includes('Start check')) as HTMLButtonElement | undefined;
+    startButton?.click();
+
+    await waitForText('Show the complete setup.');
+    expect(document.body.textContent).toContain('Required item');
+    expect(document.body.textContent).toContain('Optional item');
+
+    const usePhotoButton = Array.from(document.querySelectorAll('button'))
+      .find((button) => button.textContent?.includes('Use test photo')) as HTMLButtonElement | undefined;
+    usePhotoButton?.click();
+    await waitForText('required-item:detected');
+
+    expect(document.body.textContent).toContain('optional-item:detected');
   }, 15000);
 
   it('does not expose the account linking flow when startup restore fails', async () => {
