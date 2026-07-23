@@ -16,6 +16,28 @@ const event = (status: VerificationEvent['status']): VerificationEvent => ({
   proofImagePath: status === 'uncertain' ? 'participants/profile/checks/check-1/proof.jpg' : undefined,
 });
 
+const checklistEvent = (status: 'detected' | 'not_detected' | 'uncertain'): VerificationEvent => ({
+  ...event(status),
+  reviewStatus: status === 'uncertain' ? 'pending' : undefined,
+  challenge: {
+    routineId: 'orthodontic-elastics',
+    name: 'Visual setup',
+    instructions: 'Show the setup.',
+    response: {
+      kind: 'photo_checklist',
+      prompt: 'Show both items.',
+      criteria: [
+        { id: 'required', label: 'Required elastic', criterion: 'The elastic is visible.', required: true },
+        { id: 'optional', label: 'Storage case', criterion: 'The case is visible.', required: false },
+      ],
+    },
+  },
+  photoChecklistItems: [
+    { criterionId: 'required', status, confidence: 0.8, reason: 'Result.', decision: { source: 'ai' } },
+    { criterionId: 'optional', status: 'detected', confidence: 0.9, reason: 'Visible.', decision: { source: 'ai' } },
+  ],
+});
+
 describe('ResultScreen', () => {
   let container: HTMLDivElement;
   let root: Root;
@@ -66,5 +88,27 @@ describe('ResultScreen', () => {
 
     expect(container.textContent).toContain('temporarily available to authorized responsible people');
     expect(container.textContent).toContain('deleted after their decision');
+  });
+
+  it('explains every checklist item and the derived successful result without model details', () => {
+    act(() => root.render(<ResultScreen event={{ ...checklistEvent('detected'), analysisSource: 'ai', analysisModel: 'gemini-internal' }} done={() => undefined} t={(key) => translate('en', key)} />));
+
+    expect(container.textContent).toContain('Everything is clearly visible');
+    expect(container.textContent).toContain('Required elastic');
+    expect(container.textContent).toContain('Clearly visible');
+    expect(container.querySelector('[aria-label="Required elastic: Clearly visible"]')).not.toBeNull();
+    expect(container.textContent).not.toContain('gemini-internal');
+    expect(container.textContent).not.toContain('Source:');
+  });
+
+  it('gives calm next actions for missing and uncertain checklist results', () => {
+    act(() => root.render(<ResultScreen event={checklistEvent('not_detected')} retake={() => undefined} done={() => undefined} t={(key) => translate('en', key)} />));
+    expect(container.textContent).toContain('Some items need another photo');
+    expect(container.textContent).toContain('Required elasticNot clearly visible');
+    expect(container.textContent).toContain('Retake proof');
+
+    act(() => root.render(<ResultScreen event={checklistEvent('uncertain')} retake={() => undefined} done={() => undefined} t={(key) => translate('fr', key)} />));
+    expect(container.textContent).toContain('Un responsable va vérifier');
+    expect(container.textContent).toContain('Required elasticÀ vérifier par un responsable');
   });
 });

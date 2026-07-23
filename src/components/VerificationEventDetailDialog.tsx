@@ -7,6 +7,7 @@ import { useModalFocus } from '../hooks/useModalFocus';
 import { AppIcon } from './Icon';
 import { DisclosureToggle } from './DisclosureToggle';
 import { StatusPill } from './StatusPill';
+import { PhotoChecklistSummary } from './PhotoChecklistSummary';
 
 export function VerificationEventDetailDialog({ event, locale, proofUrl: providedProofUrl, getProofImageUrl, reviewCheck, requestCheck, onClose, t }: {
   event: VerificationEvent;
@@ -51,6 +52,9 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
         value: item.value,
       }))
       : [];
+  const photoChecklist = event.challenge?.response.kind === 'photo_checklist'
+    ? event.challenge.response
+    : undefined;
 
   useEffect(() => {
     if (providedProofUrl || !event.proofImagePath || !getProofImageUrl) return;
@@ -98,6 +102,9 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
           <div className="history-detail-heading"><small>{t('historyDetailTitle')}</small><h2 id="history-detail-title">{formatDateTime(event.requestedAt)}</h2><StatusPill status={event.status} t={t} /></div>
           <button type="button" data-autofocus aria-label={t('close')} onClick={onClose}><AppIcon name="close" /></button>
         </header>
+        {photoChecklist && event.photoChecklistItems ? (
+          <PhotoChecklistSummary criteria={photoChecklist.criteria} results={event.photoChecklistItems} title={t('photoChecklistHistoryItems')} t={t} />
+        ) : null}
         {event.proofImagePath ? <div className="history-detail-proof">{proofUrl
           ? <img src={proofUrl} alt={t('responsibleReviewImageAlt')} />
           : proofError

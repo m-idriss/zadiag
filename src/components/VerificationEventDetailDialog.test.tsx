@@ -49,4 +49,32 @@ describe('VerificationEventDetailDialog', () => {
     expect(container.querySelector('dl')).toBeNull();
     expect(container.querySelector('button[aria-label="Show all information"]')?.getAttribute('aria-expanded')).toBe('false');
   });
+
+  it('keeps the frozen checklist result visible in event history', () => {
+    const event: VerificationEvent = {
+      ...reviewedEvent,
+      challenge: {
+        routineId: 'routine',
+        name: 'Visual routine',
+        instructions: 'Show both items.',
+        response: {
+          kind: 'photo_checklist',
+          prompt: 'Show both items.',
+          criteria: [
+            { id: 'required', label: 'Required item', criterion: 'Visible.', required: true },
+            { id: 'optional', label: 'Optional item', criterion: 'Visible.', required: false },
+          ],
+        },
+      },
+      photoChecklistItems: [
+        { criterionId: 'required', status: 'detected', confidence: 0.9, reason: 'Visible.', decision: { source: 'ai' } },
+        { criterionId: 'optional', status: 'not_detected', confidence: 0.8, reason: 'Missing.', decision: { source: 'ai' } },
+      ],
+    };
+    act(() => root.render(<VerificationEventDetailDialog event={event} locale="en" onClose={() => undefined} t={(key) => translate('en', key)} />));
+
+    expect(container.textContent).toContain('Visual checklist');
+    expect(container.textContent).toContain('Required itemClearly visible');
+    expect(container.textContent).toContain('Optional itemNot clearly visible');
+  });
 });
