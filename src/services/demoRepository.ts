@@ -7,6 +7,7 @@ import type {
   Role,
   PilotParticipation,
   RoutineAssignment,
+  RoutineAppearance,
   RoutineResponseSubmission,
   RoutineValidationMode,
   VerificationEvent,
@@ -482,12 +483,19 @@ export class DemoRepository implements AppRepository {
     this.persist();
   }
 
-  async updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode) {
+  async updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode, appearance?: RoutineAppearance) {
     if (this.state.role !== 'parent') throw new Error('permission_denied');
     const assignment = this.state.routineAssignments.find((r) => r.routineId === routineId);
     if (assignment) {
       assignment.plan = plan;
       if (validationMode && assignment.createdBy === 'child') assignment.validationMode = validationMode;
+      if (appearance) {
+        const translations = Object.fromEntries(Object.entries(assignment.routine.translations ?? {}).map(([locale, content]) => [
+          locale,
+          { ...content, name: appearance.name },
+        ]));
+        assignment.routine = { ...assignment.routine, ...appearance, ...(Object.keys(translations).length ? { translations } : {}) };
+      }
       this.persist();
     }
   }

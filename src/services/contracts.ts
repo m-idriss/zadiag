@@ -1,4 +1,4 @@
-import type { AppPreferences, AppState, Locale, MembershipRole, MonitoringPlan, ParticipantMember, PilotParticipation, ProfileColorKey, Role, RoutineResponseSubmission, RoutineValidationMode, VerificationEvent } from '../domain/models';
+import type { AppPreferences, AppState, Locale, MembershipRole, MonitoringPlan, ParticipantMember, PilotParticipation, ProfileColorKey, Role, RoutineAppearance, RoutineResponseSubmission, RoutineValidationMode, VerificationEvent } from '../domain/models';
 import type { PublishedRoutineVersion, RoutineCatalogEntry, RoutineDraft, RoutinePackageV1 } from '../domain/routineDraft';
 
 export type AiRoutineResponseKind = 'photo' | 'confirmation' | 'checklist' | 'quiz';
@@ -71,7 +71,7 @@ export interface AppRepository {
   revokeSharedRoutine?(entryId: string): Promise<void>;
   reportRoutineCatalogEntry?(entryId: string, reason: 'unsafe' | 'privacy' | 'copyright' | 'other'): Promise<void>;
   requestCheckNow(routineId?: string): Promise<void>;
-  updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode): Promise<void>;
+  updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode, appearance?: RoutineAppearance): Promise<void>;
   savePushSubscription(subscription: PushSubscriptionJSON): Promise<void>;
   sendTestPushNotification(): Promise<void>;
   recordJourneyEvent?(stage: JourneyStage, source: JourneySource, contextId?: string): Promise<void>;

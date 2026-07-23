@@ -8,6 +8,7 @@ export function SplashScreen({ progress, message }: { progress: number; message:
       <div className="app-splash-card">
         <BrandMark />
         <strong>Zadiag</strong>
+        <small className="app-splash-version">v{import.meta.env.VITE_APP_VERSION}</small>
         <span>{message}</span>
         <div className="app-splash-progress" aria-hidden="true">
           <div style={{ '--splash-progress': width } as CSSProperties} />

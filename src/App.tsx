@@ -752,6 +752,17 @@ export function App() {
                 setSavingRoutineId(undefined);
               }
             } : undefined}
+            onSaveRoutineAppearance={canManageRoutines ? async (routineId, appearance) => {
+              setSavingRoutineId(routineId);
+              try {
+                const assignment = state.routineAssignments.find((item) => item.routineId === routineId);
+                if (!assignment) throw new Error('routine_not_found');
+                await repository.updateRoutine(routineId, assignment.plan, undefined, appearance);
+                sync();
+              } finally {
+                setSavingRoutineId(undefined);
+              }
+            } : undefined}
             savingRoutineId={savingRoutineId}
             focusedEventId={focusedHistoryEventId}
             onFocusedEventConsumed={() => setFocusedHistoryEventId(undefined)}
