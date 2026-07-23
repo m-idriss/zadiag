@@ -30,9 +30,10 @@ class LazyFirebaseRepository implements AppRepository {
   }
 
   async registerContactEmail(email: string) {
-    const repository = await this.load();
-    if (!repository.registerContactEmail) throw new Error('contact_email_registration_unavailable');
-    return repository.registerContactEmail(email);
+    return this.invokeOptional(
+      (repository) => repository.registerContactEmail?.(email),
+      'contact_email_registration_unavailable',
+    );
   }
 
   async selectRole(role: Role) {
@@ -40,69 +41,87 @@ class LazyFirebaseRepository implements AppRepository {
   }
 
   async selectActiveParticipant(participantId: string) {
-    const repository = await this.load();
-    if (!repository.selectActiveParticipant) throw new Error('participant_selection_unavailable');
-    return repository.selectActiveParticipant(participantId);
+    return this.invokeOptional(
+      (repository) => repository.selectActiveParticipant?.(participantId),
+      'participant_selection_unavailable',
+    );
   }
 
   async updateAccountProfile(displayName: string) {
-    const repository = await this.load();
-    if (!repository.updateAccountProfile) throw new Error('account_profile_update_unavailable');
-    return repository.updateAccountProfile(displayName);
+    return this.invokeOptional(
+      (repository) => repository.updateAccountProfile?.(displayName),
+      'account_profile_update_unavailable',
+    );
+  }
+
+  async renameParticipant(participantId: string, displayName: string) {
+    return this.invokeOptional(
+      (repository) => repository.renameParticipant?.(participantId, displayName),
+      'participant_rename_unavailable',
+    );
   }
 
   async updateParticipantColor(participantId: string, profileColor: ProfileColorKey) {
-    const repository = await this.load();
-    if (!repository.updateParticipantColor) throw new Error('participant_color_update_unavailable');
-    return repository.updateParticipantColor(participantId, profileColor);
+    return this.invokeOptional(
+      (repository) => repository.updateParticipantColor?.(participantId, profileColor),
+      'participant_color_update_unavailable',
+    );
   }
 
   async createParticipant(displayName: string, selfManaged?: boolean) {
-    const repository = await this.load();
-    if (!repository.createParticipant) throw new Error('participant_creation_unavailable');
-    return repository.createParticipant(displayName, selfManaged);
+    return this.invokeOptional(
+      (repository) => repository.createParticipant?.(displayName, selfManaged),
+      'participant_creation_unavailable',
+    );
   }
 
   async inviteParticipantMember(participantId: string, role: MembershipRole) {
-    const repository = await this.load();
-    if (!repository.inviteParticipantMember) throw new Error('participant_invitation_unavailable');
-    return repository.inviteParticipantMember(participantId, role);
+    return this.invokeOptional(
+      (repository) => repository.inviteParticipantMember?.(participantId, role),
+      'participant_invitation_unavailable',
+    );
   }
 
   async acceptParticipantInvitation(code: string) {
-    const repository = await this.load();
-    if (!repository.acceptParticipantInvitation) throw new Error('participant_invitation_unavailable');
-    return repository.acceptParticipantInvitation(code);
+    return this.invokeOptional(
+      (repository) => repository.acceptParticipantInvitation?.(code),
+      'participant_invitation_unavailable',
+    );
   }
 
   async leaveParticipant(participantId: string) {
-    const repository = await this.load();
-    if (!repository.leaveParticipant) throw new Error('participant_leave_unavailable');
-    return repository.leaveParticipant(participantId);
+    return this.invokeOptional(
+      (repository) => repository.leaveParticipant?.(participantId),
+      'participant_leave_unavailable',
+    );
   }
 
   async removeParticipantMember(participantId: string, targetUid: string) {
-    const repository = await this.load();
-    if (!repository.removeParticipantMember) throw new Error('participant_member_removal_unavailable');
-    return repository.removeParticipantMember(participantId, targetUid);
+    return this.invokeOptional(
+      (repository) => repository.removeParticipantMember?.(participantId, targetUid),
+      'participant_member_removal_unavailable',
+    );
   }
 
   async deleteParticipant(participantId: string) {
-    const repository = await this.load();
-    if (!repository.deleteParticipant) throw new Error('participant_deletion_unavailable');
-    return repository.deleteParticipant(participantId);
+    return this.invokeOptional(
+      (repository) => repository.deleteParticipant?.(participantId),
+      'participant_deletion_unavailable',
+    );
   }
 
   async createRelationshipRecovery(participantId: string) {
-    const repository = await this.load();
-    if (!repository.createRelationshipRecovery) throw new Error('relationship_recovery_unavailable');
-    return repository.createRelationshipRecovery(participantId);
+    return this.invokeOptional(
+      (repository) => repository.createRelationshipRecovery?.(participantId),
+      'relationship_recovery_unavailable',
+    );
   }
 
   async recoverRelationship(code: string) {
-    const repository = await this.load();
-    if (!repository.recoverRelationship) throw new Error('relationship_recovery_unavailable');
-    return repository.recoverRelationship(code);
+    return this.invokeOptional(
+      (repository) => repository.recoverRelationship?.(code),
+      'relationship_recovery_unavailable',
+    );
   }
 
   async setLocale(locale: Locale) {
@@ -137,26 +156,85 @@ class LazyFirebaseRepository implements AppRepository {
     return (await this.load()).deleteRoutine(routineId);
   }
 
-  async listRoutineDrafts(participantId: string) { const repository = await this.load(); if (!repository.listRoutineDrafts) throw new Error('routine_drafts_unavailable'); return repository.listRoutineDrafts(participantId); }
-  async createRoutineDraft(participantId: string, routinePackage: RoutinePackageV1) { const repository = await this.load(); if (!repository.createRoutineDraft) throw new Error('routine_drafts_unavailable'); return repository.createRoutineDraft(participantId, routinePackage); }
-  async forkRoutineAssignmentDraft(participantId: string, routineId: string, locale: Locale) { const repository = await this.load(); if (!repository.forkRoutineAssignmentDraft) throw new Error('routine_drafts_unavailable'); return repository.forkRoutineAssignmentDraft(participantId, routineId, locale); }
-  async updateRoutineDraft(participantId: string, draftId: string, expectedRevision: number, routinePackage: RoutinePackageV1) { const repository = await this.load(); if (!repository.updateRoutineDraft) throw new Error('routine_drafts_unavailable'); return repository.updateRoutineDraft(participantId, draftId, expectedRevision, routinePackage); }
-  async deleteRoutineDraft(participantId: string, draftId: string, expectedRevision: number) { const repository = await this.load(); if (!repository.deleteRoutineDraft) throw new Error('routine_drafts_unavailable'); return repository.deleteRoutineDraft(participantId, draftId, expectedRevision); }
-  async assignRoutineDraft(participantId: string, draftId: string, expectedRevision: number) { const repository = await this.load(); if (!repository.assignRoutineDraft) throw new Error('routine_drafts_unavailable'); return repository.assignRoutineDraft(participantId, draftId, expectedRevision); }
-  async getAiAuthoringCapabilities() { const repository = await this.load(); if (!repository.getAiAuthoringCapabilities) throw new Error('ai_authoring_unavailable'); return repository.getAiAuthoringCapabilities(); }
-  async proposeRoutineChallenge(input: Parameters<NonNullable<AppRepository['proposeRoutineChallenge']>>[0]) { const repository = await this.load(); if (!repository.proposeRoutineChallenge) throw new Error('ai_authoring_unavailable'); return repository.proposeRoutineChallenge(input); }
-  async publishRoutineDraft(participantId: string, draftId: string, expectedRevision: number) { const repository = await this.load(); if (!repository.publishRoutineDraft) throw new Error('routine_publication_unavailable'); return repository.publishRoutineDraft(participantId, draftId, expectedRevision); }
-  async listPublishedRoutineVersions(participantId: string) { const repository = await this.load(); if (!repository.listPublishedRoutineVersions) throw new Error('routine_publication_unavailable'); return repository.listPublishedRoutineVersions(participantId); }
-  async upgradeRoutineAssignment(participantId: string, routineId: string, targetVersion: number) { const repository = await this.load(); if (!repository.upgradeRoutineAssignment) throw new Error('routine_publication_unavailable'); return repository.upgradeRoutineAssignment(participantId, routineId, targetVersion); }
-  async createNextRoutineDraft(participantId: string, routineId: string, sourceVersion: number) { const repository = await this.load(); if (!repository.createNextRoutineDraft) throw new Error('routine_publication_unavailable'); return repository.createNextRoutineDraft(participantId, routineId, sourceVersion); }
-  async searchRoutineCatalog(query: string) { const repository = await this.load(); if (!repository.searchRoutineCatalog) throw new Error('routine_catalog_unavailable'); return repository.searchRoutineCatalog(query); }
-  async exportRoutinePackage(participantId: string, draftId: string) { const repository = await this.load(); if (!repository.exportRoutinePackage) throw new Error('routine_package_transfer_unavailable'); return repository.exportRoutinePackage(participantId, draftId); }
-  async importRoutinePackage(participantId: string, content: string, mimeType: string, conflict: 'reject' | 'copy') { const repository = await this.load(); if (!repository.importRoutinePackage) throw new Error('routine_package_transfer_unavailable'); return repository.importRoutinePackage(participantId, content, mimeType, conflict); }
-  async resolveSharedRoutine(shareCode: string) { const repository = await this.load(); if (!repository.resolveSharedRoutine) throw new Error('routine_catalog_unavailable'); return repository.resolveSharedRoutine(shareCode); }
-  async installCatalogRoutine(participantId: string, entryId: string, shareCode?: string) { const repository = await this.load(); if (!repository.installCatalogRoutine) throw new Error('routine_catalog_unavailable'); return repository.installCatalogRoutine(participantId, entryId, shareCode); }
-  async sharePublishedRoutine(participantId: string, routineId: string, version: number, visibility: 'listed' | 'unlisted') { const repository = await this.load(); if (!repository.sharePublishedRoutine) throw new Error('routine_catalog_unavailable'); return repository.sharePublishedRoutine(participantId, routineId, version, visibility); }
-  async revokeSharedRoutine(entryId: string) { const repository = await this.load(); if (!repository.revokeSharedRoutine) throw new Error('routine_catalog_unavailable'); return repository.revokeSharedRoutine(entryId); }
-  async reportRoutineCatalogEntry(entryId: string, reason: 'unsafe' | 'privacy' | 'copyright' | 'other') { const repository = await this.load(); if (!repository.reportRoutineCatalogEntry) throw new Error('routine_catalog_unavailable'); return repository.reportRoutineCatalogEntry(entryId, reason); }
+  async listRoutineDrafts(participantId: string) {
+    return this.invokeOptional((repository) => repository.listRoutineDrafts?.(participantId), 'routine_drafts_unavailable');
+  }
+
+  async createRoutineDraft(participantId: string, routinePackage: RoutinePackageV1) {
+    return this.invokeOptional((repository) => repository.createRoutineDraft?.(participantId, routinePackage), 'routine_drafts_unavailable');
+  }
+
+  async forkRoutineAssignmentDraft(participantId: string, routineId: string, locale: Locale) {
+    return this.invokeOptional((repository) => repository.forkRoutineAssignmentDraft?.(participantId, routineId, locale), 'routine_drafts_unavailable');
+  }
+
+  async updateRoutineDraft(participantId: string, draftId: string, expectedRevision: number, routinePackage: RoutinePackageV1) {
+    return this.invokeOptional((repository) => repository.updateRoutineDraft?.(participantId, draftId, expectedRevision, routinePackage), 'routine_drafts_unavailable');
+  }
+
+  async deleteRoutineDraft(participantId: string, draftId: string, expectedRevision: number) {
+    return this.invokeOptional((repository) => repository.deleteRoutineDraft?.(participantId, draftId, expectedRevision), 'routine_drafts_unavailable');
+  }
+
+  async assignRoutineDraft(participantId: string, draftId: string, expectedRevision: number) {
+    return this.invokeOptional((repository) => repository.assignRoutineDraft?.(participantId, draftId, expectedRevision), 'routine_drafts_unavailable');
+  }
+
+  async getAiAuthoringCapabilities() {
+    return this.invokeOptional((repository) => repository.getAiAuthoringCapabilities?.(), 'ai_authoring_unavailable');
+  }
+
+  async proposeRoutineChallenge(input: Parameters<NonNullable<AppRepository['proposeRoutineChallenge']>>[0]) {
+    return this.invokeOptional((repository) => repository.proposeRoutineChallenge?.(input), 'ai_authoring_unavailable');
+  }
+
+  async publishRoutineDraft(participantId: string, draftId: string, expectedRevision: number) {
+    return this.invokeOptional((repository) => repository.publishRoutineDraft?.(participantId, draftId, expectedRevision), 'routine_publication_unavailable');
+  }
+
+  async listPublishedRoutineVersions(participantId: string) {
+    return this.invokeOptional((repository) => repository.listPublishedRoutineVersions?.(participantId), 'routine_publication_unavailable');
+  }
+
+  async upgradeRoutineAssignment(participantId: string, routineId: string, targetVersion: number) {
+    return this.invokeOptional((repository) => repository.upgradeRoutineAssignment?.(participantId, routineId, targetVersion), 'routine_publication_unavailable');
+  }
+
+  async createNextRoutineDraft(participantId: string, routineId: string, sourceVersion: number) {
+    return this.invokeOptional((repository) => repository.createNextRoutineDraft?.(participantId, routineId, sourceVersion), 'routine_publication_unavailable');
+  }
+
+  async searchRoutineCatalog(query: string) {
+    return this.invokeOptional((repository) => repository.searchRoutineCatalog?.(query), 'routine_catalog_unavailable');
+  }
+
+  async exportRoutinePackage(participantId: string, draftId: string) {
+    return this.invokeOptional((repository) => repository.exportRoutinePackage?.(participantId, draftId), 'routine_package_transfer_unavailable');
+  }
+
+  async importRoutinePackage(participantId: string, content: string, mimeType: string, conflict: 'reject' | 'copy') {
+    return this.invokeOptional((repository) => repository.importRoutinePackage?.(participantId, content, mimeType, conflict), 'routine_package_transfer_unavailable');
+  }
+
+  async resolveSharedRoutine(shareCode: string) {
+    return this.invokeOptional((repository) => repository.resolveSharedRoutine?.(shareCode), 'routine_catalog_unavailable');
+  }
+
+  async installCatalogRoutine(participantId: string, entryId: string, shareCode?: string) {
+    return this.invokeOptional((repository) => repository.installCatalogRoutine?.(participantId, entryId, shareCode), 'routine_catalog_unavailable');
+  }
+
+  async sharePublishedRoutine(participantId: string, routineId: string, version: number, visibility: 'listed' | 'unlisted') {
+    return this.invokeOptional((repository) => repository.sharePublishedRoutine?.(participantId, routineId, version, visibility), 'routine_catalog_unavailable');
+  }
+
+  async revokeSharedRoutine(entryId: string) {
+    return this.invokeOptional((repository) => repository.revokeSharedRoutine?.(entryId), 'routine_catalog_unavailable');
+  }
+
+  async reportRoutineCatalogEntry(entryId: string, reason: 'unsafe' | 'privacy' | 'copyright' | 'other') {
+    return this.invokeOptional((repository) => repository.reportRoutineCatalogEntry?.(entryId, reason), 'routine_catalog_unavailable');
+  }
 
   async requestCheckNow(routineId?: string) {
     return (await this.load()).requestCheckNow(routineId);
@@ -180,9 +258,10 @@ class LazyFirebaseRepository implements AppRepository {
   }
 
   async updatePilotParticipation(status: PilotParticipation['status']) {
-    const repository = await this.load();
-    if (!repository.updatePilotParticipation) throw new Error('pilot_participation_unavailable');
-    return repository.updatePilotParticipation(status);
+    return this.invokeOptional(
+      (repository) => repository.updatePilotParticipation?.(status),
+      'pilot_participation_unavailable',
+    );
   }
 
   async savePlan(plan: MonitoringPlan, routineId?: string) {
@@ -220,6 +299,15 @@ class LazyFirebaseRepository implements AppRepository {
 
   async reset() {
     return (await this.load()).reset();
+  }
+
+  private async invokeOptional<TResult>(
+    invoke: (repository: AppRepository) => Promise<TResult> | undefined,
+    unavailableError: string,
+  ): Promise<TResult> {
+    const result = invoke(await this.load());
+    if (result === undefined) throw new Error(unavailableError);
+    return result;
   }
 
   private async load() {

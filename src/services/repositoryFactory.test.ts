@@ -42,6 +42,7 @@ class FakeFirebaseRepository implements AppRepository {
   async registerContactEmail(email: string) { return email.trim().toLowerCase(); }
   async selectRole(role: Role) { this.state = { ...this.state, role }; }
   async selectActiveParticipant(participantId: string) { this.state.activeParticipantId = participantId; }
+  async renameParticipant(participantId: string, displayName: string) { return `${participantId}:${displayName.trim()}`; }
   async createParticipant() { return 'participant-1'; }
   async inviteParticipantMember() { return { code: 'ZI-123456', expiresAt: '2026-07-12T00:00:00.000Z' }; }
   async acceptParticipantInvitation() { return 'participant-1'; }
@@ -100,9 +101,11 @@ describe('repository factory', () => {
     expect(repository.snapshot()).toMatchObject({ role: 'parent', family: { linked: true, childName: 'Maya' } });
     expect(listener).toHaveBeenCalled();
     await expect(repository.registerContactEmail?.(' USER@EXAMPLE.COM ')).resolves.toBe('user@example.com');
+    await expect(repository.renameParticipant?.('participant-1', ' Maya ')).resolves.toBe('participant-1:Maya');
     await expect(repository.inviteParticipantMember?.('participant-1', 'caregiver')).resolves.toMatchObject({ code: 'ZI-123456' });
     await expect(repository.createRelationshipRecovery?.('participant-1')).resolves.toMatchObject({ recoveryCode: 'PR-2345-6789-ABCD' });
     expect(repository.listRoutineDrafts).toBeTypeOf('function');
     await expect(repository.createRoutineDraft?.('participant-1', createBlankRoutinePackage('en', 'private-test'))).resolves.toMatchObject({ id: 'draft-1' });
+    await expect(repository.removeParticipantMember?.('participant-1', 'member-1')).rejects.toThrow('participant_member_removal_unavailable');
   });
 });
