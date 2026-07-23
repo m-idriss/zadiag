@@ -1,6 +1,7 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { routineIconCatalog } from '../components/routineIconCatalog';
 import type { RoutineDraft } from '../domain/routineDraft';
 import { translate } from '../services/i18n';
 import { RoutineDraftEditorScreen } from './RoutineDraftEditorScreen';
@@ -42,7 +43,7 @@ describe('private routine draft editor', () => {
     expect(container.textContent).toContain('Brouillon enregistré · révision 1 · prêt');
   });
 
-  it('reveals only useful customization and derives the icon from the category', async () => {
+  it('reveals the shared appearance editor, suggests an icon from the category, and allows overriding it', async () => {
     const save = vi.fn().mockImplementation(async (routinePackage) => ({ ...savedDraft(routinePackage.routine.name), package: routinePackage, validation: { status: 'valid', issues: [] } }));
     act(() => root.render(<RoutineDraftEditorScreen locale="en" online save={save} cancel={() => undefined} reload={() => undefined} t={(key) => translate('en', key)} />));
     const customize = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Customize'));
@@ -56,8 +57,12 @@ describe('private routine draft editor', () => {
     expect(container.textContent).not.toContain('Expected proof');
     const category = container.querySelector<HTMLSelectElement>('select');
     act(() => { if (category) { category.value = 'medication'; category.dispatchEvent(new Event('change', { bubbles: true })); } });
+    act(() => container.querySelector<HTMLButtonElement>('.routine-icon-picker-trigger')?.click());
+    expect(document.body.querySelectorAll('.routine-icon-catalog button')).toHaveLength(routineIconCatalog.length);
+    const star = document.body.querySelector<HTMLButtonElement>('.routine-icon-catalog button[aria-label="Star"]');
+    act(() => star?.click());
     await act(async () => { container.querySelector<HTMLFormElement>('form')?.requestSubmit(); await Promise.resolve(); });
-    expect(save.mock.calls[0][0].routine).toMatchObject({ category: 'medication', icon: 'medical' });
+    expect(save.mock.calls[0][0].routine).toMatchObject({ category: 'medication', icon: 'star' });
   });
 
   it('asks only for the intent and response mode, then previews the participant interaction', async () => {

@@ -5,7 +5,7 @@ import { presentRoutine } from '../domain/routinePresentation';
 import type { AppState, RoutineAppearance, RoutineAssignment, RoutineValidationMode, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
-import { RoutineIconPicker } from '../components/RoutineIconPicker';
+import { RoutineAppearanceFields } from '../components/RoutineAppearanceFields';
 import { StatusPill } from '../components/StatusPill';
 import { RoutineEditScreen } from './RoutineEditScreen';
 import { SvgIcon } from '../components/SvgIcon';
@@ -188,7 +188,6 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   }));
   const [appearanceStatus, setAppearanceStatus] = useState<'saving' | 'saved' | 'error'>();
   const [appearanceEditing, setAppearanceEditing] = useState(false);
-  const [iconPickerOpen, setIconPickerOpen] = useState(false);
   const todayHeatmapRef = useRef<HTMLSpanElement | null>(null);
   const now = Date.now();
   const rawEvents = state.events.filter((event) => event.routineId === assignment.routineId);
@@ -340,16 +339,18 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
         <button type="button" className="more-button" aria-label={t('moreOptions')}><SvgIcon icon={ellipsisHorizontal} /></button>
       </div>
       {appearanceEditing && edit && onSaveAppearance ? <section className="card routine-appearance-editor routine-appearance-top-editor">
-        <label className="native-input-field"><span>{t('routineDraftName')}</span><input value={appearance.name} maxLength={120} onChange={(event) => { setAppearance((current) => ({ ...current, name: event.target.value })); setAppearanceStatus(undefined); }} /></label>
-        <fieldset><legend>{t('routineIcon')}</legend><button type="button" className="routine-icon-picker-trigger" onClick={() => setIconPickerOpen(true)}><AppIcon name={routineIconName(appearance.icon)} /><span>{t('routineIconChoose')}</span><AppIcon name="chevron-forward" /></button></fieldset>
-        <label className="routine-appearance-color"><span>{t('routineDraftAccentColor')}</span><input type="color" value={appearance.accentColor} onChange={(event) => { setAppearance((current) => ({ ...current, accentColor: event.target.value.toUpperCase() })); setAppearanceStatus(undefined); }} /></label>
+        <RoutineAppearanceFields
+          appearance={appearance}
+          locale={state.locale}
+          onChange={(patch) => { setAppearance((current) => ({ ...current, ...patch })); setAppearanceStatus(undefined); }}
+          t={t}
+        />
         <div className="routine-appearance-actions">
           <ActionButton className="routine-appearance-cancel" fill="outline" onClick={() => setAppearanceEditing(false)}>{t('cancel')}</ActionButton>
           <ActionButton className="routine-appearance-save" disabled={!appearance.name.trim() || appearanceStatus === 'saving'} aria-busy={appearanceStatus === 'saving'} onClick={() => { void saveAppearance(); }}>{t(appearanceStatus === 'saving' ? 'saving' : 'save')}</ActionButton>
         </div>
         {appearanceStatus === 'saved' ? <p role="status">{t('routineAppearanceSaved')}</p> : appearanceStatus === 'error' ? <p role="alert" className="form-error">{t('routineAppearanceError')}</p> : null}
       </section> : null}
-      {iconPickerOpen ? <RoutineIconPicker selected={routineIconName(appearance.icon)} locale={state.locale} close={() => setIconPickerOpen(false)} select={(icon) => { setAppearance((current) => ({ ...current, icon })); setAppearanceStatus(undefined); }} t={t} /> : null}
       <nav className="routine-tabs" aria-label={t('routineSections')}>
         {tabs.map((item) => <button type="button" className={tab === item ? 'active' : ''} aria-current={tab === item ? 'page' : undefined} onClick={() => setTab(item)} key={item}>{t(item === 'details' ? 'infoTab' : item === 'plan' ? 'monitoringPlan' : 'trackingTab')}</button>)}
       </nav>
