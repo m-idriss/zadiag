@@ -188,9 +188,10 @@ button:disabled { cursor: not-allowed; }
 .routine-appearance-editor legend, .routine-appearance-color > span { margin-bottom: 7px; color: var(--color-text-muted); font-size: 12px; font-weight: 850; }
 .routine-appearance-color { display: grid; }
 .routine-appearance-color input { width: 100%; height: 46px; padding: 4px; border: 1px solid var(--color-border); border-radius: 13px; background: var(--color-surface-solid); }
-.routine-appearance-editor .primary-action-button { width: 100%; }
-.routine-appearance-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.routine-appearance-actions button { min-height: var(--height-action); border: 0; border-radius: var(--radius-control); font-weight: 850; }
+.routine-appearance-actions { display: grid; grid-template-columns: .9fr 1.1fr; gap: 10px; }
+.routine-appearance-actions .action-button { min-width: 0; box-shadow: none; }
+.routine-appearance-actions .routine-appearance-cancel { border-color: color-mix(in srgb, var(--color-primary) 38%, var(--color-border)); background: var(--color-surface-solid); }
+.routine-appearance-actions .routine-appearance-save { box-shadow: 0 8px 18px color-mix(in srgb, var(--color-primary) 16%, transparent); }
 .routine-appearance-editor > p { margin: 0; font-size: 12px; text-align: center; }
 .routine-icon-picker-trigger { width: 100%; min-height: 48px; display: grid; grid-template-columns: 30px minmax(0, 1fr) 20px; align-items: center; gap: 9px; padding: 7px 11px; border: 1px solid color-mix(in srgb, var(--color-text) 7%, transparent); border-radius: var(--radius-control); background: color-mix(in srgb, var(--color-primary-soft) 28%, var(--color-surface-solid)); color: var(--color-text); text-align: left; box-shadow: inset 0 1px color-mix(in srgb, var(--color-surface-solid) 86%, transparent); }
 .routine-icon-picker-trigger .app-icon:first-child { color: var(--routine-accent, var(--color-primary)); font-size: 20px; }

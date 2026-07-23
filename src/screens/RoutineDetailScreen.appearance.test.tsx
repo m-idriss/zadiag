@@ -44,6 +44,8 @@ describe('routine appearance editor', () => {
 
     expect(trigger?.getAttribute('aria-expanded')).toBe('true');
     expect(container.querySelector('.routine-appearance-top-editor')).not.toBeNull();
+    expect(container.querySelector('.routine-appearance-cancel')?.classList.contains('fill-outline')).toBe(true);
+    expect(container.querySelector('.routine-appearance-save')?.classList.contains('action-button')).toBe(true);
     const pickerTrigger = container.querySelector<HTMLButtonElement>('.routine-icon-picker-trigger');
     expect(pickerTrigger).not.toBeNull();
     await act(async () => {
@@ -63,7 +65,7 @@ describe('routine appearance editor', () => {
     act(() => document.body.querySelector<HTMLButtonElement>('.routine-icon-catalog button')?.click());
 
     await act(async () => {
-      container.querySelector<HTMLButtonElement>('.routine-appearance-actions .primary-action-button')?.click();
+      container.querySelector<HTMLButtonElement>('.routine-appearance-save')?.click();
       await Promise.resolve();
     });
 

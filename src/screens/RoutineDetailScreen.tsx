@@ -343,7 +343,10 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
         <label className="native-input-field"><span>{t('routineDraftName')}</span><input value={appearance.name} maxLength={120} onChange={(event) => { setAppearance((current) => ({ ...current, name: event.target.value })); setAppearanceStatus(undefined); }} /></label>
         <fieldset><legend>{t('routineIcon')}</legend><button type="button" className="routine-icon-picker-trigger" onClick={() => setIconPickerOpen(true)}><AppIcon name={routineIconName(appearance.icon)} /><span>{t('routineIconChoose')}</span><AppIcon name="chevron-forward" /></button></fieldset>
         <label className="routine-appearance-color"><span>{t('routineDraftAccentColor')}</span><input type="color" value={appearance.accentColor} onChange={(event) => { setAppearance((current) => ({ ...current, accentColor: event.target.value.toUpperCase() })); setAppearanceStatus(undefined); }} /></label>
-        <div className="routine-appearance-actions"><button type="button" onClick={() => setAppearanceEditing(false)}>{t('cancel')}</button><button type="button" className="primary-action-button" disabled={!appearance.name.trim() || appearanceStatus === 'saving'} onClick={() => { void saveAppearance(); }}>{t(appearanceStatus === 'saving' ? 'saving' : 'save')}</button></div>
+        <div className="routine-appearance-actions">
+          <ActionButton className="routine-appearance-cancel" fill="outline" onClick={() => setAppearanceEditing(false)}>{t('cancel')}</ActionButton>
+          <ActionButton className="routine-appearance-save" disabled={!appearance.name.trim() || appearanceStatus === 'saving'} aria-busy={appearanceStatus === 'saving'} onClick={() => { void saveAppearance(); }}>{t(appearanceStatus === 'saving' ? 'saving' : 'save')}</ActionButton>
+        </div>
         {appearanceStatus === 'saved' ? <p role="status">{t('routineAppearanceSaved')}</p> : appearanceStatus === 'error' ? <p role="alert" className="form-error">{t('routineAppearanceError')}</p> : null}
       </section> : null}
       {iconPickerOpen ? <RoutineIconPicker selected={routineIconName(appearance.icon)} locale={state.locale} close={() => setIconPickerOpen(false)} select={(icon) => { setAppearance((current) => ({ ...current, icon })); setAppearanceStatus(undefined); }} t={t} /> : null}
