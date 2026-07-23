@@ -47,6 +47,23 @@ Every interactive flow must account for the states that can occur at runtime:
 Do not create a second component tree for a state when the same structure can
 express it with content and state classes.
 
+## Shared interaction model
+
+- The same action or state must keep the same label hierarchy, control treatment,
+  and feedback pattern across screens. Centralize shared presentation in a
+  domain presenter or existing UI primitive instead of synchronizing copies.
+- A control variant must express a recurring semantic role such as primary,
+  secondary, or destructive. Do not add a variant to solve one screen's spacing
+  or color.
+- Loading disables the initiating action, preserves its label or purpose, and
+  exposes progress without moving the primary action. Recoverable failure keeps
+  the user's input and presents the next useful action.
+- Disabled and unavailable are different states: disabled explains a temporary
+  constraint; unavailable does not render an action that cannot succeed.
+- Routine and profile accents provide context, not meaning. Selection, status,
+  validation, and error feedback must remain understandable without the accent
+  color.
+
 ## Accessibility and interaction
 
 - All actions must remain keyboard reachable and expose a visible focus state.
@@ -63,8 +80,10 @@ express it with content and state classes.
 
 Review UI changes at narrow and wide phone widths first, then tablet/desktop
 where the screen supports them. Verify long French labels, keyboard focus,
-empty content, error content, and at least one populated state. Use a remote
-preview only when device APIs or real PWA behavior require it.
+empty content, error content, disabled or pending actions, and at least one
+populated state. Compare every changed shared component in each real consumer,
+not only in the screen that motivated the change. Use a remote preview only
+when device APIs or real PWA behavior require it.
 
 Run `pnpm check:design` while changing shared presentation and `pnpm check`
 before delivery. A deliberate change to these invariants must update this file,
