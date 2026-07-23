@@ -32,6 +32,23 @@ do not duplicate them in feature documentation.
 - Comments explain constraints or decisions; they must not narrate the code or
   maintain a second specification of behavior.
 
+## Refactor safely
+
+- Define the behavior that must remain unchanged and the duplicated decision,
+  competing implementation, or manual synchronization being removed before
+  editing. Moving code without simplifying one of those is not a completed
+  refactor.
+- Identify or add a characterization test before changing a cross-cutting
+  boundary. Assert observable behavior and stable errors, not the new internal
+  shape.
+- Inspect every implementation, adapter, lazy loader, mock, persisted boundary,
+  and composition-root binding when an interface or shared contract changes.
+- Optional capabilities must have one explicit availability boundary and one
+  stable unavailable result. Do not let each caller invent fallback behavior.
+- Treat a large module as a prompt to audit mixed responsibilities, not as an
+  automatic reason to split it. Extract only a cohesive responsibility with a
+  clear dependency direction and more than one meaningful operation.
+
 ## Preserve module direction
 
 - `src/domain` is framework- and infrastructure-independent.
@@ -50,14 +67,31 @@ do not duplicate them in feature documentation.
 - Add or update tests at the boundary where behavior lives. Do not encode an
   implementation detail merely to make a refactor look covered.
 - Run the narrow relevant tests while iterating, then `pnpm check` before a
-  normal delivery. Use `pnpm check:full` when Firestore rules are affected.
+  normal delivery. Use `pnpm check:full` when Firestore rules, authorization,
+  authentication, permission enforcement, or persisted-data migrations are
+  affected.
 - Keep bundle and architecture checks green. Do not silence a guardrail with an
   exception unless the repository architecture itself is intentionally changed.
 - Follow `DESIGN.md` for UI changes and keep `pnpm check:design` green. New
   visual foundations belong in semantic tokens, not individual screens.
 - Bump the application version once per deployable batch, not once per edit.
-- Use an explicit commit message describing the completed outcome. Push only a
-  validated coherent batch and confirm that the worktree is clean afterward.
+- Use an explicit commit message describing the completed outcome.
+
+## Publish deliberately
+
+- Start new work from the latest `origin/main` on a branch dedicated to one
+  outcome. Do not reuse a branch that has already been merged.
+- Local completion does not imply publication. Prepare the version bump,
+  commit, and remote branch only when delivering the coherent batch.
+- Follow `docs/deployment-workflow.md`: push the validated feature branch, open
+  a pull request, and let its merge create the production deployment. Do not
+  push directly to `main` unless the user explicitly requests that delivery
+  mode.
+- Before merging, confirm the branch contains only the intended commits, is
+  based on the current default branch, and has the required checks passing.
+- After publishing, report the branch, commit, pull request or explicit direct
+  merge, validation performed, and any known warnings. Confirm that the
+  worktree is clean.
 
 When the requested work conflicts with these rules, surface the conflict before
 adding another implementation path. Simplicity means fewer active concepts,
