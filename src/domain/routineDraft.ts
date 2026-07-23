@@ -71,11 +71,22 @@ export const routinePackageInLocale = (routinePackage: RoutinePackageV1, locale:
   const next = structuredClone(routinePackage);
   const localized = next.routine.translations?.[locale];
   if (localized) {
+    const { photoChecklist, ...localizedRoutine } = localized;
     next.routine = {
       ...next.routine,
-      ...localized,
+      ...localizedRoutine,
       analysis: localized.analysis ? { ...next.routine.analysis, ...localized.analysis } as Routine['analysis'] : next.routine.analysis,
       instructionSteps: localized.instructionSteps ?? next.routine.instructionSteps,
+      response: photoChecklist && next.routine.response?.kind === 'photo_checklist'
+        ? {
+          ...next.routine.response,
+          prompt: photoChecklist.prompt,
+          criteria: next.routine.response.criteria.map((criterion, index) => ({
+            ...criterion,
+            label: photoChecklist.criteria[index]?.id === criterion.id ? photoChecklist.criteria[index].label : criterion.label,
+          })),
+        }
+        : next.routine.response,
     };
   }
   if (localized || next.defaultLocale === locale) {
@@ -87,7 +98,7 @@ export const routinePackageInLocale = (routinePackage: RoutinePackageV1, locale:
 };
 
 const minimalRoutineCopy = (instruction: string, locale: Locale, responseKind: NonNullable<Routine['response']>['kind']) => {
-  const photo = responseKind === 'photo';
+  const photo = responseKind === 'photo' || responseKind === 'photo_checklist';
   if (locale === 'fr') return {
     fallbackName: 'Nouvelle routine', responsibleName: 'Responsable', stepOneTitle: 'Réaliser l’action',
     stepTwoTitle: photo ? 'Prendre une photo' : responseKind === 'quiz' ? 'Répondre au QCM' : 'Donner sa réponse',
@@ -128,15 +139,15 @@ export const prepareMinimalRoutinePackage = (routinePackage: RoutinePackageV1, r
   routine.accentColor ||= DEFAULT_PRIVATE_ROUTINE_ACCENT;
   routine.category ||= 'custom';
   const proofTypeByResponse = next.defaultLocale === 'fr'
-    ? { photo: 'photo', quiz: 'QCM', checklist: 'liste de confirmations', confirmation: 'oui / non' }
-    : { photo: 'photo', quiz: 'quiz', checklist: 'confirmation checklist', confirmation: 'yes / no' };
+    ? { photo: 'photo', photo_checklist: 'photo avec liste visuelle', quiz: 'QCM', checklist: 'liste de confirmations', confirmation: 'oui / non' }
+    : { photo: 'photo', photo_checklist: 'visual photo checklist', quiz: 'quiz', checklist: 'confirmation checklist', confirmation: 'yes / no' };
   routine.proofType = proofTypeByResponse[routine.response.kind];
-  routine.recommendedValidationMode = routine.response.kind === 'photo' ? routine.recommendedValidationMode ?? 'ai' : 'auto';
+  routine.recommendedValidationMode = ['photo', 'photo_checklist'].includes(routine.response.kind) ? routine.recommendedValidationMode ?? 'ai' : 'auto';
   if (shouldFill(routine.proofExample)) routine.proofExample = fit(copy.proofExample, 500);
   const stepsIncomplete = !routine.instructionSteps || routine.instructionSteps.length < 2 || routine.instructionSteps.some((step) => !step.title.trim() || !step.description.trim());
   if (regenerateDerived || stepsIncomplete) routine.instructionSteps = [
     { id: 'step-1', icon: routine.icon, title: copy.stepOneTitle, description: fit(instruction, 500) },
-    { id: 'step-2', icon: routine.response.kind === 'photo' ? 'camera' : routine.response.kind === 'quiz' ? 'sparkles' : 'check', title: copy.stepTwoTitle, description: fit(copy.stepTwoDescription, 500) },
+    { id: 'step-2', icon: ['photo', 'photo_checklist'].includes(routine.response.kind) ? 'camera' : routine.response.kind === 'quiz' ? 'sparkles' : 'check', title: copy.stepTwoTitle, description: fit(copy.stepTwoDescription, 500) },
   ];
   const analysis = routine.analysis ?? { expectedEvidence: '', detectedCriteria: '', notDetectedCriteria: '', uncertaintyCriteria: '' };
   routine.analysis = {

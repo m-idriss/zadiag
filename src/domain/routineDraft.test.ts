@@ -109,6 +109,37 @@ describe('private routine draft domain', () => {
     expect(Object.hasOwn(localized.routine, 'translations')).toBe(false);
   });
 
+  it('localizes photo checklist labels without changing frozen visual rules', () => {
+    const source = createBlankRoutinePackage('en', 'visual-elastics');
+    source.availableLocales = ['en', 'fr'];
+    source.routine.response = {
+      kind: 'photo_checklist',
+      prompt: 'Show both elastics',
+      criteria: [
+        { id: 'upper', label: 'Upper elastic', criterion: 'The upper elastic is attached.', required: true },
+        { id: 'lower', label: 'Lower elastic', criterion: 'The lower elastic is attached.', required: false },
+      ],
+    };
+    source.routine.translations = {
+      fr: {
+        photoChecklist: {
+          prompt: 'Montre les deux élastiques',
+          criteria: [{ id: 'upper', label: 'Élastique supérieur' }, { id: 'lower', label: 'Élastique inférieur' }],
+        },
+      },
+    };
+
+    const localized = routinePackageInLocale(source, 'fr');
+    expect(localized.routine.response).toEqual({
+      kind: 'photo_checklist',
+      prompt: 'Montre les deux élastiques',
+      criteria: [
+        { id: 'upper', label: 'Élastique supérieur', criterion: 'The upper elastic is attached.', required: true },
+        { id: 'lower', label: 'Élastique inférieur', criterion: 'The lower elastic is attached.', required: false },
+      ],
+    });
+  });
+
   it('creates an owned active draft at revision one without retaining mutable input', () => {
     const sourcePackage = packageV1();
     const created = createRoutineDraft({

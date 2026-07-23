@@ -83,7 +83,7 @@ export function RoutineDraftEditorScreen({
     instructions: routine.instructions ?? '',
     description: routine.description ?? routine.instructions ?? '',
     category: routine.category ?? 'custom',
-    response: routine.response?.kind === 'photo' || !routine.response
+    response: routine.response?.kind === 'photo' || routine.response?.kind === 'photo_checklist' || !routine.response
       ? { kind: 'photo', prompt: routine.instructions ?? '' }
       : routine.response.kind === 'quiz'
         ? { kind: 'quiz', prompt: routine.response.prompt, topic: routine.response.topic }
@@ -95,7 +95,9 @@ export function RoutineDraftEditorScreen({
   });
   const applyAiProposal = (proposal: AiRoutineProposal) => {
     const response: RoutineResponseDefinition = proposal.response.kind === 'photo'
-      ? { kind: 'photo' }
+      ? routine.response?.kind === 'photo_checklist'
+        ? { ...routine.response, prompt: proposal.response.prompt }
+        : { kind: 'photo' }
       : proposal.response.kind === 'confirmation'
         ? { kind: 'confirmation', prompt: proposal.response.prompt }
         : proposal.response.kind === 'checklist'
@@ -203,7 +205,7 @@ export function RoutineDraftEditorScreen({
           <div className="routine-composer-response">
             <h2>{t('routineComposerResponseTitle')}</h2>
             <div className="routine-composer-response-options" role="group" aria-label={t('routineComposerResponseTitle')}>
-              <button type="button" className={responseKind === 'photo' ? 'active' : ''} aria-pressed={responseKind === 'photo'} onClick={() => chooseResponse('photo')}><AppIcon name="camera" /><strong>{t('routineComposerPhoto')}</strong><span>{t('routineComposerPhotoHint')}</span></button>
+              <button type="button" className={responseKind === 'photo' || responseKind === 'photo_checklist' ? 'active' : ''} aria-pressed={responseKind === 'photo' || responseKind === 'photo_checklist'} onClick={() => chooseResponse('photo')}><AppIcon name="camera" /><strong>{t('routineComposerPhoto')}</strong><span>{t('routineComposerPhotoHint')}</span></button>
               <button type="button" className={responseKind === 'confirmation' || responseKind === 'checklist' ? 'active' : ''} aria-pressed={responseKind === 'confirmation' || responseKind === 'checklist'} onClick={() => chooseResponse('confirmation')}><AppIcon name="check" /><strong>{t('routineComposerConfirmation')}</strong><span>{t('routineComposerConfirmationHint')}</span></button>
               <button type="button" disabled={!quizAvailable} className={responseKind === 'quiz' ? 'active' : ''} aria-pressed={responseKind === 'quiz'} onClick={() => chooseResponse('quiz')}><AppIcon name="sparkles" /><strong>{t('routineComposerQuiz')}</strong><span>{t('routineComposerQuizHint')}</span></button>
             </div>
@@ -217,7 +219,7 @@ export function RoutineDraftEditorScreen({
             <small>{t('routineDraftParticipantPreview')}</small>
             <h3>{participantPreviewName}</h3>
             <p>{routine.instructions || t('routineDraftInstructionPlaceholder')}</p>
-            {responseKind === 'photo' ? <div className="routine-composer-preview-action"><AppIcon name="camera" />{t('sendProofShort')}</div> : null}
+            {responseKind === 'photo' || responseKind === 'photo_checklist' ? <div className="routine-composer-preview-action"><AppIcon name="camera" />{t('sendProofShort')}</div> : null}
             {responseKind === 'confirmation' ? <div className="routine-composer-preview-choices"><span>{t('yes')}</span><span>{t('no')}</span></div> : null}
             {routine.response?.kind === 'checklist' ? <ul>{routine.response.items.map((item) => <li key={item.id}><span>{item.label || t('routineComposerChecklistItem')}</span><small>{t('yes')} / {t('no')}</small></li>)}</ul> : null}
             {routine.response?.kind === 'quiz' ? <div className="routine-composer-preview-action"><AppIcon name="sparkles" />{formatMessage(t('routineComposerQuizQuestions'), { count: routine.response.questionCount })}</div> : null}
