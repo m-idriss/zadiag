@@ -4,7 +4,8 @@ import { adherenceSummary, withResolvedEventStatuses } from '../domain/adherence
 import { presentRoutine } from '../domain/routinePresentation';
 import type { AppState, RoutineAppearance, RoutineAssignment, RoutineValidationMode, VerificationEvent } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
-import { AppIcon, routineIconName, type AppIconName } from '../components/Icon';
+import { AppIcon, routineIconName } from '../components/Icon';
+import { RoutineIconPicker } from '../components/RoutineIconPicker';
 import { StatusPill } from '../components/StatusPill';
 import { RoutineEditScreen } from './RoutineEditScreen';
 import { SvgIcon } from '../components/SvgIcon';
@@ -156,11 +157,6 @@ function RoutineContentEditButton({ label, target, busy, onEdit }: {
   return <button type="button" className="routine-content-edit-overlay" aria-label={label} aria-busy={busy} disabled={busy} onClick={() => onEdit(target)}><SvgIcon icon={chevronForwardOutline} /></button>;
 }
 
-const routineAppearanceIcons: AppIconName[] = [
-  'sparkles', 'tooth', 'water', 'medical', 'fitness', 'camera', 'pulse',
-  'star', 'check', 'eye', 'calendar', 'time', 'today', 'send', 'home', 'notifications',
-];
-
 export function RoutineDetailScreen({ assignment, state, back, start, getProofImageUrl, reviewCheck, requestCheck, t, edit, initialTab, initialEventId, onInitialEventConsumed, onSaveMonitoringPlan, onSaveAppearance, onForkContent, forkingContent, routinePlanBusy }: {
   assignment: RoutineAssignment;
   state: AppState;
@@ -192,6 +188,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   }));
   const [appearanceStatus, setAppearanceStatus] = useState<'saving' | 'saved' | 'error'>();
   const [appearanceEditing, setAppearanceEditing] = useState(false);
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
   const todayHeatmapRef = useRef<HTMLSpanElement | null>(null);
   const now = Date.now();
   const rawEvents = state.events.filter((event) => event.routineId === assignment.routineId);
@@ -344,11 +341,12 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
       </div>
       {appearanceEditing && edit && onSaveAppearance ? <section className="card routine-appearance-editor routine-appearance-top-editor">
         <label className="native-input-field"><span>{t('routineDraftName')}</span><input value={appearance.name} maxLength={120} onChange={(event) => { setAppearance((current) => ({ ...current, name: event.target.value })); setAppearanceStatus(undefined); }} /></label>
-        <fieldset><legend>{t('routineIcon')}</legend><div className="routine-icon-options">{routineAppearanceIcons.map((icon) => <button type="button" key={icon} className={appearance.icon === icon ? 'selected' : ''} aria-pressed={appearance.icon === icon} aria-label={`${t('routineIcon')} · ${icon}`} onClick={() => { setAppearance((current) => ({ ...current, icon })); setAppearanceStatus(undefined); }}><AppIcon name={icon} /></button>)}</div></fieldset>
+        <fieldset><legend>{t('routineIcon')}</legend><button type="button" className="routine-icon-picker-trigger" onClick={() => setIconPickerOpen(true)}><AppIcon name={routineIconName(appearance.icon)} /><span>{t('routineIconChoose')}</span><AppIcon name="chevron-forward" /></button></fieldset>
         <label className="routine-appearance-color"><span>{t('routineDraftAccentColor')}</span><input type="color" value={appearance.accentColor} onChange={(event) => { setAppearance((current) => ({ ...current, accentColor: event.target.value.toUpperCase() })); setAppearanceStatus(undefined); }} /></label>
         <div className="routine-appearance-actions"><button type="button" onClick={() => setAppearanceEditing(false)}>{t('cancel')}</button><button type="button" className="primary-action-button" disabled={!appearance.name.trim() || appearanceStatus === 'saving'} onClick={() => { void saveAppearance(); }}>{t(appearanceStatus === 'saving' ? 'saving' : 'save')}</button></div>
         {appearanceStatus === 'saved' ? <p role="status">{t('routineAppearanceSaved')}</p> : appearanceStatus === 'error' ? <p role="alert" className="form-error">{t('routineAppearanceError')}</p> : null}
       </section> : null}
+      {iconPickerOpen ? <RoutineIconPicker selected={routineIconName(appearance.icon)} locale={state.locale} close={() => setIconPickerOpen(false)} select={(icon) => { setAppearance((current) => ({ ...current, icon })); setAppearanceStatus(undefined); }} t={t} /> : null}
       <nav className="routine-tabs" aria-label={t('routineSections')}>
         {tabs.map((item) => <button type="button" className={tab === item ? 'active' : ''} aria-current={tab === item ? 'page' : undefined} onClick={() => setTab(item)} key={item}>{t(item === 'details' ? 'infoTab' : item === 'plan' ? 'monitoringPlan' : 'trackingTab')}</button>)}
       </nav>
