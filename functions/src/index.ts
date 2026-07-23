@@ -8,7 +8,7 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { randomBytes } from 'node:crypto';
 import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, createRecoveryCode, createRelationshipInvitationCode, hashLinkCode, isFirestoreDocumentId, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, isRelationshipInvitationCode, normalizeLinkCode, sensitiveCodeAttemptState } from './helpers.js';
-import { analyzeWithGemini, parseImageDataUrl, routeAnalysisStatusForReview, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
+import { analyzePhotoChecklistWithGemini, analyzeWithGemini, isCurrentAnalysisAttempt, parseImageDataUrl, routeAnalysisStatusForReview, unavailablePhotoChecklistAnalysis, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
 import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema, plannedCheckDispatchSchedule, shouldAutoDispatchCheck } from './planning.js';
 import { challengeForAssignment, createDefaultRoutineAssignment, createDraftRoutineAssignment, createRoutineAssignment, createRoutineAssignmentVersionChange, DEFAULT_ROUTINE_ID, isRoutineValidationMode, parseRoutineResponseSubmission, routineAssignmentProvenance, routineFromCatalog, RoutineResponseInputError, shouldCreateDefaultRoutineAssignment, type RoutineAssignmentDocument, type RoutineDocument, type RoutineResponseDefinition } from './routines.js';
 import { buildCheckNotificationPayload, buildDeclarativePushPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription, notificationWindowIsOpen, type SyntheticReceiptPayload } from './notifications.js';
@@ -3347,14 +3347,14 @@ export const analyzeCheck = onCall({
     throw new HttpsError('invalid-argument', 'A valid image is required.');
   }
   const checkRef = aggregateRef.collection('checks').doc(checkId);
-  const routineId = await db.runTransaction(async (transaction) => {
+  const analysisAttempt = await db.runTransaction(async (transaction) => {
     const check = await transaction.get(checkRef);
     const checkData = check.data();
     if (!check.exists || !checkData || !isFreshCheckSubmission(checkData, capturedAt)) {
       throw new HttpsError('failed-precondition', 'This check is expired, completed, or invalid.');
     }
     const responseKind = String(checkData.challenge?.response?.kind ?? 'photo');
-    if (responseKind !== 'photo') {
+    if (!['photo', 'photo_checklist'].includes(responseKind)) {
       throw new HttpsError('failed-precondition', 'This check does not accept a photo response.');
     }
     if (checkData.status === 'analyzing') {
@@ -3365,23 +3365,31 @@ export const analyzeCheck = onCall({
       status: 'analyzing',
       analysisStartedAt: FieldValue.serverTimestamp(),
     });
-    return typeof checkData.routineId === 'string' && checkData.routineId ? checkData.routineId : DEFAULT_ROUTINE_ID;
+    return {
+      routineId: typeof checkData.routineId === 'string' && checkData.routineId ? checkData.routineId : DEFAULT_ROUTINE_ID,
+      response: (checkData.challenge?.response ?? { kind: 'photo' }) as RoutineResponseDefinition,
+    };
   });
+  const { routineId } = analysisAttempt;
   let proofImagePath: string | undefined;
   try {
     proofImagePath = await storeProofImage(aggregateRef.parent.id as 'families' | 'participants', familyId, checkId, imageDataUrl);
   } catch (error) {
     console.error('Unable to store proof image for review', error);
-    await checkRef.update({
-      capturedAt: FieldValue.delete(),
-      status: 'pending',
-      analysisStartedAt: FieldValue.delete(),
+    await db.runTransaction(async (transaction) => {
+      const check = await transaction.get(checkRef);
+      if (!check.exists || !isCurrentAnalysisAttempt(check.data(), capturedAt)) return;
+      transaction.update(checkRef, {
+        capturedAt: FieldValue.delete(),
+        status: 'pending',
+        analysisStartedAt: FieldValue.delete(),
+      });
     });
     throw new HttpsError('unavailable', 'The proof image could not be stored. Please retake the photo.');
   }
   const assignment = await aggregateRef.collection('routineAssignments').doc(routineId).get();
   const assignmentData = assignment.data() as Partial<RoutineAssignmentDocument> | undefined;
-  if (assignmentData?.validationMode === 'auto') {
+  if (assignmentData?.validationMode === 'auto' && analysisAttempt.response.kind === 'photo') {
     const autoUpdate = {
       capturedAt,
       status: 'detected',
@@ -3393,7 +3401,7 @@ export const analyzeCheck = onCall({
     const response = await db.runTransaction(async (transaction) => {
       const check = await transaction.get(checkRef);
       const checkData = check.data();
-      if (!check.exists || !checkData || checkData.status !== 'analyzing' || checkData.capturedAt !== capturedAt) {
+      if (!check.exists || !isCurrentAnalysisAttempt(checkData, capturedAt)) {
         throw new HttpsError('failed-precondition', 'This check is no longer awaiting this analysis.');
       }
       transaction.update(checkRef, autoUpdate);
@@ -3428,49 +3436,91 @@ export const analyzeCheck = onCall({
     });
     return response;
   }
-  const routineAnalysis = getRoutineAnalysisContext(assignmentData, routineId, locale);
-  const fallbackResult: Partial<AnalysisResult> = {
-    status: 'uncertain',
-    reason: 'analysis_unavailable',
+  let analysisUpdate: Record<string, unknown> & {
+    status: 'detected' | 'not_detected' | 'uncertain';
+    automatedStatus: 'detected' | 'not_detected' | 'uncertain';
+    analysisSource: 'ai' | 'fallback';
+    reviewStatus?: 'pending';
   };
-  let result: Partial<AnalysisResult> = fallbackResult;
-  try {
-    result = await analyzeWithGemini(imageDataUrl, {
-      model: geminiModel,
-      getAccessToken: () => geminiAuth.getAccessToken(),
-      locale,
-      routineAnalysis,
-    });
-  } catch (error) {
-    reportOperationalAlert({
-      kind: 'analysis_failed',
-      familyId,
-      checkId,
-      routineId,
-      actorUid: uid,
-      details: { model: geminiModel, locale },
-      error,
-    });
-    console.error('AI analysis failed, returning fallback result', error);
+  if (analysisAttempt.response.kind === 'photo_checklist') {
+    let result = unavailablePhotoChecklistAnalysis(analysisAttempt.response.criteria, geminiModel);
+    try {
+      result = await analyzePhotoChecklistWithGemini(imageDataUrl, {
+        model: geminiModel,
+        getAccessToken: () => geminiAuth.getAccessToken(),
+        locale,
+        prompt: analysisAttempt.response.prompt,
+        criteria: analysisAttempt.response.criteria,
+      });
+    } catch (error) {
+      reportOperationalAlert({
+        kind: 'analysis_failed',
+        familyId,
+        checkId,
+        routineId,
+        actorUid: uid,
+        details: { model: geminiModel, locale, responseKind: 'photo_checklist', itemCount: analysisAttempt.response.criteria.length },
+        error,
+      });
+      console.error('AI photo checklist analysis failed, returning fallback result', error);
+    }
+    const fallback = result.items.some((item) => item.decision.source === 'fallback');
+    analysisUpdate = {
+      capturedAt,
+      status: result.status,
+      automatedStatus: result.status,
+      analysisSource: fallback ? 'fallback' : 'ai',
+      photoChecklistItems: result.items,
+      imageQuality: result.imageQuality,
+      analysisProvider: result.provider,
+      analysisModel: result.model,
+      analysisPromptVersion: result.promptVersion,
+      ...(proofImagePath ? { proofImagePath } : {}),
+      ...(proofImagePath ? { proofImageExpiresAt: new Date(Date.now() + proofImageRetentionDays * 86_400_000).toISOString() } : {}),
+      ...(result.status === 'uncertain' ? { reviewStatus: 'pending' as const } : {}),
+    };
+  } else {
+    const routineAnalysis = getRoutineAnalysisContext(assignmentData, routineId, locale);
+    const fallbackResult: Partial<AnalysisResult> = { status: 'uncertain', reason: 'analysis_unavailable' };
+    let result: Partial<AnalysisResult> = fallbackResult;
+    try {
+      result = await analyzeWithGemini(imageDataUrl, {
+        model: geminiModel,
+        getAccessToken: () => geminiAuth.getAccessToken(),
+        locale,
+        routineAnalysis,
+      });
+    } catch (error) {
+      reportOperationalAlert({
+        kind: 'analysis_failed',
+        familyId,
+        checkId,
+        routineId,
+        actorUid: uid,
+        details: { model: geminiModel, locale, responseKind: 'photo' },
+        error,
+      });
+      console.error('AI analysis failed, returning fallback result', error);
+    }
+    const routedAnalysis = routeAnalysisStatusForReview(result.status ?? 'uncertain', Boolean(proofImagePath));
+    analysisUpdate = {
+      capturedAt,
+      status: routedAnalysis.status,
+      automatedStatus: routedAnalysis.automatedStatus,
+      analysisSource: result.reason === 'analysis_unavailable' ? 'fallback' : 'ai',
+      ...(proofImagePath ? { proofImagePath } : {}),
+      ...(proofImagePath ? { proofImageExpiresAt: new Date(Date.now() + proofImageRetentionDays * 86_400_000).toISOString() } : {}),
+      ...(routedAnalysis.reviewRequired ? { reviewStatus: 'pending' as const } : {}),
+      ...(result.confidence !== undefined ? { confidence: result.confidence } : {}),
+      ...(result.imageQuality !== undefined ? { imageQuality: result.imageQuality } : {}),
+      ...(result.reason ? { reason: result.reason } : {}),
+      ...(result.reasonRaw ? { reasonRaw: result.reasonRaw } : {}),
+    };
   }
-  const routedAnalysis = routeAnalysisStatusForReview(result.status ?? 'uncertain', Boolean(proofImagePath));
-  const analysisUpdate = {
-    capturedAt,
-    status: routedAnalysis.status,
-    automatedStatus: routedAnalysis.automatedStatus,
-    analysisSource: result.reason === 'analysis_unavailable' ? 'fallback' : 'ai',
-    ...(proofImagePath ? { proofImagePath } : {}),
-    ...(proofImagePath ? { proofImageExpiresAt: new Date(Date.now() + proofImageRetentionDays * 86_400_000).toISOString() } : {}),
-    ...(routedAnalysis.reviewRequired ? { reviewStatus: 'pending' } : {}),
-    ...(result.confidence !== undefined ? { confidence: result.confidence } : {}),
-    ...(result.imageQuality !== undefined ? { imageQuality: result.imageQuality } : {}),
-    ...(result.reason ? { reason: result.reason } : {}),
-    ...(result.reasonRaw ? { reasonRaw: result.reasonRaw } : {}),
-  };
   const response = await db.runTransaction(async (transaction) => {
     const check = await transaction.get(checkRef);
     const checkData = check.data();
-    if (!check.exists || !checkData || checkData.status !== 'analyzing' || checkData.capturedAt !== capturedAt) {
+    if (!check.exists || !isCurrentAnalysisAttempt(checkData, capturedAt)) {
       throw new HttpsError('failed-precondition', 'This check is no longer awaiting this analysis.');
     }
     transaction.update(checkRef, analysisUpdate);
@@ -3508,6 +3558,8 @@ export const analyzeCheck = onCall({
       analysisSource: analysisUpdate.analysisSource,
       reviewStatus: analysisUpdate.reviewStatus ?? null,
       hasProofImage: Boolean(proofImagePath),
+      responseKind: analysisAttempt.response.kind,
+      ...(analysisAttempt.response.kind === 'photo_checklist' ? { itemCount: analysisAttempt.response.criteria.length } : {}),
     },
   });
   reportOperationalEvent({
@@ -3525,6 +3577,8 @@ export const analyzeCheck = onCall({
       reviewPushSuccess: reviewDispatch?.success ?? 0,
       reviewPushFailed: reviewDispatch?.failed ?? 0,
       durationMs: Date.now() - requestStartedAt,
+      responseKind: analysisAttempt.response.kind,
+      ...(analysisAttempt.response.kind === 'photo_checklist' ? { itemCount: analysisAttempt.response.criteria.length } : {}),
     },
   });
   if (analysisUpdate.analysisSource === 'ai') reportOperationalRecovery('analysis_failed');

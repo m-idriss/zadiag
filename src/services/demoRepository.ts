@@ -569,7 +569,8 @@ export class DemoRepository implements AppRepository {
     }
     this.consumedSessions.add(sessionId);
     const assignment = this.state.routineAssignments.find((item) => item.routineId === event.routineId);
-    if (assignment?.validationMode === 'auto') {
+    const response = event.challenge?.response;
+    if (assignment?.validationMode === 'auto' && response?.kind !== 'photo_checklist') {
       Object.assign(event, {
         status: 'detected' as const,
         capturedAt: capturedAt.toISOString(),
@@ -582,6 +583,27 @@ export class DemoRepository implements AppRepository {
     event.status = 'analyzing';
     this.persist();
     await new Promise((resolve) => window.setTimeout(resolve, 900));
+    if (response?.kind === 'photo_checklist') {
+      Object.assign(event, {
+        status: 'detected' as const,
+        automatedStatus: 'detected' as const,
+        capturedAt: capturedAt.toISOString(),
+        analysisSource: 'ai' as const,
+        analysisProvider: 'demo',
+        analysisModel: 'demo',
+        analysisPromptVersion: 'photo-checklist-v1',
+        imageQuality: 0.91,
+        photoChecklistItems: response.criteria.map((criterion) => ({
+          criterionId: criterion.id,
+          status: 'detected' as const,
+          confidence: 0.94,
+          reason: 'Visible in the demo proof.',
+          decision: { source: 'ai' as const },
+        })),
+      });
+      this.persist();
+      return structuredClone(event);
+    }
     const analysis: AnalysisResult = {
       status: 'detected',
       confidence: 0.94,

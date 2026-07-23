@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { derivePhotoChecklistStatus, type PhotoChecklistItemResult, type PhotoChecklistItemStatus, type RoutinePhotoChecklistCriterion } from './routines.js';
 
 export type AnalysisResult = {
   status: 'detected' | 'not_detected' | 'uncertain';
@@ -6,6 +7,15 @@ export type AnalysisResult = {
   imageQuality: number;
   reason: string;
   reasonRaw?: string;
+};
+
+export type PhotoChecklistAnalysisResult = {
+  status: PhotoChecklistItemStatus;
+  imageQuality: number;
+  items: PhotoChecklistItemResult[];
+  provider: 'gemini';
+  model: string;
+  promptVersion: typeof PHOTO_CHECKLIST_PROMPT_VERSION;
 };
 
 export const routeAnalysisStatusForReview = (
@@ -20,6 +30,11 @@ export const routeAnalysisStatusForReview = (
   };
 };
 
+export const isCurrentAnalysisAttempt = (
+  check: { status?: unknown; capturedAt?: unknown } | undefined,
+  capturedAt: string,
+) => check?.status === 'analyzing' && check.capturedAt === capturedAt;
+
 export type RoutineAnalysisContext = {
   routineName: string;
   expectedEvidence: string;
@@ -33,6 +48,16 @@ const analysisSchema = z.object({
   confidence: z.unknown(),
   imageQuality: z.unknown(),
   reason: z.unknown(),
+});
+const photoChecklistItemSchema = z.strictObject({
+  criterionId: z.string().min(1).max(64),
+  status: z.enum(['detected', 'not_detected', 'uncertain']),
+  confidence: z.number().min(0).max(1),
+  reason: z.string().min(1).max(220),
+});
+const photoChecklistAnalysisSchema = z.strictObject({
+  imageQuality: z.number().min(0).max(1),
+  items: z.array(photoChecklistItemSchema).min(2).max(6),
 });
 
 const imageDataUrlSchema = z.string().regex(/^data:(.+?);base64,(.+)$/);
@@ -117,6 +142,9 @@ type GeminiGenerateContentResponse = {
 type AnalysisLocale = 'en' | 'fr';
 
 const GEMINI_ANALYSIS_MAX_OUTPUT_TOKENS = 768;
+const GEMINI_PHOTO_CHECKLIST_MAX_OUTPUT_TOKENS = 1_536;
+export const PHOTO_CHECKLIST_PROMPT_VERSION = 'photo-checklist-v1';
+const PHOTO_CHECKLIST_MIN_IMAGE_QUALITY = 0.5;
 const GEMINI_ANALYSIS_RESPONSE_SCHEMA = {
   type: 'OBJECT',
   required: ['status', 'confidence', 'imageQuality', 'reason'],
@@ -127,6 +155,28 @@ const GEMINI_ANALYSIS_RESPONSE_SCHEMA = {
     reason: { type: 'STRING', maxLength: 220 },
   },
 } as const;
+const photoChecklistResponseSchema = (criteria: RoutinePhotoChecklistCriterion[]) => ({
+  type: 'OBJECT',
+  required: ['imageQuality', 'items'],
+  properties: {
+    imageQuality: { type: 'NUMBER', minimum: 0, maximum: 1 },
+    items: {
+      type: 'ARRAY',
+      minItems: criteria.length,
+      maxItems: criteria.length,
+      items: {
+        type: 'OBJECT',
+        required: ['criterionId', 'status', 'confidence', 'reason'],
+        properties: {
+          criterionId: { type: 'STRING', enum: criteria.map((criterion) => criterion.id) },
+          status: { type: 'STRING', enum: ['detected', 'not_detected', 'uncertain'] },
+          confidence: { type: 'NUMBER', minimum: 0, maximum: 1 },
+          reason: { type: 'STRING', maxLength: 220 },
+        },
+      },
+    },
+  },
+} as const);
 
 const defaultRoutineAnalysis: RoutineAnalysisContext = {
   routineName: 'Treatment adherence',
@@ -155,6 +205,31 @@ const buildPrompt = (locale: AnalysisLocale, retry: boolean, routineAnalysis = d
     ? 'Example reason: "La preuve attendue n’est pas clairement visible."'
     : 'Example reason: "The expected proof is not clearly visible."',
   retry ? 'Only use not_detected if you are genuinely confident the expected evidence is missing.' : '',
+].filter(Boolean).join(' ');
+
+const buildPhotoChecklistPrompt = (
+  locale: AnalysisLocale,
+  retry: boolean,
+  prompt: string,
+  criteria: RoutinePhotoChecklistCriterion[],
+) => [
+  'Analyze one proof image against every visual criterion below.',
+  `Participant prompt: ${prompt}`,
+  ...criteria.map((criterion) => [
+    `Criterion ID: ${criterion.id}.`,
+    `Participant label: ${criterion.label}.`,
+    `Visual rule: ${criterion.criterion}`,
+    `Required: ${criterion.required ? 'yes' : 'no'}.`,
+  ].join(' ')),
+  'Return exactly one item for every criterion ID and no other IDs.',
+  'For each item return criterionId, status, confidence, and a reason under 25 words.',
+  'status must be detected, not_detected, or uncertain.',
+  'Use uncertain whenever the image is blurry, dark, cropped, ambiguous, or does not support a reliable decision.',
+  'Return imageQuality between 0 and 1.',
+  'Do not return an aggregate or global status.',
+  locale === 'fr' ? 'Write every reason in natural French.' : 'Write every reason in natural English.',
+  retry ? 'This is a second pass. Re-check every criterion carefully.' : '',
+  'Return JSON only.',
 ].filter(Boolean).join(' ');
 
 const requestGeminiAnalysis = async (
@@ -249,6 +324,120 @@ export const analyzeWithGemini = async (
     return initialResult;
   }
 };
+
+export const normalizePhotoChecklistAnalysis = (
+  value: unknown,
+  criteria: RoutinePhotoChecklistCriterion[],
+  metadata: { model: string },
+): PhotoChecklistAnalysisResult => {
+  const parsed = photoChecklistAnalysisSchema.parse(value);
+  const expectedIds = criteria.map((criterion) => criterion.id);
+  const actualIds = parsed.items.map((item) => item.criterionId);
+  if (actualIds.length !== expectedIds.length
+    || new Set(actualIds).size !== actualIds.length
+    || actualIds.some((id) => !expectedIds.includes(id))) {
+    throw new Error('invalid_photo_checklist_results');
+  }
+  const lowQuality = parsed.imageQuality < PHOTO_CHECKLIST_MIN_IMAGE_QUALITY;
+  const items: PhotoChecklistItemResult[] = parsed.items.map((item) => {
+    const criterion = criteria.find((candidate) => candidate.id === item.criterionId)!;
+    return {
+      criterionId: item.criterionId,
+      status: lowQuality && criterion.required ? 'uncertain' : item.status,
+      confidence: item.confidence,
+      reason: item.reason,
+      decision: { source: 'ai' },
+    };
+  });
+  return {
+    status: derivePhotoChecklistStatus(criteria, items),
+    imageQuality: parsed.imageQuality,
+    items,
+    provider: 'gemini',
+    model: metadata.model,
+    promptVersion: PHOTO_CHECKLIST_PROMPT_VERSION,
+  };
+};
+
+const requestGeminiPhotoChecklistAnalysis = async (
+  imageDataUrl: string,
+  options: {
+    model: string;
+    getAccessToken: () => Promise<string | null | undefined>;
+    fetchImpl?: typeof fetch;
+    locale?: AnalysisLocale;
+    prompt: string;
+    criteria: RoutinePhotoChecklistCriterion[];
+  },
+  retry: boolean,
+) => {
+  const { mimeType, data } = parseImageDataUrl(imageDataUrl);
+  const token = await options.getAccessToken();
+  if (!token) throw new Error('Missing Google access token.');
+  const response = await (options.fetchImpl ?? fetch)(`https://generativelanguage.googleapis.com/v1beta/models/${options.model}:generateContent`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [
+        { text: buildPhotoChecklistPrompt(options.locale ?? 'en', retry, options.prompt, options.criteria) },
+        { inline_data: { mime_type: mimeType, data } },
+      ] }],
+      generationConfig: {
+        temperature: 0,
+        maxOutputTokens: GEMINI_PHOTO_CHECKLIST_MAX_OUTPUT_TOKENS,
+        responseMimeType: 'application/json',
+        responseSchema: photoChecklistResponseSchema(options.criteria),
+        thinkingConfig: { thinkingBudget: 0 },
+      },
+    }),
+  });
+  if (!response.ok) throw new Error(`Gemini API request failed with status ${response.status}: ${await response.text()}`);
+  const payload = await response.json() as GeminiGenerateContentResponse;
+  if (payload.error) throw new Error(`Gemini API returned an error: ${JSON.stringify(payload.error)}`);
+  const candidate = payload.candidates?.[0];
+  const text = candidate?.content?.parts?.map((part) => part.text ?? '').join('').trim();
+  if (!text) throw new Error('Gemini response did not contain text.');
+  return normalizePhotoChecklistAnalysis(JSON.parse(extractJsonPayload(text)), options.criteria, { model: options.model });
+};
+
+export const analyzePhotoChecklistWithGemini = async (
+  imageDataUrl: string,
+  options: {
+    model: string;
+    getAccessToken: () => Promise<string | null | undefined>;
+    fetchImpl?: typeof fetch;
+    locale?: AnalysisLocale;
+    prompt: string;
+    criteria: RoutinePhotoChecklistCriterion[];
+  },
+): Promise<PhotoChecklistAnalysisResult> => {
+  const initialResult = await requestGeminiPhotoChecklistAnalysis(imageDataUrl, options, false);
+  if (initialResult.status !== 'not_detected') return initialResult;
+  try {
+    return await requestGeminiPhotoChecklistAnalysis(imageDataUrl, options, true);
+  } catch (error) {
+    console.warn('Gemini photo checklist retry failed, keeping first result', error);
+    return initialResult;
+  }
+};
+
+export const unavailablePhotoChecklistAnalysis = (
+  criteria: RoutinePhotoChecklistCriterion[],
+  model: string,
+): PhotoChecklistAnalysisResult => ({
+  status: 'uncertain',
+  imageQuality: 0,
+  items: criteria.map((criterion) => ({
+    criterionId: criterion.id,
+    status: 'uncertain',
+    confidence: 0,
+    reason: 'analysis_unavailable',
+    decision: { source: 'fallback' },
+  })),
+  provider: 'gemini',
+  model,
+  promptVersion: PHOTO_CHECKLIST_PROMPT_VERSION,
+});
 
 const requestGeminiTranslation = async (
   text: string,
