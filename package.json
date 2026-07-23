@@ -21,7 +21,7 @@
     "icons": "node scripts/generate-icons.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest run",
-    "test:rules": "firebase emulators:exec --only firestore,storage \"vitest run --config vitest.rules.config.ts\"",
+    "test:rules": "firebase --project demo-zadiag-rules emulators:exec --only firestore,storage \"vitest run --config vitest.rules.config.ts\"",
     "test:watch": "vitest"
   },
   "dependencies": {

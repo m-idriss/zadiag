@@ -5,7 +5,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { getBytes, ref, uploadBytes } from 'firebase/storage';
 import { afterAll, beforeAll, beforeEach, describe, test } from 'vitest';
 
-const projectId = 'zadiag-22482';
+const projectId = 'demo-zadiag-rules';
 let environment: RulesTestEnvironment;
 
 beforeAll(async () => {
