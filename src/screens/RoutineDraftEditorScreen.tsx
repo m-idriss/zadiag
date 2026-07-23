@@ -1,7 +1,8 @@
-import { useState, type CSSProperties, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import type { Locale, Routine, RoutineCategory, RoutineResponseDefinition } from '../domain/models';
 import { createBlankRoutinePackage, DEFAULT_PRIVATE_ROUTINE_ACCENT, prepareMinimalRoutinePackage, routinePackageInLocale, type RoutineDraft, type RoutinePackageV1 } from '../domain/routineDraft';
-import { AppIcon, routineIconName } from '../components/Icon';
+import { AppIcon } from '../components/Icon';
+import { RoutineAppearanceFields } from '../components/RoutineAppearanceFields';
 import { formatMessage, type MessageKey } from '../services/i18n';
 import type { AiRoutineProposal, AiRoutineResponseKind } from '../services/contracts';
 
@@ -173,15 +174,15 @@ export function RoutineDraftEditorScreen({
   const accentColor = /^#[0-9a-f]{6}$/i.test(routine.accentColor ?? '') ? routine.accentColor! : DEFAULT_PRIVATE_ROUTINE_ACCENT;
   const responseKind = routine.response?.kind ?? 'photo';
   const participantPreviewName = routine.name.trim() || routine.instructions?.split(/[.!?\n]/)[0]?.trim() || t('routineDraftEditorTitle');
-  const identityFields = <div className="routine-draft-customization routine-draft-customization-direct" style={{ '--routine-accent': accentColor } as CSSProperties}>
-    <div className="routine-draft-name-row">
-      <span className="settings-row-icon routine-icon" aria-hidden="true"><AppIcon name={routineIconName(routine.icon)} /></span>
-      <label className="routine-draft-field"><span>{t('routineDraftName')}</span><input value={routine.name} maxLength={120} placeholder={t('routineDraftNamePlaceholder')} onChange={(event) => updateRoutine({ name: event.target.value })} /></label>
-    </div>
-    <div className="routine-draft-appearance-fields">
-      <label className="routine-draft-field"><span>{t('routineDraftCategory')}</span><select value={routine.category ?? 'custom'} onChange={(event) => updateCategory(event.target.value as RoutineCategory)}>{routineCategories.map((category) => <option value={category} key={category}>{t(categoryLabels[category])}</option>)}</select></label>
-      <label className="routine-draft-field routine-draft-color-field"><span>{t('routineDraftAccentColor')}</span><input type="color" value={accentColor} onChange={(event) => updateRoutine({ accentColor: event.target.value.toUpperCase() })} /></label>
-    </div>
+  const identityFields = <div className="routine-draft-customization routine-draft-customization-direct">
+    <label className="routine-draft-field"><span>{t('routineDraftCategory')}</span><select value={routine.category ?? 'custom'} onChange={(event) => updateCategory(event.target.value as RoutineCategory)}>{routineCategories.map((category) => <option value={category} key={category}>{t(categoryLabels[category])}</option>)}</select></label>
+    <RoutineAppearanceFields
+      appearance={{ name: routine.name, icon: routine.icon ?? categoryIcons[routine.category ?? 'custom'], accentColor }}
+      locale={locale}
+      onChange={updateRoutine}
+      namePlaceholder={t('routineDraftNamePlaceholder')}
+      t={t}
+    />
   </div>;
   return (
     <div className="content-screen routine-draft-editor-screen">
