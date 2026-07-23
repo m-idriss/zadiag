@@ -57,10 +57,18 @@ export interface RoutineChecklistItem {
   label: string;
 }
 
+export interface RoutinePhotoChecklistCriterion {
+  id: string;
+  label: string;
+  criterion: string;
+  required: boolean;
+}
+
 export type RoutineResponseDefinition =
   | { kind: 'photo' }
   | { kind: 'confirmation'; prompt: string; positiveLabel?: string; negativeLabel?: string }
   | { kind: 'checklist'; prompt: string; items: RoutineChecklistItem[] }
+  | { kind: 'photo_checklist'; prompt: string; criteria: RoutinePhotoChecklistCriterion[] }
   | {
     kind: 'quiz';
     prompt: string;
@@ -88,6 +96,10 @@ export interface RoutineLocalizedContent {
     detectedCriteria?: string;
     notDetectedCriteria?: string;
     uncertaintyCriteria?: string;
+  };
+  photoChecklist?: {
+    prompt: string;
+    criteria: Array<{ id: string; label: string }>;
   };
 }
 
@@ -170,6 +182,18 @@ export type RoutineResponseSubmission =
   | { kind: 'checklist'; items: Array<{ id: string; value: boolean }> }
   | { kind: 'quiz'; answers: Array<{ questionId: string; choiceId: string }> };
 
+export type PhotoChecklistItemStatus = 'detected' | 'not_detected' | 'uncertain';
+export type PhotoChecklistDecision =
+  | { source: 'ai' }
+  | { source: 'responsible'; actorUid: string; decidedAt: string };
+export interface PhotoChecklistItemResult {
+  criterionId: string;
+  status: PhotoChecklistItemStatus;
+  confidence: number;
+  reason: string;
+  decision: PhotoChecklistDecision;
+}
+
 export interface RoutineQuizResult {
   score: number;
   correctCount: number;
@@ -199,6 +223,7 @@ export interface VerificationEvent extends RoutineTask {
   challenge?: RoutineChallengeSnapshot;
   submission?: RoutineResponseSubmission;
   quizResult?: RoutineQuizResult;
+  photoChecklistItems?: PhotoChecklistItemResult[];
   analysisSource?: 'ai' | 'fallback' | 'self';
   automatedStatus?: Extract<VerificationStatus, 'detected' | 'not_detected' | 'uncertain'>;
   confidence?: number;
@@ -217,6 +242,8 @@ const legacyPhotoResponse: RoutineResponseDefinition = { kind: 'photo' };
 
 const nonEmptyString = (value: unknown, maximum: number) =>
   typeof value === 'string' && value.trim().length > 0 && value.length <= maximum;
+const exactKeys = (candidate: Record<string, unknown>, expected: string[]) =>
+  Object.keys(candidate).every((key) => expected.includes(key));
 
 export const parseRoutineResponse = (value: unknown): RoutineResponseDefinition | undefined => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
@@ -242,6 +269,25 @@ export const parseRoutineResponse = (value: unknown): RoutineResponseDefinition 
       return { kind: 'checklist', prompt: String(candidate.prompt), items };
     }
   }
+  if (candidate.kind === 'photo_checklist' && nonEmptyString(candidate.prompt, 500) && Array.isArray(candidate.criteria)
+    && exactKeys(candidate, ['kind', 'prompt', 'criteria'])) {
+    const criteria = candidate.criteria.flatMap((item) => {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) return [];
+      const entry = item as Record<string, unknown>;
+      return exactKeys(entry, ['id', 'label', 'criterion', 'required'])
+        && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(String(entry.id))
+        && nonEmptyString(entry.id, 64)
+        && nonEmptyString(entry.label, 200)
+        && nonEmptyString(entry.criterion, 500)
+        && typeof entry.required === 'boolean'
+        ? [{ id: String(entry.id), label: String(entry.label), criterion: String(entry.criterion), required: entry.required }]
+        : [];
+    });
+    if (criteria.length === candidate.criteria.length && criteria.length >= 2 && criteria.length <= 6
+      && new Set(criteria.map((criterion) => criterion.id)).size === criteria.length) {
+      return { kind: 'photo_checklist', prompt: String(candidate.prompt), criteria };
+    }
+  }
   if (
     candidate.kind === 'quiz'
     && nonEmptyString(candidate.prompt, 500)
@@ -264,6 +310,31 @@ export const parseRoutineResponse = (value: unknown): RoutineResponseDefinition 
     };
   }
   return undefined;
+};
+
+export const parsePhotoChecklistItemResults = (value: unknown): PhotoChecklistItemResult[] | undefined => {
+  if (!Array.isArray(value) || value.length < 2 || value.length > 6) return undefined;
+  const items = value.flatMap<PhotoChecklistItemResult>((item) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return [];
+    const entry = item as Record<string, unknown>;
+    if (!exactKeys(entry, ['criterionId', 'status', 'confidence', 'reason', 'decision'])
+      || !nonEmptyString(entry.criterionId, 64)
+      || !['detected', 'not_detected', 'uncertain'].includes(String(entry.status))
+      || !Number.isFinite(entry.confidence) || Number(entry.confidence) < 0 || Number(entry.confidence) > 1
+      || !nonEmptyString(entry.reason, 500)
+      || !entry.decision || typeof entry.decision !== 'object' || Array.isArray(entry.decision)) return [];
+    const decision = entry.decision as Record<string, unknown>;
+    if (decision.source === 'ai' && exactKeys(decision, ['source'])) {
+      return [{ criterionId: String(entry.criterionId), status: entry.status as PhotoChecklistItemStatus, confidence: Number(entry.confidence), reason: String(entry.reason), decision: { source: 'ai' as const } }];
+    }
+    if (decision.source === 'responsible' && exactKeys(decision, ['source', 'actorUid', 'decidedAt'])
+      && nonEmptyString(decision.actorUid, 128) && nonEmptyString(decision.decidedAt, 40)
+      && Number.isFinite(Date.parse(String(decision.decidedAt)))) {
+      return [{ criterionId: String(entry.criterionId), status: entry.status as PhotoChecklistItemStatus, confidence: Number(entry.confidence), reason: String(entry.reason), decision: { source: 'responsible' as const, actorUid: String(decision.actorUid), decidedAt: String(decision.decidedAt) } }];
+    }
+    return [];
+  });
+  return items.length === value.length && new Set(items.map((item) => item.criterionId)).size === items.length ? items : undefined;
 };
 
 export const parseRoutineChallenge = (value: unknown): RoutineChallengeSnapshot | undefined => {

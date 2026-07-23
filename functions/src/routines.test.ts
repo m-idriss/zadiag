@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { challengeForAssignment, createDefaultRoutineAssignment, createDraftRoutineAssignment, createRoutineAssignmentVersionChange, DEFAULT_ROUTINE_ID, isRoutineValidationMode, migrateCheckRoutineId, parseRoutineResponseSubmission, responseForRoutine, RoutineResponseInputError, routineAssignmentProvenance, shouldCreateDefaultRoutineAssignment } from './routines.js';
+import { challengeForAssignment, createDefaultRoutineAssignment, createDraftRoutineAssignment, createRoutineAssignmentVersionChange, DEFAULT_ROUTINE_ID, derivePhotoChecklistStatus, isRoutineValidationMode, migrateCheckRoutineId, parseRoutineResponseSubmission, responseForRoutine, RoutineResponseInputError, routineAssignmentProvenance, shouldCreateDefaultRoutineAssignment } from './routines.js';
 
 const plan = {
   checksPerDay: 1,
@@ -81,4 +81,64 @@ test('freezes the assigned challenge and validates structured responses exactly'
     kind: 'checklist', items: [{ id: 'dose-a', value: true }],
   }), RoutineResponseInputError);
   assert.throws(() => parseRoutineResponseSubmission({ kind: 'photo' }, { kind: 'confirmation', value: true }), RoutineResponseInputError);
+});
+
+test('freezes photo checklist criteria independently from later routine edits', () => {
+  const assignment = createDraftRoutineAssignment({
+    id: 'elastics', name: 'Elastics', description: 'Check elastics.', instructions: 'Take one clear photo.',
+    response: {
+      kind: 'photo_checklist',
+      prompt: 'Show both elastics',
+      criteria: [
+        { id: 'upper', label: 'Upper elastic', criterion: 'The upper elastic is attached.', required: true },
+        { id: 'lower', label: 'Lower elastic', criterion: 'The lower elastic is attached.', required: false },
+      ],
+    },
+  }, plan, 'draft-visual', 2);
+  const challenge = challengeForAssignment(assignment);
+  const response = assignment.routine.response;
+  if (response?.kind !== 'photo_checklist') throw new Error('invalid test fixture');
+  response.criteria[0].label = 'Changed after request';
+  response.criteria.reverse();
+
+  assert.deepEqual(challenge.response, {
+    kind: 'photo_checklist',
+    prompt: 'Show both elastics',
+    criteria: [
+      { id: 'upper', label: 'Upper elastic', criterion: 'The upper elastic is attached.', required: true },
+      { id: 'lower', label: 'Lower elastic', criterion: 'The lower elastic is attached.', required: false },
+    ],
+  });
+});
+
+test('derives photo checklist status only from required criteria', () => {
+  const criteria = [
+    { id: 'required-a', label: 'Required A', criterion: 'A is visible.', required: true },
+    { id: 'required-b', label: 'Required B', criterion: 'B is visible.', required: true },
+    { id: 'optional', label: 'Optional', criterion: 'Optional detail is visible.', required: false },
+  ];
+  assert.equal(derivePhotoChecklistStatus(criteria, [
+    { criterionId: 'required-a', status: 'detected' },
+    { criterionId: 'required-b', status: 'detected' },
+    { criterionId: 'optional', status: 'not_detected' },
+  ]), 'detected');
+  assert.equal(derivePhotoChecklistStatus(criteria, [
+    { criterionId: 'required-a', status: 'uncertain' },
+    { criterionId: 'required-b', status: 'not_detected' },
+    { criterionId: 'optional', status: 'detected' },
+  ]), 'not_detected');
+  assert.equal(derivePhotoChecklistStatus(criteria, [
+    { criterionId: 'required-a', status: 'uncertain' },
+    { criterionId: 'required-b', status: 'detected' },
+    { criterionId: 'optional', status: 'not_detected' },
+  ]), 'uncertain');
+  assert.throws(() => derivePhotoChecklistStatus(criteria, [
+    { criterionId: 'required-a', status: 'detected' },
+    { criterionId: 'required-b', status: 'detected' },
+  ]), /invalid_photo_checklist_results/);
+  assert.throws(() => derivePhotoChecklistStatus(criteria, [
+    { criterionId: 'required-a', status: 'detected' },
+    { criterionId: 'required-b', status: 'detected' },
+    { criterionId: 'unknown', status: 'detected' },
+  ]), /invalid_photo_checklist_results/);
 });

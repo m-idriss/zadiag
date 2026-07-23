@@ -10,11 +10,50 @@ export interface RoutineChecklistItem {
   label: string;
 }
 
+export interface RoutinePhotoChecklistCriterion {
+  id: string;
+  label: string;
+  criterion: string;
+  required: boolean;
+}
+
 export type RoutineResponseDefinition =
   | { kind: 'photo' }
   | { kind: 'confirmation'; prompt: string; positiveLabel?: string; negativeLabel?: string }
   | { kind: 'checklist'; prompt: string; items: RoutineChecklistItem[] }
+  | { kind: 'photo_checklist'; prompt: string; criteria: RoutinePhotoChecklistCriterion[] }
   | { kind: 'quiz'; prompt: string; topic: string; mode: 'fixed' | 'generated'; questionCount: number; choiceCount: number };
+
+export type PhotoChecklistItemStatus = 'detected' | 'not_detected' | 'uncertain';
+export type PhotoChecklistDecision =
+  | { source: 'ai' }
+  | { source: 'responsible'; actorUid: string; decidedAt: string };
+export interface PhotoChecklistItemResult {
+  criterionId: string;
+  status: PhotoChecklistItemStatus;
+  confidence: number;
+  reason: string;
+  decision: PhotoChecklistDecision;
+}
+
+export const derivePhotoChecklistStatus = (
+  criteria: RoutinePhotoChecklistCriterion[],
+  results: Array<Pick<PhotoChecklistItemResult, 'criterionId' | 'status'>>,
+): PhotoChecklistItemStatus => {
+  const expectedIds = criteria.map((criterion) => criterion.id);
+  const resultIds = results.map((result) => result.criterionId);
+  if (criteria.length < 2 || criteria.length > 6
+    || new Set(expectedIds).size !== expectedIds.length
+    || results.length !== criteria.length
+    || new Set(resultIds).size !== resultIds.length
+    || resultIds.some((id) => !expectedIds.includes(id))) {
+    throw new RoutineResponseInputError('invalid_photo_checklist_results');
+  }
+  const resultById = new Map(results.map((result) => [result.criterionId, result.status]));
+  if (criteria.some((criterion) => criterion.required && resultById.get(criterion.id) === 'not_detected')) return 'not_detected';
+  if (criteria.some((criterion) => criterion.required && resultById.get(criterion.id) === 'uncertain')) return 'uncertain';
+  return 'detected';
+};
 
 export interface RoutineChallengeSnapshot {
   routineId: string;
@@ -65,6 +104,10 @@ export interface RoutineDocument {
       detectedCriteria?: string;
       notDetectedCriteria?: string;
       uncertaintyCriteria?: string;
+    };
+    photoChecklist?: {
+      prompt: string;
+      criteria: Array<{ id: string; label: string }>;
     };
   }>>;
 }

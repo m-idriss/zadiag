@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { assertRoutineDraftRevision, createAssignmentForkPackage, createRoutineDraftDocument, parseRoutineDraftPackage, routineDraftSessionId, RoutineDraftConflictError, RoutineDraftInputError, selectReusableAssignmentDraft, updateRoutineDraftDocument } from './routineDrafts.js';
+import { assertRoutineDraftRevision, createAssignmentForkPackage, createRoutineDraftDocument, parseRoutineDraftPackage, routineDraftSessionId, RoutineDraftConflictError, RoutineDraftInputError, selectReusableAssignmentDraft, updateRoutineDraftDocument, type RoutineDraftPackage } from './routineDrafts.js';
 
 const routinePackage = () => ({
   schemaVersion: 1,
@@ -50,6 +50,64 @@ test('accepts typed responses and rejects malformed response configuration', () 
   const malformedQuiz = routinePackage();
   Object.assign(malformedQuiz.routine, { response: { kind: 'quiz', prompt: 'Quiz', topic: 'Java', mode: 'generated', questionCount: 0, choiceCount: 3 } });
   assert.throws(() => parseRoutineDraftPackage(malformedQuiz), RoutineDraftInputError);
+});
+
+test('validates bounded photo checklist definitions and their localized labels', () => {
+  const visual = routinePackage() as unknown as RoutineDraftPackage;
+  const visualCriteria = [
+    { id: 'upper-elastic', label: 'Upper elastic', criterion: 'The upper elastic is visibly attached.', required: true },
+    { id: 'lower-elastic', label: 'Lower elastic', criterion: 'The lower elastic is visibly attached.', required: false },
+  ];
+  Object.assign(visual.routine, {
+    response: {
+      kind: 'photo_checklist',
+      prompt: 'Show the completed setup',
+      criteria: visualCriteria,
+    },
+  });
+  visual.availableLocales = ['en', 'fr'];
+  visual.routine.translations = {
+    fr: {
+      name: visual.routine.name,
+      description: visual.routine.description,
+      instructions: visual.routine.instructions,
+      proofExample: visual.routine.proofExample,
+      analysis: visual.routine.analysis,
+      instructionSteps: visual.routine.instructionSteps,
+      photoChecklist: {
+        prompt: 'Montrez l’installation terminée',
+        criteria: [
+          { id: 'upper-elastic', label: 'Élastique supérieur' },
+          { id: 'lower-elastic', label: 'Élastique inférieur' },
+        ],
+      },
+    },
+  };
+  assert.equal(parseRoutineDraftPackage(visual).validation.status, 'valid');
+
+  const duplicate = structuredClone(visual);
+  if (duplicate.routine.response?.kind !== 'photo_checklist') throw new Error('invalid test fixture');
+  duplicate.routine.response.criteria[1].id = 'upper-elastic';
+  assert.equal(parseRoutineDraftPackage(duplicate).validation.status, 'invalid');
+
+  const driftedTranslation = structuredClone(visual);
+  if (driftedTranslation.routine.response?.kind !== 'photo_checklist') throw new Error('invalid test fixture');
+  driftedTranslation.routine.translations!.fr!.photoChecklist!.criteria.reverse();
+  assert.equal(parseRoutineDraftPackage(driftedTranslation).validation.status, 'invalid');
+
+  for (const criteria of [
+    visualCriteria.slice(0, 1),
+    [...visualCriteria, ...Array.from({ length: 5 }, (_, index) => ({ id: `extra-${index}`, label: 'Extra', criterion: 'Extra criterion.', required: false }))],
+  ]) {
+    const invalid = structuredClone(visual);
+    if (invalid.routine.response?.kind !== 'photo_checklist') throw new Error('invalid test fixture');
+    invalid.routine.response.criteria = criteria;
+    assert.throws(() => parseRoutineDraftPackage(invalid), RoutineDraftInputError);
+  }
+  const unknown = structuredClone(visual);
+  if (unknown.routine.response?.kind !== 'photo_checklist') throw new Error('invalid test fixture');
+  (unknown.routine.response.criteria[0] as Record<string, unknown>).unknown = true;
+  assert.throws(() => parseRoutineDraftPackage(unknown), RoutineDraftInputError);
 });
 
 test('accepts French as the primary package locale', () => {

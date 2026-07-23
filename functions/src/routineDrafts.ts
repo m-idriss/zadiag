@@ -22,6 +22,12 @@ const checklistItemSchema = z.strictObject({
   id: z.string().min(1).max(64).regex(idPattern),
   label: z.string().min(1).max(200),
 });
+const photoChecklistCriterionSchema = z.strictObject({
+  id: z.string().min(1).max(64).regex(idPattern),
+  label: z.string().min(1).max(200),
+  criterion: z.string().min(1).max(500),
+  required: z.boolean(),
+});
 const routineResponseSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('photo') }),
   z.strictObject({
@@ -36,6 +42,11 @@ const routineResponseSchema = z.discriminatedUnion('kind', [
     items: z.array(checklistItemSchema).min(1).max(20),
   }),
   z.strictObject({
+    kind: z.literal('photo_checklist'),
+    prompt: responsePrompt,
+    criteria: z.array(photoChecklistCriterionSchema).min(2).max(6),
+  }),
+  z.strictObject({
     kind: z.literal('quiz'),
     prompt: responsePrompt,
     topic: z.string().min(1).max(200),
@@ -44,6 +55,13 @@ const routineResponseSchema = z.discriminatedUnion('kind', [
     choiceCount: z.number().int().min(2).max(5),
   }),
 ]);
+const localizedPhotoChecklistSchema = z.strictObject({
+  prompt: responsePrompt,
+  criteria: z.array(z.strictObject({
+    id: z.string().min(1).max(64).regex(idPattern),
+    label: z.string().min(1).max(200),
+  })).min(2).max(6),
+});
 const localizedContentSchema = z.strictObject({
   name: boundedString(120).optional(),
   description: boundedString(500).optional(),
@@ -51,6 +69,7 @@ const localizedContentSchema = z.strictObject({
   proofExample: boundedString(500).optional(),
   analysis: analysisSchema,
   instructionSteps: instructionStepsSchema,
+  photoChecklist: localizedPhotoChecklistSchema.optional(),
 });
 const routineSchema = z.strictObject({
   id: z.string().min(1).max(64).regex(idPattern),
@@ -161,6 +180,10 @@ const completenessIssues = (routinePackage: RoutineDraftPackage): RoutineDraftVa
     const ids = routine.response.items.map((item) => item.id);
     if (new Set(ids).size !== ids.length) issues.push({ code: 'invalid_package', path: 'routine.response.items' });
   }
+  if (routine.response?.kind === 'photo_checklist') {
+    const ids = routine.response.criteria.map((criterion) => criterion.id);
+    if (new Set(ids).size !== ids.length) issues.push({ code: 'invalid_package', path: 'routine.response.criteria' });
+  }
   ['expectedEvidence', 'detectedCriteria', 'notDetectedCriteria', 'uncertaintyCriteria'].forEach((field) => {
     requireText(routine.analysis?.[field as keyof NonNullable<typeof routine.analysis>], `routine.analysis.${field}`, 20);
   });
@@ -202,6 +225,20 @@ const completenessIssues = (routinePackage: RoutineDraftPackage): RoutineDraftVa
     });
     if (translatedIds.length !== stepIds.length || translatedIds.some((id, index) => id !== stepIds[index])) {
       issues.push({ code: 'invalid_package', path: `routine.translations.${locale}.instructionSteps` });
+    }
+    if (routine.response?.kind === 'photo_checklist') {
+      const sourceCriteria = routine.response.criteria;
+      const localizedCriteria = localized.photoChecklist?.criteria ?? [];
+      requireText(localized.photoChecklist?.prompt, `routine.translations.${locale}.photoChecklist.prompt`);
+      localizedCriteria.forEach((criterion, index) => {
+        requireText(criterion.label, `routine.translations.${locale}.photoChecklist.criteria.${index}.label`);
+      });
+      if (localizedCriteria.length !== sourceCriteria.length
+        || localizedCriteria.some((criterion, index) => criterion.id !== sourceCriteria[index]?.id)) {
+        issues.push({ code: 'invalid_package', path: `routine.translations.${locale}.photoChecklist.criteria` });
+      }
+    } else if (localized.photoChecklist) {
+      issues.push({ code: 'invalid_package', path: `routine.translations.${locale}.photoChecklist` });
     }
   });
   return issues.slice(0, 50);
