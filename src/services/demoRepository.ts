@@ -262,6 +262,21 @@ export class DemoRepository implements AppRepository {
     return normalizedName;
   }
 
+  async renameParticipant(participantId: string, displayName: string) {
+    const normalizedName = displayName.trim();
+    if (!normalizedName) throw new Error('invalid_participant_name');
+    const access = activeParticipantAccess(this.state.participantAccess, participantId);
+    if (!access || (
+      access.membership.permissions?.manageParticipant !== true
+      && access.membership.role !== 'owner'
+      && !(access.participant.selfManaged && access.membership.role === 'participant')
+    )) throw new Error('participant_rename_not_authorized');
+    access.participant.displayName = normalizedName;
+    if (this.state.activeParticipantId === participantId) this.state.family.childName = normalizedName;
+    this.persist();
+    return normalizedName;
+  }
+
   async updateParticipantColor(participantId: string, profileColor: ProfileColorKey) {
     const access = activeParticipantAccess(this.state.participantAccess, participantId);
     if (!access || !['owner', 'participant'].includes(access.membership.role)) throw new Error('permission_denied');

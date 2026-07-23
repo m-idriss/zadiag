@@ -297,6 +297,19 @@ export class FirebaseRepository implements AppRepository {
     return result.data.displayName;
   }
 
+  async renameParticipant(participantId: string, displayName: string) {
+    const rename = httpsCallable<
+      { participantId: string; displayName: string },
+      { participantId: string; displayName: string }
+    >(this.services.functions, 'renameParticipant');
+    const result = await rename({ participantId, displayName: displayName.trim() });
+    const access = this.state.participantAccess?.find((entry) => entry.participant.id === participantId);
+    if (access) access.participant.displayName = result.data.displayName;
+    if (this.state.activeParticipantId === participantId) this.state.family.childName = result.data.displayName;
+    this.emit();
+    return result.data.displayName;
+  }
+
   async recordJourneyEvent(stage: JourneyStage, source: JourneySource, contextId?: string) {
     if (!this.state.family.id) return;
     const day = new Date().toISOString().slice(0, 10);

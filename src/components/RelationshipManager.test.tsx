@@ -218,6 +218,53 @@ describe('RelationshipManager', () => {
     expect(updateAccount).toHaveBeenCalledWith('Idriss Martin');
   });
 
+  it('renames an authorized participant separately from the account identity', async () => {
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+    const renameParticipant = vi.fn().mockResolvedValue('Yoan Martin');
+    act(() => root?.render(<RelationshipManager
+      access={[{
+        participant: { id: 'yoan-profile', displayName: 'Yoan' },
+        membership: { role: 'owner', status: 'active', permissions: { view: true, manageRoutines: true, requestChecks: true, submitChecks: true, reviewProofs: true, manageCaregivers: true, manageParticipant: true } },
+      }]}
+      activeParticipantId="yoan-profile"
+      accountDisplayName="Idriss"
+      onUpdateAccountDisplayName={vi.fn().mockResolvedValue('Idriss')}
+      onRenameParticipant={renameParticipant}
+      t={(key) => translate('en', key)}
+    />));
+    expandManager();
+
+    expect(container.textContent).toContain('This is the participant name shown throughout Zadiag. It does not change your account name.');
+    const participantInput = container.querySelector('input[aria-label="Participant name"]') as HTMLInputElement;
+    const accountInput = container.querySelector('input[aria-label="Your name"]') as HTMLInputElement;
+    expect(participantInput.value).toBe('Yoan');
+    expect(accountInput.value).toBe('Idriss');
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(participantInput, '  Yoan Martin  ');
+      participantInput.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => participantInput.closest('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    expect(renameParticipant).toHaveBeenCalledWith('yoan-profile', 'Yoan Martin');
+    expect(participantInput.value).toBe('Yoan Martin');
+    expect(accountInput.value).toBe('Idriss');
+  });
+
+  it('does not offer participant renaming to an unauthorized active caregiver', () => {
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+    act(() => root?.render(<RelationshipManager
+      access={[{ participant: { id: 'yoan-profile', displayName: 'Yoan' }, membership: { role: 'caregiver', status: 'active' } }]}
+      activeParticipantId="yoan-profile"
+      onRenameParticipant={vi.fn()}
+      t={(key) => translate('en', key)}
+    />));
+    expandManager();
+    expect(container.querySelector('input[aria-label="Participant name"]')).toBeNull();
+  });
+
   it('replaces the impossible last-owner exit with profile deletion', async () => {
     container = document.createElement('div');
     document.body.append(container);

@@ -57,6 +57,7 @@ export function SettingsScreen({
   activeParticipantId,
   accountDisplayName,
   updateAccountProfile,
+  renameParticipant,
   updateParticipantColor,
   selectParticipant,
   createParticipant,
@@ -96,6 +97,7 @@ export function SettingsScreen({
   activeParticipantId?: string;
   accountDisplayName?: string;
   updateAccountProfile?: (displayName: string) => Promise<string>;
+  renameParticipant?: (participantId: string, displayName: string) => Promise<string>;
   updateParticipantColor?: (participantId: string, profileColor: ProfileColorKey) => Promise<ProfileColorKey>;
   selectParticipant?: (participantId: string) => Promise<void>;
   createParticipant?: (displayName: string, selfManaged: boolean) => Promise<string>;
@@ -297,6 +299,7 @@ export function SettingsScreen({
         activeParticipantId={activeParticipantId}
         accountDisplayName={accountDisplayName}
         onUpdateAccountDisplayName={updateAccountProfile}
+        onRenameParticipant={renameParticipant}
         onUpdateParticipantColor={updateParticipantColor}
         onSelect={selectParticipant}
         onCreate={createParticipant}

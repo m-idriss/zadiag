@@ -12,6 +12,7 @@ type AuditAction =
   | 'reset_account'
   | 'create_participant'
   | 'update_account_profile'
+  | 'rename_participant'
   | 'update_participant_color'
   | 'create_relationship_invitation'
   | 'accept_relationship_invitation'

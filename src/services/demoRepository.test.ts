@@ -169,6 +169,9 @@ describe('DemoRepository compatibility', () => {
     await expect(repository.inviteParticipantMember(selfManagedId, 'caregiver')).resolves.toMatchObject({ code: 'ZI-123456' });
     await expect(repository.updateParticipantColor(selfManagedId, 'violet')).resolves.toBe('violet');
     expect(repository.snapshot().participantAccess?.find((entry) => entry.participant.id === selfManagedId)?.participant.profileColor).toBe('violet');
+    await expect(repository.renameParticipant(selfManagedId, '  Jordan Martin  ')).resolves.toBe('Jordan Martin');
+    expect(repository.snapshot().participantAccess?.find((entry) => entry.participant.id === selfManagedId)?.participant.displayName).toBe('Jordan Martin');
+    expect(repository.snapshot().family.childName).toBe('Jordan Martin');
     await expect(repository.acceptParticipantInvitation('invalid')).rejects.toThrow('invalid_code');
     await expect(repository.acceptParticipantInvitation('ZI-123456')).resolves.toBe('demo-invited');
     expect(repository.snapshot()).toMatchObject({

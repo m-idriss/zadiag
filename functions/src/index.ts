@@ -17,7 +17,7 @@ import { recordAuditEvent, recordJourneyEvent, type JourneyStage } from './audit
 import { expiredPendingCheckCleanupUpdate, shouldDeleteProofAfterReview, staleCleanupCutoffs } from './cleanup.js';
 import { reportOperationalAlert, reportOperationalEvent, reportOperationalRecovery } from './observability.js';
 import { shouldRecoverSyntheticPush } from './syntheticMonitor.js';
-import { canLeaveMembership, canRemoveMembership, createMembership, hasParticipantPermission, isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, isProfileColorKey, membershipRoles, migrateLegacyFamilyRelationships, pushRolesForMembership, scheduledAggregatePaths, type MembershipPushRole, type MembershipRole } from './relationships.js';
+import { canLeaveMembership, canRemoveMembership, canRenameParticipant, createMembership, hasParticipantPermission, isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, isProfileColorKey, membershipRoles, migrateLegacyFamilyRelationships, participantRenameUpdates, pushRolesForMembership, scheduledAggregatePaths, type MembershipPushRole, type MembershipRole } from './relationships.js';
 import { assertRoutineDraftRevision, createAssignmentForkPackage, createRoutineDraftDocument, routineDraftSessionId, RoutineDraftConflictError, RoutineDraftInputError, selectReusableAssignmentDraft, updateRoutineDraftDocument, type IdentifiedRoutineDraft, type PublishedRoutineVersionDocument, type RoutineDraftDocument } from './routineDrafts.js';
 import { ROUTINE_PACKAGE_MIME, parseRoutinePackageEnvelope, serializeRoutinePackage } from './routinePackages.js';
 import { assertExternalPackageResponse, verifyExternalRegistryIndex } from './externalRoutineRegistry.js';
@@ -1018,6 +1018,44 @@ export const updateAccountProfile = onCall({ region, cors, enforceAppCheck: true
     metadata: { updatedMemberships: activeMemberships.length },
   });
   return { displayName, updatedMemberships: activeMemberships.length };
+});
+
+export const renameParticipant = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const participantId = requireDocumentId(request.data?.participantId, 'Participant ID');
+  let displayName: string;
+  try { displayName = assertChildName(request.data?.displayName); }
+  catch { throw new HttpsError('invalid-argument', 'A valid participant name is required.'); }
+  const participantRef = db.collection('participants').doc(participantId);
+  const membershipRef = participantRef.collection('memberships').doc(uid);
+  const now = new Date().toISOString();
+
+  await db.runTransaction(async (transaction) => {
+    const [participant, membership] = await Promise.all([
+      transaction.get(participantRef),
+      transaction.get(membershipRef),
+    ]);
+    const participantData = participant.data();
+    if (!participant.exists || !canRenameParticipant(participantData, membership.data(), uid)) {
+      throw new HttpsError('permission-denied', 'This account cannot rename the participant.');
+    }
+    const updates = participantRenameUpdates(participantData ?? {}, displayName, now);
+    const legacyFamilyRef = updates.legacyFamily && isFirestoreDocumentId(updates.legacyFamily.familyId)
+      ? db.collection('families').doc(updates.legacyFamily.familyId)
+      : undefined;
+    const legacyFamily = legacyFamilyRef ? await transaction.get(legacyFamilyRef) : undefined;
+    transaction.update(participantRef, updates.participant);
+    if (legacyFamilyRef && legacyFamily?.exists) {
+      transaction.update(legacyFamilyRef, updates.legacyFamily!.data);
+    }
+  });
+  await recordAuditEvent(db, {
+    action: 'rename_participant',
+    actorUid: uid,
+    participantId,
+    metadata: {},
+  });
+  return { participantId, displayName };
 });
 
 export const updateParticipantColor = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
