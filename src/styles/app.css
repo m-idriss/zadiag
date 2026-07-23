@@ -2489,15 +2489,21 @@ button:disabled { cursor: not-allowed; }
 .routine-validation-card { display: grid; gap: 9px; }
 .routine-validation-card p { margin: -4px 0 0; color: var(--color-text-muted); font-size: 12px; line-height: 1.35; }
 .routine-validation-toggle { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
-.routine-validation-toggle button {
+.routine-validation-toggle button,
+.plan-days-grid button,
+.time-picker-grid button {
   min-width: 0;
+  min-height: var(--height-action);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-canvas-elevated);
+  color: var(--color-text);
+  font-weight: 850;
+}
+.routine-validation-toggle button {
   display: grid;
   gap: 3px;
   padding: var(--block-padding-sm);
-  border: 1px solid #dfe9e6;
-  border-radius: 13px;
-  background: #f7fbfa;
-  color: var(--color-text);
   text-align: left;
 }
 .routine-validation-toggle button.active {
@@ -2552,7 +2558,7 @@ button:disabled { cursor: not-allowed; }
   white-space: nowrap;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
 }
-.plan-add-button:disabled { background: var(--color-disabled-surface); color: #8c9aa2; cursor: not-allowed; }
+.plan-add-button:disabled { background: var(--color-disabled-surface); color: var(--color-disabled-text); cursor: not-allowed; }
 .plan-add-button .app-icon { font-size: 18px; }
 .schedule-group-card { --window-color: var(--routine-accent, var(--color-primary)); display: grid; gap: 8px; }
 .schedule-group-card:nth-of-type(3n + 2) { --window-color: color-mix(in srgb, var(--routine-accent, var(--color-primary)) 82%, #2f80ed); }
@@ -2598,13 +2604,13 @@ button:disabled { cursor: not-allowed; }
 .plan-time-button { width: 100%; min-width: 0; min-height: 40px; display: flex; align-items: center; gap: 6px; padding: 0 10px; border: 1px solid transparent; border-radius: 10px; background: var(--color-subtle-action); color: var(--color-text); text-align: left; box-shadow: inset 0 0 0 1px rgba(227,235,232,.65); }
 .plan-time-button span { flex: 0 0 auto; color: var(--color-text-muted); font-size: 9px; font-weight: 900; letter-spacing: .01em; }
 .plan-time-button b { min-width: 0; color: var(--color-text); font-size: 13px; font-weight: 900; }
-.plan-time-button:focus-visible { outline: 3px solid color-mix(in srgb, var(--color-text) 18%, transparent); border-color: color-mix(in srgb, var(--color-text) 28%, #dce7e3); background: var(--color-surface-solid); }
+.plan-time-button:focus-visible { border-color: var(--color-primary); background: var(--color-surface-solid); }
 .plan-remove-button { width: var(--height-action); height: var(--height-action); display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--color-subtle-action); color: var(--color-text-muted); }
 .plan-remove-button span { margin-top: -1px; font-size: 18px; line-height: 1; font-weight: 900; }
 .plan-remove-button:disabled { visibility: hidden; }
 
 .plan-days-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
-.plan-days-grid button { min-width: 0; min-height: var(--height-action); display: grid; place-items: center; align-content: center; gap: 1px; border: 1px solid #dfe9e6; border-radius: 11px; background: #f9fbfa; color: var(--color-text-muted); font-size: 11px; font-weight: 900; }
+.plan-days-grid button { display: grid; place-items: center; align-content: center; gap: 1px; color: var(--color-text-muted); font-size: 11px; }
 .plan-days-grid button.active { border-color: var(--color-primary); background: var(--color-primary); color: var(--color-surface-solid); box-shadow: 0 8px 18px rgba(29,138,122,.13); }
 .plan-days-grid .app-icon { font-size: 11px; }
 
@@ -2638,15 +2644,15 @@ button:disabled { cursor: not-allowed; }
   box-shadow: none;
 }
 .routine-edit-actions .routine-edit-cancel:disabled {
-  border-color: #dce3e0;
-  background: rgba(255,255,255,.58);
-  color: #96a2a8;
+  border-color: var(--color-border);
+  background: var(--color-disabled-surface);
+  color: var(--color-disabled-text);
 }
 .routine-edit-actions .routine-edit-save:disabled {
-  background: #c5ccca;
-  color: rgba(255,255,255,.82);
+  background: var(--color-disabled-surface);
+  color: var(--color-disabled-text);
 }
-.form-error { padding: var(--row-padding-y) var(--block-padding); background: #fff0ef; border: 1px solid #f3b0a9; border-radius: 15px; color: #9b3329; font-size: 14px; font-weight: 800; }
+.form-error { padding: var(--row-padding-y) var(--block-padding); background: var(--color-danger-soft); border: 1px solid color-mix(in srgb, var(--color-danger) 35%, var(--color-border)); border-radius: var(--radius-control); color: var(--color-danger); font-size: 14px; font-weight: 800; }
 
 .quiz-response-screen { display: grid; align-content: start; gap: var(--panel-gap); }
 .quiz-preparing { display: grid; justify-items: center; gap: 10px; padding: 28px 20px; text-align: center; }
@@ -2709,13 +2715,7 @@ button:disabled { cursor: not-allowed; }
 .time-picker-grid.hours { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .time-picker-grid.minutes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .time-picker-grid button {
-  min-height: var(--height-action);
-  border: 1px solid #dfe9e6;
-  border-radius: 11px;
-  background: #f7fbfa;
-  color: var(--color-text);
   font-size: 12px;
-  font-weight: 900;
 }
 .time-picker-grid button.active {
   border-color: var(--color-primary);
