@@ -2818,8 +2818,13 @@ export const updateRoutineAssignment = onCall({
     }
     const validationMode = isRoutineValidationMode(rawValidationMode) ? rawValidationMode : undefined;
     const appearanceIcons = new Set([
-      'sparkles', 'tooth', 'water', 'medical', 'fitness', 'camera', 'pulse',
-      'star', 'check', 'eye', 'calendar', 'time', 'today', 'send', 'home', 'notifications',
+      'alarm', 'bandage', 'barbell', 'basket', 'basketball', 'bed', 'bicycle', 'body', 'book', 'bulb',
+      'cafe', 'call', 'calendar', 'camera', 'car', 'cart', 'chat', 'check', 'color-palette', 'ear', 'eye',
+      'fast-food', 'fitness', 'flag', 'flame', 'flower', 'football', 'footsteps', 'game-controller', 'gift',
+      'glasses', 'heart', 'home', 'hourglass', 'leaf', 'mail', 'medical', 'medkit', 'megaphone', 'moon',
+      'musical-notes', 'notifications', 'nutrition', 'paper-plane', 'paw', 'people', 'person', 'pulse',
+      'restaurant', 'ribbon', 'rocket', 'school', 'send', 'shield', 'shirt', 'sparkles', 'star', 'stopwatch',
+      'sunny', 'tennis', 'thermometer', 'thumbs-up', 'time', 'timer', 'today', 'tooth', 'trophy', 'walk', 'water',
     ]);
     const appearance = rawAppearance && typeof rawAppearance === 'object' && !Array.isArray(rawAppearance)
       && typeof rawAppearance.name === 'string' && rawAppearance.name.trim().length > 0 && rawAppearance.name.trim().length <= 120

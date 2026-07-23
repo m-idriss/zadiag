@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDefaultRoutineAssignment, type AppState } from '../domain/models';
 import { translate } from '../services/i18n';
+import { routineIconCatalog } from '../components/routineIconCatalog';
 import { RoutineDetailScreen } from './RoutineDetailScreen';
 
 describe('routine appearance editor', () => {
@@ -10,6 +11,7 @@ describe('routine appearance editor', () => {
   let root: ReturnType<typeof createRoot>;
 
   beforeEach(() => {
+    (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
@@ -41,8 +43,24 @@ describe('routine appearance editor', () => {
     act(() => trigger?.click());
 
     expect(trigger?.getAttribute('aria-expanded')).toBe('true');
-    expect(container.querySelectorAll('.routine-icon-options button')).toHaveLength(16);
     expect(container.querySelector('.routine-appearance-top-editor')).not.toBeNull();
+    const pickerTrigger = container.querySelector<HTMLButtonElement>('.routine-icon-picker-trigger');
+    expect(pickerTrigger).not.toBeNull();
+    await act(async () => {
+      pickerTrigger?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await Promise.resolve();
+    });
+    expect(document.body.querySelectorAll('.routine-icon-catalog button')).toHaveLength(routineIconCatalog.length);
+
+    const search = document.body.querySelector<HTMLInputElement>('.routine-icon-search input');
+    act(() => {
+      if (search) {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(search, 'dent');
+        search.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+    expect(document.body.querySelectorAll('.routine-icon-catalog button')).toHaveLength(1);
+    act(() => document.body.querySelector<HTMLButtonElement>('.routine-icon-catalog button')?.click());
 
     await act(async () => {
       container.querySelector<HTMLButtonElement>('.routine-appearance-actions .primary-action-button')?.click();
