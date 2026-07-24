@@ -1015,7 +1015,7 @@ button:disabled { cursor: not-allowed; }
 .parent-history-row.has-participant-accent .routine-history-icon::after {
   content: "";
   position: absolute;
-  inset-inline-end: -2px;
+  inset-inline-start: -2px;
   inset-block-end: -2px;
   width: 11px;
   height: 11px;
