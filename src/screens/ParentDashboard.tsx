@@ -314,7 +314,7 @@ export function ParentDashboard({
       </div>
 
       {showParticipantOverview ? (
-        <MultiParticipantOverview sources={notificationSources} locale={state.locale} now={now} onSelectParticipant={selectParticipant} t={t} />
+        <MultiParticipantOverview sources={notificationSources} locale={state.locale} range={summaryRange} onRangeChange={setSummaryRange} onSelectParticipant={selectParticipant} t={t} />
       ) : <>
       {setupStep ? (
         <section className="card parent-onboarding-card" aria-labelledby="parent-onboarding-title">
