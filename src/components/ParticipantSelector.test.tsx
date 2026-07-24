@@ -42,4 +42,20 @@ describe('ParticipantSelector', () => {
     ]} activeParticipantId="alex" label="Followed person" onSelect={vi.fn()} />));
     expect(container.textContent).toBe('Followed person Alex');
   });
+
+  it('selects an overview without invalidating the active participant', () => {
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+    const onSelectOverview = vi.fn();
+    act(() => root?.render(<ParticipantSelector access={[
+      { participant: { id: 'alex', displayName: 'Alex' }, membership: { role: 'owner', status: 'active' } },
+      { participant: { id: 'sam', displayName: 'Sam' }, membership: { role: 'caregiver', status: 'active' } },
+    ]} activeParticipantId="alex" label="Followed person" overviewLabel="All participants" onSelect={vi.fn()} onSelectOverview={onSelectOverview} />));
+
+    const overview = container.querySelector<HTMLButtonElement>('.participant-switcher-menu button');
+    act(() => overview?.click());
+    expect(onSelectOverview).toHaveBeenCalledOnce();
+    expect(overview?.getAttribute('aria-pressed')).toBe('false');
+  });
 });

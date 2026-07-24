@@ -22,6 +22,9 @@ import { useCurrentTime } from '../hooks/useCurrentTime';
 import { VerificationEventDetailDialog } from '../components/VerificationEventDetailDialog';
 import { planningRecommendation, routineAnomalies, weeklyInsight } from '../domain/reporting';
 import { DisclosureToggle } from '../components/DisclosureToggle';
+import { MultiParticipantOverview } from '../components/MultiParticipantOverview';
+
+const participantOverviewStorageKey = 'zadiag.dashboard.participantView';
 
 export function ParentDashboard({
   state,
@@ -71,6 +74,7 @@ export function ParentDashboard({
   const [planningRecommendationStatus, setPlanningRecommendationStatus] = useState<'saving' | 'saved' | 'error'>();
   const [weeklyReportOpenSignal, setWeeklyReportOpenSignal] = useState(0);
   const [weeklyInsightOpen, setWeeklyInsightOpen] = useState(false);
+  const [participantOverview, setParticipantOverview] = useState(() => localStorage.getItem(participantOverviewStorageKey) !== 'individual');
   const swipeStartRef = useRef<{ eventId: string; x: number; y: number } | undefined>(undefined);
   const swipeDecisionRef = useRef(false);
   const handledNotificationEventIdRef = useRef<string | undefined>(undefined);
@@ -247,6 +251,13 @@ export function ParentDashboard({
     assignments: state.routineAssignments,
     events: displayEvents,
   }] : [];
+  const hasMultipleParticipants = notificationSources.length > 1;
+  const showParticipantOverview = hasMultipleParticipants && participantOverview;
+  const selectParticipant = (participantId: string) => {
+    localStorage.setItem(participantOverviewStorageKey, 'individual');
+    setParticipantOverview(false);
+    onSelectParticipant?.(participantId);
+  };
   useEffect(() => {
     setExpandedStatus(undefined);
     setDismissedAnomaly(undefined);
@@ -293,10 +304,19 @@ export function ParentDashboard({
         label={t('followedPerson')}
         title={activeParticipantAccess?.participant.displayName ?? state.family.childName}
         actionLabel={t('relationshipSwitchAction')}
-        onSelect={onSelectParticipant}
+        overviewLabel={hasMultipleParticipants ? t('allParticipants') : undefined}
+        overviewSelected={showParticipantOverview}
+        onSelect={selectParticipant}
+        onSelectOverview={hasMultipleParticipants ? () => {
+          localStorage.setItem(participantOverviewStorageKey, 'overview');
+          setParticipantOverview(true);
+        } : undefined}
       />
       </div>
 
+      {showParticipantOverview ? (
+        <MultiParticipantOverview sources={notificationSources} locale={state.locale} now={now} onSelectParticipant={selectParticipant} t={t} />
+      ) : <>
       {setupStep ? (
         <section className="card parent-onboarding-card" aria-labelledby="parent-onboarding-title">
           <div className="parent-onboarding-heading">
@@ -625,6 +645,7 @@ export function ParentDashboard({
         <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedRawEvents} locale={state.locale} titleId="responsible-history-title" onRequestCheck={requestCheck} onOpenEvent={(event) => setDetailEventId(event.id)} t={t} />
       </section>
       {detailEvent ? <VerificationEventDetailDialog event={detailEvent} locale={state.locale} proofUrl={proofUrls[detailEvent.id]} getProofImageUrl={getProofImageUrl} reviewCheck={reviewCheck} requestCheck={requestCheck} onClose={() => setDetailEventId(undefined)} t={t} /> : null}
+      </>}
     </div>
   );
 }

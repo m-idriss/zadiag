@@ -5,14 +5,17 @@ import { ProfileContextCard } from './ProfileContextCard';
 import { SvgIcon } from './SvgIcon';
 import { profileColorFor } from '../domain/profileColor';
 
-export function ParticipantSelector({ access, activeParticipantId, label, title, subtitle, actionLabel, onSelect }: {
+export function ParticipantSelector({ access, activeParticipantId, label, title, subtitle, actionLabel, overviewLabel, overviewSelected = false, onSelect, onSelectOverview }: {
   access: ParticipantAccess[] | undefined;
   activeParticipantId?: string;
   label: string;
   title?: string;
   subtitle?: string;
   actionLabel?: string;
+  overviewLabel?: string;
+  overviewSelected?: boolean;
   onSelect?: (participantId: string) => void;
+  onSelectOverview?: () => void;
 }) {
   const detailsRef = useRef<HTMLDetailsElement>(null);
   const activeAccess = (access ?? []).filter((entry) => entry.membership.status === 'active');
@@ -21,7 +24,7 @@ export function ParticipantSelector({ access, activeParticipantId, label, title,
     ? activeParticipantId
     : activeAccess[0].participant.id;
   const selected = activeAccess.find((entry) => entry.participant.id === selectedId)!;
-  const displayTitle = title ?? `${label} ${selected.participant.displayName}`;
+  const displayTitle = overviewSelected && overviewLabel ? overviewLabel : title ?? `${label} ${selected.participant.displayName}`;
   if (activeAccess.length < 2 || !onSelect) {
     return <div className="card relationship-manager-card participant-switcher-static">
       <ProfileContextCard as="div" title={displayTitle} subtitle={subtitle} profileColor={profileColorFor(selected.participant)} />
@@ -36,13 +39,28 @@ export function ParticipantSelector({ access, activeParticipantId, label, title,
         subtitle={subtitle}
         leadingIcon={personCircleOutline}
         actionIcon={peopleOutline}
-        actionLabel={`${actionLabel ?? label} : ${selected.participant.displayName}`}
-        profileColor={profileColorFor(selected.participant)}
+        actionLabel={`${actionLabel ?? label} : ${overviewSelected && overviewLabel ? overviewLabel : selected.participant.displayName}`}
+        profileColor={overviewSelected ? undefined : profileColorFor(selected.participant)}
       />
       <div className="participant-switcher-menu" role="group" aria-label={label}>
         <span className="participant-switcher-label">{label}</span>
+        {overviewLabel && onSelectOverview ? (
+          <button
+            type="button"
+            className={overviewSelected ? 'active' : undefined}
+            aria-pressed={overviewSelected}
+            onClick={() => {
+              detailsRef.current?.removeAttribute('open');
+              if (!overviewSelected) onSelectOverview();
+            }}
+          >
+            <span className="participant-switcher-option-avatar participant-switcher-overview-avatar" aria-hidden="true"><SvgIcon icon={peopleOutline} /></span>
+            <span>{overviewLabel}</span>
+            {overviewSelected ? <SvgIcon icon={checkmarkOutline} /> : null}
+          </button>
+        ) : null}
         {activeAccess.map((entry) => {
-          const active = entry.participant.id === selectedId;
+          const active = !overviewSelected && entry.participant.id === selectedId;
           return (
             <button
               type="button"
