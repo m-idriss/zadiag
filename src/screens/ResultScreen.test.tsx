@@ -127,9 +127,31 @@ describe('ResultScreen', () => {
     await act(async () => { revealButton?.click(); await Promise.resolve(); });
     expect(reveal).toHaveBeenCalledWith('check-1');
     expect(container.textContent).toContain('PRIVATE-REWARD');
+    expect(document.activeElement?.textContent).toBe('PRIVATE-REWARD');
     const copyButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Copy code');
     await act(async () => { copyButton?.click(); await Promise.resolve(); });
     expect(writeText).toHaveBeenCalledWith('PRIVATE-REWARD');
     expect(container.textContent).toContain('Copied');
+  });
+
+  it('keeps reveal recoverable after a temporary request failure', async () => {
+    const reveal = vi.fn()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce({ status: 'claimed', value: 'RETRY-REWARD', expiresAt: '2026-07-05T10:00:00.000Z' });
+    await act(async () => root.render(<ResultScreen
+      event={{ ...event('detected'), reward: { status: 'claimed', resolvedAt: '2026-07-04T10:03:00.000Z' } }}
+      revealReward={reveal}
+      done={() => undefined}
+      t={(key) => translate('en', key)}
+    />));
+
+    const revealButton = () => Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Reveal reward');
+    await act(async () => { revealButton()?.click(); await Promise.resolve(); });
+    expect(container.textContent).toContain('Check the connection and try again');
+    expect(revealButton()).not.toBeUndefined();
+
+    await act(async () => { revealButton()?.click(); await Promise.resolve(); });
+    expect(container.textContent).toContain('RETRY-REWARD');
+    expect(reveal).toHaveBeenCalledTimes(2);
   });
 });

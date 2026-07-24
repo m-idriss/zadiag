@@ -29,6 +29,11 @@ test('reveals only the active claim attached to a successful check', () => {
   assert.deepEqual(rewardClaimForReveal({ status: 'pending' }, { value: 'SECRET', expiresAt: '2026-07-24T09:00:00.000Z' }, now), { status: 'unavailable' });
   assert.deepEqual(rewardClaimForReveal(successful, { value: 'SECRET', expiresAt: '2026-07-24T07:00:00.000Z' }, now), { status: 'expired' });
   assert.deepEqual(rewardClaimForReveal({ status: 'detected', reward: { status: 'exhausted', resolvedAt: now.toISOString() } }, undefined, now), { status: 'exhausted' });
+  assert.deepEqual(rewardClaimForReveal({
+    status: 'detected',
+    reward: { status: 'claimed', resolvedAt: '2026-07-23T08:00:00.000Z', expiresAt: '2026-07-24T07:00:00.000Z' },
+  }, undefined, now), { status: 'expired' });
+  assert.deepEqual(rewardClaimForReveal(successful, undefined, now), { status: 'unavailable' });
   assert.deepEqual(rewardClaimForReveal(successful, { value: 'SECRET', expiresAt: '2026-07-24T09:00:00.000Z' }, now), {
     status: 'claimed',
     value: 'SECRET',

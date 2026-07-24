@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { RewardClaimReveal } from '../services/contracts';
 import type { MessageKey } from '../services/i18n';
 import { ActionButton } from './ui';
@@ -12,13 +12,19 @@ export function RewardReveal({ eventId, outcome, reveal, t }: {
   const [result, setResult] = useState<RewardClaimReveal>();
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState<'copied' | 'error'>();
+  const [error, setError] = useState(false);
+  const codeRef = useRef<HTMLElement>(null);
   const status = result?.status ?? outcome;
+  useEffect(() => {
+    if (result?.status === 'claimed' && result.value) codeRef.current?.focus();
+  }, [result]);
   const revealCode = async () => {
     setBusy(true);
+    setError(false);
     try {
       setResult(await reveal(eventId));
     } catch {
-      setResult({ status: 'unavailable' });
+      setError(true);
     } finally {
       setBusy(false);
     }
@@ -46,9 +52,10 @@ export function RewardReveal({ eventId, outcome, reveal, t }: {
     <section className="reward-card" aria-live="polite">
       <h2>{t('rewardTitle')}</h2>
       <p>{result?.value ? t('rewardRevealHint') : t('rewardClaimedHint')}</p>
+      {error ? <p className="form-error" role="alert">{t('rewardRevealError')}</p> : null}
       {result?.value ? (
         <div className="reward-code">
-          <strong>{result.value}</strong>
+          <strong ref={codeRef} tabIndex={-1}>{result.value}</strong>
           <button type="button" onClick={() => { void copy(); }}>{t(copied === 'copied' ? 'copiedCode' : 'copyCode')}</button>
           {copied === 'error' ? <span role="alert">{t('copyCodeError')}</span> : null}
         </div>
