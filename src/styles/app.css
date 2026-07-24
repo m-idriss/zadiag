@@ -1009,17 +1009,9 @@ button:disabled { cursor: not-allowed; }
 .participant-switcher-option-avatar { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; background: #eef5f3; color: var(--profile-color, var(--color-primary)); font-size: 13px; font-weight: 900; }
 .participant-switcher-overview-avatar .svg-icon { font-size: 18px; }
 .participant-switcher-menu button.active .participant-switcher-option-avatar { background: var(--color-surface-solid); }
-.parent-history-row.has-participant-accent {
-  position: relative;
-}
-.parent-history-row.has-participant-accent::before {
-  content: "";
-  position: absolute;
-  inset-block: 12px;
-  inset-inline-start: 0;
-  width: 3px;
-  border-radius: 0 2px 2px 0;
-  background: var(--history-participant-color);
+.parent-history-row.has-participant-accent .routine-history-icon {
+  background: color-mix(in srgb, var(--history-participant-color) 12%, var(--color-surface-solid));
+  color: var(--history-participant-color);
 }
 .filter-chips .participant-filter-chip { border-color: color-mix(in srgb, var(--profile-color) 24%, var(--color-border)); background: color-mix(in srgb, var(--profile-color) 7%, var(--color-surface-solid)); color: var(--profile-color); }
 .filter-chips .participant-filter-chip.active { border-color: var(--profile-color); background: var(--profile-color); color: var(--color-surface-solid); }
