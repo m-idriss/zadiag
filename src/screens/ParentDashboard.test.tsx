@@ -161,7 +161,6 @@ describe('ParentDashboard', () => {
 
     act(() => container.querySelector<HTMLButtonElement>('.history-row-open-button')?.click());
     expect(selectParticipant).toHaveBeenCalledWith('maya');
-    expect(setParticipantOverview).toHaveBeenCalledWith(false);
   });
 
   it('shows an actionable repeated-failure trend and keeps it dismissed until a new failure', async () => {

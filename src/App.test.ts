@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_ROUTINE_ID, type AppState, type VerificationEvent } from './domain/models';
-import { appBadgeCountForState, documentLanguageForLocale, isParticipantInvitationCode, participantIdForNotificationLaunch, resetNoticeMessageKey, resolveNotificationLaunch, setupCompletionTransition, shouldShowParticipantOverviewAfterSwipe, syncStatusFor, syncStatusIsVisible } from './App';
+import { appBadgeCountForState, documentLanguageForLocale, hasMultipleParticipantsForSwipe, isParticipantInvitationCode, participantIdForNotificationLaunch, resetNoticeMessageKey, resolveNotificationLaunch, setupCompletionTransition, shouldShowParticipantOverviewAfterSwipe, syncStatusFor, syncStatusIsVisible } from './App';
 
 describe('shouldShowParticipantOverviewAfterSwipe', () => {
   it('uses the first left swipe from an individual responsible dashboard for the collective overview', () => {
@@ -9,6 +9,14 @@ describe('shouldShowParticipantOverviewAfterSwipe', () => {
     expect(shouldShowParticipantOverviewAfterSwipe('parent', 'home', 'right', true, false)).toBe(false);
     expect(shouldShowParticipantOverviewAfterSwipe('child', 'home', 'left', true, false)).toBe(false);
     expect(shouldShowParticipantOverviewAfterSwipe('parent', 'home', 'left', false, false)).toBe(false);
+  });
+});
+
+describe('hasMultipleParticipantsForSwipe', () => {
+  it('keeps the collective destination available while either relationship source is synchronizing', () => {
+    expect(hasMultipleParticipantsForSwipe(2, 0)).toBe(true);
+    expect(hasMultipleParticipantsForSwipe(0, 2)).toBe(true);
+    expect(hasMultipleParticipantsForSwipe(1, 1)).toBe(false);
   });
 });
 

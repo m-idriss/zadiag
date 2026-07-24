@@ -256,7 +256,6 @@ export function ParentDashboard({
   const hasMultipleParticipants = notificationSources.length > 1;
   const showParticipantOverview = hasMultipleParticipants && participantOverview;
   const selectParticipant = (participantId: string) => {
-    onParticipantOverviewChange?.(false);
     onSelectParticipant?.(participantId);
   };
   useEffect(() => {

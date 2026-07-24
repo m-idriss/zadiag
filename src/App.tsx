@@ -91,6 +91,11 @@ export const shouldShowParticipantOverviewAfterSwipe = (
   && hasMultipleParticipants
   && !participantOverview;
 
+export const hasMultipleParticipantsForSwipe = (
+  activeAccessCount: number,
+  notificationSourceCount: number,
+) => Math.max(activeAccessCount, notificationSourceCount) > 1;
+
 export const isParticipantInvitationCode = (code: string) => /^ZI-\d{6}$/.test(code.trim().toUpperCase());
 
 export const documentLanguageForLocale = (locale: Locale) => documentLanguage(locale);
@@ -465,6 +470,11 @@ export function App() {
   ) => action ? withRepositorySync(action) : undefined;
   const syncLocale = withRepositorySync(repository.setLocale);
   const selectActiveParticipant = withOptionalRepositorySync(repository.selectActiveParticipant);
+  const selectParticipantContext = selectActiveParticipant ? async (participantId: string) => {
+    setParticipantOverview(false);
+    writeUiStorageString(PARTICIPANT_OVERVIEW_STORAGE_KEY, 'individual');
+    await selectActiveParticipant(participantId);
+  } : undefined;
   const selectRole = async (role: Role) => {
     await repository.selectRole(role);
     sync();
@@ -760,7 +770,7 @@ export function App() {
             onExportRoutinePackage={canManageRoutines ? bindOptionalRepository(repository.exportRoutinePackage) : undefined}
             onImportRoutinePackage={canManageRoutines ? bindOptionalRepository(repository.importRoutinePackage) : undefined}
             onRevokeSharedRoutine={canManageRoutines ? bindOptionalRepository(repository.revokeSharedRoutine) : undefined}
-            onSelectParticipant={selectActiveParticipant}
+            onSelectParticipant={selectParticipantContext}
             onSaveMonitoringPlan={canManageRoutines ? async (routineId, plan, validationMode) => {
               setSavingRoutineId(routineId);
               try {
@@ -812,7 +822,7 @@ export function App() {
             updateAccountProfile={withOptionalRepositorySync(repository.updateAccountProfile)}
             renameParticipant={withOptionalRepositorySync(repository.renameParticipant)}
             updateParticipantColor={withOptionalRepositorySync(repository.updateParticipantColor)}
-            selectParticipant={selectActiveParticipant}
+            selectParticipant={selectParticipantContext}
             createParticipant={withOptionalRepositorySync(repository.createParticipant)}
             inviteParticipantMember={bindOptionalRepository(repository.inviteParticipantMember)}
             acceptParticipantInvitation={withOptionalRepositorySync(repository.acceptParticipantInvitation)}
@@ -855,7 +865,7 @@ export function App() {
               } : undefined}
               summaryRange={dashboardSummaryRange}
               onSummaryRangeChange={setDashboardSummaryRange}
-              onSelectParticipant={selectActiveParticipant}
+              onSelectParticipant={selectParticipantContext}
               onOpenNotificationEvent={(participantId, event) => { void openNotificationEvent(participantId, event); }}
               notificationEventId={focusedDashboardEventId}
               onNotificationEventConsumed={() => setFocusedDashboardEventId(undefined)}
@@ -877,7 +887,10 @@ export function App() {
     content = (
       <PullToUpdate
         onHorizontalSwipe={(direction) => {
-          const hasMultipleParticipants = (state.participantAccess?.filter((entry) => entry.membership.status === 'active').length ?? 0) > 1;
+          const hasMultipleParticipants = hasMultipleParticipantsForSwipe(
+            state.participantAccess?.filter((entry) => entry.membership.status === 'active').length ?? 0,
+            state.notificationSources?.length ?? 0,
+          );
           if (shouldShowParticipantOverviewAfterSwipe(role, tab, direction, hasMultipleParticipants, participantOverview)) {
             setParticipantOverview(true);
             writeUiStorageString(PARTICIPANT_OVERVIEW_STORAGE_KEY, 'overview');
