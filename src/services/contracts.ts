@@ -18,6 +18,16 @@ export interface AiAuthoringCapabilities {
   dynamicQuizGeneration: { enabled: boolean; promptVersion: string };
   manualFallback: true;
 }
+export interface RewardPoolStatus {
+  status: 'active' | 'revoked';
+  remainingCount: number;
+  claimLifetimeHours: number;
+}
+export interface RewardClaimReveal {
+  status: 'claimed' | 'exhausted' | 'expired' | 'revoked' | 'unavailable';
+  value?: string;
+  expiresAt?: string;
+}
 
 export type SyncStatus = 'synced' | 'syncing' | 'offline' | 'failed';
 export type StartupStage = 'services' | 'account' | 'profile' | 'relationships' | 'workspace';
@@ -73,6 +83,10 @@ export interface AppRepository {
   reportRoutineCatalogEntry?(entryId: string, reason: 'unsafe' | 'privacy' | 'copyright' | 'other'): Promise<void>;
   requestCheckNow(routineId?: string): Promise<void>;
   updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode, appearance?: RoutineAppearance): Promise<void>;
+  getRewardPoolStatus?(routineId: string): Promise<RewardPoolStatus>;
+  addRewardCodes?(routineId: string, codes: string[], claimLifetimeHours: number): Promise<RewardPoolStatus>;
+  revokeRewardPool?(routineId: string): Promise<RewardPoolStatus>;
+  revealRewardClaim?(checkId: string): Promise<RewardClaimReveal>;
   savePushSubscription(subscription: PushSubscriptionJSON): Promise<void>;
   sendTestPushNotification(): Promise<void>;
   recordJourneyEvent?(stage: JourneyStage, source: JourneySource, contextId?: string): Promise<void>;

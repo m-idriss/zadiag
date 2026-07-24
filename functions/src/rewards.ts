@@ -1,9 +1,11 @@
 import { FieldPath, FieldValue, type DocumentData, type DocumentReference, type Firestore, type Transaction } from 'firebase-admin/firestore';
+import { createHash } from 'node:crypto';
 import { expiredRewardSecretCutoff } from './cleanup.js';
 
 const finalSuccessStatuses = new Set(['answered', 'detected']);
 const maxRewardCodesPerPolicy = 100;
 const defaultClaimLifetimeHours = 24;
+const maxRewardCodeLength = 240;
 
 export type RewardOutcomeStatus = 'claimed' | 'exhausted' | 'expired' | 'revoked';
 
@@ -13,6 +15,39 @@ export interface RewardOutcome {
   claimId?: string;
   expiresAt?: string;
 }
+
+export interface RewardPoolInput {
+  codes: string[];
+  claimLifetimeHours: number;
+}
+
+export const rewardClaimForReveal = (
+  checkData: DocumentData | undefined,
+  claimData: DocumentData | undefined,
+  now = new Date(),
+): { status: RewardOutcomeStatus | 'unavailable'; value?: string; expiresAt?: string } => {
+  if (!checkData || !finalSuccessStatuses.has(String(checkData.status ?? ''))) return { status: 'unavailable' };
+  const rewardStatus = existingRewardOutcome(checkData.reward)?.status ?? 'unavailable';
+  if (!claimData) return { status: rewardStatus };
+  const expiresAt = typeof claimData.expiresAt === 'string' ? claimData.expiresAt : '';
+  if (!expiresAt || Date.parse(expiresAt) <= now.getTime()) return { status: 'expired' };
+  if (typeof claimData.value !== 'string' || !claimData.value) return { status: 'unavailable' };
+  return { status: 'claimed', value: claimData.value, expiresAt };
+};
+
+export const rewardPoolInput = (input: unknown): RewardPoolInput | undefined => {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return undefined;
+  const candidate = input as Record<string, unknown>;
+  if (!Array.isArray(candidate.codes) || candidate.codes.length < 1 || candidate.codes.length > maxRewardCodesPerPolicy) return undefined;
+  const codes = candidate.codes.map((code) => typeof code === 'string' ? code.trim() : '');
+  if (codes.some((code) => !code || code.length > maxRewardCodeLength) || new Set(codes).size !== codes.length) return undefined;
+  const claimLifetimeHours = Number(candidate.claimLifetimeHours ?? defaultClaimLifetimeHours);
+  if (!Number.isSafeInteger(claimLifetimeHours) || claimLifetimeHours < 1 || claimLifetimeHours > 168) return undefined;
+  return { codes, claimLifetimeHours };
+};
+
+export const rewardCodeDocumentId = (value: string) =>
+  createHash('sha256').update(value).digest('hex');
 
 const existingRewardOutcome = (input: unknown): RewardOutcome | undefined => {
   if (!input || typeof input !== 'object' || Array.isArray(input)) return undefined;
@@ -66,7 +101,7 @@ const availableRewardCode = (
       hasExpiredCode = true;
       continue;
     }
-    if (value && value.length <= 240) return { document, value };
+    if (value && value.length <= maxRewardCodeLength) return { document, value };
   }
   return { hasExpiredCode };
 };

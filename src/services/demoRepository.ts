@@ -17,7 +17,7 @@ import { routineFromCatalog } from '../domain/routineCatalog';
 import { activeParticipantAccess } from '../domain/participantAccess';
 import { isFreshCapture } from '../domain/adherence';
 import { responseWindowExpiresAt } from '../domain/monitoringPlan';
-import type { AppRepository, JourneySource, JourneyStage } from './contracts';
+import type { AppRepository, JourneySource, JourneyStage, RewardClaimReveal } from './contracts';
 import { browserLocale } from './appStateDefaults';
 import { pilotParticipationRecord } from '../domain/pilotParticipation';
 
@@ -130,6 +130,7 @@ function seedEvents(now = new Date()): VerificationEvent[] {
       status: 'detected',
       confidence: 0.94,
       imageQuality: 0.91,
+      reward: { status: 'claimed', resolvedAt: days(-1), claimId: 'yesterday', expiresAt: days(1) },
     },
     {
       id: 'two-days',
@@ -215,6 +216,7 @@ export class DemoRepository implements AppRepository {
   private state: AppState;
   private consumedSessions = new Set<string>();
   private listeners = new Set<() => void>();
+  private rewardPools = new Map<string, { remainingCount: number; claimLifetimeHours: number; status: 'active' | 'revoked' }>();
 
   constructor() {
     const savedState = readStoredState();
@@ -553,6 +555,40 @@ export class DemoRepository implements AppRepository {
     this.persist();
   }
 
+  async getRewardPoolStatus(routineId: string) {
+    if (this.state.role !== 'parent') throw new Error('permission_denied');
+    return this.rewardPools.get(routineId) ?? { status: 'revoked' as const, remainingCount: 0, claimLifetimeHours: 24 };
+  }
+
+  async addRewardCodes(routineId: string, codes: string[], claimLifetimeHours: number) {
+    const normalized = codes.map((code) => code.trim());
+    if (!normalized.length || normalized.some((code) => !code || code.length > 240)
+      || new Set(normalized).size !== normalized.length || normalized.length > 100
+      || !Number.isSafeInteger(claimLifetimeHours) || claimLifetimeHours < 1 || claimLifetimeHours > 168) throw new Error('invalid_reward_codes');
+    const current = await this.getRewardPoolStatus(routineId);
+    if (current.remainingCount + normalized.length > 100) throw new Error('reward_pool_full');
+    const status = { status: 'active' as const, remainingCount: current.remainingCount + normalized.length, claimLifetimeHours };
+    this.rewardPools.set(routineId, status);
+    return status;
+  }
+
+  async revokeRewardPool(routineId: string) {
+    if (this.state.role !== 'parent') throw new Error('permission_denied');
+    const current = await this.getRewardPoolStatus(routineId);
+    const status = { ...current, status: 'revoked' as const, remainingCount: 0 };
+    this.rewardPools.set(routineId, status);
+    return status;
+  }
+
+  async revealRewardClaim(checkId: string): Promise<RewardClaimReveal> {
+    if (!this.state.role) throw new Error('permission_denied');
+    const event = this.state.events.find((item) => item.id === checkId);
+    if (!event || !['detected', 'answered'].includes(event.status)) return { status: 'unavailable' as const };
+    if (event.reward?.status !== 'claimed') return { status: event.reward?.status ?? 'unavailable' };
+    if (!event.reward.expiresAt || Date.parse(event.reward.expiresAt) <= Date.now()) return { status: 'expired' as const };
+    return { status: 'claimed' as const, value: 'DEMO-CADEAU-2026', expiresAt: event.reward.expiresAt };
+  }
+
   activeSession(routineId?: string) {
     const now = new Date();
     return this.state.events.find(
@@ -576,6 +612,7 @@ export class DemoRepository implements AppRepository {
         capturedAt: capturedAt.toISOString(),
         analysisSource: 'self' as const,
         reason: 'self_validated',
+        reward: { status: 'claimed', resolvedAt: capturedAt.toISOString(), claimId: event.id, expiresAt: new Date(capturedAt.getTime() + 86_400_000).toISOString() },
       });
       this.persist();
       return structuredClone(event);
@@ -600,6 +637,7 @@ export class DemoRepository implements AppRepository {
           reason: 'Visible in the demo proof.',
           decision: { source: 'ai' as const },
         })),
+        reward: { status: 'claimed', resolvedAt: capturedAt.toISOString(), claimId: event.id, expiresAt: new Date(capturedAt.getTime() + 86_400_000).toISOString() },
       });
       this.persist();
       return structuredClone(event);
@@ -609,7 +647,7 @@ export class DemoRepository implements AppRepository {
       confidence: 0.94,
       imageQuality: 0.91,
     };
-    Object.assign(event, analysis, { capturedAt: capturedAt.toISOString() });
+    Object.assign(event, analysis, { capturedAt: capturedAt.toISOString(), reward: { status: 'claimed', resolvedAt: capturedAt.toISOString(), claimId: event.id, expiresAt: new Date(capturedAt.getTime() + 86_400_000).toISOString() } });
     this.persist();
     return structuredClone(event);
   }
@@ -622,7 +660,7 @@ export class DemoRepository implements AppRepository {
       corrections: submission.answers.map((answer) => ({ questionId: answer.questionId, selectedChoiceId: answer.choiceId, correctChoiceId: answer.choiceId, correct: true, explanation: 'Demo answer.' })),
       provider: 'demo', model: 'demo', promptVersion: 'demo-v1',
     } : undefined;
-    Object.assign(event, { status: 'answered' as const, submittedAt: submittedAt.toISOString(), submission: structuredClone(submission), ...(quizResult ? { quizResult } : {}) });
+    Object.assign(event, { status: 'answered' as const, submittedAt: submittedAt.toISOString(), submission: structuredClone(submission), reward: { status: 'claimed', resolvedAt: submittedAt.toISOString(), claimId: event.id, expiresAt: new Date(submittedAt.getTime() + 86_400_000).toISOString() }, ...(quizResult ? { quizResult } : {}) });
     this.persist();
     return structuredClone(event);
   }

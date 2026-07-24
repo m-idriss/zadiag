@@ -12,7 +12,7 @@ import { assignableRoutineTemplates, marketplaceFromTemplates, presentRoutineTem
 import { isCompletedVerification, isSuccessfulVerification, withResolvedEventStatuses } from '../domain/adherence';
 import { routineContentChanges, selectRoutineVersionTarget, type PublishedRoutineVersion, type RoutineCatalogEntry, type RoutineContentChange, type RoutineDraft } from '../domain/routineDraft';
 import { readUiStorageJson, readUiStorageString, removeUiStorageItem, writeUiStorageString } from '../services/uiStorage';
-import type { AiAuthoringCapabilities, AiRoutineProposal, AiRoutineResponseKind } from '../services/contracts';
+import type { AiAuthoringCapabilities, AiRoutineProposal, AiRoutineResponseKind, RewardClaimReveal, RewardPoolStatus } from '../services/contracts';
 import type { JourneyStage } from '../services/contracts';
 
 const RoutineDetailScreen = lazy(() => import('./RoutineDetailScreen').then((module) => ({ default: module.RoutineDetailScreen })));
@@ -123,6 +123,10 @@ export function RoutinesScreen({
   requestCheck,
   getProofImageUrl,
   reviewCheck,
+  revealReward,
+  getRewardPoolStatus,
+  addRewardCodes,
+  revokeRewardPool,
   onAssignRoutine,
   onDeleteRoutine,
   onRetryRoutines,
@@ -160,6 +164,10 @@ export function RoutinesScreen({
   requestCheck?: (routineId: string) => Promise<void>;
   getProofImageUrl?: (eventId: string) => Promise<string>;
   reviewCheck?: (eventId: string, decision: ReviewCheckDecision) => Promise<void>;
+  revealReward?: (eventId: string) => Promise<RewardClaimReveal>;
+  getRewardPoolStatus?: (routineId: string) => Promise<RewardPoolStatus>;
+  addRewardCodes?: (routineId: string, codes: string[], claimLifetimeHours: number) => Promise<RewardPoolStatus>;
+  revokeRewardPool?: (routineId: string) => Promise<RewardPoolStatus>;
   onAssignRoutine?: (routineId: string) => Promise<void>;
   onDeleteRoutine?: (routineId: string) => Promise<void>;
   onRetryRoutines?: () => Promise<void>;
@@ -370,7 +378,7 @@ export function RoutinesScreen({
     return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDraftEditorScreen key={draft?.id ?? 'new'} draft={draft} locale={state.locale} online={online} save={saveDraft} approve={approve} aiAvailable={aiCapabilities?.routineGeneration.enabled} quizAvailable={aiCapabilities?.dynamicQuizGeneration.enabled} planSummary={planSummary} propose={onProposeRoutineChallenge ? async (input) => { const proposal = await onProposeRoutineChallenge({ ...input, locale: state.locale }); void onRecordAuthoringStage?.(input.refinement ? 'routine_authoring_refinement' : 'routine_authoring_proposal').catch(() => undefined); return proposal; } : undefined} cancel={closeDraftEditor} reload={() => { closeDraftEditor(); setDraftReloadSequence((value) => value + 1); }} t={t} /></Suspense>;
   }
 
-  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={backToList} start={start} edit={canManageRoutines} initialTab={detailInitialTab} initialEventId={focusedEventId} onInitialEventConsumed={onFocusedEventConsumed} getProofImageUrl={getProofImageUrl} reviewCheck={canManageRoutines ? reviewCheck : undefined} requestCheck={canManageRoutines ? requestCheck : undefined} onSaveMonitoringPlan={canManageRoutines && onSaveMonitoringPlan ? (plan, validationMode) => onSaveMonitoringPlan(selected.routineId, plan, validationMode) : undefined} onSaveAppearance={canManageRoutines && onSaveRoutineAppearance ? (appearance) => onSaveRoutineAppearance(selected.routineId, appearance) : undefined} onForkContent={canManageRoutines && onForkRoutineAssignmentDraft ? () => forkAssignedRoutine(selected) : undefined} forkingContent={forkingRoutineId === selected.routineId} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
+  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={backToList} start={start} edit={canManageRoutines} initialTab={detailInitialTab} initialEventId={focusedEventId} onInitialEventConsumed={onFocusedEventConsumed} getProofImageUrl={getProofImageUrl} reviewCheck={canManageRoutines ? reviewCheck : undefined} requestCheck={canManageRoutines ? requestCheck : undefined} revealReward={revealReward} getRewardPoolStatus={canManageRoutines ? getRewardPoolStatus : undefined} addRewardCodes={canManageRoutines ? addRewardCodes : undefined} revokeRewardPool={canManageRoutines ? revokeRewardPool : undefined} onSaveMonitoringPlan={canManageRoutines && onSaveMonitoringPlan ? (plan, validationMode) => onSaveMonitoringPlan(selected.routineId, plan, validationMode) : undefined} onSaveAppearance={canManageRoutines && onSaveRoutineAppearance ? (appearance) => onSaveRoutineAppearance(selected.routineId, appearance) : undefined} onForkContent={canManageRoutines && onForkRoutineAssignmentDraft ? () => forkAssignedRoutine(selected) : undefined} forkingContent={forkingRoutineId === selected.routineId} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
 
   const setRequestStatus = (routineId: string, status: RequestStatus) => {
     setRequestStatuses((current) => ({ ...current, [routineId]: status }));

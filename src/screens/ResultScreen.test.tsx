@@ -111,4 +111,25 @@ describe('ResultScreen', () => {
     expect(container.textContent).toContain('Un responsable va vérifier');
     expect(container.textContent).toContain('Required elasticÀ vérifier par un responsable');
   });
+
+  it('keeps a claimed reward masked until an explicit reveal and supports copy feedback', async () => {
+    const reveal = vi.fn().mockResolvedValue({ status: 'claimed', value: 'PRIVATE-REWARD', expiresAt: '2026-07-05T10:00:00.000Z' });
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    await act(async () => root.render(<ResultScreen
+      event={{ ...event('detected'), reward: { status: 'claimed', resolvedAt: '2026-07-04T10:03:00.000Z', claimId: 'check-1', expiresAt: '2026-07-05T10:00:00.000Z' } }}
+      revealReward={reveal}
+      done={() => undefined}
+      t={(key) => translate('en', key)}
+    />));
+    expect(container.textContent).not.toContain('PRIVATE-REWARD');
+    const revealButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Reveal reward');
+    await act(async () => { revealButton?.click(); await Promise.resolve(); });
+    expect(reveal).toHaveBeenCalledWith('check-1');
+    expect(container.textContent).toContain('PRIVATE-REWARD');
+    const copyButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Copy code');
+    await act(async () => { copyButton?.click(); await Promise.resolve(); });
+    expect(writeText).toHaveBeenCalledWith('PRIVATE-REWARD');
+    expect(container.textContent).toContain('Copied');
+  });
 });

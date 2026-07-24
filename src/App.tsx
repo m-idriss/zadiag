@@ -691,7 +691,7 @@ export function App() {
         : <div className="content-screen routines-state" role="status"><p>{t('noPendingTask')}</p></div>;
   } else if (route === 'result' && result) {
     const canRetake = canRetakeCapture(result, state.events);
-    content = <ResultScreen event={result} retake={canRetake ? () => retryCapture(result) : undefined} done={() => { setResult(undefined); setRoute('app'); }} t={t} />;
+    content = <ResultScreen event={result} retake={canRetake ? () => retryCapture(result) : undefined} revealReward={repository.revealRewardClaim?.bind(repository)} done={() => { setResult(undefined); setRoute('app'); }} t={t} />;
   } else {
     const role = state.role ?? 'child';
     const syncStatus = syncStatusFor(online, pendingSyncOperations, syncFailed);
@@ -717,6 +717,10 @@ export function App() {
             requestCheck={canRequestChecks ? withRepositorySync(repository.requestCheckNow) : undefined}
             getProofImageUrl={(eventId) => repository.getProofImageUrl(eventId)}
             reviewCheck={canReviewProofs ? withRepositorySyncVoid(repository.reviewCheck) : undefined}
+            revealReward={repository.revealRewardClaim?.bind(repository)}
+            getRewardPoolStatus={canManageRoutines ? repository.getRewardPoolStatus?.bind(repository) : undefined}
+            addRewardCodes={canManageRoutines ? repository.addRewardCodes?.bind(repository) : undefined}
+            revokeRewardPool={canManageRoutines ? repository.revokeRewardPool?.bind(repository) : undefined}
             onAssignRoutine={canManageRoutines ? withRepositorySync(repository.assignRoutine) : undefined}
             onDeleteRoutine={canManageRoutines ? withRepositorySync(repository.deleteRoutine) : undefined}
             onRetryRoutines={withOptionalRepositorySync(repository.retryRemoteSync)}

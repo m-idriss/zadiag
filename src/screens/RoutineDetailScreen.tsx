@@ -15,6 +15,8 @@ import { ProofLightbox } from '../components/ProofLightbox';
 import { VerificationEventDetailDialog } from '../components/VerificationEventDetailDialog';
 import type { RoutineContentEditTarget } from './routineContentEditTarget';
 import { DEFAULT_PRIVATE_ROUTINE_ACCENT } from '../domain/routineDraft';
+import { RewardPoolManager } from '../components/RewardPoolManager';
+import type { RewardClaimReveal, RewardPoolStatus } from '../services/contracts';
 
 type DetailTab = 'details' | 'tracking' | 'plan';
 type DetailInitialTab = DetailTab | 'overview';
@@ -157,7 +159,7 @@ function RoutineContentEditButton({ label, target, busy, onEdit }: {
   return <button type="button" className="routine-content-edit-overlay" aria-label={label} aria-busy={busy} disabled={busy} onClick={() => onEdit(target)}><SvgIcon icon={chevronForwardOutline} /></button>;
 }
 
-export function RoutineDetailScreen({ assignment, state, back, start, getProofImageUrl, reviewCheck, requestCheck, t, edit, initialTab, initialEventId, onInitialEventConsumed, onSaveMonitoringPlan, onSaveAppearance, onForkContent, forkingContent, routinePlanBusy }: {
+export function RoutineDetailScreen({ assignment, state, back, start, getProofImageUrl, reviewCheck, requestCheck, revealReward, getRewardPoolStatus, addRewardCodes, revokeRewardPool, t, edit, initialTab, initialEventId, onInitialEventConsumed, onSaveMonitoringPlan, onSaveAppearance, onForkContent, forkingContent, routinePlanBusy }: {
   assignment: RoutineAssignment;
   state: AppState;
   back: () => void;
@@ -165,6 +167,10 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   getProofImageUrl?: (eventId: string) => Promise<string>;
   reviewCheck?: (eventId: string, decision: ReviewCheckDecision) => Promise<void>;
   requestCheck?: (routineId: string) => Promise<void>;
+  revealReward?: (eventId: string) => Promise<RewardClaimReveal>;
+  getRewardPoolStatus?: (routineId: string) => Promise<RewardPoolStatus>;
+  addRewardCodes?: (routineId: string, codes: string[], claimLifetimeHours: number) => Promise<RewardPoolStatus>;
+  revokeRewardPool?: (routineId: string) => Promise<RewardPoolStatus>;
   t: (key: MessageKey) => string;
   edit?: boolean;
   initialTab?: DetailInitialTab;
@@ -361,7 +367,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
       {tab === 'tracking' && trackingPanel}
 
       {selectedHistoryEvent ? (
-        <VerificationEventDetailDialog event={selectedHistoryEvent} locale={state.locale} proofUrl={proofUrls[selectedHistoryEvent.id]} getProofImageUrl={getProofImageUrl} reviewCheck={reviewCheck} requestCheck={requestCheck} onClose={() => setSelectedHistoryEventId(undefined)} t={t} />
+        <VerificationEventDetailDialog event={selectedHistoryEvent} locale={state.locale} proofUrl={proofUrls[selectedHistoryEvent.id]} getProofImageUrl={getProofImageUrl} reviewCheck={reviewCheck} requestCheck={requestCheck} revealReward={revealReward} onClose={() => setSelectedHistoryEventId(undefined)} t={t} />
       ) : null}
 
       {enlargedProofUrl ? (
@@ -369,6 +375,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
       ) : null}
 
       {tab === 'plan' && edit && onSaveMonitoringPlan && <div className="routine-tab-panel routine-plan-tab-panel">
+        {getRewardPoolStatus && addRewardCodes && revokeRewardPool ? <RewardPoolManager routineId={assignment.routineId} load={getRewardPoolStatus} add={addRewardCodes} revoke={revokeRewardPool} t={t} /> : null}
         <RoutineEditScreen
           plan={assignment.plan}
           validationMode={assignment.validationMode ?? 'ai'}

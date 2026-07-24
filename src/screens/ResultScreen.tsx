@@ -6,16 +6,20 @@ import { ActionButton } from '../components/ui';
 import { AppIcon } from '../components/Icon';
 import { retakeGuidanceMessageKey } from '../services/retakeGuidance';
 import { PhotoChecklistSummary } from '../components/PhotoChecklistSummary';
+import { RewardReveal } from '../components/RewardReveal';
+import type { RewardClaimReveal } from '../services/contracts';
 
 export function ResultScreen({
   event,
   retake,
   done,
+  revealReward,
   t,
 }: {
   event: VerificationEvent;
   retake?: () => void;
   done: () => void;
+  revealReward?: (eventId: string) => Promise<RewardClaimReveal>;
   t: (key: MessageKey) => string;
   }) {
   const success = event.status === 'detected';
@@ -58,6 +62,7 @@ export function ResultScreen({
       ) : null}
       {!checklist && quality != null && quality <= 60 ? <p className="result-reason">{t('analysisQualityHint')}</p> : null}
       {event.status === 'uncertain' && event.proofImagePath ? <p className="result-reason">{t('proofPendingReviewPrivacy')}</p> : null}
+      {event.reward && revealReward ? <RewardReveal eventId={event.id} outcome={event.reward.status} reveal={revealReward} t={t} /> : null}
       <Disclaimer t={t} />
       {retake ? <p className="result-choice-hint">{t(retakeGuidanceMessageKey(event))}</p> : null}
       {retake ? <ActionButton onClick={retake}>{t('retakeProof')}</ActionButton> : null}
