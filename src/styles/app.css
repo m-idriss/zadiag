@@ -1009,9 +1009,7 @@ button:disabled { cursor: not-allowed; }
 .participant-switcher-option-avatar { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; background: #eef5f3; color: var(--profile-color, var(--color-primary)); font-size: 13px; font-weight: 900; }
 .participant-switcher-overview-avatar .svg-icon { font-size: 18px; }
 .participant-switcher-menu button.active .participant-switcher-option-avatar { background: var(--color-surface-solid); }
-.history-row-title { display: flex; min-width: 0; align-items: baseline; gap: 7px; }
-.history-row-title > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.history-row-participant { flex: 0 0 auto; color: var(--profile-color); font-size: 10px; font-weight: 850; }
+.parent-history-row.has-participant-accent { border-inline-start: 4px solid var(--history-participant-color); }
 .filter-chips .participant-filter-chip { border-color: color-mix(in srgb, var(--profile-color) 24%, var(--color-border)); background: color-mix(in srgb, var(--profile-color) 7%, var(--color-surface-solid)); color: var(--profile-color); }
 .filter-chips .participant-filter-chip.active { border-color: var(--profile-color); background: var(--profile-color); color: var(--color-surface-solid); }
 .participant-switcher-static .profile-context-card { cursor: default; }

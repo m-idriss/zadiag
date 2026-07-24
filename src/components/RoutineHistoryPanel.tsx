@@ -57,6 +57,7 @@ export function RoutineHistoryPanel({
   onRequestCheck,
   participants,
   participantForEvent,
+  colorForEvent,
   excludedParticipantIds = [],
   onToggleParticipant,
   t,
@@ -71,6 +72,7 @@ export function RoutineHistoryPanel({
   onRequestCheck?: (routineId: string) => Promise<void>;
   participants?: Array<{ id: string; displayName: string; profileColor: string }>;
   participantForEvent?: (event: VerificationEvent) => { id: string; displayName: string; profileColor: string } | undefined;
+  colorForEvent?: (event: VerificationEvent) => string | undefined;
   excludedParticipantIds?: string[];
   onToggleParticipant?: (participantId: string) => void;
   t: (key: MessageKey) => string;
@@ -199,7 +201,7 @@ export function RoutineHistoryPanel({
           <div className="history-list parent-history-list">
             {filtered.map((event) => {
               const visual = presentationFor(event);
-              const participant = participantForEvent?.(event);
+              const participantColor = colorForEvent?.(event);
               const canRetake = Boolean(onRetake) && canRetakeCapture(event, retryEvents ?? events, new Date());
               const canRequestCheck = Boolean(onRequestCheck)
                 && latestMissedEventIds.has(event.id)
@@ -215,16 +217,11 @@ export function RoutineHistoryPanel({
               return (
                 <ListRow
                   as="section"
-                  className={`card history-row parent-history-row${onOpenEvent ? ' history-row-clickable' : ''}`}
+                  className={`card history-row parent-history-row${participantColor ? ' has-participant-accent' : ''}${onOpenEvent ? ' history-row-clickable' : ''}`}
                   variant="bare"
                   icon={<AppIcon name={routineIconName(visual?.icon)} />}
                   iconClassName="history-icon routine-history-icon"
-                  title={(
-                    <span className="history-row-title">
-                      <span>{visual?.name ?? t('routine')}</span>
-                      {participant ? <span className="history-row-participant" style={{ '--profile-color': participant.profileColor } as CSSProperties}>{participant.displayName}</span> : null}
-                    </span>
-                  )}
+                  title={visual?.name ?? t('routine')}
                   detail={(
                     <>
                       {formatDateTime(event.requestedAt)}
@@ -234,7 +231,7 @@ export function RoutineHistoryPanel({
                       {staleHint ? <span className="history-stale-hint"> · {staleHint}</span> : null}
                     </>
                   )}
-                  style={visual?.style}
+                  style={{ ...visual?.style, ...(participantColor ? { '--history-participant-color': participantColor } : {}) } as CSSProperties}
                   trailing={(
                     <>
                     {onOpenEvent ? <button type="button" className="history-row-open-button" aria-label={`${t('historyDetailTitle')} · ${visual?.name ?? t('routine')} · ${formatDateTime(event.requestedAt)}`} onClick={() => onOpenEvent(event)} /> : null}

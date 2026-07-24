@@ -7,6 +7,7 @@ import { RoutineHistoryPanel } from '../components/RoutineHistoryPanel';
 import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } from '../components/AdherenceSummaryCard';
 import { UpcomingChecksSection } from '../components/UpcomingChecksSection';
 import { presentRoutine } from '../domain/routinePresentation';
+import { profileColorFor } from '../domain/profileColor';
 import { eventWindowLabel } from '../domain/taskTimeLabel';
 import { isReviewableVerification, withResolvedEventStatuses } from '../domain/adherence';
 import { EmptyState } from '../components/ui';
@@ -314,7 +315,7 @@ export function ParentDashboard({
       </div>
 
       {showParticipantOverview ? (
-        <MultiParticipantOverview sources={notificationSources} locale={state.locale} range={summaryRange} onRangeChange={setSummaryRange} onSelectParticipant={selectParticipant} t={t} />
+        <MultiParticipantOverview sources={notificationSources} locale={state.locale} range={summaryRange} now={now} onRangeChange={setSummaryRange} onSelectParticipant={selectParticipant} t={t} />
       ) : <>
       <section className="today-section participant-history-section dashboard-summary-section parent-dashboard-overview-section" aria-labelledby="responsible-summary-title">
         <h2 id="responsible-summary-title">{t('overview')}</h2>
@@ -643,7 +644,7 @@ export function ParentDashboard({
       ) : null}
 
       <section className="today-section participant-history-section parent-history-section">
-        <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedRawEvents} locale={state.locale} titleId="responsible-history-title" onRequestCheck={requestCheck} onOpenEvent={(event) => setDetailEventId(event.id)} t={t} />
+        <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedRawEvents} locale={state.locale} titleId="responsible-history-title" colorForEvent={activeParticipantAccess ? () => profileColorFor(activeParticipantAccess.participant) : undefined} onRequestCheck={requestCheck} onOpenEvent={(event) => setDetailEventId(event.id)} t={t} />
       </section>
       {detailEvent ? <VerificationEventDetailDialog event={detailEvent} locale={state.locale} proofUrl={proofUrls[detailEvent.id]} getProofImageUrl={getProofImageUrl} reviewCheck={reviewCheck} requestCheck={requestCheck} onClose={() => setDetailEventId(undefined)} t={t} /> : null}
       </>}

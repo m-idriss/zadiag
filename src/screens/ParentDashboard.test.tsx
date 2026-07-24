@@ -39,6 +39,8 @@ describe('ParentDashboard', () => {
       role: 'parent',
       locale: 'en',
       notificationsEnabled: true,
+      activeParticipantId: 'maya',
+      participantAccess: [{ participant: { id: 'maya', displayName: 'Maya', profileColor: 'violet' }, membership: { role: 'owner', status: 'active' } }],
       family: { linked: true, childLinked: false, childName: 'Maya', linkingCode: 'ZD-123456', parentRecoveryCode: '', consented: true },
       routineAssignments: [assignment],
       events: [
@@ -80,12 +82,15 @@ describe('ParentDashboard', () => {
       role: 'parent',
       locale: 'en',
       notificationsEnabled: true,
+      activeParticipantId: 'maya',
+      participantAccess: [{ participant: { id: 'maya', displayName: 'Maya', profileColor: 'violet' }, membership: { role: 'owner', status: 'active' } }],
       family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
       routineAssignments: [assignment],
       events: [{ id: 'dashboard-detail', routineId: assignment.routineId, sessionId: 'one', requestedAt, expiresAt: new Date(Date.now() + 60 * 60_000).toISOString(), status: 'detected', reason: 'Visible from dashboard' }],
     };
 
     act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} requestCheck={vi.fn()} t={(key) => translate('en', key)} />));
+    expect(container.querySelector<HTMLElement>('.parent-history-row')?.style.getPropertyValue('--history-participant-color')).not.toBe('');
     const openDetails = container.querySelector<HTMLButtonElement>('.history-row-open-button');
     act(() => openDetails?.click());
 
@@ -112,7 +117,10 @@ describe('ParentDashboard', () => {
       notificationSources: [
         {
           participant: { id: 'maya', displayName: 'Maya', profileColor: 'violet' }, role: 'parent', assignments: [assignment],
-          events: [{ id: 'maya-ok', routineId: assignment.routineId, sessionId: 'maya', requestedAt: now, expiresAt: now, status: 'detected' }],
+          events: [
+            { id: 'maya-ok', routineId: assignment.routineId, sessionId: 'maya', requestedAt: now, expiresAt: now, status: 'detected' },
+            { id: 'maya-expired', routineId: assignment.routineId, sessionId: 'maya-expired', requestedAt: now, expiresAt: threeDaysAgo, status: 'pending' },
+          ],
         },
         {
           participant: { id: 'leo', displayName: 'Leo', profileColor: 'teal' }, role: 'parent', assignments: [assignment],
@@ -131,25 +139,25 @@ describe('ParentDashboard', () => {
     expect(container.querySelector('.history-filter-card')).not.toBeNull();
     expect(Array.from(container.querySelectorAll('.filter-group > span')).map((label) => label.textContent)).toEqual(['Participant', 'Routine', 'Status']);
     expect(container.textContent).toContain('Results');
-    expect(container.querySelectorAll('.parent-history-row')).toHaveLength(1);
+    expect(container.querySelectorAll('.parent-history-row')).toHaveLength(2);
     const weekRange = Array.from(container.querySelectorAll<HTMLButtonElement>('.summary-range-toggle button'))
       .find((button) => button.textContent === '7 days');
     act(() => weekRange?.click());
-    expect(container.querySelectorAll('.parent-history-row')).toHaveLength(2);
-    expect(container.querySelector('.progress-ring')?.textContent).toBe('50%');
-    const collectiveTitles = Array.from(container.querySelectorAll('.history-row-title')).map((title) => title.textContent).join(' ');
-    expect(collectiveTitles).toContain('Maya');
-    expect(collectiveTitles).toContain('Leo');
+    expect(container.querySelectorAll('.parent-history-row')).toHaveLength(3);
+    expect(container.querySelector('.progress-ring')?.textContent).toBe('33%');
+    const collectiveTitles = Array.from(container.querySelectorAll('.parent-history-row strong')).map((title) => title.textContent).join(' ');
+    expect(collectiveTitles).not.toContain('Maya');
+    expect(collectiveTitles).not.toContain('Leo');
     const participantChips = Array.from(container.querySelectorAll<HTMLElement>('.participant-filter-chip'));
     expect(participantChips.every((chip) => chip.style.getPropertyValue('--profile-color').length > 0)).toBe(true);
-    expect(new Set(Array.from(container.querySelectorAll<HTMLElement>('.history-row-participant')).map((name) => name.style.getPropertyValue('--profile-color'))).size).toBe(2);
+    expect(new Set(Array.from(container.querySelectorAll<HTMLElement>('.has-participant-accent')).map((row) => row.style.getPropertyValue('--history-participant-color'))).size).toBe(2);
     expect(container.textContent).toContain('Detailed report');
 
     const leoFilter = Array.from(container.querySelectorAll<HTMLButtonElement>('.filter-group:first-child button'))
       .find((button) => button.textContent === 'Leo');
     act(() => leoFilter?.click());
-    expect(container.querySelectorAll('.parent-history-row')).toHaveLength(1);
-    expect(container.querySelector('.progress-ring')?.textContent).toBe('100%');
+    expect(container.querySelectorAll('.parent-history-row')).toHaveLength(2);
+    expect(container.querySelector('.progress-ring')?.textContent).toBe('50%');
 
     act(() => container.querySelector<HTMLButtonElement>('.history-row-open-button')?.click());
     expect(selectParticipant).toHaveBeenCalledWith('maya');
