@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { Locale, ParticipantNotificationSource, RoutineAssignment, VerificationEvent } from '../domain/models';
 import { profileColorFor } from '../domain/profileColor';
+import { withResolvedEventStatuses } from '../domain/adherence';
 import type { MessageKey } from '../services/i18n';
 import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } from './AdherenceSummaryCard';
 import { RoutineHistoryPanel } from './RoutineHistoryPanel';
@@ -43,6 +44,7 @@ export function MultiParticipantOverview({
   sources,
   locale,
   range,
+  now,
   onRangeChange,
   onSelectParticipant,
   t,
@@ -50,20 +52,22 @@ export function MultiParticipantOverview({
   sources: ParticipantNotificationSource[];
   locale: Locale;
   range: SummaryRange;
+  now: number;
   onRangeChange: (range: SummaryRange) => void;
   onSelectParticipant: (participantId: string) => void;
   t: (key: MessageKey) => string;
 }) {
   const { assignments, events, eventContext } = useMemo(() => collectiveDashboardData(sources), [sources]);
+  const resolvedEvents = useMemo(() => withResolvedEventStatuses(events, now), [events, now]);
   const [excludedParticipantIds, setExcludedParticipantIds] = useState<string[]>([]);
   const participants = sources.map((source) => ({
     id: source.participant.id,
     displayName: source.participant.displayName,
     profileColor: profileColorFor(source.participant),
   }));
-  const visibleEvents = useMemo(() => events.filter((event) => (
+  const visibleEvents = useMemo(() => resolvedEvents.filter((event) => (
     !excludedParticipantIds.includes(eventContext.get(event.id)?.participant.id ?? '')
-  )), [eventContext, events, excludedParticipantIds]);
+  )), [eventContext, excludedParticipantIds, resolvedEvents]);
   const visibleAssignments = useMemo(() => assignments.filter((assignment) => (
     !excludedParticipantIds.some((participantId) => assignment.routineId.startsWith(`${participantId}:`))
   )), [assignments, excludedParticipantIds]);
@@ -89,6 +93,7 @@ export function MultiParticipantOverview({
         titleId="collective-history-title"
         participants={participants}
         participantForEvent={participantForEvent}
+        colorForEvent={(event) => eventContext.get(event.id)?.participant.profileColor}
         excludedParticipantIds={excludedParticipantIds}
         onToggleParticipant={(participantId) => setExcludedParticipantIds((current) => (
           current.includes(participantId)
