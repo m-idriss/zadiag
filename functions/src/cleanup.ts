@@ -23,3 +23,5 @@ export const expiredPendingCheckCleanupUpdate = (now = new Date()) => ({
 
 export const shouldDeleteProofAfterReview = (decision: string) =>
   decision === 'detected' || decision === 'not_detected';
+
+export const expiredRewardSecretCutoff = (now = new Date()) => now.toISOString();

@@ -56,6 +56,9 @@ beforeEach(async () => {
     await setDoc(doc(db, 'participants/participant-1/checks/check-1'), { status: 'pending' });
     await setDoc(doc(db, 'participants/participant-1/quizAnswerKeys/check-1'), { answerKey: [{ correctChoiceId: 'secret' }] });
     await setDoc(doc(db, 'participants/participant-1/quizQuestionReports/report-1'), { checkId: 'check-1' });
+    await setDoc(doc(db, 'participants/participant-1/rewardPolicies/routine-1'), { status: 'active' });
+    await setDoc(doc(db, 'participants/participant-1/rewardPolicies/routine-1/rewardCodes/code-1'), { status: 'available', value: 'PRIVATE-CODE' });
+    await setDoc(doc(db, 'participants/participant-1/rewardClaims/check-1'), { value: 'CLAIMED-CODE' });
     await setDoc(doc(db, 'participants/participant-1/routineAssignments/routine-1'), { status: 'active' });
     await setDoc(doc(db, 'participants/participant-1/routineDrafts/parent-draft'), { ownerId: 'parent', revision: 1 });
     await setDoc(doc(db, 'participants/participant-1/routineDrafts/coparent-draft'), { ownerId: 'coparent', revision: 1 });
@@ -81,6 +84,9 @@ beforeEach(async () => {
     await setDoc(doc(db, 'families/family-1/pushSubscriptions/child'), { endpoint: 'legacy-child-device' });
     await setDoc(doc(db, 'families/family-1/quizAnswerKeys/check-1'), { answerKey: [{ correctChoiceId: 'secret' }] });
     await setDoc(doc(db, 'families/family-1/quizQuestionReports/report-1'), { checkId: 'check-1' });
+    await setDoc(doc(db, 'families/family-1/rewardPolicies/orthodontic-elastics'), { status: 'active' });
+    await setDoc(doc(db, 'families/family-1/rewardPolicies/orthodontic-elastics/rewardCodes/code-1'), { status: 'available', value: 'PRIVATE-LEGACY-CODE' });
+    await setDoc(doc(db, 'families/family-1/rewardClaims/check-1'), { value: 'CLAIMED-LEGACY-CODE' });
   });
 });
 
@@ -163,6 +169,22 @@ describe('participant relationship isolation', () => {
     }
   });
 
+  test('keeps reward policies, unclaimed codes, and claims server-only', async () => {
+    for (const uid of ['parent', 'coparent']) {
+      const memberDb = environment.authenticatedContext(uid).firestore();
+      for (const path of [
+        'participants/participant-1/rewardPolicies/routine-1',
+        'participants/participant-1/rewardPolicies/routine-1/rewardCodes/code-1',
+        'participants/participant-1/rewardClaims/check-1',
+      ]) {
+        await assertFails(getDoc(doc(memberDb, path)));
+        await assertFails(setDoc(doc(memberDb, path), { value: 'TAMPERED' }));
+        await assertFails(deleteDoc(doc(memberDb, path)));
+      }
+      await assertFails(getDocs(collection(memberDb, 'participants/participant-1/rewardClaims')));
+    }
+  });
+
   test('keeps marketplace, registry, share codes, and reports behind callable functions', async () => {
     const parentDb = environment.authenticatedContext('parent').firestore();
     for (const path of [
@@ -216,6 +238,20 @@ describe('family isolation', () => {
     await assertFails(getDoc(doc(outsiderDb, 'families/family-1/routineAssignments/orthodontic-elastics')));
     await assertFails(getDocs(collection(outsiderDb, 'families/family-1/checks')));
     await assertFails(getDoc(doc(parentDb, 'linkCodes/private-hash')));
+  });
+
+  test('keeps legacy-family reward secrets server-only', async () => {
+    const parentDb = environment.authenticatedContext('parent').firestore();
+    const childDb = environment.authenticatedContext('child').firestore();
+    for (const uidDb of [parentDb, childDb]) {
+      for (const path of [
+        'families/family-1/rewardPolicies/orthodontic-elastics',
+        'families/family-1/rewardPolicies/orthodontic-elastics/rewardCodes/code-1',
+        'families/family-1/rewardClaims/check-1',
+      ]) {
+        await assertFails(getDoc(doc(uidDb, path)));
+      }
+    }
   });
 
   test('lets a suspended account see only its own suspension profile', async () => {

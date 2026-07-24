@@ -14,6 +14,7 @@ type OperationalEventKind =
   | 'push_dispatch_summary'
   | 'scheduler_run_summary'
   | 'analysis_completed'
+  | 'reward_claim_outcome'
   | 'proof_image_fallback'
   | 'synthetic_push_receipt';
 
