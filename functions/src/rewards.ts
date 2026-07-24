@@ -27,8 +27,15 @@ export const rewardClaimForReveal = (
   now = new Date(),
 ): { status: RewardOutcomeStatus | 'unavailable'; value?: string; expiresAt?: string } => {
   if (!checkData || !finalSuccessStatuses.has(String(checkData.status ?? ''))) return { status: 'unavailable' };
-  const rewardStatus = existingRewardOutcome(checkData.reward)?.status ?? 'unavailable';
-  if (!claimData) return { status: rewardStatus };
+  const outcome = existingRewardOutcome(checkData.reward);
+  if (!claimData) {
+    if (outcome?.status === 'claimed') {
+      return outcome.expiresAt && Date.parse(outcome.expiresAt) <= now.getTime()
+        ? { status: 'expired' }
+        : { status: 'unavailable' };
+    }
+    return { status: outcome?.status ?? 'unavailable' };
+  }
   const expiresAt = typeof claimData.expiresAt === 'string' ? claimData.expiresAt : '';
   if (!expiresAt || Date.parse(expiresAt) <= now.getTime()) return { status: 'expired' };
   if (typeof claimData.value !== 'string' || !claimData.value) return { status: 'unavailable' };
