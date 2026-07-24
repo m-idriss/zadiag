@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { Locale, RoutineAssignment, VerificationEvent, VerificationStatus } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { presentRoutine } from '../domain/routinePresentation';
@@ -68,8 +68,8 @@ export function RoutineHistoryPanel({
   onRetake?: (event: VerificationEvent) => void;
   onOpenEvent?: (event: VerificationEvent) => void;
   onRequestCheck?: (routineId: string) => Promise<void>;
-  participants?: Array<{ id: string; displayName: string }>;
-  participantForEvent?: (event: VerificationEvent) => { id: string; displayName: string } | undefined;
+  participants?: Array<{ id: string; displayName: string; profileColor: string }>;
+  participantForEvent?: (event: VerificationEvent) => { id: string; displayName: string; profileColor: string } | undefined;
   t: (key: MessageKey) => string;
 }) {
   const [excludedStatuses, setExcludedStatuses] = useState<VerificationStatus[]>(() => readStoredFilters(titleId).statuses);
@@ -176,7 +176,7 @@ export function RoutineHistoryPanel({
                 <div className="filter-chips">
                   {participants.map((participant) => {
                     const active = !excludedParticipantIds.includes(participant.id);
-                    return <button type="button" key={participant.id} aria-pressed={active} className={active ? 'active' : ''} onClick={() => toggleParticipantFilter(participant.id)}>{participant.displayName}</button>;
+                    return <button type="button" key={participant.id} aria-pressed={active} className={`participant-filter-chip${active ? ' active' : ''}`} style={{ '--profile-color': participant.profileColor } as CSSProperties} onClick={() => toggleParticipantFilter(participant.id)}>{participant.displayName}</button>;
                   })}
                 </div>
               </div>
@@ -229,7 +229,7 @@ export function RoutineHistoryPanel({
                   title={(
                     <span className="history-row-title">
                       <span>{visual?.name ?? t('routine')}</span>
-                      {participant ? <span className="history-row-participant">{participant.displayName}</span> : null}
+                      {participant ? <span className="history-row-participant" style={{ '--profile-color': participant.profileColor } as CSSProperties}>{participant.displayName}</span> : null}
                     </span>
                   )}
                   detail={(

@@ -99,23 +99,24 @@ describe('ParentDashboard', () => {
 
   it('reuses the individual dashboard with participant filters and context labels', () => {
     const now = new Date().toISOString();
+    const threeDaysAgo = new Date(Date.now() - 3 * 86_400_000).toISOString();
     const assignment = createDefaultRoutineAssignment(now);
     const selectParticipant = vi.fn();
     const state: AppState = {
       role: 'parent', locale: 'en', notificationsEnabled: true, activeParticipantId: 'maya',
       family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
       participantAccess: [
-        { participant: { id: 'maya', displayName: 'Maya' }, membership: { role: 'owner', status: 'active' } },
-        { participant: { id: 'leo', displayName: 'Leo' }, membership: { role: 'caregiver', status: 'active' } },
+        { participant: { id: 'maya', displayName: 'Maya', profileColor: 'violet' }, membership: { role: 'owner', status: 'active' } },
+        { participant: { id: 'leo', displayName: 'Leo', profileColor: 'teal' }, membership: { role: 'caregiver', status: 'active' } },
       ],
       notificationSources: [
         {
-          participant: { id: 'maya', displayName: 'Maya' }, role: 'parent', assignments: [assignment],
+          participant: { id: 'maya', displayName: 'Maya', profileColor: 'violet' }, role: 'parent', assignments: [assignment],
           events: [{ id: 'maya-ok', routineId: assignment.routineId, sessionId: 'maya', requestedAt: now, expiresAt: now, status: 'detected' }],
         },
         {
-          participant: { id: 'leo', displayName: 'Leo' }, role: 'parent', assignments: [assignment],
-          events: [{ id: 'leo-review', routineId: assignment.routineId, sessionId: 'leo', requestedAt: now, expiresAt: now, status: 'uncertain' }],
+          participant: { id: 'leo', displayName: 'Leo', profileColor: 'teal' }, role: 'parent', assignments: [assignment],
+          events: [{ id: 'leo-review', routineId: assignment.routineId, sessionId: 'leo', requestedAt: threeDaysAgo, expiresAt: threeDaysAgo, status: 'uncertain' }],
         },
       ],
       routineAssignments: [assignment],
@@ -130,10 +131,17 @@ describe('ParentDashboard', () => {
     expect(container.querySelector('.history-filter-card')).not.toBeNull();
     expect(Array.from(container.querySelectorAll('.filter-group > span')).map((label) => label.textContent)).toEqual(['Participant', 'Routine', 'Status']);
     expect(container.textContent).toContain('Results');
+    expect(container.querySelectorAll('.parent-history-row')).toHaveLength(1);
+    const weekRange = Array.from(container.querySelectorAll<HTMLButtonElement>('.summary-range-toggle button'))
+      .find((button) => button.textContent === '7 days');
+    act(() => weekRange?.click());
     expect(container.querySelectorAll('.parent-history-row')).toHaveLength(2);
     const collectiveTitles = Array.from(container.querySelectorAll('.history-row-title')).map((title) => title.textContent).join(' ');
     expect(collectiveTitles).toContain('Maya');
     expect(collectiveTitles).toContain('Leo');
+    const participantChips = Array.from(container.querySelectorAll<HTMLElement>('.participant-filter-chip'));
+    expect(participantChips.every((chip) => chip.style.getPropertyValue('--profile-color').length > 0)).toBe(true);
+    expect(new Set(Array.from(container.querySelectorAll<HTMLElement>('.history-row-participant')).map((name) => name.style.getPropertyValue('--profile-color'))).size).toBe(2);
     expect(container.textContent).toContain('Detailed report');
 
     const leoFilter = Array.from(container.querySelectorAll<HTMLButtonElement>('.filter-group:first-child button'))
