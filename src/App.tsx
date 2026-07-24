@@ -48,6 +48,7 @@ const appBadgeApi = navigator as Navigator & {
 };
 
 const DASHBOARD_SUMMARY_RANGE_KEY = 'zadiag.dashboard.summaryRange';
+const PARTICIPANT_OVERVIEW_STORAGE_KEY = 'zadiag.dashboard.participantView';
 const syncStatusMessageKeys: Record<SyncStatus, MessageKey> = {
   synced: 'syncStatusSynced',
   syncing: 'syncStatusSyncing',
@@ -77,6 +78,18 @@ export const appBadgeCountForState = (
 
 export const resetNoticeMessageKey = (role: Role | undefined): MessageKey =>
   role === 'parent' ? 'resetNoticeParent' : 'resetNoticeChild';
+
+export const shouldShowParticipantOverviewAfterSwipe = (
+  role: Role,
+  tab: Tab,
+  direction: 'left' | 'right',
+  hasMultipleParticipants: boolean,
+  participantOverview: boolean,
+) => role === 'parent'
+  && tab === 'home'
+  && direction === 'left'
+  && hasMultipleParticipants
+  && !participantOverview;
 
 export const isParticipantInvitationCode = (code: string) => /^ZI-\d{6}$/.test(code.trim().toUpperCase());
 
@@ -180,6 +193,9 @@ export function App() {
   const [invitationNeedsAccountName, setInvitationNeedsAccountName] = useState(false);
   const [pendingInvitationCode, setPendingInvitationCode] = useState(captureRelationshipInvitationCode);
   const [dashboardSummaryRange, setDashboardSummaryRange] = useState<SummaryRange>(readDashboardSummaryRange);
+  const [participantOverview, setParticipantOverview] = useState(
+    () => readUiStorageString(PARTICIPANT_OVERVIEW_STORAGE_KEY) !== 'individual',
+  );
   const [serviceWorkerStatus, setServiceWorkerStatus] = useState<'unsupported' | 'registered' | 'notRegistered'>(
     () => ('serviceWorker' in navigator ? 'notRegistered' : 'unsupported'),
   );
@@ -818,6 +834,11 @@ export function App() {
         : role === 'parent'
           ? <ParentDashboard
               state={state}
+              participantOverview={participantOverview}
+              onParticipantOverviewChange={(overview) => {
+                setParticipantOverview(overview);
+                writeUiStorageString(PARTICIPANT_OVERVIEW_STORAGE_KEY, overview ? 'overview' : 'individual');
+              }}
               regenerateCode={canManageParticipant ? withRepositorySync(repository.regenerateLinkCode) : undefined}
               onCreateRoutine={canManageRoutines ? () => setTab('routines') : undefined}
               getProofImageUrl={(eventId) => repository.getProofImageUrl(eventId)}
@@ -855,7 +876,15 @@ export function App() {
             />;
     content = (
       <PullToUpdate
-        onHorizontalSwipe={(direction) => setTab((current) => tabAfterSwipe(navigationTabs(role, routineCentricUiEnabled), current, direction))}
+        onHorizontalSwipe={(direction) => {
+          const hasMultipleParticipants = (state.participantAccess?.filter((entry) => entry.membership.status === 'active').length ?? 0) > 1;
+          if (shouldShowParticipantOverviewAfterSwipe(role, tab, direction, hasMultipleParticipants, participantOverview)) {
+            setParticipantOverview(true);
+            writeUiStorageString(PARTICIPANT_OVERVIEW_STORAGE_KEY, 'overview');
+            return;
+          }
+          setTab((current) => tabAfterSwipe(navigationTabs(role, routineCentricUiEnabled), current, direction));
+        }}
         onUpdate={forceAppUpdate}
         t={t}
       >

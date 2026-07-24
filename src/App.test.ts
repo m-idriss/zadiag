@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_ROUTINE_ID, type AppState, type VerificationEvent } from './domain/models';
-import { appBadgeCountForState, documentLanguageForLocale, isParticipantInvitationCode, participantIdForNotificationLaunch, resetNoticeMessageKey, resolveNotificationLaunch, setupCompletionTransition, syncStatusFor, syncStatusIsVisible } from './App';
+import { appBadgeCountForState, documentLanguageForLocale, isParticipantInvitationCode, participantIdForNotificationLaunch, resetNoticeMessageKey, resolveNotificationLaunch, setupCompletionTransition, shouldShowParticipantOverviewAfterSwipe, syncStatusFor, syncStatusIsVisible } from './App';
+
+describe('shouldShowParticipantOverviewAfterSwipe', () => {
+  it('uses the first left swipe from an individual responsible dashboard for the collective overview', () => {
+    expect(shouldShowParticipantOverviewAfterSwipe('parent', 'home', 'left', true, false)).toBe(true);
+    expect(shouldShowParticipantOverviewAfterSwipe('parent', 'home', 'left', true, true)).toBe(false);
+    expect(shouldShowParticipantOverviewAfterSwipe('parent', 'home', 'right', true, false)).toBe(false);
+    expect(shouldShowParticipantOverviewAfterSwipe('child', 'home', 'left', true, false)).toBe(false);
+    expect(shouldShowParticipantOverviewAfterSwipe('parent', 'home', 'left', false, false)).toBe(false);
+  });
+});
 
 const activePendingEvent = (expiresAt: string): VerificationEvent => ({
   id: 'check-1',

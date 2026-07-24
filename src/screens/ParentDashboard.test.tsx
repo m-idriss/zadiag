@@ -122,22 +122,24 @@ describe('ParentDashboard', () => {
       events: [],
     };
 
-    act(() => root.render(<ParentDashboard state={state} onSelectParticipant={selectParticipant} t={(key) => translate('en', key)} />));
+    const setParticipantOverview = vi.fn();
+    act(() => root.render(<ParentDashboard state={state} participantOverview onParticipantOverviewChange={setParticipantOverview} onSelectParticipant={selectParticipant} t={(key) => translate('en', key)} />));
 
     expect(container.querySelector('.multi-participant-overview')).not.toBeNull();
     expect(Array.from(container.querySelectorAll('.multi-participant-card')).map((card) => card.textContent)).toEqual([
       expect.stringContaining('Leo'),
       expect.stringContaining('Maya'),
     ]);
-    expect(container.textContent).toContain('Recent activity');
+    expect(container.textContent).toContain('Results');
+    expect(container.querySelectorAll('.multi-participant-result')).toHaveLength(2);
+    expect(Array.from(container.querySelectorAll('.multi-participant-result-icon')).map((icon) => icon.textContent).sort()).toEqual(['L', 'M']);
     expect(container.textContent).not.toContain('Detailed report');
 
     const maya = Array.from(container.querySelectorAll<HTMLButtonElement>('.multi-participant-card'))
       .find((card) => card.textContent?.includes('Maya'));
     act(() => maya?.click());
     expect(selectParticipant).toHaveBeenCalledWith('maya');
-    expect(container.querySelector('.multi-participant-overview')).toBeNull();
-    expect(localStorage.getItem('zadiag.dashboard.participantView')).toBe('individual');
+    expect(setParticipantOverview).toHaveBeenCalledWith(false);
   });
 
   it('shows an actionable repeated-failure trend and keeps it dismissed until a new failure', async () => {

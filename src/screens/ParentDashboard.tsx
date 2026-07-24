@@ -24,10 +24,10 @@ import { planningRecommendation, routineAnomalies, weeklyInsight } from '../doma
 import { DisclosureToggle } from '../components/DisclosureToggle';
 import { MultiParticipantOverview } from '../components/MultiParticipantOverview';
 
-const participantOverviewStorageKey = 'zadiag.dashboard.participantView';
-
 export function ParentDashboard({
   state,
+  participantOverview = false,
+  onParticipantOverviewChange,
   regenerateCode,
   onCreateRoutine,
   getProofImageUrl,
@@ -43,6 +43,8 @@ export function ParentDashboard({
   t,
 }: {
   state: AppState;
+  participantOverview?: boolean;
+  onParticipantOverviewChange?: (overview: boolean) => void;
   regenerateCode?: () => Promise<void>;
   onCreateRoutine?: () => void;
   getProofImageUrl?: (eventId: string) => Promise<string>;
@@ -74,7 +76,6 @@ export function ParentDashboard({
   const [planningRecommendationStatus, setPlanningRecommendationStatus] = useState<'saving' | 'saved' | 'error'>();
   const [weeklyReportOpenSignal, setWeeklyReportOpenSignal] = useState(0);
   const [weeklyInsightOpen, setWeeklyInsightOpen] = useState(false);
-  const [participantOverview, setParticipantOverview] = useState(() => localStorage.getItem(participantOverviewStorageKey) !== 'individual');
   const swipeStartRef = useRef<{ eventId: string; x: number; y: number } | undefined>(undefined);
   const swipeDecisionRef = useRef(false);
   const handledNotificationEventIdRef = useRef<string | undefined>(undefined);
@@ -254,8 +255,7 @@ export function ParentDashboard({
   const hasMultipleParticipants = notificationSources.length > 1;
   const showParticipantOverview = hasMultipleParticipants && participantOverview;
   const selectParticipant = (participantId: string) => {
-    localStorage.setItem(participantOverviewStorageKey, 'individual');
-    setParticipantOverview(false);
+    onParticipantOverviewChange?.(false);
     onSelectParticipant?.(participantId);
   };
   useEffect(() => {
@@ -308,8 +308,7 @@ export function ParentDashboard({
         overviewSelected={showParticipantOverview}
         onSelect={selectParticipant}
         onSelectOverview={hasMultipleParticipants ? () => {
-          localStorage.setItem(participantOverviewStorageKey, 'overview');
-          setParticipantOverview(true);
+          onParticipantOverviewChange?.(true);
         } : undefined}
       />
       </div>

@@ -3,10 +3,12 @@ import { adherenceSummary, isReviewableVerification, withResolvedEventStatuses }
 import type { Locale, ParticipantNotificationSource, VerificationEvent } from '../domain/models';
 import { eventsInSummaryRange } from '../domain/reporting';
 import { profileColorFor } from '../domain/profileColor';
+import { presentRoutine } from '../domain/routinePresentation';
 import type { MessageKey } from '../services/i18n';
 import { languageTag } from '../services/locale';
 import { AppIcon } from './Icon';
-import { statusMessageKey } from './StatusPill';
+import { StatusPill } from './StatusPill';
+import { ListRow } from './ui';
 
 const eventTime = (event: VerificationEvent) =>
   Date.parse(event.submittedAt ?? event.capturedAt ?? event.requestedAt);
@@ -29,8 +31,7 @@ export function MultiParticipantOverview({ sources, locale, now, onSelectPartici
     || left.source.participant.displayName.localeCompare(right.source.participant.displayName, languageTag(locale))
   ));
   const recent = sources.flatMap((source) => withResolvedEventStatuses(source.events, now).map((event) => ({ source, event })))
-    .sort((left, right) => eventTime(right.event) - eventTime(left.event))
-    .slice(0, 5);
+    .sort((left, right) => eventTime(right.event) - eventTime(left.event));
   const dateFormatter = new Intl.DateTimeFormat(languageTag(locale), { dateStyle: 'short', timeStyle: 'short' });
 
   return (
@@ -61,16 +62,32 @@ export function MultiParticipantOverview({ sources, locale, now, onSelectPartici
           );
         })}
       </div>
-      <div className="section-heading multi-participant-activity-heading"><h2>{t('multiParticipantRecentActivity')}</h2></div>
+      <div className="section-heading history-results-heading multi-participant-activity-heading"><h2>{t('historyResults')}</h2><span>{recent.length}</span></div>
       {recent.length ? (
-        <div className="card multi-participant-activity">
-          {recent.map(({ source, event }) => (
-            <button type="button" key={`${source.participant.id}:${event.id}`} onClick={() => onSelectParticipant(source.participant.id)}>
-              <span className="multi-participant-activity-avatar" style={{ '--profile-color': profileColorFor(source.participant) } as CSSProperties} aria-hidden="true">{source.participant.displayName.trim().charAt(0).toUpperCase() || '?'}</span>
-              <span><strong>{source.participant.displayName}</strong><small>{t(statusMessageKey(event.status))} · {dateFormatter.format(new Date(eventTime(event)))}</small></span>
-              <AppIcon name="chevron-forward" />
-            </button>
-          ))}
+        <div className="history-list parent-history-list multi-participant-results">
+          {recent.map(({ source, event }) => {
+            const assignment = source.assignments.find((item) => item.routineId === event.routineId);
+            const routine = assignment ? presentRoutine(assignment.routine, locale) : undefined;
+            return (
+              <ListRow
+                as="section"
+                className="card history-row parent-history-row history-row-clickable multi-participant-result"
+                variant="bare"
+                icon={<span className="multi-participant-result-avatar">{source.participant.displayName.trim().charAt(0).toUpperCase() || '?'}</span>}
+                iconClassName="history-icon multi-participant-result-icon"
+                title={routine?.name ?? t('routine')}
+                detail={`${source.participant.displayName} · ${dateFormatter.format(new Date(eventTime(event)))}`}
+                style={{ ...routine?.style, '--profile-color': profileColorFor(source.participant) } as CSSProperties}
+                trailing={(
+                  <>
+                    <button type="button" className="history-row-open-button" aria-label={`${source.participant.displayName} · ${routine?.name ?? t('routine')}`} onClick={() => onSelectParticipant(source.participant.id)} />
+                    <div className="history-row-actions"><StatusPill status={event.status} t={t} /></div>
+                  </>
+                )}
+                key={`${source.participant.id}:${event.id}`}
+              />
+            );
+          })}
         </div>
       ) : <p className="card multi-participant-empty">{t('multiParticipantNoActivity')}</p>}
     </section>
