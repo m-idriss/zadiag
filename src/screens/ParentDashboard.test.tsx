@@ -136,6 +136,7 @@ describe('ParentDashboard', () => {
       .find((button) => button.textContent === '7 days');
     act(() => weekRange?.click());
     expect(container.querySelectorAll('.parent-history-row')).toHaveLength(2);
+    expect(container.querySelector('.progress-ring')?.textContent).toBe('50%');
     const collectiveTitles = Array.from(container.querySelectorAll('.history-row-title')).map((title) => title.textContent).join(' ');
     expect(collectiveTitles).toContain('Maya');
     expect(collectiveTitles).toContain('Leo');
@@ -148,6 +149,7 @@ describe('ParentDashboard', () => {
       .find((button) => button.textContent === 'Leo');
     act(() => leoFilter?.click());
     expect(container.querySelectorAll('.parent-history-row')).toHaveLength(1);
+    expect(container.querySelector('.progress-ring')?.textContent).toBe('100%');
 
     act(() => container.querySelector<HTMLButtonElement>('.history-row-open-button')?.click());
     expect(selectParticipant).toHaveBeenCalledWith('maya');

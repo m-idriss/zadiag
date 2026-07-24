@@ -282,7 +282,7 @@ export function ParentDashboard({
     onNotificationEventConsumed?.();
   }, [notificationEventId, now, onNotificationEventConsumed, state.events]);
   return (
-    <div className="content-screen child-home parent-overview-screen">
+    <div className="content-screen child-home parent-overview-screen" data-swipe-navigation="allow">
       <div className="page-context-top parent-context-top">
         <header className="screen-header page-context-heading">
           <div><h1>{t('activity')}</h1></div>

@@ -4,9 +4,10 @@ import type { MessageKey } from '../services/i18n';
 
 const PULL_THRESHOLD = 72;
 const MAX_PULL_DISTANCE = 110;
-const HORIZONTAL_SWIPE_THRESHOLD = 64;
-const HORIZONTAL_SWIPE_DOMINANCE = 1.35;
-const SWIPE_NAVIGATION_EXCLUSION_SELECTOR = 'button:not(.history-row-open-button), a, input, select, textarea, summary, [role="button"], dialog, .parent-review-card, [data-swipe-navigation="ignore"]';
+const HORIZONTAL_SWIPE_THRESHOLD = 56;
+const HORIZONTAL_SWIPE_DOMINANCE = 1.2;
+const SWIPE_NAVIGATION_CONTROL_SELECTOR = 'button:not(.history-row-open-button), a, input, select, textarea, summary, [role="button"]';
+const SWIPE_NAVIGATION_HARD_EXCLUSION_SELECTOR = 'dialog, .parent-review-card, [data-swipe-navigation="ignore"]';
 
 type PullGesture = {
   startX: number;
@@ -46,7 +47,10 @@ export function PullToUpdate({
     if (event.touches.length !== 1) return;
     const target = event.target instanceof Element ? event.target : undefined;
     const touch = event.touches[0];
-    swipeGestureRef.current = onHorizontalSwipe && !target?.closest(SWIPE_NAVIGATION_EXCLUSION_SELECTOR)
+    const hardExcluded = target?.closest(SWIPE_NAVIGATION_HARD_EXCLUSION_SELECTOR);
+    const controlExcluded = target?.closest(SWIPE_NAVIGATION_CONTROL_SELECTOR);
+    const explicitlyAllowed = target?.closest('[data-swipe-navigation="allow"]');
+    swipeGestureRef.current = onHorizontalSwipe && !hardExcluded && (!controlExcluded || explicitlyAllowed)
       ? { startX: touch.clientX, startY: touch.clientY }
       : undefined;
     if (updating) return;
