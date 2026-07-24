@@ -121,4 +121,16 @@ describe('PullToUpdate', () => {
 
     expect(onHorizontalSwipe).toHaveBeenCalledWith('left');
   });
+
+  it('allows a dashboard to opt its controls into swipe navigation', () => {
+    const onHorizontalSwipe = vi.fn();
+    const page = renderPullToUpdate(async () => false, onHorizontalSwipe);
+    page.innerHTML = '<main data-swipe-navigation="allow"><button type="button">Dashboard filter</button></main>';
+    const dashboardFilter = page.querySelector('button') as HTMLButtonElement;
+
+    dispatchTouch(dashboardFilter, 'touchstart', 120, 80);
+    dispatchTouch(dashboardFilter, 'touchend', 45, 82);
+
+    expect(onHorizontalSwipe).toHaveBeenCalledWith('left');
+  });
 });

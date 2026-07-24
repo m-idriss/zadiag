@@ -21,13 +21,12 @@ const displayReason = (reason?: string) =>
 const historyFilterStorageKey = (titleId: string) => `zadiag.historyFilters.${titleId}`;
 
 const readStoredFilters = (titleId: string) => {
-  const empty = { statuses: [] as VerificationStatus[], routineIds: [] as string[], participantIds: [] as string[] };
+  const empty = { statuses: [] as VerificationStatus[], routineIds: [] as string[] };
   return readUiStorageJson(historyFilterStorageKey(titleId), empty, (value) => {
-    const parsed = value as Partial<{ statuses: VerificationStatus[]; routineIds: string[]; participantIds: string[] }>;
+    const parsed = value as Partial<{ statuses: VerificationStatus[]; routineIds: string[] }>;
     return {
       statuses: Array.isArray(parsed.statuses) ? parsed.statuses : [],
       routineIds: Array.isArray(parsed.routineIds) ? parsed.routineIds : [],
-      participantIds: Array.isArray(parsed.participantIds) ? parsed.participantIds : [],
     };
   });
 };
@@ -58,6 +57,8 @@ export function RoutineHistoryPanel({
   onRequestCheck,
   participants,
   participantForEvent,
+  excludedParticipantIds = [],
+  onToggleParticipant,
   t,
 }: {
   assignments: RoutineAssignment[];
@@ -70,11 +71,12 @@ export function RoutineHistoryPanel({
   onRequestCheck?: (routineId: string) => Promise<void>;
   participants?: Array<{ id: string; displayName: string; profileColor: string }>;
   participantForEvent?: (event: VerificationEvent) => { id: string; displayName: string; profileColor: string } | undefined;
+  excludedParticipantIds?: string[];
+  onToggleParticipant?: (participantId: string) => void;
   t: (key: MessageKey) => string;
 }) {
   const [excludedStatuses, setExcludedStatuses] = useState<VerificationStatus[]>(() => readStoredFilters(titleId).statuses);
   const [excludedRoutineIds, setExcludedRoutineIds] = useState<string[]>(() => readStoredFilters(titleId).routineIds);
-  const [excludedParticipantIds, setExcludedParticipantIds] = useState<string[]>(() => readStoredFilters(titleId).participantIds);
   const [requestingEventId, setRequestingEventId] = useState<string>();
   const [hiddenRequestEventIds, setHiddenRequestEventIds] = useState<Record<string, string>>({});
   const formatterLocale = languageTag(locale);
@@ -111,14 +113,12 @@ export function RoutineHistoryPanel({
   );
   const excludedStatusSet = useMemo(() => new Set(excludedStatuses), [excludedStatuses]);
   const excludedRoutineIdSet = useMemo(() => new Set(excludedRoutineIds), [excludedRoutineIds]);
-  const excludedParticipantIdSet = useMemo(() => new Set(excludedParticipantIds), [excludedParticipantIds]);
   useEffect(() => {
     writeUiStorageString(historyFilterStorageKey(titleId), JSON.stringify({
       statuses: excludedStatuses,
       routineIds: excludedRoutineIds,
-      participantIds: excludedParticipantIds,
     }));
-  }, [excludedParticipantIds, excludedRoutineIds, excludedStatuses, titleId]);
+  }, [excludedRoutineIds, excludedStatuses, titleId]);
   const toggleRoutineFilter = (routineId: string) => {
     setExcludedRoutineIds((current) =>
       current.includes(routineId)
@@ -133,17 +133,10 @@ export function RoutineHistoryPanel({
         : current.filter((status) => !eventStatuses.includes(status));
     });
   };
-  const toggleParticipantFilter = (participantId: string) => {
-    setExcludedParticipantIds((current) =>
-      current.includes(participantId)
-        ? current.filter((item) => item !== participantId)
-        : [...current, participantId]);
-  };
   const filtered = useMemo(() => sortedEvents.filter((event) =>
     !excludedStatusSet.has(event.status)
     && !excludedRoutineIdSet.has(event.routineId)
-    && !excludedParticipantIdSet.has(participantForEvent?.(event)?.id ?? '')
-  ), [excludedParticipantIdSet, excludedRoutineIdSet, excludedStatusSet, participantForEvent, sortedEvents]);
+  ), [excludedRoutineIdSet, excludedStatusSet, sortedEvents]);
   const presentationFor = (event: VerificationEvent) => routinePresentationsById.get(event.routineId);
   const requestCheck = async (event: VerificationEvent) => {
     if (!onRequestCheck || requestingEventId) return;
@@ -170,13 +163,13 @@ export function RoutineHistoryPanel({
       {sortedEvents.length ? (
         <>
           <section className="card history-filter-card" aria-label={t('historyFilters')}>
-            {participants?.length ? (
+            {participants?.length && onToggleParticipant ? (
               <div className="filter-group">
                 <span>{t('filterByParticipant')}</span>
                 <div className="filter-chips">
                   {participants.map((participant) => {
                     const active = !excludedParticipantIds.includes(participant.id);
-                    return <button type="button" key={participant.id} aria-pressed={active} className={`participant-filter-chip${active ? ' active' : ''}`} style={{ '--profile-color': participant.profileColor } as CSSProperties} onClick={() => toggleParticipantFilter(participant.id)}>{participant.displayName}</button>;
+                    return <button type="button" key={participant.id} aria-pressed={active} className={`participant-filter-chip${active ? ' active' : ''}`} style={{ '--profile-color': participant.profileColor } as CSSProperties} onClick={() => onToggleParticipant(participant.id)}>{participant.displayName}</button>;
                   })}
                 </div>
               </div>

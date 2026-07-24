@@ -1012,8 +1012,8 @@ button:disabled { cursor: not-allowed; }
 .history-row-title { display: flex; min-width: 0; align-items: baseline; gap: 7px; }
 .history-row-title > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .history-row-participant { flex: 0 0 auto; color: var(--profile-color); font-size: 10px; font-weight: 850; }
-.participant-filter-chip { color: var(--profile-color); }
-.participant-filter-chip.active { border-color: color-mix(in srgb, var(--profile-color) 32%, var(--color-border)); background: color-mix(in srgb, var(--profile-color) 12%, var(--color-surface-solid)); color: var(--profile-color); }
+.filter-chips .participant-filter-chip { border-color: color-mix(in srgb, var(--profile-color) 24%, var(--color-border)); background: color-mix(in srgb, var(--profile-color) 7%, var(--color-surface-solid)); color: var(--profile-color); }
+.filter-chips .participant-filter-chip.active { border-color: var(--profile-color); background: var(--profile-color); color: var(--color-surface-solid); }
 .participant-switcher-static .profile-context-card { cursor: default; }
 .relationship-manager-card { display: grid; padding: 0; overflow: hidden; }
 .profile-context-card { width: 100%; min-height: 68px; display: grid; grid-template-columns: 40px minmax(0, 1fr) 38px; align-items: center; gap: 11px; padding: 12px 14px; border: 0; background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(241,248,246,.94)); color: var(--color-text); text-align: left; }
