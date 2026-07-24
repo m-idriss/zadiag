@@ -97,7 +97,7 @@ describe('ParentDashboard', () => {
     expect(container.querySelector('.screen-header h1')?.textContent).toBe('Activity');
   });
 
-  it('shows every participant together and opens an individual context explicitly', () => {
+  it('reuses the individual dashboard with participant filters and context labels', () => {
     const now = new Date().toISOString();
     const assignment = createDefaultRoutineAssignment(now);
     const selectParticipant = vi.fn();
@@ -126,18 +126,22 @@ describe('ParentDashboard', () => {
     act(() => root.render(<ParentDashboard state={state} participantOverview onParticipantOverviewChange={setParticipantOverview} onSelectParticipant={selectParticipant} t={(key) => translate('en', key)} />));
 
     expect(container.querySelector('.multi-participant-overview')).not.toBeNull();
-    expect(Array.from(container.querySelectorAll('.multi-participant-card')).map((card) => card.textContent)).toEqual([
-      expect.stringContaining('Leo'),
-      expect.stringContaining('Maya'),
-    ]);
+    expect(container.querySelector('.adherence-summary-card')).not.toBeNull();
+    expect(container.querySelector('.history-filter-card')).not.toBeNull();
+    expect(Array.from(container.querySelectorAll('.filter-group > span')).map((label) => label.textContent)).toEqual(['Participant', 'Routine', 'Status']);
     expect(container.textContent).toContain('Results');
-    expect(container.querySelectorAll('.multi-participant-result')).toHaveLength(2);
-    expect(Array.from(container.querySelectorAll('.multi-participant-result-icon')).map((icon) => icon.textContent).sort()).toEqual(['L', 'M']);
-    expect(container.textContent).not.toContain('Detailed report');
+    expect(container.querySelectorAll('.parent-history-row')).toHaveLength(2);
+    const collectiveTitles = Array.from(container.querySelectorAll('.history-row-title')).map((title) => title.textContent).join(' ');
+    expect(collectiveTitles).toContain('Maya');
+    expect(collectiveTitles).toContain('Leo');
+    expect(container.textContent).toContain('Detailed report');
 
-    const maya = Array.from(container.querySelectorAll<HTMLButtonElement>('.multi-participant-card'))
-      .find((card) => card.textContent?.includes('Maya'));
-    act(() => maya?.click());
+    const leoFilter = Array.from(container.querySelectorAll<HTMLButtonElement>('.filter-group:first-child button'))
+      .find((button) => button.textContent === 'Leo');
+    act(() => leoFilter?.click());
+    expect(container.querySelectorAll('.parent-history-row')).toHaveLength(1);
+
+    act(() => container.querySelector<HTMLButtonElement>('.history-row-open-button')?.click());
     expect(selectParticipant).toHaveBeenCalledWith('maya');
     expect(setParticipantOverview).toHaveBeenCalledWith(false);
   });

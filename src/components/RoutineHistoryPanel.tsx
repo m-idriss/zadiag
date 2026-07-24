@@ -21,12 +21,13 @@ const displayReason = (reason?: string) =>
 const historyFilterStorageKey = (titleId: string) => `zadiag.historyFilters.${titleId}`;
 
 const readStoredFilters = (titleId: string) => {
-  const empty = { statuses: [] as VerificationStatus[], routineIds: [] as string[] };
+  const empty = { statuses: [] as VerificationStatus[], routineIds: [] as string[], participantIds: [] as string[] };
   return readUiStorageJson(historyFilterStorageKey(titleId), empty, (value) => {
-    const parsed = value as Partial<{ statuses: VerificationStatus[]; routineIds: string[] }>;
+    const parsed = value as Partial<{ statuses: VerificationStatus[]; routineIds: string[]; participantIds: string[] }>;
     return {
       statuses: Array.isArray(parsed.statuses) ? parsed.statuses : [],
       routineIds: Array.isArray(parsed.routineIds) ? parsed.routineIds : [],
+      participantIds: Array.isArray(parsed.participantIds) ? parsed.participantIds : [],
     };
   });
 };
@@ -55,6 +56,8 @@ export function RoutineHistoryPanel({
   onRetake,
   onOpenEvent,
   onRequestCheck,
+  participants,
+  participantForEvent,
   t,
 }: {
   assignments: RoutineAssignment[];
@@ -65,10 +68,13 @@ export function RoutineHistoryPanel({
   onRetake?: (event: VerificationEvent) => void;
   onOpenEvent?: (event: VerificationEvent) => void;
   onRequestCheck?: (routineId: string) => Promise<void>;
+  participants?: Array<{ id: string; displayName: string }>;
+  participantForEvent?: (event: VerificationEvent) => { id: string; displayName: string } | undefined;
   t: (key: MessageKey) => string;
 }) {
   const [excludedStatuses, setExcludedStatuses] = useState<VerificationStatus[]>(() => readStoredFilters(titleId).statuses);
   const [excludedRoutineIds, setExcludedRoutineIds] = useState<string[]>(() => readStoredFilters(titleId).routineIds);
+  const [excludedParticipantIds, setExcludedParticipantIds] = useState<string[]>(() => readStoredFilters(titleId).participantIds);
   const [requestingEventId, setRequestingEventId] = useState<string>();
   const [hiddenRequestEventIds, setHiddenRequestEventIds] = useState<Record<string, string>>({});
   const formatterLocale = languageTag(locale);
@@ -105,12 +111,14 @@ export function RoutineHistoryPanel({
   );
   const excludedStatusSet = useMemo(() => new Set(excludedStatuses), [excludedStatuses]);
   const excludedRoutineIdSet = useMemo(() => new Set(excludedRoutineIds), [excludedRoutineIds]);
+  const excludedParticipantIdSet = useMemo(() => new Set(excludedParticipantIds), [excludedParticipantIds]);
   useEffect(() => {
     writeUiStorageString(historyFilterStorageKey(titleId), JSON.stringify({
       statuses: excludedStatuses,
       routineIds: excludedRoutineIds,
+      participantIds: excludedParticipantIds,
     }));
-  }, [excludedRoutineIds, excludedStatuses, titleId]);
+  }, [excludedParticipantIds, excludedRoutineIds, excludedStatuses, titleId]);
   const toggleRoutineFilter = (routineId: string) => {
     setExcludedRoutineIds((current) =>
       current.includes(routineId)
@@ -125,10 +133,17 @@ export function RoutineHistoryPanel({
         : current.filter((status) => !eventStatuses.includes(status));
     });
   };
+  const toggleParticipantFilter = (participantId: string) => {
+    setExcludedParticipantIds((current) =>
+      current.includes(participantId)
+        ? current.filter((item) => item !== participantId)
+        : [...current, participantId]);
+  };
   const filtered = useMemo(() => sortedEvents.filter((event) =>
     !excludedStatusSet.has(event.status)
     && !excludedRoutineIdSet.has(event.routineId)
-  ), [excludedRoutineIdSet, excludedStatusSet, sortedEvents]);
+    && !excludedParticipantIdSet.has(participantForEvent?.(event)?.id ?? '')
+  ), [excludedParticipantIdSet, excludedRoutineIdSet, excludedStatusSet, participantForEvent, sortedEvents]);
   const presentationFor = (event: VerificationEvent) => routinePresentationsById.get(event.routineId);
   const requestCheck = async (event: VerificationEvent) => {
     if (!onRequestCheck || requestingEventId) return;
@@ -155,6 +170,17 @@ export function RoutineHistoryPanel({
       {sortedEvents.length ? (
         <>
           <section className="card history-filter-card" aria-label={t('historyFilters')}>
+            {participants?.length ? (
+              <div className="filter-group">
+                <span>{t('filterByParticipant')}</span>
+                <div className="filter-chips">
+                  {participants.map((participant) => {
+                    const active = !excludedParticipantIds.includes(participant.id);
+                    return <button type="button" key={participant.id} aria-pressed={active} className={active ? 'active' : ''} onClick={() => toggleParticipantFilter(participant.id)}>{participant.displayName}</button>;
+                  })}
+                </div>
+              </div>
+            ) : null}
             <div className="filter-group">
               <span>{t('filterByRoutine')}</span>
               <div className="filter-chips">
@@ -180,6 +206,7 @@ export function RoutineHistoryPanel({
           <div className="history-list parent-history-list">
             {filtered.map((event) => {
               const visual = presentationFor(event);
+              const participant = participantForEvent?.(event);
               const canRetake = Boolean(onRetake) && canRetakeCapture(event, retryEvents ?? events, new Date());
               const canRequestCheck = Boolean(onRequestCheck)
                 && latestMissedEventIds.has(event.id)
@@ -199,7 +226,12 @@ export function RoutineHistoryPanel({
                   variant="bare"
                   icon={<AppIcon name={routineIconName(visual?.icon)} />}
                   iconClassName="history-icon routine-history-icon"
-                  title={visual?.name ?? t('routine')}
+                  title={(
+                    <span className="history-row-title">
+                      <span>{visual?.name ?? t('routine')}</span>
+                      {participant ? <span className="history-row-participant">{participant.displayName}</span> : null}
+                    </span>
+                  )}
                   detail={(
                     <>
                       {formatDateTime(event.requestedAt)}
