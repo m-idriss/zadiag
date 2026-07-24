@@ -97,6 +97,49 @@ describe('ParentDashboard', () => {
     expect(container.querySelector('.screen-header h1')?.textContent).toBe('Activity');
   });
 
+  it('shows every participant together and opens an individual context explicitly', () => {
+    const now = new Date().toISOString();
+    const assignment = createDefaultRoutineAssignment(now);
+    const selectParticipant = vi.fn();
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true, activeParticipantId: 'maya',
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      participantAccess: [
+        { participant: { id: 'maya', displayName: 'Maya' }, membership: { role: 'owner', status: 'active' } },
+        { participant: { id: 'leo', displayName: 'Leo' }, membership: { role: 'caregiver', status: 'active' } },
+      ],
+      notificationSources: [
+        {
+          participant: { id: 'maya', displayName: 'Maya' }, role: 'parent', assignments: [assignment],
+          events: [{ id: 'maya-ok', routineId: assignment.routineId, sessionId: 'maya', requestedAt: now, expiresAt: now, status: 'detected' }],
+        },
+        {
+          participant: { id: 'leo', displayName: 'Leo' }, role: 'parent', assignments: [assignment],
+          events: [{ id: 'leo-review', routineId: assignment.routineId, sessionId: 'leo', requestedAt: now, expiresAt: now, status: 'uncertain' }],
+        },
+      ],
+      routineAssignments: [assignment],
+      events: [],
+    };
+
+    act(() => root.render(<ParentDashboard state={state} onSelectParticipant={selectParticipant} t={(key) => translate('en', key)} />));
+
+    expect(container.querySelector('.multi-participant-overview')).not.toBeNull();
+    expect(Array.from(container.querySelectorAll('.multi-participant-card')).map((card) => card.textContent)).toEqual([
+      expect.stringContaining('Leo'),
+      expect.stringContaining('Maya'),
+    ]);
+    expect(container.textContent).toContain('Recent activity');
+    expect(container.textContent).not.toContain('Detailed report');
+
+    const maya = Array.from(container.querySelectorAll<HTMLButtonElement>('.multi-participant-card'))
+      .find((card) => card.textContent?.includes('Maya'));
+    act(() => maya?.click());
+    expect(selectParticipant).toHaveBeenCalledWith('maya');
+    expect(container.querySelector('.multi-participant-overview')).toBeNull();
+    expect(localStorage.getItem('zadiag.dashboard.participantView')).toBe('individual');
+  });
+
   it('shows an actionable repeated-failure trend and keeps it dismissed until a new failure', async () => {
     const now = Date.now();
     const assignment = createDefaultRoutineAssignment();
