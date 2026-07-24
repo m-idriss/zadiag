@@ -1010,8 +1010,18 @@ button:disabled { cursor: not-allowed; }
 .participant-switcher-overview-avatar .svg-icon { font-size: 18px; }
 .participant-switcher-menu button.active .participant-switcher-option-avatar { background: var(--color-surface-solid); }
 .parent-history-row.has-participant-accent .routine-history-icon {
-  background: color-mix(in srgb, var(--history-participant-color) 12%, var(--color-surface-solid));
-  color: var(--history-participant-color);
+  position: relative;
+}
+.parent-history-row.has-participant-accent .routine-history-icon::after {
+  content: "";
+  position: absolute;
+  inset-inline-end: -2px;
+  inset-block-end: -2px;
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--color-surface-solid);
+  border-radius: 50%;
+  background: var(--history-participant-color);
 }
 .filter-chips .participant-filter-chip { border-color: color-mix(in srgb, var(--profile-color) 24%, var(--color-border)); background: color-mix(in srgb, var(--profile-color) 7%, var(--color-surface-solid)); color: var(--profile-color); }
 .filter-chips .participant-filter-chip.active { border-color: var(--profile-color); background: var(--profile-color); color: var(--color-surface-solid); }
