@@ -8,7 +8,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "npm run build && node --test lib/*.test.js"
+    "test": "npm run build && node --test lib/*.test.js",
+    "test:reward-integration": "npm run build && node --test lib/rewards.integration.js"
   },
   "dependencies": {
     "firebase-admin": "^14.2.0",

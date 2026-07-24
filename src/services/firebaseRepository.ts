@@ -145,6 +145,19 @@ const asResponsibleActions = (value: unknown): VerificationEvent['responsibleAct
   return actions.length ? actions : undefined;
 };
 
+const asRewardOutcome = (value: unknown): VerificationEvent['reward'] => {
+  if (!value || typeof value !== 'object') return undefined;
+  const candidate = value as Record<string, unknown>;
+  if (!['claimed', 'exhausted', 'expired', 'revoked'].includes(String(candidate.status))
+    || typeof candidate.resolvedAt !== 'string') return undefined;
+  return {
+    status: candidate.status as NonNullable<VerificationEvent['reward']>['status'],
+    resolvedAt: candidate.resolvedAt,
+    ...(typeof candidate.claimId === 'string' ? { claimId: candidate.claimId } : {}),
+    ...(typeof candidate.expiresAt === 'string' ? { expiresAt: candidate.expiresAt } : {}),
+  };
+};
+
 const asEvent = (id: string, data: DocumentData): VerificationEvent => ({
   id,
   routineId: String(data.routineId ?? DEFAULT_ROUTINE_ID),
@@ -176,6 +189,7 @@ const asEvent = (id: string, data: DocumentData): VerificationEvent => ({
   reviewedBy: data.reviewedBy ? String(data.reviewedBy) : undefined,
   reviewReason: data.reviewReason && data.reviewReason !== 'responsible_review' ? String(data.reviewReason) : undefined,
   responsibleActions: asResponsibleActions(data.responsibleActions),
+  reward: asRewardOutcome(data.reward),
 });
 
 const asRoutineAssignment = (id: string, data: DocumentData): RoutineAssignment => {

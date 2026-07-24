@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { expiredPendingCheckCleanupUpdate, shouldDeleteProofAfterReview, staleCleanupCutoffs } from './cleanup.js';
+import { expiredPendingCheckCleanupUpdate, expiredRewardSecretCutoff, shouldDeleteProofAfterReview, staleCleanupCutoffs } from './cleanup.js';
 
 test('computes conservative stale cleanup cutoffs', () => {
   const cutoffs = staleCleanupCutoffs(new Date('2026-07-10T12:00:00.000Z'));
@@ -23,4 +23,9 @@ test('deletes proof images after every completed responsible review', () => {
   assert.equal(shouldDeleteProofAfterReview('detected'), true);
   assert.equal(shouldDeleteProofAfterReview('not_detected'), true);
   assert.equal(shouldDeleteProofAfterReview('uncertain'), false);
+});
+
+test('uses the current instant to remove expired reward secrets', () => {
+  const now = new Date('2026-07-24T08:00:00.000Z');
+  assert.equal(expiredRewardSecretCutoff(now), now.toISOString());
 });

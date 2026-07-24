@@ -104,3 +104,15 @@ test('truncates operational event errors used for successful fallbacks', () => {
 
   assert.equal(payload.error, 'x'.repeat(240));
 });
+
+test('records reward outcomes without accepting secret detail structures', () => {
+  const payload = operationalEventPayload({
+    kind: 'reward_claim_outcome',
+    familyId: 'participant-1',
+    checkId: 'check-1',
+    routineId: 'routine-1',
+    details: { status: 'claimed', ignoredReward: { value: 'SECRET' } as never },
+  });
+  assert.deepEqual(payload.details, { status: 'claimed' });
+  assert.equal(JSON.stringify(payload).includes('SECRET'), false);
+});

@@ -25,6 +25,13 @@ export interface ResponsibleAction {
   actorName: string;
 }
 
+export interface RewardOutcome {
+  status: 'claimed' | 'exhausted' | 'expired' | 'revoked';
+  resolvedAt: string;
+  claimId?: string;
+  expiresAt?: string;
+}
+
 export interface TimeWindow {
   id: string;
   start: string;
@@ -251,6 +258,7 @@ export interface VerificationEvent extends RoutineTask {
   reviewedBy?: string;
   reviewReason?: string;
   responsibleActions?: ResponsibleAction[];
+  reward?: RewardOutcome;
 }
 
 const legacyPhotoResponse: RoutineResponseDefinition = { kind: 'photo' };

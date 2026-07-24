@@ -68,6 +68,18 @@ service cloud.firestore {
         allow create, update, delete: if false;
       }
 
+      match /rewardPolicies/{policyId} {
+        allow read, write: if false;
+
+        match /rewardCodes/{codeId} {
+          allow read, write: if false;
+        }
+      }
+
+      match /rewardClaims/{checkId} {
+        allow read, write: if false;
+      }
+
       // Quiz corrections are server-only until the callable grades a submission.
       match /quizAnswerKeys/{checkId} {
         allow read, write: if false;
@@ -102,6 +114,18 @@ service cloud.firestore {
       match /routineAssignments/{assignmentId} {
         allow read: if canViewParticipant(participantId);
         allow write: if false;
+      }
+
+      match /rewardPolicies/{policyId} {
+        allow read, write: if false;
+
+        match /rewardCodes/{codeId} {
+          allow read, write: if false;
+        }
+      }
+
+      match /rewardClaims/{checkId} {
+        allow read, write: if false;
       }
 
       match /quizAnswerKeys/{checkId} {

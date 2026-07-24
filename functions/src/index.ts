@@ -16,6 +16,7 @@ import { isCheckRequestRateLimited } from './reminders.js';
 import { recordAuditEvent, recordJourneyEvent, type JourneyStage } from './audit.js';
 import { expiredPendingCheckCleanupUpdate, shouldDeleteProofAfterReview, staleCleanupCutoffs } from './cleanup.js';
 import { reportOperationalAlert, reportOperationalEvent, reportOperationalRecovery } from './observability.js';
+import { claimRewardForSuccessfulTransition, cleanupExpiredRewardSecrets, deleteRoutineRewardSecrets } from './rewards.js';
 import { shouldRecoverSyntheticPush } from './syntheticMonitor.js';
 import { canLeaveMembership, canRemoveMembership, canRenameParticipant, createMembership, hasParticipantPermission, isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, isProfileColorKey, membershipRoles, migrateLegacyFamilyRelationships, participantRenameUpdates, pushRolesForMembership, scheduledAggregatePaths, type MembershipPushRole, type MembershipRole } from './relationships.js';
 import { assertRoutineDraftRevision, createAssignmentForkPackage, createRoutineDraftDocument, routineDraftSessionId, RoutineDraftConflictError, RoutineDraftInputError, selectReusableAssignmentDraft, updateRoutineDraftDocument, type IdentifiedRoutineDraft, type PublishedRoutineVersionDocument, type RoutineDraftDocument } from './routineDrafts.js';
@@ -302,6 +303,23 @@ type ReviewedCheckPayload = Record<string, unknown> & {
   id: string;
   proofImagePath?: unknown;
   proofImageExpiresAt?: unknown;
+};
+
+const reportRewardOutcome = (
+  check: Record<string, unknown>,
+  familyId: string,
+  checkId: string,
+  routineId: string,
+) => {
+  const status = (check.reward as { status?: unknown } | undefined)?.status;
+  if (typeof status !== 'string') return;
+  reportOperationalEvent({
+    kind: 'reward_claim_outcome',
+    familyId,
+    checkId,
+    routineId,
+    details: { status },
+  });
 };
 
 const requireAggregatePermission = async (
@@ -2825,6 +2843,7 @@ export const deleteRoutine = onCall({
   });
 
   const deletedAfterTransaction = await deleteQueryDocumentsInBatches(routineChecksQuery);
+  await deleteRoutineRewardSecrets(db, familyRef.path, routineId);
   await recordAuditEvent(db, {
     action: 'delete_routine',
     actorUid: uid,
@@ -3262,10 +3281,14 @@ export const submitRoutineResponse = onCall({ region, cors, enforceAppCheck: tru
     responseKind = submission.kind;
     itemCount = submission.kind === 'checklist' ? submission.items.length : 1;
     routineId = typeof checkData.routineId === 'string' && checkData.routineId ? checkData.routineId : DEFAULT_ROUTINE_ID;
-    const update = { status: 'answered', submittedAt, submission };
+    const reward = await claimRewardForSuccessfulTransition({
+      transaction, aggregateRef, checkRef, checkData, nextStatus: 'answered',
+    });
+    const update = { status: 'answered', submittedAt, submission, ...(reward ? { reward } : {}) };
     transaction.update(checkRef, update);
     return { id: check.id, ...checkData, ...update };
   });
+  reportRewardOutcome(response, familyId, checkId, routineId);
   await recordAuditEvent(db, {
     action: 'submit_proof',
     actorUid: uid,
@@ -3306,11 +3329,15 @@ export const submitQuizResponse = onCall({ region, cors, enforceAppCheck: true }
       model: String(secretData.model),
       promptVersion: String(secretData.promptVersion),
     };
-    const update = { status: 'answered', submittedAt, submission: graded.submission, quizResult };
+    const reward = await claimRewardForSuccessfulTransition({
+      transaction, aggregateRef, checkRef, checkData, nextStatus: 'answered',
+    });
+    const update = { status: 'answered', submittedAt, submission: graded.submission, quizResult, ...(reward ? { reward } : {}) };
     transaction.update(checkRef, update);
     transaction.delete(answerKeyRef);
     return { id: check.id, ...checkData, ...update };
   });
+  reportRewardOutcome(response, familyId, checkId, routineId);
   await recordAuditEvent(db, { action: 'submit_proof', actorUid: uid, familyId, role: 'child', metadata: { checkId, routineId, responseKind: 'quiz', questionCount } });
   return response;
 });
@@ -3403,9 +3430,14 @@ export const analyzeCheck = onCall({
       if (!check.exists || !isCurrentAnalysisAttempt(checkData, capturedAt)) {
         throw new HttpsError('failed-precondition', 'This check is no longer awaiting this analysis.');
       }
-      transaction.update(checkRef, autoUpdate);
-      return { id: check.id, ...checkData, ...autoUpdate };
+      const reward = await claimRewardForSuccessfulTransition({
+        transaction, aggregateRef, checkRef, checkData: checkData ?? {}, nextStatus: autoUpdate.status,
+      });
+      const update = { ...autoUpdate, ...(reward ? { reward } : {}) };
+      transaction.update(checkRef, update);
+      return { id: check.id, ...checkData, ...update };
     });
+    reportRewardOutcome(response, familyId, checkId, routineId);
     await recordAuditEvent(db, {
       action: 'submit_proof',
       actorUid: uid,
@@ -3522,9 +3554,14 @@ export const analyzeCheck = onCall({
     if (!check.exists || !isCurrentAnalysisAttempt(checkData, capturedAt)) {
       throw new HttpsError('failed-precondition', 'This check is no longer awaiting this analysis.');
     }
-    transaction.update(checkRef, analysisUpdate);
-    return { id: check.id, ...checkData, ...analysisUpdate };
+    const reward = await claimRewardForSuccessfulTransition({
+      transaction, aggregateRef, checkRef, checkData: checkData ?? {}, nextStatus: analysisUpdate.status,
+    });
+    const update = { ...analysisUpdate, ...(reward ? { reward } : {}) };
+    transaction.update(checkRef, update);
+    return { id: check.id, ...checkData, ...update };
   });
+  reportRewardOutcome(response, familyId, checkId, routineId);
   let reviewDispatch: PushDispatchSummary | undefined;
   if (analysisUpdate.reviewStatus === 'pending') {
     try {
@@ -3711,9 +3748,19 @@ export const reviewCheck = onCall({ region, cors, enforceAppCheck: true }, async
         ].slice(-20),
       };
     }
+    const reward = await claimRewardForSuccessfulTransition({
+      transaction,
+      aggregateRef,
+      checkRef,
+      checkData,
+      nextStatus: String(update.status ?? checkData.status ?? ''),
+      now: new Date(reviewedAt),
+    });
+    if (reward) update.reward = reward;
     transaction.update(checkRef, update);
     return { id: check.id, ...checkData, ...update };
   });
+  reportRewardOutcome(reviewedCheck, familyId, checkId, String(reviewedCheck.routineId ?? DEFAULT_ROUTINE_ID));
   const proofImagePath = reviewedCheck.proofImagePath;
   const finalDecision = reviewedCheck.reviewStatus === 'approved'
     ? 'detected'
@@ -3871,13 +3918,13 @@ export const cleanupStaleOperationalData = onSchedule({
     const aggregateRef = document.ref.parent.parent;
     if (aggregateRef) operations.push((batch) => batch.delete(aggregateRef.collection('quizAnswerKeys').doc(document.id)));
   });
-  if (!operations.length) return;
   const batchSize = 400;
   for (let offset = 0; offset < operations.length; offset += batchSize) {
     const batch = db.batch();
     operations.slice(offset, offset + batchSize).forEach((operation) => operation(batch));
     await batch.commit();
   }
+  await cleanupExpiredRewardSecrets(db, now);
 });
 
 export const deleteAccountData = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
