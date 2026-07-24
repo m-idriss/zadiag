@@ -115,8 +115,21 @@ describe('DemoRepository compatibility', () => {
     await expect(repository.deleteRoutine(DEFAULT_ROUTINE_ID)).rejects.toThrow('permission_denied');
     await expect(repository.updateRoutine(DEFAULT_ROUTINE_ID, defaultPlan)).rejects.toThrow('permission_denied');
     await expect(repository.requestCheckNow(DEFAULT_ROUTINE_ID)).rejects.toThrow('permission_denied');
+    await expect(repository.addRewardCodes(DEFAULT_ROUTINE_ID, ['PRIVATE'], 24)).rejects.toThrow('permission_denied');
 
     expect(repository.snapshot().routineAssignments.some((assignment) => assignment.routineId === DEFAULT_ROUTINE_ID)).toBe(true);
+  });
+
+  test('manages bounded synthetic reward pools and reveals only a successful active claim', async () => {
+    const repository = new DemoRepository();
+    await repository.selectRole('parent');
+
+    await expect(repository.addRewardCodes(DEFAULT_ROUTINE_ID, ['CODE-A', 'CODE-A'], 24)).rejects.toThrow('invalid_reward_codes');
+    await expect(repository.addRewardCodes(DEFAULT_ROUTINE_ID, ['CODE-A', 'CODE-B'], 24)).resolves.toMatchObject({ status: 'active', remainingCount: 2 });
+    await expect(repository.getRewardPoolStatus(DEFAULT_ROUTINE_ID)).resolves.toMatchObject({ remainingCount: 2, claimLifetimeHours: 24 });
+    await expect(repository.revealRewardClaim('yesterday')).resolves.toMatchObject({ status: 'claimed', value: 'DEMO-CADEAU-2026' });
+    await expect(repository.revealRewardClaim('active')).resolves.toEqual({ status: 'unavailable' });
+    await expect(repository.revokeRewardPool(DEFAULT_ROUTINE_ID)).resolves.toMatchObject({ status: 'revoked', remainingCount: 0 });
   });
 
   test('keeps parent-created demo routines on AI validation', async () => {

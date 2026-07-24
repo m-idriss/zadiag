@@ -11,7 +11,7 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
-import type { AiAuthoringCapabilities, AiRoutineProposal, AiRoutineResponseKind, AppRepository, JourneySource, JourneyStage, StartupProgressReporter } from './contracts';
+import type { AiAuthoringCapabilities, AiRoutineProposal, AiRoutineResponseKind, AppRepository, JourneySource, JourneyStage, RewardClaimReveal, RewardPoolStatus, StartupProgressReporter } from './contracts';
 import { routineUpdatePayload } from './routineUpdate';
 import { getFirebaseServices, type FirebaseServices } from './firebaseClient';
 import {
@@ -655,6 +655,30 @@ export class FirebaseRepository implements AppRepository {
       });
     }
     catch (error) { throw error; }
+  }
+
+  async getRewardPoolStatus(routineId: string) {
+    if (!this.state.family.id || !this.activeAccessCan('manageRoutines')) throw new Error('permission_denied');
+    const callable = httpsCallable<{ familyId: string; routineId: string }, RewardPoolStatus>(this.services.functions, 'getRewardPoolStatus');
+    return (await callable({ familyId: this.state.family.id, routineId })).data;
+  }
+
+  async addRewardCodes(routineId: string, codes: string[], claimLifetimeHours: number) {
+    if (!this.state.family.id || !this.activeAccessCan('manageRoutines')) throw new Error('permission_denied');
+    const callable = httpsCallable<{ familyId: string; routineId: string; codes: string[]; claimLifetimeHours: number }, RewardPoolStatus>(this.services.functions, 'addRewardCodes');
+    return (await callable({ familyId: this.state.family.id, routineId, codes, claimLifetimeHours })).data;
+  }
+
+  async revokeRewardPool(routineId: string) {
+    if (!this.state.family.id || !this.activeAccessCan('manageRoutines')) throw new Error('permission_denied');
+    const callable = httpsCallable<{ familyId: string; routineId: string }, RewardPoolStatus>(this.services.functions, 'revokeRewardPool');
+    return (await callable({ familyId: this.state.family.id, routineId })).data;
+  }
+
+  async revealRewardClaim(checkId: string) {
+    if (!this.state.family.id || !this.activeAccessCan('view')) throw new Error('permission_denied');
+    const callable = httpsCallable<{ familyId: string; checkId: string }, RewardClaimReveal>(this.services.functions, 'revealRewardClaim');
+    return (await callable({ familyId: this.state.family.id, checkId })).data;
   }
 
   async savePushSubscription(subscription: PushSubscriptionJSON) {

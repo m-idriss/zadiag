@@ -8,14 +8,17 @@ import { AppIcon } from './Icon';
 import { DisclosureToggle } from './DisclosureToggle';
 import { StatusPill } from './StatusPill';
 import { PhotoChecklistSummary } from './PhotoChecklistSummary';
+import { RewardReveal } from './RewardReveal';
+import type { RewardClaimReveal } from '../services/contracts';
 
-export function VerificationEventDetailDialog({ event, locale, proofUrl: providedProofUrl, getProofImageUrl, reviewCheck, requestCheck, onClose, t }: {
+export function VerificationEventDetailDialog({ event, locale, proofUrl: providedProofUrl, getProofImageUrl, reviewCheck, requestCheck, revealReward, onClose, t }: {
   event: VerificationEvent;
   locale: Locale;
   proofUrl?: string;
   getProofImageUrl?: (eventId: string) => Promise<string>;
   reviewCheck?: (eventId: string, decision: ReviewCheckDecision) => Promise<void>;
   requestCheck?: (routineId: string) => Promise<void>;
+  revealReward?: (eventId: string) => Promise<RewardClaimReveal>;
   onClose: () => void;
   t: (key: MessageKey) => string;
 }) {
@@ -186,6 +189,7 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
             {requestStatus === 'error' ? <p className="request-feedback error" role="alert">{t('requestCheckError')}</p> : null}
           </div>
         ) : null}
+        {event.reward && revealReward ? <RewardReveal eventId={event.id} outcome={event.reward.status} reveal={revealReward} t={t} /> : null}
         <div className="history-detail-disclosure">
           <span>{t('historyMoreDetails')}</span>
           <DisclosureToggle expanded={detailsExpanded} showLabel={t('historyShowDetails')} hideLabel={t('historyHideDetails')} onToggle={() => setDetailsExpanded((expanded) => !expanded)} />

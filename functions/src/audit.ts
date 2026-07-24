@@ -35,6 +35,7 @@ type AuditAction =
   | 'export_routine_package'
   | 'import_routine_package'
   | 'delete_routine'
+  | 'manage_reward_pool'
   | 'create_routine_draft'
   | 'fork_routine_assignment_draft'
   | 'resume_routine_assignment_draft'

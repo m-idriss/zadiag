@@ -16,7 +16,7 @@ import { isCheckRequestRateLimited } from './reminders.js';
 import { recordAuditEvent, recordJourneyEvent, type JourneyStage } from './audit.js';
 import { expiredPendingCheckCleanupUpdate, shouldDeleteProofAfterReview, staleCleanupCutoffs } from './cleanup.js';
 import { reportOperationalAlert, reportOperationalEvent, reportOperationalRecovery } from './observability.js';
-import { claimRewardForSuccessfulTransition, cleanupExpiredRewardSecrets, deleteRoutineRewardSecrets } from './rewards.js';
+import { claimRewardForSuccessfulTransition, cleanupExpiredRewardSecrets, deleteRoutineRewardSecrets, rewardClaimForReveal, rewardCodeDocumentId, rewardPoolInput } from './rewards.js';
 import { shouldRecoverSyntheticPush } from './syntheticMonitor.js';
 import { canLeaveMembership, canRemoveMembership, canRenameParticipant, createMembership, hasParticipantPermission, isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, isProfileColorKey, membershipRoles, migrateLegacyFamilyRelationships, participantRenameUpdates, pushRolesForMembership, scheduledAggregatePaths, type MembershipPushRole, type MembershipRole } from './relationships.js';
 import { assertRoutineDraftRevision, createAssignmentForkPackage, createRoutineDraftDocument, routineDraftSessionId, RoutineDraftConflictError, RoutineDraftInputError, selectReusableAssignmentDraft, updateRoutineDraftDocument, type IdentifiedRoutineDraft, type PublishedRoutineVersionDocument, type RoutineDraftDocument } from './routineDrafts.js';
@@ -2855,6 +2855,99 @@ export const deleteRoutine = onCall({
   });
 
   return { success: true };
+});
+
+export const getRewardPoolStatus = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
+  const routineId = requireDocumentId(request.data?.routineId, 'Routine ID');
+  const aggregateRef = await requireAggregatePermission(uid, familyId, 'manageRoutines', 'parent');
+  const policyRef = aggregateRef.collection('rewardPolicies').doc(routineId);
+  const [policy, available] = await Promise.all([
+    policyRef.get(),
+    policyRef.collection('rewardCodes').where('status', '==', 'available').count().get(),
+  ]);
+  return {
+    status: policy.exists && policy.data()?.status === 'active' ? 'active' : 'revoked',
+    remainingCount: available.data().count,
+    claimLifetimeHours: Number(policy.data()?.claimLifetimeHours ?? 24),
+  };
+});
+
+export const addRewardCodes = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
+  const routineId = requireDocumentId(request.data?.routineId, 'Routine ID');
+  const input = rewardPoolInput(request.data);
+  if (!input) throw new HttpsError('invalid-argument', 'Reward codes or expiry are invalid.');
+  const aggregateRef = await requireAggregatePermission(uid, familyId, 'manageRoutines', 'parent');
+  const policyRef = aggregateRef.collection('rewardPolicies').doc(routineId);
+  const codeDocuments = input.codes.map((value) => ({ id: rewardCodeDocumentId(value), value }));
+  const remainingCount = await db.runTransaction(async (transaction) => {
+    const availableQuery = policyRef.collection('rewardCodes').where('status', '==', 'available').limit(101);
+    const [available, ...existingCodes] = await Promise.all([
+      transaction.get(availableQuery),
+      ...codeDocuments.map(({ id }) => transaction.get(policyRef.collection('rewardCodes').doc(id))),
+    ]);
+    if (available.size + codeDocuments.length > 100) throw new HttpsError('failed-precondition', 'The reward pool is limited to 100 available codes.');
+    if (existingCodes.some((document) => document.exists)) {
+      throw new HttpsError('already-exists', 'The reward import contains a code already stored in this pool.');
+    }
+    const updatedAt = new Date().toISOString();
+    transaction.set(policyRef, { status: 'active', claimLifetimeHours: input.claimLifetimeHours, updatedAt }, { merge: true });
+    codeDocuments.forEach(({ id, value }) => transaction.create(policyRef.collection('rewardCodes').doc(id), {
+      status: 'available',
+      value,
+      createdAt: updatedAt,
+    }));
+    return available.size + codeDocuments.length;
+  });
+  await recordAuditEvent(db, {
+    action: 'manage_reward_pool',
+    actorUid: uid,
+    familyId,
+    metadata: { routineId, rewardAction: 'codes_added', addedCount: codeDocuments.length, remainingCount },
+  });
+  return { status: 'active', remainingCount, claimLifetimeHours: input.claimLifetimeHours };
+});
+
+export const revokeRewardPool = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
+  const routineId = requireDocumentId(request.data?.routineId, 'Routine ID');
+  const aggregateRef = await requireAggregatePermission(uid, familyId, 'manageRoutines', 'parent');
+  const policyRef = aggregateRef.collection('rewardPolicies').doc(routineId);
+  const available = await policyRef.collection('rewardCodes').where('status', '==', 'available').get();
+  const batch = db.batch();
+  batch.set(policyRef, { status: 'revoked', updatedAt: new Date().toISOString() }, { merge: true });
+  available.docs.forEach((document) => batch.delete(document.ref));
+  await batch.commit();
+  await recordAuditEvent(db, {
+    action: 'manage_reward_pool',
+    actorUid: uid,
+    familyId,
+    metadata: { routineId, rewardAction: 'unused_codes_revoked', revokedCount: available.size },
+  });
+  return { status: 'revoked', remainingCount: 0 };
+});
+
+export const revealRewardClaim = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
+  const checkId = requireDocumentId(request.data?.checkId, 'Check ID');
+  const aggregateRef = await requireFamilyMember(uid, familyId);
+  const [check, claim] = await Promise.all([
+    aggregateRef.collection('checks').doc(checkId).get(),
+    aggregateRef.collection('rewardClaims').doc(checkId).get(),
+  ]);
+  if (!check.exists || !['answered', 'detected'].includes(String(check.data()?.status))) {
+    throw new HttpsError('failed-precondition', 'A reward is unavailable before a successful check.');
+  }
+  const result = rewardClaimForReveal(check.data(), claim.data());
+  if (result.status === 'expired' && claim.exists) {
+    await claim.ref.delete();
+  }
+  return result;
 });
 
 export const updateRoutineAssignment = onCall({
