@@ -109,4 +109,16 @@ describe('PullToUpdate', () => {
 
     expect(onHorizontalSwipe).not.toHaveBeenCalled();
   });
+
+  it('keeps horizontal navigation available from a full-row history opener', () => {
+    const onHorizontalSwipe = vi.fn();
+    const page = renderPullToUpdate(async () => false, onHorizontalSwipe);
+    page.innerHTML = '<section class="history-row"><button type="button" class="history-row-open-button">Open result</button></section>';
+    const historyRowOpener = page.querySelector('.history-row-open-button') as HTMLButtonElement;
+
+    dispatchTouch(historyRowOpener, 'touchstart', 120, 80);
+    dispatchTouch(historyRowOpener, 'touchend', 30, 82);
+
+    expect(onHorizontalSwipe).toHaveBeenCalledWith('left');
+  });
 });

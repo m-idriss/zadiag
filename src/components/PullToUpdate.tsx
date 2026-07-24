@@ -6,7 +6,7 @@ const PULL_THRESHOLD = 72;
 const MAX_PULL_DISTANCE = 110;
 const HORIZONTAL_SWIPE_THRESHOLD = 64;
 const HORIZONTAL_SWIPE_DOMINANCE = 1.35;
-const SWIPE_NAVIGATION_EXCLUSION_SELECTOR = 'button, a, input, select, textarea, summary, [role="button"], dialog, .parent-review-card, [data-swipe-navigation="ignore"]';
+const SWIPE_NAVIGATION_EXCLUSION_SELECTOR = 'button:not(.history-row-open-button), a, input, select, textarea, summary, [role="button"], dialog, .parent-review-card, [data-swipe-navigation="ignore"]';
 
 type PullGesture = {
   startX: number;

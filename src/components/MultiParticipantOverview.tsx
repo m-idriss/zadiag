@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
 import type { Locale, ParticipantNotificationSource, RoutineAssignment, VerificationEvent } from '../domain/models';
+import { profileColorFor } from '../domain/profileColor';
 import type { MessageKey } from '../services/i18n';
-import { AdherenceSummaryCard, type SummaryRange } from './AdherenceSummaryCard';
+import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } from './AdherenceSummaryCard';
 import { RoutineHistoryPanel } from './RoutineHistoryPanel';
 
-type CollectiveEventContext = {
-  participant: { id: string; displayName: string };
-};
+type CollectiveParticipant = { id: string; displayName: string; profileColor: string };
+type CollectiveEventContext = { participant: CollectiveParticipant };
 
 const collectiveDashboardData = (sources: ParticipantNotificationSource[]) => {
   const assignments: RoutineAssignment[] = [];
@@ -31,6 +31,7 @@ const collectiveDashboardData = (sources: ParticipantNotificationSource[]) => {
         participant: {
           id: source.participant.id,
           displayName: source.participant.displayName,
+          profileColor: profileColorFor(source.participant),
         },
       });
     });
@@ -57,7 +58,9 @@ export function MultiParticipantOverview({
   const participants = sources.map((source) => ({
     id: source.participant.id,
     displayName: source.participant.displayName,
+    profileColor: profileColorFor(source.participant),
   }));
+  const rangedEvents = useMemo(() => filterEventsBySummaryRange(events, range), [events, range]);
   const participantForEvent = (event: VerificationEvent) => eventContext.get(event.id)?.participant;
 
   return (
@@ -74,7 +77,7 @@ export function MultiParticipantOverview({
       />
       <RoutineHistoryPanel
         assignments={assignments}
-        events={events}
+        events={rangedEvents}
         locale={locale}
         titleId="collective-history-title"
         participants={participants}
