@@ -208,7 +208,7 @@ export function RoutineHistoryPanel({
     }
   };
 
-  if (!sortedEvents.length) {
+  if (!sortedEvents.length && !participants?.length) {
     return (
       <section className="routine-history-panel" aria-label={t('recentHistory')}>
         <EmptyState icon="time" title={t('noHistoryYet')} detail={t('noHistoryYetHint')} />

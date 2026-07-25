@@ -189,8 +189,20 @@ describe('ParentDashboard', () => {
     expect(container.querySelectorAll('.parent-history-row')).toHaveLength(2);
     expect(container.querySelector('.progress-ring')?.textContent).toBe('50%');
 
+    const mayaFilter = Array.from(container.querySelectorAll<HTMLButtonElement>('.participant-history-filter-card button'))
+      .find((button) => button.textContent === 'Maya');
+    act(() => mayaFilter?.click());
+    expect(container.querySelector('.participant-history-filter-card')).not.toBeNull();
+    expect(Array.from(container.querySelectorAll<HTMLButtonElement>('.participant-filter-chip')).every((button) => button.getAttribute('aria-pressed') === 'false')).toBe(true);
+    expect(container.querySelectorAll('.parent-history-row')).toHaveLength(0);
+    expect(container.querySelector('.history-results-heading span')?.textContent).toBe('0');
+
+    act(() => leoFilter?.click());
+    expect(container.querySelector('.participant-history-filter-card')).not.toBeNull();
+    expect(container.querySelectorAll('.parent-history-row')).toHaveLength(1);
+
     act(() => container.querySelector<HTMLButtonElement>('.history-row-open-button')?.click());
-    expect(selectParticipant).toHaveBeenCalledWith('maya');
+    expect(selectParticipant).toHaveBeenCalledWith('leo');
   });
 
   it('requests a collective active check for its owning participant', async () => {
