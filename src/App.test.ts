@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { DEFAULT_ROUTINE_ID, type AppState, type VerificationEvent } from './domain/models';
-import { appBadgeCountForState, documentLanguageForLocale, hasMultipleParticipantsForSwipe, isParticipantInvitationCode, participantIdForNotificationLaunch, resetNoticeMessageKey, resolveNotificationLaunch, setupCompletionTransition, shouldShowParticipantOverviewAfterSwipe, syncStatusFor, syncStatusIsVisible } from './App';
+import { appBadgeCountForState, documentLanguageForLocale, hasMultipleParticipantsForSwipe, isParticipantInvitationCode, participantIdForNotificationLaunch, resetNoticeMessageKey, resolveNotificationLaunch, runParticipantAction, setupCompletionTransition, shouldShowParticipantOverviewAfterSwipe, syncStatusFor, syncStatusIsVisible } from './App';
 
 describe('shouldShowParticipantOverviewAfterSwipe', () => {
   it('uses the first left swipe from an individual responsible dashboard for the collective overview', () => {
@@ -17,6 +17,41 @@ describe('hasMultipleParticipantsForSwipe', () => {
     expect(hasMultipleParticipantsForSwipe(2, 0)).toBe(true);
     expect(hasMultipleParticipantsForSwipe(0, 2)).toBe(true);
     expect(hasMultipleParticipantsForSwipe(1, 1)).toBe(false);
+  });
+});
+
+describe('runParticipantAction', () => {
+  it('targets the requested participant and restores the previous context after success', async () => {
+    const selections: string[] = [];
+    let activeParticipantId = 'maya';
+    const selectParticipant = async (participantId: string) => {
+      selections.push(participantId);
+      activeParticipantId = participantId;
+    };
+    const settled = vi.fn();
+
+    const result = await runParticipantAction('leo', 'maya', selectParticipant, async () => activeParticipantId, settled);
+
+    expect(result).toBe('leo');
+    expect(selections).toEqual(['leo', 'maya']);
+    expect(activeParticipantId).toBe('maya');
+    expect(settled).toHaveBeenCalledOnce();
+  });
+
+  it('restores the previous context when the participant action fails', async () => {
+    const selections: string[] = [];
+    const settled = vi.fn();
+
+    await expect(runParticipantAction(
+      'leo',
+      'maya',
+      async (participantId) => { selections.push(participantId); },
+      async () => { throw new Error('action_failed'); },
+      settled,
+    )).rejects.toThrow('action_failed');
+
+    expect(selections).toEqual(['leo', 'maya']);
+    expect(settled).toHaveBeenCalledOnce();
   });
 });
 

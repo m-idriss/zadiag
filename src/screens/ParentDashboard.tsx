@@ -21,9 +21,9 @@ import { NotificationCenter } from '../components/NotificationCenter';
 import { AwaitingCheckCards } from '../components/AwaitingCheckCards';
 import { useCurrentTime } from '../hooks/useCurrentTime';
 import { VerificationEventDetailDialog } from '../components/VerificationEventDetailDialog';
-import { planningRecommendation, routineAnomalies, weeklyInsight } from '../domain/reporting';
-import { DisclosureToggle } from '../components/DisclosureToggle';
+import { planningRecommendation, routineAnomalies } from '../domain/reporting';
 import { MultiParticipantOverview } from '../components/MultiParticipantOverview';
+import { WeeklyInsightCard } from '../components/WeeklyInsightCard';
 
 export function ParentDashboard({
   state,
@@ -34,6 +34,9 @@ export function ParentDashboard({
   getProofImageUrl,
   reviewCheck,
   requestCheck,
+  reviewParticipantCheck,
+  requestParticipantCheck,
+  getParticipantProofImageUrl,
   updateRoutine,
   summaryRange: controlledSummaryRange,
   onSummaryRangeChange,
@@ -51,6 +54,9 @@ export function ParentDashboard({
   getProofImageUrl?: (eventId: string) => Promise<string>;
   reviewCheck?: (eventId: string, decision: ReviewCheckDecision) => Promise<void>;
   requestCheck?: (routineId: string) => Promise<void>;
+  reviewParticipantCheck?: (participantId: string, eventId: string, decision: ReviewCheckDecision) => Promise<void>;
+  requestParticipantCheck?: (participantId: string, routineId: string) => Promise<void>;
+  getParticipantProofImageUrl?: (participantId: string, eventId: string) => Promise<string>;
   updateRoutine?: (routineId: string, plan: MonitoringPlan) => Promise<void>;
   summaryRange?: SummaryRange;
   onSummaryRangeChange?: (range: SummaryRange) => void;
@@ -76,7 +82,6 @@ export function ParentDashboard({
   const [planningRecommendationOpen, setPlanningRecommendationOpen] = useState(false);
   const [planningRecommendationStatus, setPlanningRecommendationStatus] = useState<'saving' | 'saved' | 'error'>();
   const [weeklyReportOpenSignal, setWeeklyReportOpenSignal] = useState(0);
-  const [weeklyInsightOpen, setWeeklyInsightOpen] = useState(false);
   const swipeStartRef = useRef<{ eventId: string; x: number; y: number } | undefined>(undefined);
   const swipeDecisionRef = useRef(false);
   const handledNotificationEventIdRef = useRef<string | undefined>(undefined);
@@ -121,13 +126,6 @@ export function ParentDashboard({
     && localStorage.getItem(anomalyStorageKey) !== anomalyFingerprint ? anomaly : undefined;
   const anomalyAssignment = visibleAnomaly ? state.routineAssignments.find((assignment) => assignment.routineId === visibleAnomaly.routineId) : undefined;
   const recommendedPlan = anomalyAssignment ? planningRecommendation(anomalyAssignment, displayEvents, now) : undefined;
-  const weekly = useMemo(() => weeklyInsight(state.routineAssignments, displayEvents, now), [displayEvents, now, state.routineAssignments]);
-  const weeklyPriorityKey: MessageKey | undefined = weekly ? {
-    adjust_schedule: 'weeklyPriorityAdjustSchedule',
-    review_proofs: 'weeklyPriorityReviewProofs',
-    support_consistency: 'weeklyPrioritySupportConsistency',
-    keep_course: 'weeklyPriorityKeepCourse',
-  }[weekly.priority] as MessageKey : undefined;
   const responsibleEmptyState = !state.family.childLinked
     ? { icon: 'link' as const, title: t('responsibleEmptyParticipantNotLinkedTitle'), hint: t('responsibleEmptyParticipantNotLinkedHint') }
     : !state.routineAssignments.length
@@ -263,7 +261,6 @@ export function ParentDashboard({
     setDismissedAnomaly(undefined);
     setPlanningRecommendationOpen(false);
     setPlanningRecommendationStatus(undefined);
-    setWeeklyInsightOpen(false);
   }, [state.activeParticipantId]);
   useEffect(() => {
     if (!notificationEventId) {
@@ -314,7 +311,19 @@ export function ParentDashboard({
       </div>
 
       {showParticipantOverview ? (
-        <MultiParticipantOverview sources={notificationSources} locale={state.locale} range={summaryRange} now={now} onRangeChange={setSummaryRange} onSelectParticipant={selectParticipant} t={t} />
+        <MultiParticipantOverview
+          sources={notificationSources}
+          locale={state.locale}
+          range={summaryRange}
+          now={now}
+          onRangeChange={setSummaryRange}
+          onSelectParticipant={selectParticipant}
+          participantAccess={state.participantAccess}
+          reviewParticipantCheck={reviewParticipantCheck}
+          requestParticipantCheck={requestParticipantCheck}
+          getParticipantProofImageUrl={getParticipantProofImageUrl}
+          t={t}
+        />
       ) : <>
       {setupStep ? (
         <section className="card parent-onboarding-card" aria-labelledby="parent-onboarding-title">
@@ -487,40 +496,6 @@ export function ParentDashboard({
         </section>
       ) : null}
 
-      {state.family.childLinked ? (
-        <section className="card weekly-insight-card" aria-labelledby="weekly-insight-title">
-          <div className="weekly-insight-heading">
-            <div><span className="eyebrow">{t('weeklyInsightEyebrow')}</span><h2 id="weekly-insight-title">{t('weeklyInsightTitle')}</h2></div>
-            <span className="weekly-insight-rate"><strong>{weekly ? `${Math.round(weekly.rate * 100)}%` : '—'}</strong></span>
-            <DisclosureToggle
-              expanded={weeklyInsightOpen}
-              showLabel={t('weeklyInsightShow')}
-              hideLabel={t('weeklyInsightHide')}
-              onToggle={() => setWeeklyInsightOpen((open) => !open)}
-            />
-          </div>
-          {weeklyInsightOpen ? <div className="weekly-insight-content">
-            {weekly && weeklyPriorityKey ? (
-              <>
-                <p className="weekly-insight-evolution">{weekly.rateDelta === undefined
-                  ? t('summaryNoPreviousBaseline')
-                  : weekly.rateDelta === 0
-                    ? t('summaryComparedStable')
-                    : `${t(weekly.rateDelta > 0 ? 'weeklyInsightUp' : 'weeklyInsightDown')} ${Math.abs(Math.round(weekly.rateDelta * 100))} ${t('summaryPoints')}`}</p>
-                <div className="weekly-insight-metrics">
-                  {weekly.strongestRoutineId && weekly.strongestRoutineId !== weekly.watchRoutineId ? <span><small>{t('weeklyInsightStrongest')}</small><strong>{routinePresentationsById.get(weekly.strongestRoutineId)?.name ?? t('routine')}</strong></span> : null}
-                  {weekly.watchRoutineId ? <span><small>{t('weeklyInsightWatch')}</small><strong>{routinePresentationsById.get(weekly.watchRoutineId)?.name ?? t('routine')}</strong></span> : null}
-                  {weekly.bestWindow ? <span><small>{t('weeklyInsightBestWindow')}</small><strong>{weekly.bestWindow.start}–{weekly.bestWindow.end}</strong></span> : null}
-                  <span><small>{t('weeklyInsightResponsibleActions')}</small><strong>{weekly.responsibleActions.length ? weekly.responsibleActions.map((actor) => `${actor.actorName} · ${actor.count}`).join(', ') : weekly.responsibleActionCount}</strong></span>
-                </div>
-                <div className="weekly-insight-priority"><AppIcon name="sparkles" /><p><small>{t('weeklyInsightPriority')}</small><strong>{t(weeklyPriorityKey)}</strong></p></div>
-                <button type="button" onClick={() => { setSummaryRange('week'); setWeeklyReportOpenSignal((current) => current + 1); }}>{t('weeklyInsightOpenReport')}</button>
-              </>
-            ) : <p className="weekly-insight-empty">{t('weeklyInsightEmpty')}</p>}
-          </div> : null}
-        </section>
-      ) : null}
-
       {expandedStatus === 'review' && reviewEvents.length ? (
         <section className="settings-section parent-review-section" aria-labelledby="parent-review-title">
           <div className="section-heading parent-review-heading">
@@ -621,6 +596,17 @@ export function ParentDashboard({
 
       {expandedStatus === 'next' && state.family.childLinked && state.routineAssignments.length && upcomingChecks.length ? (
         <UpcomingChecksSection checks={upcomingChecks} now={nowDate} locale={locale} titleId="responsible-upcoming-checks-title" t={t} />
+      ) : null}
+
+      {state.family.childLinked ? (
+        <WeeklyInsightCard
+          assignments={state.routineAssignments}
+          events={displayEvents}
+          locale={state.locale}
+          now={now}
+          onOpenReport={() => { setSummaryRange('week'); setWeeklyReportOpenSignal((current) => current + 1); }}
+          t={t}
+        />
       ) : null}
 
       {enlargedProof ? (
