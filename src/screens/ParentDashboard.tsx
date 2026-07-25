@@ -281,6 +281,21 @@ export function ParentDashboard({
     setDetailEventId(event.id);
     onNotificationEventConsumed?.();
   }, [notificationEventId, now, onNotificationEventConsumed, state.events]);
+  const participantSelector = (
+    <ParticipantSelector
+      access={state.participantAccess}
+      activeParticipantId={state.activeParticipantId}
+      label={t('followedPerson')}
+      title={activeParticipantAccess?.participant.displayName ?? state.family.childName}
+      actionLabel={t('relationshipSwitchAction')}
+      overviewLabel={hasMultipleParticipants ? t('allParticipants') : undefined}
+      overviewSelected={showParticipantOverview}
+      onSelect={selectParticipant}
+      onSelectOverview={hasMultipleParticipants ? () => {
+        onParticipantOverviewChange?.(true);
+      } : undefined}
+    />
+  );
   return (
     <div className="content-screen child-home parent-overview-screen" data-swipe-navigation="allow">
       <div className="page-context-top parent-context-top">
@@ -298,28 +313,16 @@ export function ParentDashboard({
             t={t}
           />
         </header>
-      <ParticipantSelector
-        access={state.participantAccess}
-        activeParticipantId={state.activeParticipantId}
-        label={t('followedPerson')}
-        title={activeParticipantAccess?.participant.displayName ?? state.family.childName}
-        actionLabel={t('relationshipSwitchAction')}
-        overviewLabel={hasMultipleParticipants ? t('allParticipants') : undefined}
-        overviewSelected={showParticipantOverview}
-        onSelect={selectParticipant}
-        onSelectOverview={hasMultipleParticipants ? () => {
-          onParticipantOverviewChange?.(true);
-        } : undefined}
-      />
       </div>
 
       {showParticipantOverview ? (
-        <MultiParticipantOverview sources={notificationSources} locale={state.locale} range={summaryRange} now={now} onRangeChange={setSummaryRange} onSelectParticipant={selectParticipant} t={t} />
+        <MultiParticipantOverview sources={notificationSources} locale={state.locale} range={summaryRange} now={now} onRangeChange={setSummaryRange} onSelectParticipant={selectParticipant} contextControl={participantSelector} t={t} />
       ) : <>
       <section className="today-section participant-history-section dashboard-summary-section parent-dashboard-overview-section" aria-labelledby="responsible-summary-title">
         <h2 id="responsible-summary-title">{t('overview')}</h2>
         <AdherenceSummaryCard events={displayEvents} assignments={state.routineAssignments} locale={state.locale} subjectName={reportSubjectName} range={summaryRange} onRangeChange={setSummaryRange} detailedReportOpenSignal={weeklyReportOpenSignal} t={t} />
       </section>
+      {participantSelector}
       {setupStep ? (
         <section className="card parent-onboarding-card" aria-labelledby="parent-onboarding-title">
           <div className="parent-onboarding-heading">
