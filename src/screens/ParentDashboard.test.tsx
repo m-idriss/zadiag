@@ -58,7 +58,8 @@ describe('ParentDashboard', () => {
     expect(setupSteps[1]?.classList.contains('active')).toBe(true);
     expect(container.textContent).toContain('Participant phone not linked');
     expect(container.textContent).toContain('Participant linking code');
-    expect(container.textContent).toContain('Recent history');
+    expect(container.textContent).not.toContain('Recent history');
+    expect(container.textContent).toContain('Results');
     expect(container.textContent).toContain('Status');
     expect(container.textContent).not.toContain('StatusAll');
     expect(container.textContent).not.toContain('Monitoring plan');
@@ -67,14 +68,14 @@ describe('ParentDashboard', () => {
     const operationalCards = container.querySelector('.parent-onboarding-card');
     const summaryCard = coreDashboard?.querySelector('.adherence-summary-card');
     const filterCard = coreDashboard?.querySelector('.history-filter-card');
-    const historyHeading = coreDashboard?.querySelector('.parent-history-heading');
+    const resultsHeading = coreDashboard?.querySelector('.history-results-heading');
     expect(summaryCard).not.toBeNull();
     expect(filterCard).not.toBeNull();
-    expect(historyHeading).not.toBeNull();
+    expect(resultsHeading).not.toBeNull();
     expect(operationalCards).not.toBeNull();
     expect(Boolean(operationalCards!.compareDocumentPosition(coreDashboard!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
     expect(Boolean(summaryCard!.compareDocumentPosition(filterCard!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
-    expect(Boolean(filterCard!.compareDocumentPosition(historyHeading!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    expect(Boolean(filterCard!.compareDocumentPosition(resultsHeading!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
     const detailedReport = container.querySelector<HTMLDetailsElement>('.detailed-reporting');
     expect(detailedReport?.open).toBe(false);
     expect(detailedReport?.querySelector('summary')?.textContent).toBe('Detailed report');

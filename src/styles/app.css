@@ -770,7 +770,6 @@ button:disabled { cursor: not-allowed; }
 .parent-empty-history-card > .settings-row-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; background: #e9f5f2; color: var(--color-primary); box-shadow: inset 0 1px rgba(255,255,255,.8); }
 .parent-empty-history-card > .app-icon,
 .parent-empty-history-card > .settings-row-icon { font-size: 24px; }
-.parent-history-heading { margin-top: 0; margin-bottom: 0; }
 .parent-empty-history-card { display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: center; gap: 12px; padding: var(--row-padding-y) var(--row-padding-x); }
 .parent-empty-history-card h2 { font-size: 16px; }
 .parent-empty-history-card p { margin: 3px 0 0; font-size: 12px; line-height: 1.35; }
