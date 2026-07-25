@@ -114,11 +114,12 @@ describe('ParentDashboard', () => {
     expect(container.querySelector('.screen-header h1')?.textContent).toBe('Activity');
   });
 
-  it('reuses the individual dashboard with participant filters and context labels', () => {
+  it('reuses the individual dashboard with participant filters and context labels', async () => {
     const now = new Date().toISOString();
     const threeDaysAgo = new Date(Date.now() - 3 * 86_400_000).toISOString();
     const assignment = createDefaultRoutineAssignment(now);
     const selectParticipant = vi.fn();
+    const reviewParticipantCheck = vi.fn().mockResolvedValue(undefined);
     const state: AppState = {
       role: 'parent', locale: 'en', notificationsEnabled: true, activeParticipantId: 'maya',
       family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
@@ -144,11 +145,16 @@ describe('ParentDashboard', () => {
     };
 
     const setParticipantOverview = vi.fn();
-    act(() => root.render(<ParentDashboard state={state} participantOverview onParticipantOverviewChange={setParticipantOverview} onSelectParticipant={selectParticipant} t={(key) => translate('en', key)} />));
+    act(() => root.render(<ParentDashboard state={state} participantOverview onParticipantOverviewChange={setParticipantOverview} onSelectParticipant={selectParticipant} reviewParticipantCheck={reviewParticipantCheck} t={(key) => translate('en', key)} />));
 
     expect(container.querySelector('.multi-participant-overview')).not.toBeNull();
     expect(container.querySelector('.adherence-summary-card')).not.toBeNull();
     expect(container.querySelector('.history-filter-card')).not.toBeNull();
+    const collectiveStatus = container.querySelector('.dashboard-status-summary');
+    const collectiveWeekly = container.querySelector('.weekly-insight-card');
+    const collectiveSummary = container.querySelector('.adherence-summary-card');
+    expect(Boolean(collectiveStatus!.compareDocumentPosition(collectiveWeekly!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    expect(Boolean(collectiveWeekly!.compareDocumentPosition(collectiveSummary!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
     expect(Array.from(container.querySelectorAll('.filter-group > span')).map((label) => label.textContent)).toEqual(['Participant', 'Routine', 'Status']);
     expect(container.textContent).toContain('Results');
     expect(container.querySelectorAll('.parent-history-row')).toHaveLength(2);
@@ -164,6 +170,15 @@ describe('ParentDashboard', () => {
     expect(participantChips.every((chip) => chip.style.getPropertyValue('--profile-color').length > 0)).toBe(true);
     expect(new Set(Array.from(container.querySelectorAll<HTMLElement>('.has-participant-accent')).map((row) => row.style.getPropertyValue('--history-participant-color'))).size).toBe(2);
     expect(container.textContent).toContain('Detailed report');
+    const reviewStatus = Array.from(container.querySelectorAll<HTMLButtonElement>('.dashboard-status-summary button'))
+      .find((button) => button.textContent?.includes('To review'));
+    act(() => reviewStatus?.click());
+    const collectiveReview = container.querySelector('.collective-operational-section');
+    expect(Boolean(collectiveReview?.compareDocumentPosition(collectiveWeekly!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.collective-operational-section .parent-review-button.approve')?.click();
+    });
+    expect(reviewParticipantCheck).toHaveBeenCalledWith('leo', 'leo-review', 'detected');
 
     const leoFilter = Array.from(container.querySelectorAll<HTMLButtonElement>('.filter-group:first-child button'))
       .find((button) => button.textContent === 'Leo');
@@ -173,6 +188,41 @@ describe('ParentDashboard', () => {
 
     act(() => container.querySelector<HTMLButtonElement>('.history-row-open-button')?.click());
     expect(selectParticipant).toHaveBeenCalledWith('maya');
+  });
+
+  it('requests a collective active check for its owning participant', async () => {
+    const now = new Date().toISOString();
+    const assignment = createDefaultRoutineAssignment(now);
+    const requestParticipantCheck = vi.fn().mockResolvedValue(undefined);
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true, activeParticipantId: 'maya',
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      participantAccess: [
+        { participant: { id: 'maya', displayName: 'Maya', profileColor: 'violet' }, membership: { role: 'owner', status: 'active' } },
+        { participant: { id: 'leo', displayName: 'Leo', profileColor: 'teal' }, membership: { role: 'caregiver', status: 'active' } },
+      ],
+      notificationSources: [
+        { participant: { id: 'maya', displayName: 'Maya', profileColor: 'violet' }, role: 'parent', assignments: [assignment], events: [] },
+        {
+          participant: { id: 'leo', displayName: 'Leo', profileColor: 'teal' }, role: 'parent', assignments: [assignment],
+          events: [{ id: 'leo-active', routineId: assignment.routineId, sessionId: 'leo', requestedAt: now, expiresAt: new Date(Date.now() + 3_600_000).toISOString(), status: 'pending' }],
+        },
+      ],
+      routineAssignments: [assignment],
+      events: [],
+    };
+
+    act(() => root.render(<ParentDashboard state={state} participantOverview requestParticipantCheck={requestParticipantCheck} t={(key) => translate('en', key)} />));
+    const activeStatus = Array.from(container.querySelectorAll<HTMLButtonElement>('.dashboard-status-summary button'))
+      .find((button) => button.textContent?.includes('Active'));
+    act(() => activeStatus?.click());
+    const leoCard = Array.from(container.querySelectorAll<HTMLElement>('.collective-operational-section .parent-active-check-card'))
+      .find((card) => card.textContent?.includes('Leo'));
+    await act(async () => {
+      leoCard?.querySelector<HTMLButtonElement>('button')?.click();
+    });
+
+    expect(requestParticipantCheck).toHaveBeenCalledWith('leo', assignment.routineId);
   });
 
   it('shows an actionable repeated-failure trend and keeps it dismissed until a new failure', async () => {
@@ -774,7 +824,10 @@ describe('ParentDashboard', () => {
     expect(container.textContent).toContain('Checks to verify');
     expect(Array.from(container.querySelectorAll('.dashboard-status-summary strong')).map((item) => item.textContent)).toEqual(['0', '1', '1']);
     const reviewSection = container.querySelector('.parent-review-section');
+    const weeklyInsight = container.querySelector('.weekly-insight-card');
     expect(reviewSection).not.toBeNull();
+    expect(weeklyInsight).not.toBeNull();
+    expect(Boolean(reviewSection!.compareDocumentPosition(weeklyInsight!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
     expect(container.querySelector('.upcoming-checks-section')).toBeNull();
     expect(container.textContent).toContain('Expected proof: Mouth photo');
     expect(container.textContent).toContain('Source: AI');

@@ -79,6 +79,27 @@ export const appBadgeCountForState = (
 export const resetNoticeMessageKey = (role: Role | undefined): MessageKey =>
   role === 'parent' ? 'resetNoticeParent' : 'resetNoticeChild';
 
+export const runParticipantAction = async <TResult,>(
+  participantId: string,
+  previousParticipantId: string | undefined,
+  selectParticipant: (participantId: string) => Promise<void>,
+  action: () => Promise<TResult>,
+  onSettled: () => void,
+): Promise<TResult> => {
+  if (previousParticipantId !== participantId) await selectParticipant(participantId);
+  try {
+    return await action();
+  } finally {
+    try {
+      if (previousParticipantId && previousParticipantId !== participantId) {
+        await selectParticipant(previousParticipantId);
+      }
+    } finally {
+      onSettled();
+    }
+  }
+};
+
 export const shouldShowParticipantOverviewAfterSwipe = (
   role: Role,
   tab: Tab,
@@ -475,6 +496,19 @@ export function App() {
     writeUiStorageString(PARTICIPANT_OVERVIEW_STORAGE_KEY, 'individual');
     await selectActiveParticipant(participantId);
   } : undefined;
+  const runInParticipantContext = async <TResult,>(
+    participantId: string,
+    action: () => Promise<TResult>,
+  ): Promise<TResult> => {
+    if (!repository.selectActiveParticipant) throw new Error('participant_selection_unavailable');
+    return runParticipantAction(
+      participantId,
+      state.activeParticipantId,
+      repository.selectActiveParticipant,
+      action,
+      sync,
+    );
+  };
   const selectRole = async (role: Role) => {
     await repository.selectRole(role);
     sync();
@@ -854,6 +888,15 @@ export function App() {
               getProofImageUrl={(eventId) => repository.getProofImageUrl(eventId)}
               reviewCheck={canReviewProofs ? withRepositorySyncVoid(repository.reviewCheck) : undefined}
               requestCheck={canRequestChecks ? withRepositorySync(repository.requestCheckNow) : undefined}
+              reviewParticipantCheck={repository.selectActiveParticipant
+                ? (participantId, eventId, decision) => runInParticipantContext(participantId, () => repository.reviewCheck(eventId, decision)).then(() => undefined)
+                : undefined}
+              requestParticipantCheck={repository.selectActiveParticipant
+                ? (participantId, routineId) => runInParticipantContext(participantId, () => repository.requestCheckNow(routineId))
+                : undefined}
+              getParticipantProofImageUrl={repository.selectActiveParticipant
+                ? (participantId, eventId) => runInParticipantContext(participantId, () => repository.getProofImageUrl(eventId))
+                : undefined}
               updateRoutine={canManageRoutines ? async (routineId, plan) => {
                 setSavingRoutineId(routineId);
                 try {
