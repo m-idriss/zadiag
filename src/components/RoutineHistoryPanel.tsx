@@ -176,30 +176,25 @@ export function RoutineHistoryPanel({
                 </div>
               </div>
             ) : null}
-            <details className="history-secondary-filters">
-              <summary>{t('historyFilters')}</summary>
-              <div className="history-secondary-filters-content">
-                <div className="filter-group">
-                  <span>{t('filterByRoutine')}</span>
-                  <div className="filter-chips">
-                    {assignments.map((assignment) => {
-                      const visual = presentRoutine(assignment.routine, locale);
-                      const active = !excludedRoutineIds.includes(assignment.routineId);
-                      return <button type="button" key={assignment.id} aria-pressed={active} className={active ? 'active' : ''} onClick={() => toggleRoutineFilter(assignment.routineId)}>{visual.name}</button>;
-                    })}
-                  </div>
-                </div>
-                <div className="filter-group">
-                  <span>{t('filterByStatus')}</span>
-                  <div className="filter-chips">
-                    {statusFilters.map(({ status, eventStatuses }) => {
-                      const active = eventStatuses.every((eventStatus) => !excludedStatuses.includes(eventStatus));
-                      return <button type="button" key={status} aria-pressed={active} className={`filter-status-${status} ${active ? 'active' : ''}`} onClick={() => toggleStatusFilter(eventStatuses)}>{t(statusMessageKey(status))}</button>;
-                    })}
-                  </div>
-                </div>
+            <div className="filter-group">
+              <span>{t('filterByRoutine')}</span>
+              <div className="filter-chips">
+                {assignments.map((assignment) => {
+                  const visual = presentRoutine(assignment.routine, locale);
+                  const active = !excludedRoutineIds.includes(assignment.routineId);
+                  return <button type="button" key={assignment.id} aria-pressed={active} className={active ? 'active' : ''} onClick={() => toggleRoutineFilter(assignment.routineId)}>{visual.name}</button>;
+                })}
               </div>
-            </details>
+            </div>
+            <div className="filter-group">
+              <span>{t('filterByStatus')}</span>
+              <div className="filter-chips">
+                {statusFilters.map(({ status, eventStatuses }) => {
+                  const active = eventStatuses.every((eventStatus) => !excludedStatuses.includes(eventStatus));
+                  return <button type="button" key={status} aria-pressed={active} className={`filter-status-${status} ${active ? 'active' : ''}`} onClick={() => toggleStatusFilter(eventStatuses)}>{t(statusMessageKey(status))}</button>;
+                })}
+              </div>
+            </div>
           </section>
 
           <div className="section-heading history-results-heading"><h2>{t('historyResults')}</h2><span>{filtered.length}</span></div>
