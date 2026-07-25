@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { Locale, ParticipantAccess, ParticipantNotificationSource, ReviewCheckDecision, RoutineAssignment, VerificationEvent } from '../domain/models';
 import { profileColorFor } from '../domain/profileColor';
 import { isReviewableVerification, withResolvedEventStatuses } from '../domain/adherence';
@@ -13,6 +13,7 @@ import { AppIcon, routineIconName } from './Icon';
 import { plannedWindowLabel } from '../domain/taskTimeLabel';
 import { languageTag } from '../services/locale';
 import { WeeklyInsightCard } from './WeeklyInsightCard';
+import { ListRow } from './ui';
 
 type CollectiveParticipant = { id: string; displayName: string; profileColor: string };
 type CollectiveEventContext = { participant: CollectiveParticipant };
@@ -189,25 +190,47 @@ export function MultiParticipantOverview({
       />
       {expandedStatus === 'active' && activeCount ? (
         <section className="settings-section collective-operational-section" aria-label={t('dashboardActive')}>
-          <div className="today-task-list">
+          <div className="history-list parent-history-list">
             {operationalSources.flatMap((source) => [
               ...source.active.map(({ event, presentation }) => (
-                <article className="today-task today-routine-card parent-active-check-card actionable" style={presentation.style} key={`${source.participant.id}:${event.id}`}>
-                  <div className="today-task-copy">
-                    <span className="settings-row-icon today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(presentation.icon)} /></span>
-                    <div><h3>{presentation.name}</h3><p>{source.participant.displayName}</p></div>
-                  </div>
-                  {source.canRequest ? <button type="button" className="primary-action-button parent-remind-button" disabled={Boolean(requestingKey)} onClick={() => { void request(source.participant.id, event.routineId); }}>{requestingKey === `${source.participant.id}:${event.routineId}` ? t('requestingCheck') : t('requestCheckShort')}</button> : null}
-                </article>
+                <ListRow
+                  as="article"
+                  variant="bare"
+                  className="card history-row parent-history-row has-participant-accent parent-active-check-card"
+                  icon={<AppIcon name={routineIconName(presentation.icon)} />}
+                  iconClassName="history-icon routine-history-icon"
+                  title={presentation.name}
+                  detail={source.participant.displayName}
+                  style={{ ...presentation.style, '--history-participant-color': source.participant.profileColor } as CSSProperties}
+                  trailing={source.canRequest ? (
+                    <div className="history-row-actions">
+                      <button type="button" className="history-retake-button" disabled={Boolean(requestingKey)} onClick={() => { void request(source.participant.id, event.routineId); }}>
+                        {requestingKey === `${source.participant.id}:${event.routineId}` ? t('requestingCheck') : t('requestCheckShort')}
+                      </button>
+                    </div>
+                  ) : null}
+                  key={`${source.participant.id}:${event.id}`}
+                />
               )),
               ...source.awaiting.map((item) => (
-                <article className="today-task today-routine-card parent-active-check-card actionable" style={item.presentation.style} key={`${source.participant.id}:awaiting:${item.id}`}>
-                  <div className="today-task-copy">
-                    <span className="settings-row-icon today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(item.presentation.icon)} /></span>
-                    <div><h3>{item.presentation.name}</h3><p>{source.participant.displayName}</p></div>
-                  </div>
-                  {source.canRequest ? <button type="button" className="primary-action-button parent-remind-button" disabled={Boolean(requestingKey)} onClick={() => { void request(source.participant.id, item.routineId); }}>{requestingKey === `${source.participant.id}:${item.routineId}` ? t('requestingCheck') : t('requestCheckShort')}</button> : null}
-                </article>
+                <ListRow
+                  as="article"
+                  variant="bare"
+                  className="card history-row parent-history-row has-participant-accent parent-active-check-card"
+                  icon={<AppIcon name={routineIconName(item.presentation.icon)} />}
+                  iconClassName="history-icon routine-history-icon"
+                  title={item.presentation.name}
+                  detail={source.participant.displayName}
+                  style={{ ...item.presentation.style, '--history-participant-color': source.participant.profileColor } as CSSProperties}
+                  trailing={source.canRequest ? (
+                    <div className="history-row-actions">
+                      <button type="button" className="history-retake-button" disabled={Boolean(requestingKey)} onClick={() => { void request(source.participant.id, item.routineId); }}>
+                        {requestingKey === `${source.participant.id}:${item.routineId}` ? t('requestingCheck') : t('requestCheckShort')}
+                      </button>
+                    </div>
+                  ) : null}
+                  key={`${source.participant.id}:awaiting:${item.id}`}
+                />
               )),
             ])}
             {actionError === 'request' ? <span className="request-feedback error" role="alert">{t('requestCheckError')}</span> : null}
@@ -241,12 +264,19 @@ export function MultiParticipantOverview({
       ) : null}
       {expandedStatus === 'next' && upcomingCount ? (
         <section className="today-section upcoming-checks-section collective-operational-section" aria-label={t('dashboardNext')}>
-          <div className="upcoming-checks-list">
+          <div className="history-list parent-history-list">
             {operationalSources.flatMap((source) => source.upcoming.map((item) => (
-              <article className="upcoming-check-card" style={item.presentation.style} key={`${source.participant.id}:${item.id}`}>
-                <span className="settings-row-icon today-task-icon" aria-hidden="true"><AppIcon name={routineIconName(item.presentation.icon)} /></span>
-                <div><h3>{item.presentation.name}</h3><p>{source.participant.displayName} · {plannedWindowLabel(item.planned.start, item.planned.end, new Date(now), languageTag(locale), t)}</p></div>
-              </article>
+              <ListRow
+                as="article"
+                variant="bare"
+                className="card history-row parent-history-row has-participant-accent collective-upcoming-check-card"
+                icon={<AppIcon name={routineIconName(item.presentation.icon)} />}
+                iconClassName="history-icon routine-history-icon"
+                title={item.presentation.name}
+                detail={`${source.participant.displayName} · ${plannedWindowLabel(item.planned.start, item.planned.end, new Date(now), languageTag(locale), t)}`}
+                style={{ ...item.presentation.style, '--history-participant-color': source.participant.profileColor } as CSSProperties}
+                key={`${source.participant.id}:${item.id}`}
+              />
             )))}
           </div>
         </section>
