@@ -3,7 +3,7 @@ import type { AppState, MonitoringPlan, ReviewCheckDecision, VerificationEvent }
 import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
 import { CodeBox } from '../components/CodeBox';
-import { RoutineHistoryPanel } from '../components/RoutineHistoryPanel';
+import { HistoryFilterControls, RoutineHistoryPanel, useHistoryFilters } from '../components/RoutineHistoryPanel';
 import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } from '../components/AdherenceSummaryCard';
 import { UpcomingChecksSection } from '../components/UpcomingChecksSection';
 import { presentRoutine } from '../domain/routinePresentation';
@@ -82,6 +82,7 @@ export function ParentDashboard({
   const [planningRecommendationOpen, setPlanningRecommendationOpen] = useState(false);
   const [planningRecommendationStatus, setPlanningRecommendationStatus] = useState<'saving' | 'saved' | 'error'>();
   const [weeklyReportOpenSignal, setWeeklyReportOpenSignal] = useState(0);
+  const historyFilters = useHistoryFilters('responsible-history-title');
   const swipeStartRef = useRef<{ eventId: string; x: number; y: number } | undefined>(undefined);
   const swipeDecisionRef = useRef(false);
   const handledNotificationEventIdRef = useRef<string | undefined>(undefined);
@@ -626,8 +627,18 @@ export function ParentDashboard({
 
       <section className="today-section participant-history-section dashboard-summary-section parent-dashboard-overview-section" aria-labelledby="responsible-summary-title">
         <h2 id="responsible-summary-title">{t('overview')}</h2>
-        <AdherenceSummaryCard events={displayEvents} assignments={state.routineAssignments} locale={state.locale} subjectName={reportSubjectName} range={summaryRange} onRangeChange={setSummaryRange} detailedReportOpenSignal={weeklyReportOpenSignal} t={t} />
-        <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedRawEvents} locale={state.locale} titleId="responsible-history-title" colorForEvent={activeParticipantAccess ? () => profileColorFor(activeParticipantAccess.participant) : undefined} onRequestCheck={requestCheck} onOpenEvent={(event) => setDetailEventId(event.id)} t={t} />
+        <AdherenceSummaryCard
+          events={displayEvents}
+          assignments={state.routineAssignments}
+          locale={state.locale}
+          subjectName={reportSubjectName}
+          range={summaryRange}
+          onRangeChange={setSummaryRange}
+          detailedReportOpenSignal={weeklyReportOpenSignal}
+          filters={<HistoryFilterControls assignments={state.routineAssignments} events={rangedRawEvents} locale={state.locale} excludedRoutineIds={historyFilters.excludedRoutineIds} excludedStatuses={historyFilters.excludedStatuses} onToggleRoutine={historyFilters.toggleRoutine} onToggleStatuses={historyFilters.toggleStatuses} t={t} />}
+          t={t}
+        />
+        <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedRawEvents} locale={state.locale} titleId="responsible-history-title" excludedRoutineIds={historyFilters.excludedRoutineIds} excludedStatuses={historyFilters.excludedStatuses} colorForEvent={activeParticipantAccess ? () => profileColorFor(activeParticipantAccess.participant) : undefined} onRequestCheck={requestCheck} onOpenEvent={(event) => setDetailEventId(event.id)} t={t} />
       </section>
 
       {detailEvent ? <VerificationEventDetailDialog event={detailEvent} locale={state.locale} proofUrl={proofUrls[detailEvent.id]} getProofImageUrl={getProofImageUrl} reviewCheck={reviewCheck} requestCheck={requestCheck} onClose={() => setDetailEventId(undefined)} t={t} /> : null}

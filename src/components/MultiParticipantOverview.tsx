@@ -4,7 +4,7 @@ import { profileColorFor } from '../domain/profileColor';
 import { isReviewableVerification, withResolvedEventStatuses } from '../domain/adherence';
 import type { MessageKey } from '../services/i18n';
 import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } from './AdherenceSummaryCard';
-import { RoutineHistoryPanel } from './RoutineHistoryPanel';
+import { HistoryFilterControls, RoutineHistoryPanel, useHistoryFilters } from './RoutineHistoryPanel';
 import { DashboardStatusSummary } from './DashboardStatusSummary';
 import { activePendingEvents, presentedAwaitingRoutineChecks, presentedUpcomingRoutineChecks } from '../domain/dashboardChecks';
 import { participantAccessCan } from '../domain/participantAccess';
@@ -83,6 +83,7 @@ export function MultiParticipantOverview({
   const [actionError, setActionError] = useState<'request' | 'review'>();
   const [proofUrls, setProofUrls] = useState<Record<string, string>>({});
   const [proofErrors, setProofErrors] = useState<Record<string, boolean>>({});
+  const historyFilters = useHistoryFilters('collective-history-title');
   const participants = sources.map((source) => ({
     id: source.participant.id,
     displayName: source.participant.displayName,
@@ -296,6 +297,7 @@ export function MultiParticipantOverview({
         subjectName={t('allParticipants')}
         range={range}
         onRangeChange={onRangeChange}
+        filters={<HistoryFilterControls assignments={visibleAssignments} events={rangedEvents} locale={locale} excludedRoutineIds={historyFilters.excludedRoutineIds} excludedStatuses={historyFilters.excludedStatuses} onToggleRoutine={historyFilters.toggleRoutine} onToggleStatuses={historyFilters.toggleStatuses} t={t} />}
         t={t}
       />
       <RoutineHistoryPanel
@@ -307,6 +309,8 @@ export function MultiParticipantOverview({
         participantForEvent={participantForEvent}
         colorForEvent={(event) => eventContext.get(event.id)?.participant.profileColor}
         excludedParticipantIds={excludedParticipantIds}
+        excludedRoutineIds={historyFilters.excludedRoutineIds}
+        excludedStatuses={historyFilters.excludedStatuses}
         onToggleParticipant={(participantId) => setExcludedParticipantIds((current) => (
           current.includes(participantId)
             ? current.filter((item) => item !== participantId)

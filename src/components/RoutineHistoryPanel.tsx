@@ -46,6 +46,77 @@ export const groupedVerificationStatuses = (statuses: VerificationStatus[]) => {
   return Array.from(groups, ([status, eventStatuses]) => ({ status, eventStatuses }));
 };
 
+export function useHistoryFilters(titleId: string) {
+  const [excludedStatuses, setExcludedStatuses] = useState<VerificationStatus[]>(() => readStoredFilters(titleId).statuses);
+  const [excludedRoutineIds, setExcludedRoutineIds] = useState<string[]>(() => readStoredFilters(titleId).routineIds);
+  useEffect(() => {
+    writeUiStorageString(historyFilterStorageKey(titleId), JSON.stringify({
+      statuses: excludedStatuses,
+      routineIds: excludedRoutineIds,
+    }));
+  }, [excludedRoutineIds, excludedStatuses, titleId]);
+  return {
+    excludedStatuses,
+    excludedRoutineIds,
+    toggleRoutine: (routineId: string) => setExcludedRoutineIds((current) =>
+      current.includes(routineId) ? current.filter((item) => item !== routineId) : [...current, routineId]),
+    toggleStatuses: (statuses: VerificationStatus[]) => setExcludedStatuses((current) => {
+      const allActive = statuses.every((status) => !current.includes(status));
+      return allActive
+        ? Array.from(new Set([...current, ...statuses]))
+        : current.filter((status) => !statuses.includes(status));
+    }),
+  };
+}
+
+export function HistoryFilterControls({
+  assignments,
+  events,
+  locale,
+  excludedRoutineIds,
+  excludedStatuses,
+  onToggleRoutine,
+  onToggleStatuses,
+  t,
+}: {
+  assignments: RoutineAssignment[];
+  events: VerificationEvent[];
+  locale: Locale;
+  excludedRoutineIds: string[];
+  excludedStatuses: VerificationStatus[];
+  onToggleRoutine: (routineId: string) => void;
+  onToggleStatuses: (statuses: VerificationStatus[]) => void;
+  t: (key: MessageKey) => string;
+}) {
+  const statuses = groupedVerificationStatuses(Array.from(new Set(
+    withResolvedEventStatuses(coalesceActivePendingEventsByRoutine(events, Date.now()), Date.now())
+      .map((event) => event.status),
+  )));
+  return (
+    <div className="history-filter-controls">
+      <div className="filter-group">
+        <span>{t('filterByRoutine')}</span>
+        <div className="filter-chips">
+          {assignments.map((assignment) => {
+            const visual = presentRoutine(assignment.routine, locale);
+            const active = !excludedRoutineIds.includes(assignment.routineId);
+            return <button type="button" key={assignment.id} aria-pressed={active} className={active ? 'active' : ''} onClick={() => onToggleRoutine(assignment.routineId)}>{visual.name}</button>;
+          })}
+        </div>
+      </div>
+      <div className="filter-group">
+        <span>{t('filterByStatus')}</span>
+        <div className="filter-chips">
+          {statuses.map(({ status, eventStatuses }) => {
+            const active = eventStatuses.every((eventStatus) => !excludedStatuses.includes(eventStatus));
+            return <button type="button" key={status} aria-pressed={active} className={`filter-status-${status} ${active ? 'active' : ''}`} onClick={() => onToggleStatuses(eventStatuses)}>{t(statusMessageKey(status))}</button>;
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function RoutineHistoryPanel({
   assignments,
   events,
@@ -59,6 +130,8 @@ export function RoutineHistoryPanel({
   participantForEvent,
   colorForEvent,
   excludedParticipantIds = [],
+  excludedRoutineIds,
+  excludedStatuses,
   onToggleParticipant,
   t,
 }: {
@@ -74,11 +147,11 @@ export function RoutineHistoryPanel({
   participantForEvent?: (event: VerificationEvent) => { id: string; displayName: string; profileColor: string } | undefined;
   colorForEvent?: (event: VerificationEvent) => string | undefined;
   excludedParticipantIds?: string[];
+  excludedRoutineIds: string[];
+  excludedStatuses: VerificationStatus[];
   onToggleParticipant?: (participantId: string) => void;
   t: (key: MessageKey) => string;
 }) {
-  const [excludedStatuses, setExcludedStatuses] = useState<VerificationStatus[]>(() => readStoredFilters(titleId).statuses);
-  const [excludedRoutineIds, setExcludedRoutineIds] = useState<string[]>(() => readStoredFilters(titleId).routineIds);
   const [requestingEventId, setRequestingEventId] = useState<string>();
   const [hiddenRequestEventIds, setHiddenRequestEventIds] = useState<Record<string, string>>({});
   const formatterLocale = languageTag(locale);
@@ -109,32 +182,8 @@ export function RoutineHistoryPanel({
     });
     return ids;
   }, [sortedEvents]);
-  const statusFilters = useMemo(
-    () => groupedVerificationStatuses(Array.from(new Set(sortedEvents.map((event) => event.status)))),
-    [sortedEvents],
-  );
   const excludedStatusSet = useMemo(() => new Set(excludedStatuses), [excludedStatuses]);
   const excludedRoutineIdSet = useMemo(() => new Set(excludedRoutineIds), [excludedRoutineIds]);
-  useEffect(() => {
-    writeUiStorageString(historyFilterStorageKey(titleId), JSON.stringify({
-      statuses: excludedStatuses,
-      routineIds: excludedRoutineIds,
-    }));
-  }, [excludedRoutineIds, excludedStatuses, titleId]);
-  const toggleRoutineFilter = (routineId: string) => {
-    setExcludedRoutineIds((current) =>
-      current.includes(routineId)
-        ? current.filter((item) => item !== routineId)
-        : [...current, routineId]);
-  };
-  const toggleStatusFilter = (eventStatuses: VerificationStatus[]) => {
-    setExcludedStatuses((current) => {
-      const allActive = eventStatuses.every((status) => !current.includes(status));
-      return allActive
-        ? Array.from(new Set([...current, ...eventStatuses]))
-        : current.filter((status) => !eventStatuses.includes(status));
-    });
-  };
   const filtered = useMemo(() => sortedEvents.filter((event) =>
     !excludedStatusSet.has(event.status)
     && !excludedRoutineIdSet.has(event.routineId)
@@ -169,40 +218,19 @@ export function RoutineHistoryPanel({
 
   return (
     <section className="routine-history-panel" aria-label={t('recentHistory')}>
-      <section className="card history-filter-card" aria-label={t('historyFilters')}>
-            {participants?.length && onToggleParticipant ? (
-              <div className="filter-group">
-                <span>{t('filterByParticipant')}</span>
-                <div className="filter-chips">
-                  {participants.map((participant) => {
-                    const active = !excludedParticipantIds.includes(participant.id);
-                    return <button type="button" key={participant.id} aria-pressed={active} className={`participant-filter-chip${active ? ' active' : ''}`} style={{ '--profile-color': participant.profileColor } as CSSProperties} onClick={() => onToggleParticipant(participant.id)}>{participant.displayName}</button>;
-                  })}
-                </div>
-              </div>
-            ) : null}
-            <div className="filter-group">
-              <span>{t('filterByRoutine')}</span>
-              <div className="filter-chips">
-                {assignments.map((assignment) => {
-                  const visual = presentRoutine(assignment.routine, locale);
-                  const active = !excludedRoutineIds.includes(assignment.routineId);
-                  return <button type="button" key={assignment.id} aria-pressed={active} className={active ? 'active' : ''} onClick={() => toggleRoutineFilter(assignment.routineId)}>{visual.name}</button>;
-                })}
-              </div>
-            </div>
-            <div className="filter-group">
-              <span>{t('filterByStatus')}</span>
-              <div className="filter-chips">
-                {statusFilters.map(({ status, eventStatuses }) => {
-                  const active = eventStatuses.every((eventStatus) => !excludedStatuses.includes(eventStatus));
-                  return <button type="button" key={status} aria-pressed={active} className={`filter-status-${status} ${active ? 'active' : ''}`} onClick={() => toggleStatusFilter(eventStatuses)}>{t(statusMessageKey(status))}</button>;
-                })}
-              </div>
-            </div>
-      </section>
+      {participants?.length && onToggleParticipant ? <section className="card history-filter-card participant-history-filter-card" aria-label={t('filterByParticipant')}>
+        <div className="filter-group">
+          <span>{t('filterByParticipant')}</span>
+          <div className="filter-chips">
+            {participants.map((participant) => {
+              const active = !excludedParticipantIds.includes(participant.id);
+              return <button type="button" key={participant.id} aria-pressed={active} className={`participant-filter-chip${active ? ' active' : ''}`} style={{ '--profile-color': participant.profileColor } as CSSProperties} onClick={() => onToggleParticipant(participant.id)}>{participant.displayName}</button>;
+            })}
+          </div>
+        </div>
+      </section> : null}
 
-        <div className="section-heading history-results-heading"><h2>{t('historyResults')}</h2><span>{filtered.length}</span></div>
+      <div className="section-heading history-results-heading"><h2>{t('historyResults')}</h2><span>{filtered.length}</span></div>
       <div className="history-list parent-history-list">
             {filtered.map((event) => {
               const visual = presentationFor(event);
