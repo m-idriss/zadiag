@@ -498,6 +498,7 @@ describe('ParentDashboard', () => {
     expect(container.querySelectorAll('.responsible-state-card')).toHaveLength(1);
     expect(container.querySelector('.weekly-insight-card')).not.toBeNull();
     expect(container.textContent).toContain('No history yet');
+    expect(container.textContent).not.toContain('Recent history');
     expect(container.textContent).not.toContain('StatusAll');
     act(() => Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Choose a routine')?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(openRoutines).toHaveBeenCalled();
