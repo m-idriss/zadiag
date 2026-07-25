@@ -5,7 +5,7 @@ import { languageTag } from '../services/locale';
 import { Disclaimer } from '../components/Disclaimer';
 import { StatusPill } from '../components/StatusPill';
 import { AppIcon, routineIconName } from '../components/Icon';
-import { RoutineHistoryPanel } from '../components/RoutineHistoryPanel';
+import { HistoryFilterControls, RoutineHistoryPanel, useHistoryFilters } from '../components/RoutineHistoryPanel';
 import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } from '../components/AdherenceSummaryCard';
 import { UpcomingChecksSection } from '../components/UpcomingChecksSection';
 import { presentRoutine } from '../domain/routinePresentation';
@@ -54,6 +54,7 @@ export function ChildDashboard({
 }) {
   const [localSummaryRange, setLocalSummaryRange] = useState<SummaryRange>('day');
   const [expandedStatus, setExpandedStatus] = useState<'todo' | 'retry' | 'next' | undefined>('todo');
+  const historyFilters = useHistoryFilters('participant-history-title');
   const handledNotificationEventIdRef = useRef<string | undefined>(undefined);
   const summaryRange = controlledSummaryRange ?? localSummaryRange;
   const setSummaryRange = onSummaryRangeChange ?? setLocalSummaryRange;
@@ -249,8 +250,8 @@ export function ChildDashboard({
   const historySection = (
     <section className="today-section participant-history-section dashboard-summary-section" aria-labelledby="participant-summary-title">
       <h2 id="participant-summary-title">{t('overview')}</h2>
-      <AdherenceSummaryCard events={historyEvents} assignments={state.routineAssignments} locale={state.locale} subjectName={reportSubjectName} range={summaryRange} onRangeChange={setSummaryRange} t={t} />
-      <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedHistoryEvents} retryEvents={state.events} locale={state.locale} titleId="participant-history-title" onRetake={retake} onOpenEvent={onOpenHistoryEvent} t={t} />
+      <AdherenceSummaryCard events={historyEvents} assignments={state.routineAssignments} locale={state.locale} subjectName={reportSubjectName} range={summaryRange} onRangeChange={setSummaryRange} filters={<HistoryFilterControls assignments={state.routineAssignments} events={rangedHistoryEvents} locale={state.locale} excludedRoutineIds={historyFilters.excludedRoutineIds} excludedStatuses={historyFilters.excludedStatuses} onToggleRoutine={historyFilters.toggleRoutine} onToggleStatuses={historyFilters.toggleStatuses} t={t} />} t={t} />
+      <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedHistoryEvents} retryEvents={state.events} locale={state.locale} titleId="participant-history-title" excludedRoutineIds={historyFilters.excludedRoutineIds} excludedStatuses={historyFilters.excludedStatuses} onRetake={retake} onOpenEvent={onOpenHistoryEvent} t={t} />
     </section>
   );
   return (

@@ -67,15 +67,17 @@ describe('ParentDashboard', () => {
     const coreDashboard = container.querySelector('.parent-dashboard-overview-section');
     const operationalCards = container.querySelector('.parent-onboarding-card');
     const summaryCard = coreDashboard?.querySelector('.adherence-summary-card');
-    const filterCard = coreDashboard?.querySelector('.history-filter-card');
+    const filterDetails = coreDashboard?.querySelector('.summary-filtering');
     const resultsHeading = coreDashboard?.querySelector('.history-results-heading');
     expect(summaryCard).not.toBeNull();
-    expect(filterCard).not.toBeNull();
+    expect(filterDetails).not.toBeNull();
+    expect(filterDetails?.querySelector('summary')?.textContent).toBe('Filters');
+    expect((filterDetails as HTMLDetailsElement).open).toBe(false);
     expect(resultsHeading).not.toBeNull();
     expect(operationalCards).not.toBeNull();
     expect(Boolean(operationalCards!.compareDocumentPosition(coreDashboard!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
-    expect(Boolean(summaryCard!.compareDocumentPosition(filterCard!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
-    expect(Boolean(filterCard!.compareDocumentPosition(resultsHeading!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    expect(summaryCard!.contains(filterDetails!)).toBe(true);
+    expect(Boolean(summaryCard!.compareDocumentPosition(resultsHeading!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
     const detailedReport = container.querySelector<HTMLDetailsElement>('.detailed-reporting');
     expect(detailedReport?.open).toBe(false);
     expect(detailedReport?.querySelector('summary')?.textContent).toBe('Detailed report');
@@ -156,7 +158,7 @@ describe('ParentDashboard', () => {
     const collectiveSummary = container.querySelector('.adherence-summary-card');
     expect(Boolean(collectiveStatus!.compareDocumentPosition(collectiveWeekly!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
     expect(Boolean(collectiveWeekly!.compareDocumentPosition(collectiveSummary!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
-    expect(Array.from(container.querySelectorAll('.filter-group > span')).map((label) => label.textContent)).toEqual(['Participant', 'Routine', 'Status']);
+    expect(Array.from(container.querySelectorAll('.filter-group > span')).map((label) => label.textContent)).toEqual(['Routine', 'Status', 'Participant']);
     expect(container.textContent).toContain('Results');
     expect(container.querySelectorAll('.parent-history-row')).toHaveLength(2);
     const weekRange = Array.from(container.querySelectorAll<HTMLButtonElement>('.summary-range-toggle button'))
@@ -181,7 +183,7 @@ describe('ParentDashboard', () => {
     });
     expect(reviewParticipantCheck).toHaveBeenCalledWith('leo', 'leo-review', 'detected');
 
-    const leoFilter = Array.from(container.querySelectorAll<HTMLButtonElement>('.filter-group:first-child button'))
+    const leoFilter = Array.from(container.querySelectorAll<HTMLButtonElement>('.participant-history-filter-card button'))
       .find((button) => button.textContent === 'Leo');
     act(() => leoFilter?.click());
     expect(container.querySelectorAll('.parent-history-row')).toHaveLength(2);

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { adherencePeriodReport, eventsInSummaryRange, isSummaryRange, routineAnomalies, type SummaryRange } from '../domain/reporting';
 import type { Locale, RoutineAssignment, VerificationEvent, VerificationStatus } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
@@ -55,6 +55,7 @@ export function AdherenceSummaryCard({
   range,
   onRangeChange,
   detailedReportOpenSignal,
+  filters,
   t,
 }: {
   events: VerificationEvent[];
@@ -64,6 +65,7 @@ export function AdherenceSummaryCard({
   range: SummaryRange;
   onRangeChange: (range: SummaryRange) => void;
   detailedReportOpenSignal?: number;
+  filters?: ReactNode;
   t: (key: MessageKey) => string;
 }) {
   const selectedRange = ranges.find((item) => item.id === range) ?? ranges[0];
@@ -233,6 +235,12 @@ export function AdherenceSummaryCard({
           {reportDownloadState === 'error' ? <small className="request-feedback error">{t('reportDownloadError')}</small> : null}
         </div>
       </details>
+      {filters ? (
+        <details className="detailed-reporting summary-filtering">
+          <summary>{t('summaryFilters')}</summary>
+          <div className="detailed-reporting-content">{filters}</div>
+        </details>
+      ) : null}
     </section>
   );
 }

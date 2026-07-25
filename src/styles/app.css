@@ -615,6 +615,7 @@ button:disabled { cursor: not-allowed; }
 .detailed-reporting > summary { color: var(--color-text); font-size: 12px; font-weight: 850; cursor: pointer; }
 .detailed-reporting > summary:focus-visible { outline: 3px solid color-mix(in srgb, var(--color-primary) 35%, transparent); outline-offset: 3px; border-radius: 4px; }
 .detailed-reporting-content { display: grid; gap: 10px; margin-top: 8px; }
+.history-filter-controls { display: grid; gap: var(--block-padding-sm); }
 .routine-reporting { border-top: 1px solid var(--color-border); padding-top: 8px; }
 .routine-reporting > strong { color: var(--color-text); font-size: 12px; }
 .routine-reporting > div { display: grid; gap: 5px; margin-top: 7px; }
