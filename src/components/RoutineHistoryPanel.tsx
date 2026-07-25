@@ -161,7 +161,6 @@ export function RoutineHistoryPanel({
 
   return (
     <section className="routine-history-panel" aria-labelledby={titleId}>
-      <div className="section-heading parent-history-heading"><h2 id={titleId}>{t('recentHistory')}</h2></div>
       {sortedEvents.length ? (
         <>
           <section className="card history-filter-card" aria-label={t('historyFilters')}>
@@ -197,6 +196,7 @@ export function RoutineHistoryPanel({
             </div>
           </section>
 
+          <div className="section-heading parent-history-heading"><h2 id={titleId}>{t('recentHistory')}</h2></div>
           <div className="section-heading history-results-heading"><h2>{t('historyResults')}</h2><span>{filtered.length}</span></div>
           <div className="history-list parent-history-list">
             {filtered.map((event) => {
@@ -261,7 +261,10 @@ export function RoutineHistoryPanel({
           </div>
         </>
       ) : (
-        <EmptyState icon="time" title={t('noHistoryYet')} detail={t('noHistoryYetHint')} />
+        <>
+          <div className="section-heading parent-history-heading"><h2 id={titleId}>{t('recentHistory')}</h2></div>
+          <EmptyState icon="time" title={t('noHistoryYet')} detail={t('noHistoryYetHint')} />
+        </>
       )}
     </section>
   );

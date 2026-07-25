@@ -63,6 +63,15 @@ describe('ParentDashboard', () => {
     expect(container.textContent).not.toContain('StatusAll');
     expect(container.textContent).not.toContain('Monitoring plan');
     expect(container.textContent).not.toContain('Needs attention');
+    const coreDashboard = container.querySelector('.parent-dashboard-overview-section');
+    const summaryCard = coreDashboard?.querySelector('.adherence-summary-card');
+    const filterCard = coreDashboard?.querySelector('.history-filter-card');
+    const historyHeading = coreDashboard?.querySelector('.parent-history-heading');
+    expect(summaryCard).not.toBeNull();
+    expect(filterCard).not.toBeNull();
+    expect(historyHeading).not.toBeNull();
+    expect(Boolean(summaryCard!.compareDocumentPosition(filterCard!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    expect(Boolean(filterCard!.compareDocumentPosition(historyHeading!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
     const detailedReport = container.querySelector<HTMLDetailsElement>('.detailed-reporting');
     expect(detailedReport?.open).toBe(false);
     expect(detailedReport?.querySelector('summary')?.textContent).toBe('Detailed report');

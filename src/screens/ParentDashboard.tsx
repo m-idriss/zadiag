@@ -319,6 +319,7 @@ export function ParentDashboard({
       <section className="today-section participant-history-section dashboard-summary-section parent-dashboard-overview-section" aria-labelledby="responsible-summary-title">
         <h2 id="responsible-summary-title">{t('overview')}</h2>
         <AdherenceSummaryCard events={displayEvents} assignments={state.routineAssignments} locale={state.locale} subjectName={reportSubjectName} range={summaryRange} onRangeChange={setSummaryRange} detailedReportOpenSignal={weeklyReportOpenSignal} t={t} />
+        <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedRawEvents} locale={state.locale} titleId="responsible-history-title" colorForEvent={activeParticipantAccess ? () => profileColorFor(activeParticipantAccess.participant) : undefined} onRequestCheck={requestCheck} onOpenEvent={(event) => setDetailEventId(event.id)} t={t} />
       </section>
       {setupStep ? (
         <section className="card parent-onboarding-card" aria-labelledby="parent-onboarding-title">
@@ -642,9 +643,6 @@ export function ParentDashboard({
         />
       ) : null}
 
-      <section className="today-section participant-history-section parent-history-section">
-        <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedRawEvents} locale={state.locale} titleId="responsible-history-title" colorForEvent={activeParticipantAccess ? () => profileColorFor(activeParticipantAccess.participant) : undefined} onRequestCheck={requestCheck} onOpenEvent={(event) => setDetailEventId(event.id)} t={t} />
-      </section>
       {detailEvent ? <VerificationEventDetailDialog event={detailEvent} locale={state.locale} proofUrl={proofUrls[detailEvent.id]} getProofImageUrl={getProofImageUrl} reviewCheck={reviewCheck} requestCheck={requestCheck} onClose={() => setDetailEventId(undefined)} t={t} /> : null}
       </>}
     </div>
