@@ -748,7 +748,7 @@ button:disabled { cursor: not-allowed; }
 .filter-group > span { color: var(--color-text-muted); font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
 .filter-chips { display: flex; flex-wrap: wrap; gap: 7px; overflow: visible; padding-bottom: 0; scrollbar-width: none; }
 .filter-chips::-webkit-scrollbar { display: none; }
-.filter-chips button { flex: 0 1 auto; min-height: 32px; max-width: 100%; padding: 3px 12px; border: 1px solid transparent; border-radius: 11px; background: var(--color-control-surface); color: var(--color-text-muted); font-size: 12px; font-weight: 800; line-height: 1.05; white-space: normal; }
+.filter-chips button { flex: 0 1 auto; min-height: 28px; max-width: 100%; padding: 1px 12px; border: 1px solid transparent; border-radius: 9px; background: var(--color-control-surface); color: var(--color-text-muted); font-size: 12px; font-weight: 800; line-height: 1.05; white-space: normal; }
 .filter-chips button.active { background: var(--color-text); color: var(--color-surface-solid); box-shadow: 0 4px 12px rgba(16,42,67,.16); }
 .filter-chips .filter-status-detected,
 .filter-chips .filter-status-answered { background: var(--color-primary-soft); color: var(--color-primary); }
@@ -2166,8 +2166,8 @@ button:disabled { cursor: not-allowed; }
   font-weight: 700;
 }
 .filter-chips button {
-  min-height: 32px;
-  padding: 3px 8px;
+  min-height: 28px;
+  padding: 1px 8px;
   font-size: 11px;
   font-weight: 700;
 }
