@@ -159,11 +159,17 @@ export function RoutineHistoryPanel({
     }
   };
 
+  if (!sortedEvents.length) {
+    return (
+      <section className="routine-history-panel" aria-label={t('recentHistory')}>
+        <EmptyState icon="time" title={t('noHistoryYet')} detail={t('noHistoryYetHint')} />
+      </section>
+    );
+  }
+
   return (
     <section className="routine-history-panel" aria-labelledby={titleId}>
-      {sortedEvents.length ? (
-        <>
-          <section className="card history-filter-card" aria-label={t('historyFilters')}>
+      <section className="card history-filter-card" aria-label={t('historyFilters')}>
             {participants?.length && onToggleParticipant ? (
               <div className="filter-group">
                 <span>{t('filterByParticipant')}</span>
@@ -194,11 +200,11 @@ export function RoutineHistoryPanel({
                 })}
               </div>
             </div>
-          </section>
+      </section>
 
-          <div className="section-heading parent-history-heading"><h2 id={titleId}>{t('recentHistory')}</h2></div>
-          <div className="section-heading history-results-heading"><h2>{t('historyResults')}</h2><span>{filtered.length}</span></div>
-          <div className="history-list parent-history-list">
+        <div className="section-heading parent-history-heading"><h2 id={titleId}>{t('recentHistory')}</h2></div>
+        <div className="section-heading history-results-heading"><h2>{t('historyResults')}</h2><span>{filtered.length}</span></div>
+      <div className="history-list parent-history-list">
             {filtered.map((event) => {
               const visual = presentationFor(event);
               const participantColor = colorForEvent?.(event);
@@ -258,14 +264,7 @@ export function RoutineHistoryPanel({
               );
             })}
             {!filtered.length && <p className="empty-state">{t('noHistoryMatches')}</p>}
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="section-heading parent-history-heading"><h2 id={titleId}>{t('recentHistory')}</h2></div>
-          <EmptyState icon="time" title={t('noHistoryYet')} detail={t('noHistoryYetHint')} />
-        </>
-      )}
+      </div>
     </section>
   );
 }
