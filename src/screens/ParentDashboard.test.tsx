@@ -218,6 +218,9 @@ describe('ParentDashboard', () => {
     act(() => activeStatus?.click());
     const leoCard = Array.from(container.querySelectorAll<HTMLElement>('.collective-operational-section .parent-active-check-card'))
       .find((card) => card.textContent?.includes('Leo'));
+    expect(leoCard?.classList.contains('parent-history-row')).toBe(true);
+    expect(leoCard?.classList.contains('has-participant-accent')).toBe(true);
+    expect(leoCard?.style.getPropertyValue('--history-participant-color')).not.toBe('');
     await act(async () => {
       leoCard?.querySelector<HTMLButtonElement>('button')?.click();
     });
