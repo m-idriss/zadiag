@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import type { Locale, ParticipantNotificationSource, RoutineAssignment, VerificationEvent } from '../domain/models';
 import { profileColorFor } from '../domain/profileColor';
 import { withResolvedEventStatuses } from '../domain/adherence';
@@ -47,6 +47,7 @@ export function MultiParticipantOverview({
   now,
   onRangeChange,
   onSelectParticipant,
+  contextControl,
   t,
 }: {
   sources: ParticipantNotificationSource[];
@@ -55,6 +56,7 @@ export function MultiParticipantOverview({
   now: number;
   onRangeChange: (range: SummaryRange) => void;
   onSelectParticipant: (participantId: string) => void;
+  contextControl?: ReactNode;
   t: (key: MessageKey) => string;
 }) {
   const { assignments, events, eventContext } = useMemo(() => collectiveDashboardData(sources), [sources]);
@@ -86,6 +88,7 @@ export function MultiParticipantOverview({
         onRangeChange={onRangeChange}
         t={t}
       />
+      {contextControl}
       <RoutineHistoryPanel
         assignments={visibleAssignments}
         events={rangedEvents}
