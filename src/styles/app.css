@@ -1153,19 +1153,57 @@ button:disabled { cursor: not-allowed; }
 .routine-add-switcher { position: fixed; z-index: 13; bottom: calc(var(--bottom-nav-offset) + var(--bottom-nav-block-size) + var(--bottom-nav-gap)); left: 50%; width: min(calc(100% - 36px), 604px); transform: translateX(-50%); }
 .routine-add-actions {
   display: grid;
-  grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr);
-  gap: 6px;
-  padding: 6px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  padding: 5px;
   border: 1px solid color-mix(in srgb, var(--color-surface-solid) 72%, var(--color-border));
-  border-radius: 20px;
+  border-radius: 21px;
   background: color-mix(in srgb, var(--color-surface-solid) 91%, transparent);
-  box-shadow: var(--shadow-sm);
+  box-shadow:
+    0 12px 34px color-mix(in srgb, var(--color-text) 9%, transparent),
+    inset 0 1px color-mix(in srgb, var(--color-surface-solid) 86%, transparent);
   backdrop-filter: blur(18px) saturate(140%);
   -webkit-backdrop-filter: blur(18px) saturate(140%);
 }
-.routine-library-dock-button { min-width: 0; min-height: calc(var(--routine-action-block-size) - 12px); display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 10px 12px; border: 0; border-radius: var(--radius-control); background: var(--color-subtle-action); color: var(--color-text); font-weight: 850; }
-.routines-add-dock-button { width: 100%; min-height: calc(var(--routine-action-block-size) - 12px); margin: 0; border: 0; background: var(--color-text); color: var(--color-surface-solid); box-shadow: none; }
-.routines-add-dock-button .app-icon { font-size: 20px; }
+.routine-add-actions > .routine-library-dock-button,
+.routine-add-actions > .routines-add-dock-button {
+  width: 100%;
+  min-width: 0;
+  min-height: calc(var(--routine-action-block-size) - 10px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1;
+  transition: border-color .18s ease, background .18s ease, box-shadow .18s ease, transform .16s ease;
+}
+.routine-add-actions > .routine-library-dock-button {
+  border-color: color-mix(in srgb, var(--color-text) 5%, transparent);
+  background: linear-gradient(145deg, var(--color-surface-solid), var(--color-subtle-action));
+  color: var(--color-text);
+  box-shadow: inset 0 1px color-mix(in srgb, var(--color-surface-solid) 88%, transparent);
+}
+.routine-add-actions > .routine-library-dock-button[aria-expanded="true"] {
+  border-color: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  background: color-mix(in srgb, var(--color-primary-soft) 70%, var(--color-surface-solid));
+  color: var(--color-primary);
+}
+.routine-add-actions > .routines-add-dock-button {
+  border-color: color-mix(in srgb, var(--color-surface-solid) 10%, transparent);
+  background: linear-gradient(145deg, color-mix(in srgb, var(--color-text) 92%, var(--color-primary)), var(--color-text));
+  color: var(--color-surface-solid);
+  box-shadow:
+    0 6px 15px color-mix(in srgb, var(--color-text) 15%, transparent),
+    inset 0 1px color-mix(in srgb, var(--color-surface-solid) 12%, transparent);
+}
+.routine-add-actions > button .app-icon { font-size: 20px; }
+.routine-add-actions > button:active:not(:disabled) { transform: scale(.98); }
 .routine-add-switcher .routine-catalog-popover { position: absolute; right: 0; bottom: calc(100% + 10px); left: 0; z-index: 2; width: 100%; margin: 0; background: var(--color-surface-solid); box-shadow: 0 22px 52px rgba(16,42,67,.18); }
 .today-task { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .today-task.actionable { border-color: rgba(29, 138, 122, .3); box-shadow: 0 14px 32px rgba(29, 138, 122, .1); }
