@@ -13,6 +13,21 @@ import { languageTag } from '../services/locale';
 const eventTimestamp = (event: VerificationEvent) =>
   Date.parse(event.submittedAt ?? event.capturedAt ?? event.requestedAt);
 
+const historyStatusPriority: Record<VerificationStatus, number> = {
+  uncertain: 0,
+  not_detected: 0,
+  pending: 1,
+  analyzing: 1,
+  detected: 2,
+  answered: 2,
+  missed: 3,
+  expired: 3,
+};
+
+export const compareHistoryEvents = (left: VerificationEvent, right: VerificationEvent) =>
+  historyStatusPriority[left.status] - historyStatusPriority[right.status]
+  || eventTimestamp(right) - eventTimestamp(left);
+
 const hiddenReasonCodes = new Set(['analysis_unavailable', 'self_validated']);
 
 const displayReason = (reason?: string) =>
@@ -169,7 +184,7 @@ export function RoutineHistoryPanel({
     presentRoutine(assignment.routine, locale),
   ])), [assignments, locale]);
   const sortedEvents = useMemo(
-    () => [...displayEvents].sort((a, b) => eventTimestamp(b) - eventTimestamp(a)),
+    () => [...displayEvents].sort(compareHistoryEvents),
     [displayEvents],
   );
   const latestMissedEventIds = useMemo(() => {
