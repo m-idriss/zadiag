@@ -3,7 +3,8 @@ import type { AppState, MonitoringPlan, ReviewCheckDecision, VerificationEvent }
 import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
 import { CodeBox } from '../components/CodeBox';
-import { HistoryFilterControls, RoutineHistoryPanel, useHistoryFilters } from '../components/RoutineHistoryPanel';
+import { RoutineHistoryPanel } from '../components/RoutineHistoryPanel';
+import { HistoryFilterControls, useHistoryFilters } from '../components/HistoryFilters';
 import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } from '../components/AdherenceSummaryCard';
 import { UpcomingChecksSection } from '../components/UpcomingChecksSection';
 import { presentRoutine } from '../domain/routinePresentation';

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { VerificationEvent, VerificationStatus } from '../domain/models';
-import { compareHistoryEvents, groupedVerificationStatuses } from './RoutineHistoryPanel';
+import { compareHistoryEvents } from './RoutineHistoryPanel';
 
 const event = (id: string, status: VerificationStatus, requestedAt: string): VerificationEvent => ({
   id,
@@ -11,14 +11,7 @@ const event = (id: string, status: VerificationStatus, requestedAt: string): Ver
   status,
 });
 
-describe('groupedVerificationStatuses', () => {
-  it('offers one validated filter for photo and structured-response successes', () => {
-    expect(groupedVerificationStatuses(['detected', 'answered', 'missed'])).toEqual([
-      { status: 'detected', eventStatuses: ['detected', 'answered'] },
-      { status: 'missed', eventStatuses: ['missed'] },
-    ]);
-  });
-
+describe('compareHistoryEvents', () => {
   it('puts items to review or follow before completed and exceeded items', () => {
     const older = '2026-07-25T08:00:00.000Z';
     const newer = '2026-07-26T08:00:00.000Z';
