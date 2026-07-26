@@ -4,7 +4,8 @@ import { profileColorFor } from '../domain/profileColor';
 import { isReviewableVerification, withResolvedEventStatuses } from '../domain/adherence';
 import type { MessageKey } from '../services/i18n';
 import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } from './AdherenceSummaryCard';
-import { HistoryFilterControls, RoutineHistoryPanel, useHistoryFilters } from './RoutineHistoryPanel';
+import { RoutineHistoryPanel } from './RoutineHistoryPanel';
+import { HistoryFilterControls, useHistoryFilters } from './HistoryFilters';
 import { DashboardStatusSummary } from './DashboardStatusSummary';
 import { activePendingEvents, presentedAwaitingRoutineChecks, presentedUpcomingRoutineChecks } from '../domain/dashboardChecks';
 import { participantAccessCan } from '../domain/participantAccess';
@@ -96,7 +97,6 @@ export function MultiParticipantOverview({
     !excludedParticipantIds.some((participantId) => assignment.routineId.startsWith(`${participantId}:`))
   )), [assignments, excludedParticipantIds]);
   const rangedEvents = useMemo(() => filterEventsBySummaryRange(visibleEvents, range), [range, visibleEvents]);
-  const participantForEvent = (event: VerificationEvent) => eventContext.get(event.id)?.participant;
   const operationalSources = useMemo(() => sources.map((source) => {
     const access = participantAccess?.find((entry) => entry.participant.id === source.participant.id);
     const participant = {
@@ -306,7 +306,6 @@ export function MultiParticipantOverview({
         locale={locale}
         titleId="collective-history-title"
         participants={participants}
-        participantForEvent={participantForEvent}
         colorForEvent={(event) => eventContext.get(event.id)?.participant.profileColor}
         excludedParticipantIds={excludedParticipantIds}
         excludedRoutineIds={historyFilters.excludedRoutineIds}
