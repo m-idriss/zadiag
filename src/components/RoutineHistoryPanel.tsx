@@ -19,8 +19,8 @@ const historyStatusPriority: Record<VerificationStatus, number> = {
   analyzing: 1,
   detected: 2,
   answered: 2,
-  missed: 3,
-  expired: 3,
+  missed: 2,
+  expired: 2,
 };
 
 export const compareHistoryEvents = (left: VerificationEvent, right: VerificationEvent) =>

@@ -12,15 +12,16 @@ const event = (id: string, status: VerificationStatus, requestedAt: string): Ver
 });
 
 describe('compareHistoryEvents', () => {
-  it('puts items to review or follow before completed and exceeded items', () => {
+  it('puts actionable items first, then merges every completed item by date', () => {
     const older = '2026-07-25T08:00:00.000Z';
     const newer = '2026-07-26T08:00:00.000Z';
+    const newest = '2026-07-27T08:00:00.000Z';
     const events = [
       event('expired', 'expired', newer),
       event('validated', 'detected', newer),
       event('pending', 'pending', older),
       event('review', 'uncertain', older),
-      event('missed', 'missed', newer),
+      event('missed', 'missed', newest),
       event('analyzing', 'analyzing', newer),
       event('rejected', 'not_detected', newer),
       event('answered', 'answered', older),
@@ -31,10 +32,10 @@ describe('compareHistoryEvents', () => {
       'review',
       'analyzing',
       'pending',
+      'missed',
+      'expired',
       'validated',
       'answered',
-      'expired',
-      'missed',
     ]);
   });
 });
