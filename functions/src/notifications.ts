@@ -138,6 +138,28 @@ interface ReviewNotificationPayload {
   path: string;
 }
 
+interface MissedCheckNotificationInput {
+  participantId: string;
+  checkId: string;
+  routineId: string;
+  routineName: string;
+  routineNames?: Partial<Record<NotificationLocale, string>>;
+  routineIcon?: string;
+  locale?: string;
+}
+
+interface MissedCheckNotificationPayload {
+  version: 2;
+  kind: 'check-missed';
+  participantId: string;
+  checkId: string;
+  routineId: string;
+  tag: string;
+  title: string;
+  body: string;
+  path: string;
+}
+
 interface TestNotificationInput {
   locale?: string;
   role?: 'child' | 'parent';
@@ -197,6 +219,26 @@ export const buildReviewNotificationPayload = (input: ReviewNotificationInput): 
     tag: `review:${input.checkId}`,
     title: locale === 'fr' ? `${titlePrefix} · à vérifier` : `${titlePrefix} · review`,
     body: locale === 'fr' ? 'Une preuve attend votre validation.' : 'A proof needs your review.',
+    path: `/?open=review&participant=${encodeURIComponent(input.participantId)}&event=${encodeURIComponent(input.checkId)}`,
+  };
+};
+
+export const buildMissedCheckNotificationPayload = (
+  input: MissedCheckNotificationInput,
+): MissedCheckNotificationPayload => {
+  const locale = normalizeNotificationLocale(input.locale);
+  const titlePrefix = notificationRoutineLabel(input, locale);
+  return {
+    version: 2,
+    kind: 'check-missed',
+    participantId: input.participantId,
+    checkId: input.checkId,
+    routineId: input.routineId,
+    tag: `missed:${input.checkId}`,
+    title: locale === 'fr' ? `${titlePrefix} · manqué` : `${titlePrefix} · missed`,
+    body: locale === 'fr'
+      ? 'Aucune preuve reçue dans le délai prévu.'
+      : 'No proof was received before the deadline.',
     path: `/?open=review&participant=${encodeURIComponent(input.participantId)}&event=${encodeURIComponent(input.checkId)}`,
   };
 };

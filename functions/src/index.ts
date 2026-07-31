@@ -11,7 +11,7 @@ import { assertChildName, createLinkCode, createRecoveryCode, createRelationship
 import { analyzePhotoChecklistWithGemini, analyzeWithGemini, isCurrentAnalysisAttempt, parseImageDataUrl, routeAnalysisStatusForReview, unavailablePhotoChecklistAnalysis, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
 import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema, plannedCheckDispatchSchedule, shouldAutoDispatchCheck } from './planning.js';
 import { applyPhotoChecklistReview, challengeForAssignment, createDefaultRoutineAssignment, createDraftRoutineAssignment, createRoutineAssignment, createRoutineAssignmentVersionChange, DEFAULT_ROUTINE_ID, isRoutineValidationMode, parseRoutineResponseSubmission, routineAssignmentProvenance, routineFromCatalog, RoutineResponseInputError, shouldCreateDefaultRoutineAssignment, type PhotoChecklistItemResult, type PhotoChecklistReviewDecision, type RoutineAssignmentDocument, type RoutineDocument, type RoutineResponseDefinition } from './routines.js';
-import { buildCheckNotificationPayload, buildDeclarativePushPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription, notificationWindowIsOpen, type SyntheticReceiptPayload } from './notifications.js';
+import { buildCheckNotificationPayload, buildDeclarativePushPayload, buildMissedCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription, notificationWindowIsOpen, type SyntheticReceiptPayload } from './notifications.js';
 import { isCheckRequestRateLimited } from './reminders.js';
 import { recordAuditEvent, recordJourneyEvent, type JourneyStage } from './audit.js';
 import { expiredPendingCheckCleanupUpdate, shouldDeleteProofAfterReview, staleCleanupCutoffs } from './cleanup.js';
@@ -744,13 +744,31 @@ const sendReviewPushNotification = async (
   return sendPushPayload(subscriptionDocument, payload);
 };
 
+const sendMissedCheckPushNotification = async (
+  subscriptionDocument: PushNotificationDocument,
+  check: { checkId: string; routineId: string } & RoutineNotificationNames,
+): Promise<PushDispatchResult> => {
+  if (!pushRecipientRoles(subscriptionDocument).includes('parent')) return 'skipped';
+  const subscription = subscriptionDocument.data() as { locale?: string } | undefined;
+  const payload = buildMissedCheckNotificationPayload({
+    participantId: subscriptionDocument.ref.parent.parent!.id,
+    checkId: check.checkId,
+    routineId: check.routineId,
+    routineName: check.routineName,
+    routineNames: check.routineNames,
+    routineIcon: check.routineIcon,
+    locale: subscription?.locale,
+  });
+  return sendPushPayload(subscriptionDocument, payload);
+};
+
 const dispatchPushNotifications = async (
   subscriptions: PushNotificationDocument[],
   context: {
     familyId: string;
     checkId?: string;
     routineId?: string;
-    notificationType: 'check' | 'review' | 'test';
+    notificationType: 'check' | 'missed' | 'review' | 'test';
   },
   dispatch: (document: PushNotificationDocument) => Promise<PushDispatchResult>,
 ): Promise<PushDispatchSummary> => {
@@ -851,6 +869,22 @@ const sendReviewPushNotifications = async (
     routineId: check.routineId,
     notificationType: 'review',
   }, (document) => sendReviewPushNotification(document, check));
+};
+
+const sendMissedCheckPushNotifications = async (
+  aggregateRef: FirebaseFirestore.DocumentReference,
+  check: { checkId: string; routineId: string } & RoutineNotificationNames,
+): Promise<PushDispatchSummary> => {
+  const subscriptions = await aggregateRef.collection('pushSubscriptions').get();
+  if (!subscriptions.empty) {
+    webpush.setVapidDetails('https://www.zadiag.com', vapidPublicKey.value(), vapidPrivateKey.value());
+  }
+  return dispatchPushNotifications(subscriptions.docs, {
+    familyId: aggregateRef.id,
+    checkId: check.checkId,
+    routineId: check.routineId,
+    notificationType: 'missed',
+  }, (document) => sendMissedCheckPushNotification(document, check));
 };
 
 const getRoutineNotificationNames = (
@@ -3056,6 +3090,54 @@ const aggregateHasActiveParticipant = async (aggregate: FirebaseFirestore.QueryD
     && (membership.data().role === 'participant' || membership.data().label === 'self')
   ));
 };
+
+export const dispatchMissedCheckNotifications = onSchedule({
+  region,
+  schedule: plannedCheckDispatchSchedule,
+  timeZone: 'UTC',
+  secrets: [vapidPrivateKey, vapidPublicKey],
+}, async () => {
+  const now = new Date();
+  const expiredPendingChecks = await db.collectionGroup('checks')
+    .where('status', '==', 'pending')
+    .where('expiresAt', '<=', now.toISOString())
+    .limit(200)
+    .get();
+  const results = await Promise.allSettled(expiredPendingChecks.docs.map(async (checkDocument) => {
+    const check = await db.runTransaction(async (transaction) => {
+      const freshCheck = await transaction.get(checkDocument.ref);
+      const data = freshCheck.data();
+      if (!freshCheck.exists
+        || data?.status !== 'pending'
+        || Date.parse(String(data.expiresAt ?? '')) > now.getTime()) return undefined;
+      transaction.update(freshCheck.ref, expiredPendingCheckCleanupUpdate(now));
+      return {
+        checkId: freshCheck.id,
+        routineId: String(data.routineId ?? ''),
+      };
+    });
+    if (!check?.routineId) return;
+    const aggregateRef = checkDocument.ref.parent.parent;
+    if (!aggregateRef) return;
+    const assignment = await aggregateRef.collection('routineAssignments').doc(check.routineId).get();
+    await sendMissedCheckPushNotifications(aggregateRef, {
+      ...check,
+      ...getRoutineNotificationNames(assignment.data(), check.routineId),
+    });
+  }));
+  results.forEach((result, index) => {
+    if (result.status === 'fulfilled') return;
+    const check = expiredPendingChecks.docs[index];
+    reportOperationalAlert({
+      kind: 'scheduler_dispatch_failed',
+      familyId: check?.ref.parent.parent?.id,
+      checkId: check?.id,
+      routineId: String(check?.data().routineId ?? ''),
+      details: { phase: 'missed_check_notification' },
+      error: result.reason,
+    });
+  });
+});
 
 export const dispatchPlannedChecks = onSchedule({
   region,
