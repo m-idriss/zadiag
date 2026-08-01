@@ -14,10 +14,14 @@ interface FirestoreIndex {
 
 const indexes = JSON.parse(readFileSync('firestore.indexes.json', 'utf8')) as { indexes: FirestoreIndex[] };
 
-const hasIndex = (collectionGroup: string, fields: FirestoreIndexField[]) =>
+const hasIndex = (
+  collectionGroup: string,
+  fields: FirestoreIndexField[],
+  queryScope = 'COLLECTION',
+) =>
   indexes.indexes.some((index) =>
     index.collectionGroup === collectionGroup
-    && index.queryScope === 'COLLECTION'
+    && index.queryScope === queryScope
     && JSON.stringify(index.fields) === JSON.stringify(fields));
 
 describe('Firestore indexes', () => {
@@ -36,6 +40,6 @@ describe('Firestore indexes', () => {
     expect(hasIndex('checks', [
       { fieldPath: 'status', order: 'ASCENDING' },
       { fieldPath: 'expiresAt', order: 'ASCENDING' },
-    ])).toBe(true);
+    ], 'COLLECTION_GROUP')).toBe(true);
   });
 });
