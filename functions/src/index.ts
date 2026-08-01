@@ -14,7 +14,7 @@ import { applyPhotoChecklistReview, challengeForAssignment, createDefaultRoutine
 import { buildCheckNotificationPayload, buildDeclarativePushPayload, buildMissedCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription, notificationWindowIsOpen, type SyntheticReceiptPayload } from './notifications.js';
 import { isCheckRequestRateLimited } from './reminders.js';
 import { recordAuditEvent, recordJourneyEvent, type JourneyStage } from './audit.js';
-import { expiredPendingCheckCleanupUpdate, shouldDeleteProofAfterReview, staleCleanupCutoffs } from './cleanup.js';
+import { expiredPendingCheckCleanupUpdate, shouldDeleteProofAfterReview, shouldNotifyMissedCheck, staleCleanupCutoffs } from './cleanup.js';
 import { reportOperationalAlert, reportOperationalEvent, reportOperationalRecovery } from './observability.js';
 import { claimRewardForSuccessfulTransition, cleanupExpiredRewardSecrets, deleteRoutineRewardSecrets, rewardClaimForReveal, rewardCodeDocumentId, rewardPoolInput } from './rewards.js';
 import { shouldRecoverSyntheticPush } from './syntheticMonitor.js';
@@ -3114,9 +3114,10 @@ export const dispatchMissedCheckNotifications = onSchedule({
       return {
         checkId: freshCheck.id,
         routineId: String(data.routineId ?? ''),
+        notify: shouldNotifyMissedCheck(data.expiresAt, now),
       };
     });
-    if (!check?.routineId) return;
+    if (!check?.routineId || !check.notify) return;
     const aggregateRef = checkDocument.ref.parent.parent;
     if (!aggregateRef) return;
     const assignment = await aggregateRef.collection('routineAssignments').doc(check.routineId).get();
