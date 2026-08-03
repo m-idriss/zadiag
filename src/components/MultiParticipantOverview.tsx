@@ -17,6 +17,7 @@ import { WeeklyInsightCard } from './WeeklyInsightCard';
 import { ListRow } from './ui';
 import { UpcomingCheckActionMenu } from './UpcomingCheckActionMenu';
 import { VerificationEventDetailDialog } from './VerificationEventDetailDialog';
+import { ProofLightbox } from './ProofLightbox';
 
 type CollectiveParticipant = { id: string; displayName: string; profileColor: string };
 type CollectiveEventContext = { participant: CollectiveParticipant; event: VerificationEvent };
@@ -92,6 +93,7 @@ export function MultiParticipantOverview({
   const [proofUrls, setProofUrls] = useState<Record<string, string>>({});
   const [proofErrors, setProofErrors] = useState<Record<string, boolean>>({});
   const [detailEventId, setDetailEventId] = useState<string>();
+  const [enlargedProof, setEnlargedProof] = useState<{ participantId: string; eventId: string; url: string; canReview: boolean }>();
   const historyFilters = useHistoryFilters('collective-history-title');
   const participants = sources.map((source) => ({
     id: source.participant.id,
@@ -172,15 +174,17 @@ export function MultiParticipantOverview({
     }
   };
   const review = async (participantId: string, eventId: string, decision: ReviewCheckDecision) => {
-    if (!reviewParticipantCheck || reviewingKey) return;
+    if (!reviewParticipantCheck || reviewingKey) return false;
     const key = `${participantId}:${eventId}`;
     setReviewingKey(key);
     setActionError(undefined);
     try {
       await reviewParticipantCheck(participantId, eventId, decision);
+      return true;
     } catch (error) {
       console.error(error);
       setActionError('review');
+      return false;
     } finally {
       setReviewingKey(undefined);
     }
@@ -257,9 +261,16 @@ export function MultiParticipantOverview({
               return (
                 <article className="card parent-review-card" key={key}>
                   <div className="parent-review-main">
-                    {getParticipantProofImageUrl ? <div className="parent-review-image">{proofUrls[key]
-                      ? <img src={proofUrls[key]} alt={t('responsibleReviewImageAlt')} />
-                      : <div role="status">{proofErrors[key] ? t('responsibleReviewImageError') : t('loadingProofImage')}</div>}</div> : null}
+                    {getParticipantProofImageUrl ? proofUrls[key] ? (
+                      <button
+                        type="button"
+                        className="parent-review-image parent-review-image-button"
+                        aria-label={t('responsibleReviewImageAlt')}
+                        onClick={() => setEnlargedProof({ participantId: source.participant.id, eventId: event.id, url: proofUrls[key], canReview: source.canReview })}
+                      >
+                        <img src={proofUrls[key]} alt={t('responsibleReviewImageAlt')} />
+                      </button>
+                    ) : <div className="parent-review-image"><div role="status">{proofErrors[key] ? t('responsibleReviewImageError') : t('loadingProofImage')}</div></div> : null}
                     <div className="parent-review-copy"><strong>{presentation.name}</strong><small>{source.participant.displayName}</small>{event.reason ? <p>{event.reason}</p> : null}</div>
                     <div className="parent-review-actions">
                       {source.canReview ? <button type="button" className="parent-review-button reject" aria-label={t('responsibleReviewReject')} disabled={Boolean(reviewingKey)} onClick={() => { void review(source.participant.id, event.id, 'not_detected'); }}><AppIcon name="close" /></button> : null}
@@ -272,6 +283,20 @@ export function MultiParticipantOverview({
             {actionError === 'review' ? <p className="request-feedback error" role="alert">{t('responsibleReviewError')}</p> : null}
           </div>
         </section>
+      ) : null}
+      {enlargedProof ? (
+        <ProofLightbox
+          src={enlargedProof.url}
+          alt={t('responsibleReviewImageAlt')}
+          closeLabel={t('close')}
+          onClose={() => setEnlargedProof(undefined)}
+          actions={enlargedProof.canReview ? (
+            <>
+              <button type="button" className="parent-review-button reject" aria-label={t('responsibleReviewReject')} disabled={Boolean(reviewingKey)} onClick={() => { void review(enlargedProof.participantId, enlargedProof.eventId, 'not_detected').then((completed) => { if (completed) setEnlargedProof(undefined); }); }}><AppIcon name="close" /></button>
+              <button type="button" className="parent-review-button approve" aria-label={t('responsibleReviewApprove')} disabled={Boolean(reviewingKey)} onClick={() => { void review(enlargedProof.participantId, enlargedProof.eventId, 'detected').then((completed) => { if (completed) setEnlargedProof(undefined); }); }}><AppIcon name="check" /></button>
+            </>
+          ) : undefined}
+        />
       ) : null}
       {expandedStatus === 'next' && upcomingCount ? (
         <section className="today-section upcoming-checks-section collective-operational-section" aria-label={t('dashboardNext')}>

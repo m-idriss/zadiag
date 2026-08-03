@@ -123,6 +123,7 @@ describe('ParentDashboard', () => {
     const assignment = createDefaultRoutineAssignment(now);
     const selectParticipant = vi.fn();
     const reviewParticipantCheck = vi.fn().mockResolvedValue(undefined);
+    const getParticipantProofImageUrl = vi.fn().mockResolvedValue('data:image/png;base64,COLLECTIVE');
     const state: AppState = {
       role: 'parent', locale: 'en', notificationsEnabled: true, activeParticipantId: 'maya',
       family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
@@ -148,7 +149,7 @@ describe('ParentDashboard', () => {
     };
 
     const setParticipantOverview = vi.fn();
-    act(() => root.render(<ParentDashboard state={state} participantOverview onParticipantOverviewChange={setParticipantOverview} onSelectParticipant={selectParticipant} reviewParticipantCheck={reviewParticipantCheck} t={(key) => translate('en', key)} />));
+    act(() => root.render(<ParentDashboard state={state} participantOverview onParticipantOverviewChange={setParticipantOverview} onSelectParticipant={selectParticipant} reviewParticipantCheck={reviewParticipantCheck} getParticipantProofImageUrl={getParticipantProofImageUrl} t={(key) => translate('en', key)} />));
 
     expect(container.querySelector('.multi-participant-overview')).not.toBeNull();
     expect(container.querySelector('.adherence-summary-card')).not.toBeNull();
@@ -175,9 +176,17 @@ describe('ParentDashboard', () => {
     expect(container.textContent).toContain('Detailed report');
     const reviewStatus = Array.from(container.querySelectorAll<HTMLButtonElement>('.dashboard-status-summary button'))
       .find((button) => button.textContent?.includes('To review'));
-    act(() => reviewStatus?.click());
+    await act(async () => {
+      reviewStatus?.click();
+      await Promise.resolve();
+    });
     const collectiveReview = container.querySelector('.collective-operational-section');
     expect(Boolean(collectiveReview?.compareDocumentPosition(collectiveWeekly!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    expect(getParticipantProofImageUrl).toHaveBeenCalledWith('leo', 'leo-review');
+    act(() => container.querySelector<HTMLButtonElement>('.collective-operational-section .parent-review-image-button')?.click());
+    expect(container.querySelector('.proof-lightbox')).not.toBeNull();
+    expect(container.querySelector('.proof-lightbox button[aria-label="Validate"]')).not.toBeNull();
+    act(() => container.querySelector<HTMLButtonElement>('.proof-lightbox-close')?.click());
     await act(async () => {
       container.querySelector<HTMLButtonElement>('.collective-operational-section .parent-review-button.approve')?.click();
     });
