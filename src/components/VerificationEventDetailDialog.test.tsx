@@ -32,6 +32,7 @@ describe('VerificationEventDetailDialog', () => {
   afterEach(() => {
     act(() => root.unmount());
     container.remove();
+    vi.restoreAllMocks();
   });
 
   it('opens reviewed information by default without exposing its legacy system marker', () => {
@@ -127,5 +128,23 @@ describe('VerificationEventDetailDialog', () => {
         reason: 'Clearly visible on the retained proof.',
       }],
     });
+  });
+
+  it('confirms and cancels only an active pending check', async () => {
+    const cancelCheck = vi.fn().mockResolvedValue(undefined);
+    const onClose = vi.fn();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const pending = {
+      ...reviewedEvent,
+      status: 'pending' as const,
+      capturedAt: undefined,
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    };
+    await act(async () => root.render(<VerificationEventDetailDialog event={pending} locale="en" cancelCheck={cancelCheck} onClose={onClose} t={(key) => translate('en', key)} />));
+    const cancel = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Cancel this check')!;
+    await act(async () => cancel.click());
+    expect(window.confirm).toHaveBeenCalledWith('Cancel this check? The participant will no longer be able to respond. It will not count as missed.');
+    expect(cancelCheck).toHaveBeenCalledWith(pending.id);
+    expect(onClose).toHaveBeenCalled();
   });
 });

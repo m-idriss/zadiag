@@ -133,7 +133,7 @@ const asResponsibleActions = (value: unknown): VerificationEvent['responsibleAct
   const actions = value.flatMap((candidate) => {
     if (!candidate || typeof candidate !== 'object') return [];
     const action = candidate as Record<string, unknown>;
-    if (!['requested', 'reminded', 'approved', 'rejected'].includes(String(action.type))) return [];
+    if (!['requested', 'reminded', 'approved', 'rejected', 'cancelled', 'skipped'].includes(String(action.type))) return [];
     if (![action.at, action.actorUid, action.actorName].every((field) => typeof field === 'string' && field.trim())) return [];
     return [{
       type: action.type as NonNullable<VerificationEvent['responsibleActions']>[number]['type'],
@@ -643,6 +643,30 @@ export class FirebaseRepository implements AppRepository {
       if ((error as { code?: string }).code === 'functions/already-exists') throw new Error('active_check_exists');
       throw error;
     }
+  }
+
+  async cancelCheck(eventId: string) {
+    if (!this.state.family.id || !this.activeAccessCan('requestChecks')) throw new Error('permission_denied');
+    const familyId = this.state.family.id;
+    const result = await coalesceInFlight(this.inFlightCallables, `cancelCheck:${familyId}:${eventId}`, async () => {
+      const cancelCheck = httpsCallable<{ familyId: string; checkId: string }, VerificationEvent>(this.services.functions, 'cancelCheck');
+      return cancelCheck({ familyId, checkId: eventId });
+    });
+    this.state.events = this.state.events.map((item) => item.id === result.data.id ? result.data : item);
+    this.emit();
+    return result.data;
+  }
+
+  async skipPlannedCheck(routineId: string, plannedStart: Date, plannedEnd: Date) {
+    if (!this.state.family.id || !this.activeAccessCan('requestChecks')) throw new Error('permission_denied');
+    const familyId = this.state.family.id;
+    const result = await coalesceInFlight(this.inFlightCallables, `skipPlannedCheck:${familyId}:${routineId}:${plannedStart.toISOString()}`, async () => {
+      const skipPlannedCheck = httpsCallable<{ familyId: string; routineId: string; plannedStart: string; plannedEnd: string }, VerificationEvent>(this.services.functions, 'skipPlannedCheck');
+      return skipPlannedCheck({ familyId, routineId, plannedStart: plannedStart.toISOString(), plannedEnd: plannedEnd.toISOString() });
+    });
+    this.state.events = [result.data, ...this.state.events.filter((item) => item.id !== result.data.id)];
+    this.emit();
+    return result.data;
   }
 
   async updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode, appearance?: RoutineAppearance) {

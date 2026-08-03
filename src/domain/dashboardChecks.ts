@@ -44,10 +44,22 @@ export const upcomingRoutineChecks = (
   assignments: RoutineAssignment[],
   now = new Date(),
   limit = 3,
+  events: VerificationEvent[] = [],
 ): UpcomingRoutineCheck[] =>
   assignments
     .map((assignment) => {
-      const planned = nextPlannedWindow(assignment.plan, now);
+      let cursor = now;
+      let planned = nextPlannedWindow(assignment.plan, cursor);
+      for (let attempt = 0; planned && attempt < 14; attempt += 1) {
+        const ignored = events.some((event) => (
+          event.status === 'skipped'
+          && event.routineId === assignment.routineId
+          && event.requestedAt === planned?.start.toISOString()
+        ));
+        if (!ignored) break;
+        cursor = planned.end;
+        planned = nextPlannedWindow(assignment.plan, cursor);
+      }
       if (!planned) return undefined;
       return {
         id: assignment.id,
@@ -80,7 +92,8 @@ export const presentedUpcomingRoutineChecks = (
   assignments: RoutineAssignment[],
   locale: Parameters<typeof presentRoutine>[1],
   now = new Date(),
-) => upcomingRoutineChecks(assignments, now).map((item) => ({
+  events: VerificationEvent[] = [],
+) => upcomingRoutineChecks(assignments, now, 3, events).map((item) => ({
   ...item,
   presentation: presentRoutine(item.assignment.routine, locale),
 }));

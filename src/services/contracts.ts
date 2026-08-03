@@ -82,6 +82,8 @@ export interface AppRepository {
   revokeSharedRoutine?(entryId: string): Promise<void>;
   reportRoutineCatalogEntry?(entryId: string, reason: 'unsafe' | 'privacy' | 'copyright' | 'other'): Promise<void>;
   requestCheckNow(routineId?: string): Promise<void>;
+  cancelCheck(eventId: string): Promise<VerificationEvent>;
+  skipPlannedCheck(routineId: string, plannedStart: Date, plannedEnd: Date): Promise<VerificationEvent>;
   updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode, appearance?: RoutineAppearance): Promise<void>;
   getRewardPoolStatus?(routineId: string): Promise<RewardPoolStatus>;
   addRewardCodes?(routineId: string, codes: string[], claimLifetimeHours: number): Promise<RewardPoolStatus>;

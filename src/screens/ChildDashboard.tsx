@@ -132,8 +132,8 @@ export function ChildDashboard({
   const missedTodayLabel = missedTodayCount > 0
     ? formatMessage(t(missedTodayCount === 1 ? 'missedTodayCountOne' : 'missedTodayCountMany'), { count: missedTodayCount })
     : undefined;
-  const upcomingChecks = useMemo(() => presentedUpcomingRoutineChecks(state.routineAssignments, state.locale, nowDate),
-  [nowDate, state.locale, state.routineAssignments]);
+  const upcomingChecks = useMemo(() => presentedUpcomingRoutineChecks(state.routineAssignments, state.locale, nowDate, state.events),
+  [nowDate, state.events, state.locale, state.routineAssignments]);
   useEffect(() => {
     if (!notificationEventId) {
       handledNotificationEventIdRef.current = undefined;

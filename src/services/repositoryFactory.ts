@@ -240,6 +240,14 @@ class LazyFirebaseRepository implements AppRepository {
     return (await this.load()).requestCheckNow(routineId);
   }
 
+  async cancelCheck(eventId: string) {
+    return (await this.load()).cancelCheck(eventId);
+  }
+
+  async skipPlannedCheck(routineId: string, plannedStart: Date, plannedEnd: Date) {
+    return (await this.load()).skipPlannedCheck(routineId, plannedStart, plannedEnd);
+  }
+
   async updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode, appearance?: RoutineAppearance) {
     return (await this.load()).updateRoutine(routineId, plan, validationMode, appearance);
   }

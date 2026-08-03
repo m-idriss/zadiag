@@ -9,6 +9,8 @@ export const statusMessageKey = (status: VerificationStatus): MessageKey => {
   if (status === 'missed') return 'missed';
   if (status === 'pending') return 'pending';
   if (status === 'analyzing') return 'analyzing';
+  if (status === 'cancelled') return 'cancelled';
+  if (status === 'skipped') return 'skipped';
   return 'expired';
 };
 

@@ -35,6 +35,9 @@ export function ParentDashboard({
   getProofImageUrl,
   reviewCheck,
   requestCheck,
+  cancelCheck,
+  skipPlannedCheck,
+  onEditRoutinePlan,
   reviewParticipantCheck,
   requestParticipantCheck,
   getParticipantProofImageUrl,
@@ -55,6 +58,9 @@ export function ParentDashboard({
   getProofImageUrl?: (eventId: string) => Promise<string>;
   reviewCheck?: (eventId: string, decision: ReviewCheckDecision) => Promise<void>;
   requestCheck?: (routineId: string) => Promise<void>;
+  cancelCheck?: (eventId: string) => Promise<void>;
+  skipPlannedCheck?: (routineId: string, plannedStart: Date, plannedEnd: Date) => Promise<void>;
+  onEditRoutinePlan?: (routineId: string) => void;
   reviewParticipantCheck?: (participantId: string, eventId: string, decision: ReviewCheckDecision) => Promise<void>;
   requestParticipantCheck?: (participantId: string, routineId: string) => Promise<void>;
   getParticipantProofImageUrl?: (participantId: string, eventId: string) => Promise<string>;
@@ -118,8 +124,8 @@ export function ParentDashboard({
   const reportSubjectName = state.participantAccess?.find((entry) => entry.participant.id === state.activeParticipantId)?.participant.displayName
     ?? state.participantAccess?.find((entry) => entry.membership.status === 'active')?.participant.displayName
     ?? state.family.childName;
-  const upcomingChecks = useMemo(() => presentedUpcomingRoutineChecks(state.routineAssignments, state.locale, nowDate),
-  [nowDate, state.locale, state.routineAssignments]);
+  const upcomingChecks = useMemo(() => presentedUpcomingRoutineChecks(state.routineAssignments, state.locale, nowDate, state.events),
+  [nowDate, state.events, state.locale, state.routineAssignments]);
   const anomaly = useMemo(() => routineAnomalies(displayEvents, now)
     .sort((a, b) => b.failed - a.failed)[0], [displayEvents, now]);
   const anomalyFingerprint = anomaly ? `${anomaly.routineId}:${anomaly.latestEventId}` : undefined;
@@ -597,7 +603,7 @@ export function ParentDashboard({
       ) : null}
 
       {expandedStatus === 'next' && state.family.childLinked && state.routineAssignments.length && upcomingChecks.length ? (
-        <UpcomingChecksSection checks={upcomingChecks} now={nowDate} locale={locale} titleId="responsible-upcoming-checks-title" t={t} />
+        <UpcomingChecksSection checks={upcomingChecks} now={nowDate} locale={locale} titleId="responsible-upcoming-checks-title" onRequest={requestCheck} onSkip={skipPlannedCheck} onEditPlan={onEditRoutinePlan} t={t} />
       ) : null}
 
       {state.family.childLinked ? (
@@ -642,7 +648,7 @@ export function ParentDashboard({
         <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedRawEvents} locale={state.locale} titleId="responsible-history-title" excludedRoutineIds={historyFilters.excludedRoutineIds} excludedStatuses={historyFilters.excludedStatuses} colorForEvent={activeParticipantAccess ? () => profileColorFor(activeParticipantAccess.participant) : undefined} onRequestCheck={requestCheck} onOpenEvent={(event) => setDetailEventId(event.id)} t={t} />
       </section>
 
-      {detailEvent ? <VerificationEventDetailDialog event={detailEvent} locale={state.locale} proofUrl={proofUrls[detailEvent.id]} getProofImageUrl={getProofImageUrl} reviewCheck={reviewCheck} requestCheck={requestCheck} onClose={() => setDetailEventId(undefined)} t={t} /> : null}
+      {detailEvent ? <VerificationEventDetailDialog event={detailEvent} locale={state.locale} proofUrl={proofUrls[detailEvent.id]} getProofImageUrl={getProofImageUrl} reviewCheck={reviewCheck} requestCheck={requestCheck} cancelCheck={cancelCheck} onClose={() => setDetailEventId(undefined)} t={t} /> : null}
       </>}
     </div>
   );

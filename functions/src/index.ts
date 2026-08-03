@@ -9,9 +9,9 @@ import { randomBytes } from 'node:crypto';
 import webpush, { type PushSubscription } from 'web-push';
 import { assertChildName, createLinkCode, createRecoveryCode, createRelationshipInvitationCode, hashLinkCode, isFirestoreDocumentId, isFreshCheckSubmission, isLegacyRecoveryCode, isRecoveryCode, isRelationshipInvitationCode, normalizeLinkCode, sensitiveCodeAttemptState } from './helpers.js';
 import { analyzePhotoChecklistWithGemini, analyzeWithGemini, isCurrentAnalysisAttempt, parseImageDataUrl, routeAnalysisStatusForReview, unavailablePhotoChecklistAnalysis, type AnalysisResult, type RoutineAnalysisContext } from './analysis.js';
-import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema, plannedCheckDispatchSchedule, shouldAutoDispatchCheck } from './planning.js';
+import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema, plannedCheckDispatchKey, plannedCheckDispatchSchedule, shouldAutoDispatchCheck } from './planning.js';
 import { applyPhotoChecklistReview, challengeForAssignment, createDefaultRoutineAssignment, createDraftRoutineAssignment, createRoutineAssignment, createRoutineAssignmentVersionChange, DEFAULT_ROUTINE_ID, isRoutineValidationMode, parseRoutineResponseSubmission, routineAssignmentProvenance, routineFromCatalog, RoutineResponseInputError, shouldCreateDefaultRoutineAssignment, type PhotoChecklistItemResult, type PhotoChecklistReviewDecision, type RoutineAssignmentDocument, type RoutineDocument, type RoutineResponseDefinition } from './routines.js';
-import { buildCheckNotificationPayload, buildDeclarativePushPayload, buildMissedCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription, notificationWindowIsOpen, type SyntheticReceiptPayload } from './notifications.js';
+import { buildCancelledCheckNotificationPayload, buildCheckNotificationPayload, buildDeclarativePushPayload, buildMissedCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription, notificationWindowIsOpen, type SyntheticReceiptPayload } from './notifications.js';
 import { isCheckRequestRateLimited } from './reminders.js';
 import { recordAuditEvent, recordJourneyEvent, type JourneyStage } from './audit.js';
 import { expiredPendingCheckCleanupUpdate, shouldDeleteProofAfterReview, shouldNotifyMissedCheck, staleCleanupCutoffs } from './cleanup.js';
@@ -28,6 +28,7 @@ import { generateQuizWithGemini, gradeQuizSubmission, type GeneratedQuiz, type P
 import { generateRoutineProposalWithGemini, parseRoutineProposal, type ProposedResponseKind } from './routineGeneration.js';
 import { aggregatePilotReport, pilotReportPeriod } from './pilotReport.js';
 import { shouldMarkPushUnconfirmed } from './pushDelivery.js';
+import { cancelledCheckUpdate, CheckCancellationError } from './checkCancellation.js';
 
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
   ?? (process.env.GCLOUD_PROJECT ? `${process.env.GCLOUD_PROJECT}.firebasestorage.app` : undefined);
@@ -726,6 +727,23 @@ const sendCheckPushNotification = async (
   return result;
 };
 
+const sendCancelledCheckPushNotification = async (
+  subscriptionDocument: PushNotificationDocument,
+  check: { checkId: string; sessionId: string; routineId: string } & RoutineNotificationNames,
+): Promise<PushDispatchResult> => {
+  if (!pushRecipientRoles(subscriptionDocument).includes('child')) return 'skipped';
+  const subscription = subscriptionDocument.data() as { locale?: string } | undefined;
+  return sendPushPayload(subscriptionDocument, buildCancelledCheckNotificationPayload({
+    checkId: check.checkId,
+    sessionId: check.sessionId,
+    routineId: check.routineId,
+    routineName: check.routineName,
+    routineNames: check.routineNames,
+    routineIcon: check.routineIcon,
+    locale: subscription?.locale,
+  }));
+};
+
 const sendReviewPushNotification = async (
   subscriptionDocument: PushNotificationDocument,
   check: { checkId: string; routineId: string } & RoutineNotificationNames,
@@ -768,7 +786,7 @@ const dispatchPushNotifications = async (
     familyId: string;
     checkId?: string;
     routineId?: string;
-    notificationType: 'check' | 'missed' | 'review' | 'test';
+    notificationType: 'check' | 'cancelled' | 'missed' | 'review' | 'test';
   },
   dispatch: (document: PushNotificationDocument) => Promise<PushDispatchResult>,
 ): Promise<PushDispatchSummary> => {
@@ -869,6 +887,20 @@ const sendReviewPushNotifications = async (
     routineId: check.routineId,
     notificationType: 'review',
   }, (document) => sendReviewPushNotification(document, check));
+};
+
+const sendCancelledCheckPushNotifications = async (
+  familyRef: FirebaseFirestore.DocumentReference,
+  check: { checkId: string; sessionId: string; routineId: string } & RoutineNotificationNames,
+): Promise<PushDispatchSummary> => {
+  const subscriptions = await familyRef.collection('pushSubscriptions').get();
+  if (!subscriptions.empty) webpush.setVapidDetails('https://www.zadiag.com', vapidPublicKey.value(), vapidPrivateKey.value());
+  return dispatchPushNotifications(subscriptions.docs, {
+    familyId: familyRef.id,
+    checkId: check.checkId,
+    routineId: check.routineId,
+    notificationType: 'cancelled',
+  }, (document) => sendCancelledCheckPushNotification(document, check));
 };
 
 const sendMissedCheckPushNotifications = async (
@@ -2322,6 +2354,115 @@ export const requestCheckNow = onCall({
     },
   });
   return check;
+});
+
+export const cancelCheck = onCall({
+  region,
+  cors,
+  enforceAppCheck: true,
+  secrets: [vapidPrivateKey, vapidPublicKey],
+}, async (request) => {
+  type CancelledCheck = {
+    id: string;
+    sessionId: string;
+    routineId: string;
+    status: 'cancelled';
+    cancelledAt: string;
+    cancelledBy: string;
+    responsibleActions: unknown[];
+    [key: string]: unknown;
+  };
+  const uid = await requireUid(request.auth);
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
+  const checkId = requireDocumentId(request.data?.checkId, 'Check ID');
+  const familyRef = await requireAggregatePermission(uid, familyId, 'requestChecks');
+  const actorName = await responsibleActorName(uid);
+  const checkRef = familyRef.collection('checks').doc(checkId);
+  const cancelledCheck = await db.runTransaction<CancelledCheck>(async (transaction) => {
+    const check = await transaction.get(checkRef);
+    const data = check.data();
+    if (!check.exists || !data) throw new HttpsError('not-found', 'The check could not be found.');
+    let update;
+    try {
+      update = cancelledCheckUpdate(data, { uid, name: actorName }, new Date());
+    } catch (error) {
+      if (error instanceof CheckCancellationError) {
+        throw new HttpsError('failed-precondition', 'This check can no longer be cancelled.');
+      }
+      throw error;
+    }
+    transaction.update(checkRef, update);
+    return { id: check.id, ...data, ...update } as CancelledCheck;
+  });
+
+  const assignment = await familyRef.collection('routineAssignments').doc(String(cancelledCheck.routineId)).get();
+  const routineNames = getRoutineNotificationNames(assignment.data(), String(cancelledCheck.routineId));
+  await sendCancelledCheckPushNotifications(familyRef, {
+    checkId,
+    sessionId: String(cancelledCheck.sessionId),
+    routineId: String(cancelledCheck.routineId),
+    ...routineNames,
+  });
+  await recordAuditEvent(db, {
+    action: 'cancel_check',
+    actorUid: uid,
+    familyId,
+    role: 'parent',
+    metadata: { checkId, routineId: cancelledCheck.routineId },
+  });
+  return cancelledCheck;
+});
+
+export const skipPlannedCheck = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
+  const uid = await requireUid(request.auth);
+  const familyId = requireDocumentId(request.data?.familyId, 'Family ID');
+  const routineId = requireDocumentId(request.data?.routineId, 'Routine ID');
+  const plannedStart = new Date(String(request.data?.plannedStart ?? ''));
+  const plannedEnd = new Date(String(request.data?.plannedEnd ?? ''));
+  const now = new Date();
+  if (!Number.isFinite(plannedStart.getTime()) || !Number.isFinite(plannedEnd.getTime())
+    || plannedStart <= now || plannedStart.getTime() > now.getTime() + 14 * 86_400_000
+    || plannedEnd <= plannedStart || plannedEnd.getTime() - plannedStart.getTime() > 24 * 60 * 60_000) {
+    throw new HttpsError('invalid-argument', 'A valid upcoming check window is required.');
+  }
+  const familyRef = await requireAggregatePermission(uid, familyId, 'requestChecks');
+  const actorName = await responsibleActorName(uid);
+  const assignmentRef = familyRef.collection('routineAssignments').doc(routineId);
+
+  const skipped = await db.runTransaction(async (transaction) => {
+    const assignment = await transaction.get(assignmentRef);
+    if (!assignment.exists || assignment.data()?.status !== 'active') {
+      throw new HttpsError('failed-precondition', 'The routine is not active.');
+    }
+    const parsedPlan = monitoringPlanSchema.safeParse(assignment.data()?.plan);
+    if (!parsedPlan.success) throw new HttpsError('failed-precondition', 'The routine plan is invalid.');
+    const dispatchKey = plannedCheckDispatchKey(parsedPlan.data, plannedStart);
+    if (!dispatchKey) throw new HttpsError('failed-precondition', 'This occurrence is no longer planned.');
+    const checkRef = familyRef.collection('checks').doc(`skip_${routineId}_${dispatchKey}`);
+    const existing = await transaction.get(checkRef);
+    if (existing.exists) return { id: existing.id, ...existing.data() };
+    const skippedAt = now.toISOString();
+    const data = {
+      routineId,
+      sessionId: crypto.randomUUID(),
+      requestedAt: plannedStart.toISOString(),
+      expiresAt: plannedEnd.toISOString(),
+      status: 'skipped',
+      dispatchKey,
+      dispatchSource: 'schedule',
+      skippedAt,
+      skippedBy: uid,
+      responsibleActions: [{ type: 'skipped', at: skippedAt, actorUid: uid, actorName }],
+    };
+    transaction.create(checkRef, data);
+    return { id: checkRef.id, ...data };
+  });
+
+  await recordAuditEvent(db, {
+    action: 'skip_check', actorUid: uid, familyId, role: 'parent',
+    metadata: { checkId: skipped.id, routineId, plannedStart: plannedStart.toISOString() },
+  });
+  return skipped;
 });
 
 export const createRoutineDraft = onCall({ region, cors, enforceAppCheck: true }, async (request) => {

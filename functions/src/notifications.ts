@@ -109,6 +109,21 @@ interface CheckNotificationPayload {
   path: string;
 }
 
+interface CancelledCheckNotificationInput extends Omit<CheckNotificationInput, 'resend'> {
+  checkId: string;
+}
+
+interface CancelledCheckNotificationPayload {
+  version: 2;
+  kind: 'check-cancelled';
+  checkId: string;
+  routineId: string;
+  tag: string;
+  title: string;
+  body: string;
+  path: string;
+}
+
 export interface SyntheticReceiptPayload {
   monitorId: string;
   receiptId: string;
@@ -204,6 +219,25 @@ export const buildCheckNotificationPayload = (input: CheckNotificationInput): Ch
       ? (locale === 'fr' ? 'Contrôle attendu.' : 'Check waiting.')
       : (locale === 'fr' ? 'Envoie ta preuve.' : 'Send your proof.'),
     path: `/?open=verification&session=${encodeURIComponent(input.sessionId)}`,
+  };
+};
+
+export const buildCancelledCheckNotificationPayload = (
+  input: CancelledCheckNotificationInput,
+): CancelledCheckNotificationPayload => {
+  const locale = normalizeNotificationLocale(input.locale);
+  const titlePrefix = notificationRoutineLabel(input, locale);
+  return {
+    version: 2,
+    kind: 'check-cancelled',
+    checkId: input.checkId,
+    routineId: input.routineId,
+    tag: `verification:${input.sessionId}`,
+    title: locale === 'fr' ? `${titlePrefix} · annulé` : `${titlePrefix} · cancelled`,
+    body: locale === 'fr'
+      ? 'Ce contrôle a été annulé par un responsable.'
+      : 'This check was cancelled by a responsible user.',
+    path: '/',
   };
 };
 

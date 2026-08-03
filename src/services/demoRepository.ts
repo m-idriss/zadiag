@@ -500,6 +500,36 @@ export class DemoRepository implements AppRepository {
     this.persist();
   }
 
+  async cancelCheck(eventId: string) {
+    if (this.state.role !== 'parent') throw new Error('permission_denied');
+    const event = this.state.events.find((item) => item.id === eventId);
+    if (!event || event.status !== 'pending' || Date.parse(event.expiresAt) <= Date.now()) throw new Error('check_not_cancellable');
+    const cancelledAt = new Date().toISOString();
+    event.status = 'cancelled';
+    event.responsibleActions = [...(event.responsibleActions ?? []), {
+      type: 'cancelled', at: cancelledAt, actorUid: 'demo-current', actorName: this.state.accountDisplayName ?? 'Responsable démo',
+    }];
+    this.persist();
+    return structuredClone(event);
+  }
+
+  async skipPlannedCheck(routineId: string, plannedStart: Date, plannedEnd: Date) {
+    if (this.state.role !== 'parent') throw new Error('permission_denied');
+    const skippedAt = new Date().toISOString();
+    const event: VerificationEvent = {
+      id: `skip-${routineId}-${plannedStart.toISOString()}`,
+      routineId,
+      sessionId: crypto.randomUUID(),
+      requestedAt: plannedStart.toISOString(),
+      expiresAt: plannedEnd.toISOString(),
+      status: 'skipped',
+      responsibleActions: [{ type: 'skipped', at: skippedAt, actorUid: 'demo-current', actorName: this.state.accountDisplayName ?? 'Responsable démo' }],
+    };
+    this.state.events = [event, ...this.state.events.filter((item) => item.id !== event.id)];
+    this.persist();
+    return structuredClone(event);
+  }
+
   async updateRoutine(routineId: string, plan: MonitoringPlan, validationMode?: RoutineValidationMode, appearance?: RoutineAppearance) {
     if (this.state.role !== 'parent') throw new Error('permission_denied');
     const assignment = this.state.routineAssignments.find((r) => r.routineId === routineId);

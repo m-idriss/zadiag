@@ -19,6 +19,12 @@ describe('adherenceSummary', () => {
     expect(result).toMatchObject({ completed: 3, successful: 2, attention: 1 });
     expect(result.rate).toBeCloseTo(2 / 3);
   });
+
+  it('keeps cancelled checks out of completion and attention indicators', () => {
+    const result = adherenceSummary([event('detected'), event('missed'), event('cancelled')]);
+    expect(result).toMatchObject({ completed: 2, successful: 1, attention: 1 });
+    expect(result.statusCounts.cancelled).toBeUndefined();
+  });
 });
 
 describe('isSuccessfulVerification', () => {

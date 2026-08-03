@@ -16,10 +16,12 @@ export type VerificationStatus =
   | 'not_detected'
   | 'uncertain'
   | 'missed'
-  | 'expired';
+  | 'expired'
+  | 'cancelled'
+  | 'skipped';
 
 export interface ResponsibleAction {
-  type: 'requested' | 'reminded' | 'approved' | 'rejected';
+  type: 'requested' | 'reminded' | 'approved' | 'rejected' | 'cancelled' | 'skipped';
   at: string;
   actorUid: string;
   actorName: string;

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildCheckNotificationPayload, buildDeclarativePushPayload, buildMissedCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription, notificationWindowIsOpen } from './notifications.js';
+import { buildCancelledCheckNotificationPayload, buildCheckNotificationPayload, buildDeclarativePushPayload, buildMissedCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription, notificationWindowIsOpen } from './notifications.js';
 
 test('normalizes bounded Web Push subscriptions', () => {
   const subscription = normalizePushSubscription({
@@ -71,6 +71,23 @@ test('builds the current English reminder notification payload', () => {
   assert.equal(payload.body, 'Check waiting.');
   assert.equal(payload.tag, 'reminder:session-2');
   assert.equal(payload.path, '/?open=verification&session=session-2');
+});
+
+test('builds a French cancellation notification that replaces the active check notification', () => {
+  const payload = buildCancelledCheckNotificationPayload({
+    checkId: 'check-1',
+    sessionId: 'session-1',
+    routineId: 'orthodontic-elastics',
+    routineName: 'Orthodontic Elastics',
+    routineNames: { fr: 'Élastiques orthodontiques' },
+    routineIcon: '🦷',
+    locale: 'fr',
+  });
+  assert.equal(payload.kind, 'check-cancelled');
+  assert.equal(payload.title, '🦷 Élastiques orthodontiques · annulé');
+  assert.equal(payload.body, 'Ce contrôle a été annulé par un responsable.');
+  assert.equal(payload.tag, 'verification:session-1');
+  assert.equal(payload.path, '/');
 });
 
 test('builds a French review notification payload for responsible users only', () => {
