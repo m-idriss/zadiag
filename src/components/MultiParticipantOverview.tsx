@@ -15,6 +15,7 @@ import { plannedWindowLabel } from '../domain/taskTimeLabel';
 import { languageTag } from '../services/locale';
 import { WeeklyInsightCard } from './WeeklyInsightCard';
 import { ListRow } from './ui';
+import { UpcomingCheckActionMenu } from './UpcomingCheckActionMenu';
 
 type CollectiveParticipant = { id: string; displayName: string; profileColor: string };
 type CollectiveEventContext = { participant: CollectiveParticipant };
@@ -59,6 +60,8 @@ export function MultiParticipantOverview({
   onSelectParticipant,
   participantAccess,
   requestParticipantCheck,
+  skipParticipantPlannedCheck,
+  onEditParticipantRoutinePlan,
   reviewParticipantCheck,
   getParticipantProofImageUrl,
   t,
@@ -71,6 +74,8 @@ export function MultiParticipantOverview({
   onSelectParticipant: (participantId: string) => void;
   participantAccess?: ParticipantAccess[];
   requestParticipantCheck?: (participantId: string, routineId: string) => Promise<void>;
+  skipParticipantPlannedCheck?: (participantId: string, routineId: string, plannedStart: Date, plannedEnd: Date) => Promise<void>;
+  onEditParticipantRoutinePlan?: (participantId: string, routineId: string) => void | Promise<void>;
   reviewParticipantCheck?: (participantId: string, eventId: string, decision: ReviewCheckDecision) => Promise<void>;
   getParticipantProofImageUrl?: (participantId: string, eventId: string) => Promise<string>;
   t: (key: MessageKey) => string;
@@ -111,6 +116,8 @@ export function MultiParticipantOverview({
     return {
       participant,
       canRequest: Boolean(requestParticipantCheck && participantAccessCan(access, 'requestChecks')),
+      canSkip: Boolean(skipParticipantPlannedCheck && participantAccessCan(access, 'requestChecks')),
+      canManage: Boolean(onEditParticipantRoutinePlan && participantAccessCan(access, 'manageRoutines')),
       canReview: Boolean(reviewParticipantCheck && participantAccessCan(access, 'reviewProofs')),
       active: activePendingEvents(source.events, now).map((event) => ({
         event,
@@ -119,10 +126,10 @@ export function MultiParticipantOverview({
       awaiting: presentedAwaitingRoutineChecks(source.assignments, source.events, locale, new Date(now)),
       review: source.events.filter(isReviewableVerification)
         .sort((left, right) => Date.parse(right.capturedAt ?? right.requestedAt) - Date.parse(left.capturedAt ?? left.requestedAt)),
-      upcoming: presentedUpcomingRoutineChecks(source.assignments, locale, new Date(now)),
+      upcoming: presentedUpcomingRoutineChecks(source.assignments, locale, new Date(now), source.events),
       presentationFor,
     };
-  }), [locale, now, participantAccess, requestParticipantCheck, reviewParticipantCheck, sources, t]);
+  }), [locale, now, onEditParticipantRoutinePlan, participantAccess, requestParticipantCheck, reviewParticipantCheck, skipParticipantPlannedCheck, sources, t]);
   const activeCount = operationalSources.reduce((count, source) => count + source.active.length + source.awaiting.length, 0);
   const reviewCount = operationalSources.reduce((count, source) => count + source.review.length, 0);
   const upcomingCount = operationalSources.reduce((count, source) => count + source.upcoming.length, 0);
@@ -276,7 +283,18 @@ export function MultiParticipantOverview({
                 title={item.presentation.name}
                 detail={`${source.participant.displayName} · ${plannedWindowLabel(item.planned.start, item.planned.end, new Date(now), languageTag(locale), t)}`}
                 style={{ ...item.presentation.style, '--history-participant-color': source.participant.profileColor } as CSSProperties}
-                key={`${source.participant.id}:${item.id}`}
+                trailing={source.canRequest || source.canSkip || source.canManage ? <UpcomingCheckActionMenu
+                  actionId={`${source.participant.id}:${item.routineId}:${item.planned.start.toISOString()}`}
+                  routineId={item.routineId}
+                  routineName={`${item.presentation.name} · ${source.participant.displayName}`}
+                  plannedStart={item.planned.start}
+                  plannedEnd={item.planned.end}
+                  onRequest={source.canRequest ? (routineId) => requestParticipantCheck!(source.participant.id, routineId) : undefined}
+                  onSkip={source.canSkip ? (routineId, start, end) => skipParticipantPlannedCheck!(source.participant.id, routineId, start, end) : undefined}
+                  onEditPlan={source.canManage ? (routineId) => onEditParticipantRoutinePlan!(source.participant.id, routineId) : undefined}
+                  t={t}
+                /> : null}
+                key={`${source.participant.id}:${item.routineId}:${item.planned.start.toISOString()}`}
               />
             )))}
           </div>

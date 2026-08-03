@@ -40,6 +40,8 @@ export function ParentDashboard({
   onEditRoutinePlan,
   reviewParticipantCheck,
   requestParticipantCheck,
+  skipParticipantPlannedCheck,
+  onEditParticipantRoutinePlan,
   getParticipantProofImageUrl,
   updateRoutine,
   summaryRange: controlledSummaryRange,
@@ -63,6 +65,8 @@ export function ParentDashboard({
   onEditRoutinePlan?: (routineId: string) => void;
   reviewParticipantCheck?: (participantId: string, eventId: string, decision: ReviewCheckDecision) => Promise<void>;
   requestParticipantCheck?: (participantId: string, routineId: string) => Promise<void>;
+  skipParticipantPlannedCheck?: (participantId: string, routineId: string, plannedStart: Date, plannedEnd: Date) => Promise<void>;
+  onEditParticipantRoutinePlan?: (participantId: string, routineId: string) => void | Promise<void>;
   getParticipantProofImageUrl?: (participantId: string, eventId: string) => Promise<string>;
   updateRoutine?: (routineId: string, plan: MonitoringPlan) => Promise<void>;
   summaryRange?: SummaryRange;
@@ -329,6 +333,8 @@ export function ParentDashboard({
           participantAccess={state.participantAccess}
           reviewParticipantCheck={reviewParticipantCheck}
           requestParticipantCheck={requestParticipantCheck}
+          skipParticipantPlannedCheck={skipParticipantPlannedCheck}
+          onEditParticipantRoutinePlan={onEditParticipantRoutinePlan}
           getParticipantProofImageUrl={getParticipantProofImageUrl}
           t={t}
         />

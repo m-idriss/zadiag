@@ -902,6 +902,12 @@ export function App() {
               requestParticipantCheck={repository.selectActiveParticipant
                 ? (participantId, routineId) => runInParticipantContext(participantId, () => repository.requestCheckNow(routineId))
                 : undefined}
+              skipParticipantPlannedCheck={repository.selectActiveParticipant
+                ? (participantId, routineId, plannedStart, plannedEnd) => runInParticipantContext(participantId, () => repository.skipPlannedCheck(routineId, plannedStart, plannedEnd)).then(() => undefined)
+                : undefined}
+              onEditParticipantRoutinePlan={selectParticipantContext
+                ? async (participantId, routineId) => { await selectParticipantContext(participantId); setFocusedRoutinePlanId(routineId); setTab('routines'); }
+                : undefined}
               getParticipantProofImageUrl={repository.selectActiveParticipant
                 ? (participantId, eventId) => runInParticipantContext(participantId, () => repository.getProofImageUrl(eventId))
                 : undefined}

@@ -243,6 +243,43 @@ describe('ParentDashboard', () => {
     expect(requestParticipantCheck).toHaveBeenCalledWith('leo', assignment.routineId);
   });
 
+  it('offers upcoming actions in the owning participant context', async () => {
+    const assignment = createDefaultRoutineAssignment();
+    const today = new Date();
+    assignment.plan = {
+      ...assignment.plan,
+      weekdays: [today.getDay() === 0 ? 7 : today.getDay()],
+      windows: [{ id: 'late', start: '23:00', end: '23:30' }],
+      scheduleGroups: undefined,
+    };
+    const requestParticipantCheck = vi.fn().mockResolvedValue(undefined);
+    const skipParticipantPlannedCheck = vi.fn().mockResolvedValue(undefined);
+    const onEditParticipantRoutinePlan = vi.fn();
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true, activeParticipantId: 'maya',
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      participantAccess: [
+        { participant: { id: 'maya', displayName: 'Maya', profileColor: 'violet' }, membership: { role: 'owner', status: 'active' } },
+        { participant: { id: 'leo', displayName: 'Leo', profileColor: 'teal' }, membership: { role: 'caregiver', status: 'active' } },
+      ],
+      notificationSources: [
+        { participant: { id: 'maya', displayName: 'Maya', profileColor: 'violet' }, role: 'parent', assignments: [assignment], events: [] },
+        { participant: { id: 'leo', displayName: 'Leo', profileColor: 'teal' }, role: 'parent', assignments: [], events: [] },
+      ],
+      routineAssignments: [assignment], events: [],
+    };
+    await act(async () => root.render(<ParentDashboard state={state} participantOverview requestParticipantCheck={requestParticipantCheck} skipParticipantPlannedCheck={skipParticipantPlannedCheck} onEditParticipantRoutinePlan={onEditParticipantRoutinePlan} t={(key) => translate('en', key)} />));
+    const nextStatus = Array.from(container.querySelectorAll<HTMLButtonElement>('.dashboard-status-summary button')).find((button) => button.textContent?.includes('Next'))!;
+    await act(async () => nextStatus.click());
+    const trigger = container.querySelector<HTMLButtonElement>('.collective-upcoming-check-card [aria-haspopup="menu"]')!;
+    expect(trigger).not.toBeNull();
+    await act(async () => trigger.click());
+    expect(container.querySelectorAll('.collective-upcoming-check-card [role="menuitem"]')).toHaveLength(3);
+    const edit = Array.from(container.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')).find((button) => button.textContent?.includes('Edit schedule'))!;
+    await act(async () => edit.click());
+    expect(onEditParticipantRoutinePlan).toHaveBeenCalledWith('maya', assignment.routineId);
+  });
+
   it('shows an actionable repeated-failure trend and keeps it dismissed until a new failure', async () => {
     const now = Date.now();
     const assignment = createDefaultRoutineAssignment();
