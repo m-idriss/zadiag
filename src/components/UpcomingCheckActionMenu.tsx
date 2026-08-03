@@ -7,6 +7,7 @@ import { SvgIcon } from './SvgIcon';
 export function UpcomingCheckActionMenu({
   actionId,
   actionLabel,
+  context,
   routineId,
   routineName,
   plannedStart,
@@ -21,6 +22,7 @@ export function UpcomingCheckActionMenu({
 }: {
   actionId: string;
   actionLabel?: string;
+  context?: { label: string; detail?: string };
   routineId: string;
   routineName: string;
   plannedStart: Date;
@@ -93,6 +95,7 @@ export function UpcomingCheckActionMenu({
     <div ref={rootRef} className={`upcoming-check-actions${open ? ` menu-open ${placement === 'up' ? 'open-up' : 'open-down'}` : ''}`} data-action-id={actionId}>
       <button type="button" className="upcoming-check-menu-trigger" aria-label={`${actionLabel ?? t('upcomingCheckActions')} · ${routineName}`} aria-haspopup="menu" aria-expanded={open} onClick={toggleMenu}><SvgIcon icon={ellipsisHorizontal} /></button>
       {open ? <div className="upcoming-check-menu" role="menu">
+        {context ? <div className="upcoming-check-menu-context"><span>{context.label}</span>{context.detail ? <small>{context.detail}</small> : null}</div> : null}
         {onRequest ? <button type="button" role="menuitem" disabled={Boolean(busyAction)} onClick={() => { void run('request'); }}><SvgIcon icon={playOutline} /><span><b>{t('requestCheckNow')}</b><small>{t('requestPlannedCheckNowHint')}</small></span></button> : null}
         {onCancel && eventId ? <button type="button" role="menuitem" className="skip" disabled={Boolean(busyAction)} onClick={() => { void run('cancel'); }}><AppIcon name="close" /><span><b>{t('cancelCheck')}</b><small>{t('confirmCancelCheck')}</small></span></button> : null}
         {onSkip ? <button type="button" role="menuitem" className="skip" disabled={Boolean(busyAction)} onClick={() => { void run('skip'); }}><AppIcon name="close" /><span><b>{t('skipPlannedCheck')}</b><small>{t('skipPlannedCheckHint')}</small></span></button> : null}

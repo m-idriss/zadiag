@@ -281,9 +281,12 @@ describe('ParentDashboard', () => {
     act(() => root.render(<ParentDashboard state={state} participantOverview requestParticipantCheck={requestParticipantCheck} cancelParticipantCheck={cancelParticipantCheck} t={(key) => translate('en', key)} />));
     const trigger = container.querySelector<HTMLButtonElement>('.parent-history-row [aria-haspopup="menu"]');
     expect(trigger?.closest('.history-row-has-menu')).not.toBeNull();
+    expect(trigger?.closest('.parent-history-row')?.querySelector('.status-pill')).toBeNull();
     act(() => trigger?.click());
     expect(trigger?.closest('.history-row-menu-open')).not.toBeNull();
     expect(container.querySelectorAll('.parent-history-row [role="menuitem"]')).toHaveLength(2);
+    expect(container.querySelector('.upcoming-check-menu-context')?.textContent).toContain('Pending');
+    expect(container.querySelector('.upcoming-check-menu-context')?.textContent).toContain('Deadline');
     expect(container.querySelector('.multi-participant-overview')).not.toBeNull();
 
     const cancel = Array.from(container.querySelectorAll<HTMLButtonElement>('.parent-history-row [role="menuitem"]'))

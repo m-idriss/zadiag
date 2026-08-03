@@ -168,6 +168,7 @@ export function RoutineHistoryPanel({
                 && hiddenRequestEventIds[event.routineId] !== event.id;
               const isActive = event.status === 'pending' && Date.parse(event.expiresAt) > now;
               const canManageActiveCheck = isActive && (canManageCheck?.(event) ?? true);
+              const hasActiveMenu = canManageActiveCheck && Boolean(onRequestCheck || onCancelCheck);
               const reason = displayReason(event.reason);
               const staleReason = stalePendingCheckReason(events.find((item) => item.id === event.id) ?? event, assignments);
               const staleHint = staleReason === 'expired'
@@ -179,7 +180,7 @@ export function RoutineHistoryPanel({
               return (
                 <ListRow
                   as="section"
-                  className={`card history-row parent-history-row${participantColor ? ' has-participant-accent' : ''}${onOpenEvent ? ' history-row-clickable' : ''}${canManageActiveCheck && (onRequestCheck || onCancelCheck) ? ' history-row-has-menu' : ''}${openActionEventId === event.id ? ' history-row-menu-open' : ''}`}
+                  className={`card history-row parent-history-row${participantColor ? ' has-participant-accent' : ''}${onOpenEvent ? ' history-row-clickable' : ''}${hasActiveMenu ? ' history-row-has-menu' : ''}${openActionEventId === event.id ? ' history-row-menu-open' : ''}`}
                   variant="bare"
                   icon={<AppIcon name={routineIconName(visual?.icon)} />}
                   iconClassName="history-icon routine-history-icon"
@@ -198,11 +199,12 @@ export function RoutineHistoryPanel({
                     <>
                     {onOpenEvent ? <button type="button" className="history-row-open-button" aria-label={`${t('historyDetailTitle')} · ${visual?.name ?? t('routine')} · ${formatDateTime(event.requestedAt)}`} onClick={() => onOpenEvent(event)} /> : null}
                     <div className="history-row-actions">
-                      <StatusPill status={event.status} t={t} />
-                      {canManageActiveCheck && (onRequestCheck || onCancelCheck) ? (
+                      {!hasActiveMenu ? <StatusPill status={event.status} t={t} /> : null}
+                      {hasActiveMenu ? (
                         <UpcomingCheckActionMenu
                           actionId={`history:${event.id}`}
                           actionLabel={t('checkActions')}
+                          context={{ label: t('pending'), detail: `${t('historyExpiresAt')} · ${formatDateTime(event.expiresAt)}` }}
                           routineId={event.routineId}
                           routineName={visual?.name ?? t('routine')}
                           plannedStart={new Date(event.requestedAt)}

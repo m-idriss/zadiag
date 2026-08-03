@@ -1408,6 +1408,9 @@ button:disabled { cursor: not-allowed; }
 .upcoming-check-menu-trigger[aria-expanded="true"] { background: var(--color-text); color: var(--color-surface-solid); }
 .upcoming-check-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 5; width: min(310px, calc(100vw - 48px)); display: grid; gap: 3px; padding: 8px; border: 1px solid rgba(16,42,67,.08); border-radius: 18px; background: rgba(255,255,255,.98); box-shadow: 0 22px 52px rgba(16,42,67,.2); backdrop-filter: blur(16px); }
 .upcoming-check-actions.open-up .upcoming-check-menu { top: auto; bottom: calc(100% + 8px); }
+.upcoming-check-menu-context { display: grid; gap: 3px; margin: 0 2px 5px; padding: 8px 10px 10px; border-bottom: 1px solid var(--color-border); }
+.upcoming-check-menu-context span { width: max-content; padding: 4px 8px; border-radius: 999px; background: var(--color-warning-soft); color: var(--color-warning); font-size: 10px; font-weight: 900; }
+.upcoming-check-menu-context small { color: var(--color-text-muted); font-size: 10px; font-weight: 700; }
 .upcoming-check-menu button { width: 100%; min-height: 52px; display: grid; grid-template-columns: 32px minmax(0, 1fr); align-items: center; gap: 10px; padding: 8px 10px; border: 0; border-radius: 12px; background: transparent; color: var(--color-text); text-align: left; }
 .upcoming-check-menu button:hover, .upcoming-check-menu button:focus-visible { background: var(--color-canvas-elevated); }
 .upcoming-check-menu button > .svg-icon, .upcoming-check-menu button > .app-icon { justify-self: center; color: var(--color-primary); font-size: 19px; }
