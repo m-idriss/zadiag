@@ -105,6 +105,8 @@ describe('ParentDashboard', () => {
     };
 
     act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} requestCheck={vi.fn()} t={(key) => translate('en', key)} />));
+    expect(container.querySelector('.participant-dashboard-overview')).not.toBeNull();
+    expect(container.querySelector('.participant-history-filter-card')).toBeNull();
     expect(container.querySelector<HTMLElement>('.parent-history-row')?.style.getPropertyValue('--history-participant-color')).not.toBe('');
     const openDetails = container.querySelector<HTMLButtonElement>('.history-row-open-button');
     act(() => openDetails?.click());
@@ -151,7 +153,7 @@ describe('ParentDashboard', () => {
     const setParticipantOverview = vi.fn();
     act(() => root.render(<ParentDashboard state={state} participantOverview onParticipantOverviewChange={setParticipantOverview} onSelectParticipant={selectParticipant} reviewParticipantCheck={reviewParticipantCheck} getParticipantProofImageUrl={getParticipantProofImageUrl} t={(key) => translate('en', key)} />));
 
-    expect(container.querySelector('.multi-participant-overview')).not.toBeNull();
+    expect(container.querySelector('.participant-dashboard-overview')).not.toBeNull();
     expect(container.querySelector('.adherence-summary-card')).not.toBeNull();
     expect(container.querySelector('.history-filter-card')).not.toBeNull();
     const collectiveStatus = container.querySelector('.dashboard-status-summary');
@@ -212,7 +214,7 @@ describe('ParentDashboard', () => {
 
     act(() => container.querySelector<HTMLButtonElement>('.history-row-open-button')?.click());
     expect(selectParticipant).not.toHaveBeenCalled();
-    expect(container.querySelector('.multi-participant-overview')).not.toBeNull();
+    expect(container.querySelector('.participant-dashboard-overview')).not.toBeNull();
     expect(container.querySelector('.history-detail-dialog')).not.toBeNull();
   });
 
@@ -287,7 +289,7 @@ describe('ParentDashboard', () => {
     expect(container.querySelectorAll('.parent-history-row [role="menuitem"]')).toHaveLength(2);
     expect(container.querySelector('.upcoming-check-menu-context')?.textContent).toContain('Pending');
     expect(container.querySelector('.upcoming-check-menu-context')?.textContent).toContain('Deadline');
-    expect(container.querySelector('.multi-participant-overview')).not.toBeNull();
+    expect(container.querySelector('.participant-dashboard-overview')).not.toBeNull();
 
     const cancel = Array.from(container.querySelectorAll<HTMLButtonElement>('.parent-history-row [role="menuitem"]'))
       .find((button) => button.textContent?.includes('Cancel this check'));
@@ -295,7 +297,7 @@ describe('ParentDashboard', () => {
 
     expect(window.confirm).toHaveBeenCalled();
     expect(cancelParticipantCheck).toHaveBeenCalledWith('leo', 'leo-active');
-    expect(container.querySelector('.multi-participant-overview')).not.toBeNull();
+    expect(container.querySelector('.participant-dashboard-overview')).not.toBeNull();
   });
 
   it('offers upcoming actions in the owning participant context', async () => {
@@ -891,6 +893,8 @@ describe('ParentDashboard', () => {
       role: 'parent',
       locale: 'en',
       notificationsEnabled: true,
+      activeParticipantId: 'maya',
+      participantAccess: [{ participant: { id: 'maya', displayName: 'Maya', profileColor: 'violet' }, membership: { role: 'owner', status: 'active' } }],
       family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
       routineAssignments: [assignment],
       events: [{

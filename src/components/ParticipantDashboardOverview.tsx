@@ -54,12 +54,14 @@ const collectiveDashboardData = (sources: ParticipantNotificationSource[]) => {
   return { assignments, events, eventContext };
 };
 
-export function MultiParticipantOverview({
+export function ParticipantDashboardOverview({
   sources,
   locale,
   range,
   now,
   onRangeChange,
+  selectedStatus: controlledSelectedStatus,
+  onSelectedStatusChange,
   participantAccess,
   requestParticipantCheck,
   skipParticipantPlannedCheck,
@@ -74,6 +76,8 @@ export function MultiParticipantOverview({
   range: SummaryRange;
   now: number;
   onRangeChange: (range: SummaryRange) => void;
+  selectedStatus?: 'active' | 'review' | 'next';
+  onSelectedStatusChange?: (status: 'active' | 'review' | 'next' | undefined) => void;
   participantAccess?: ParticipantAccess[];
   requestParticipantCheck?: (participantId: string, routineId: string) => Promise<void>;
   skipParticipantPlannedCheck?: (participantId: string, routineId: string, plannedStart: Date, plannedEnd: Date) => Promise<void>;
@@ -84,9 +88,12 @@ export function MultiParticipantOverview({
   t: (key: MessageKey) => string;
 }) {
   const { assignments, events, eventContext } = useMemo(() => collectiveDashboardData(sources), [sources]);
+  const collective = sources.length > 1;
   const resolvedEvents = useMemo(() => withResolvedEventStatuses(events, now), [events, now]);
   const [excludedParticipantIds, setExcludedParticipantIds] = useState<string[]>([]);
-  const [expandedStatus, setExpandedStatus] = useState<'active' | 'review' | 'next'>();
+  const [localSelectedStatus, setLocalSelectedStatus] = useState<'active' | 'review' | 'next'>();
+  const expandedStatus = controlledSelectedStatus ?? localSelectedStatus;
+  const setExpandedStatus = onSelectedStatusChange ?? setLocalSelectedStatus;
   const [requestingKey, setRequestingKey] = useState<string>();
   const [reviewingKey, setReviewingKey] = useState<string>();
   const [actionError, setActionError] = useState<'request' | 'review'>();
@@ -95,6 +102,7 @@ export function MultiParticipantOverview({
   const [detailEventId, setDetailEventId] = useState<string>();
   const [enlargedProof, setEnlargedProof] = useState<{ participantId: string; eventId: string; url: string; canReview: boolean }>();
   const historyFilters = useHistoryFilters('collective-history-title');
+  const dateTimeFormatter = useMemo(() => new Intl.DateTimeFormat(languageTag(locale), { dateStyle: 'short', timeStyle: 'short' }), [locale]);
   const participants = sources.map((source) => ({
     id: source.participant.id,
     displayName: source.participant.displayName,
@@ -116,7 +124,7 @@ export function MultiParticipantOverview({
     };
     const presentationFor = (routineId: string) => {
       const assignment = source.assignments.find((item) => item.routineId === routineId);
-      return assignment ? presentRoutine(assignment.routine, locale) : { name: t('routine'), icon: undefined, style: {} };
+      return assignment ? presentRoutine(assignment.routine, locale) : { name: t('routine'), icon: undefined, proofExample: undefined, style: {} };
     };
     return {
       participant,
@@ -191,7 +199,7 @@ export function MultiParticipantOverview({
   };
 
   return (
-    <section className="today-section participant-history-section parent-history-section dashboard-summary-section multi-participant-overview" aria-labelledby="collective-summary-title">
+    <section className="today-section participant-history-section parent-history-section parent-dashboard-overview-section dashboard-summary-section participant-dashboard-overview" aria-labelledby="collective-summary-title">
       <h2 id="collective-summary-title">{t('overview')}</h2>
       <DashboardStatusSummary
         label={t('dashboardStatusSummary')}
@@ -201,7 +209,7 @@ export function MultiParticipantOverview({
           { id: 'next', label: t('dashboardNext'), value: upcomingCount },
         ]}
         selectedId={expandedStatus}
-        onSelect={(id) => setExpandedStatus((current) => current === id ? undefined : id as typeof current)}
+        onSelect={(id) => setExpandedStatus(expandedStatus === id ? undefined : id as typeof expandedStatus)}
       />
       {expandedStatus === 'active' && activeCount ? (
         <section className="settings-section collective-operational-section" aria-label={t('dashboardActive')}>
@@ -254,12 +262,18 @@ export function MultiParticipantOverview({
       ) : null}
       {expandedStatus === 'review' && reviewCount ? (
         <section className="settings-section parent-review-section collective-operational-section" aria-label={t('dashboardReview')}>
+          <div className="section-heading parent-review-heading"><h2>{t('responsibleReviewTitle')}</h2><span>{reviewCount}</span></div>
           <div className="parent-review-list">
             {operationalSources.flatMap((source) => source.review.map((event) => {
               const presentation = source.presentationFor(event.routineId);
               const key = `${source.participant.id}:${event.id}`;
+              const analysisSource = event.analysisSource ? t(event.analysisSource === 'ai' ? 'analysisSourceAi' : event.analysisSource === 'fallback' ? 'analysisSourceFallback' : 'analysisSourceSelf') : undefined;
+              const automatedVerdict = t(event.automatedStatus === 'not_detected' ? 'notDetected' : event.automatedStatus === 'detected' ? 'validated' : 'uncertain');
               return (
-                <article className="card parent-review-card" key={key}>
+                <article className="card parent-review-card" key={key} onClick={(clickEvent) => {
+                  if ((clickEvent.target as HTMLElement).closest('button')) return;
+                  setDetailEventId(key);
+                }}>
                   <div className="parent-review-main">
                     {getParticipantProofImageUrl ? proofUrls[key] ? (
                       <button
@@ -271,7 +285,23 @@ export function MultiParticipantOverview({
                         <img src={proofUrls[key]} alt={t('responsibleReviewImageAlt')} />
                       </button>
                     ) : <div className="parent-review-image"><div role="status">{proofErrors[key] ? t('responsibleReviewImageError') : t('loadingProofImage')}</div></div> : null}
-                    <div className="parent-review-copy"><strong>{presentation.name}</strong><small>{source.participant.displayName}</small>{event.reason ? <p>{event.reason}</p> : null}</div>
+                    <div className="parent-review-copy">
+                      <div className="parent-review-title-row">
+                        <div>
+                          <strong>{presentation.name}</strong>
+                          <small>{dateTimeFormatter.format(new Date(event.capturedAt ?? event.requestedAt))}{collective ? ` · ${source.participant.displayName}` : ''}</small>
+                          {presentation.proofExample ? <p className="routine-proof-context"><b>{t('expectedProof')}:</b> {presentation.proofExample}</p> : null}
+                        </div>
+                        <button type="button" className="parent-review-detail-button" aria-label={`${t('historyDetailTitle')} · ${presentation.name}`} onClick={() => setDetailEventId(key)}><AppIcon name="chevron-forward" /></button>
+                      </div>
+                      {(analysisSource || event.confidence !== undefined || event.imageQuality !== undefined) ? <div className="parent-review-analysis">
+                        {analysisSource ? <span>{t('analysisSource')}: {analysisSource}</span> : null}
+                        <span>{t('analysisVerdict')}: {automatedVerdict}</span>
+                        {event.confidence !== undefined ? <span>{t('analysisConfidence')} {Math.round(event.confidence * 100)}%</span> : null}
+                        {event.imageQuality !== undefined ? <span>{t('analysisQuality')} {Math.round(event.imageQuality * 100)}%</span> : null}
+                      </div> : null}
+                      {event.reason && !['analysis_unavailable', 'self_validated'].includes(event.reason) ? <p>{event.reason}</p> : null}
+                    </div>
                     <div className="parent-review-actions">
                       {source.canReview ? <button type="button" className="parent-review-button reject" aria-label={t('responsibleReviewReject')} disabled={Boolean(reviewingKey)} onClick={() => { void review(source.participant.id, event.id, 'not_detected'); }}><AppIcon name="close" /></button> : null}
                       {source.canReview ? <button type="button" className="parent-review-button approve" aria-label={t('responsibleReviewApprove')} disabled={Boolean(reviewingKey)} onClick={() => { void review(source.participant.id, event.id, 'detected'); }}><AppIcon name="check" /></button> : null}
@@ -340,7 +370,7 @@ export function MultiParticipantOverview({
         events={visibleEvents}
         assignments={visibleAssignments}
         locale={locale}
-        subjectName={t('allParticipants')}
+        subjectName={collective ? t('allParticipants') : participants[0]?.displayName ?? t('routine')}
         range={range}
         onRangeChange={onRangeChange}
         filters={<HistoryFilterControls assignments={visibleAssignments} events={rangedEvents} locale={locale} excludedRoutineIds={historyFilters.excludedRoutineIds} excludedStatuses={historyFilters.excludedStatuses} onToggleRoutine={historyFilters.toggleRoutine} onToggleStatuses={historyFilters.toggleStatuses} t={t} />}
@@ -351,16 +381,16 @@ export function MultiParticipantOverview({
         events={rangedEvents}
         locale={locale}
         titleId="collective-history-title"
-        participants={participants}
+        participants={collective ? participants : undefined}
         colorForEvent={(event) => eventContext.get(event.id)?.participant.profileColor}
         excludedParticipantIds={excludedParticipantIds}
         excludedRoutineIds={historyFilters.excludedRoutineIds}
         excludedStatuses={historyFilters.excludedStatuses}
-        onToggleParticipant={(participantId) => setExcludedParticipantIds((current) => (
+        onToggleParticipant={collective ? (participantId) => setExcludedParticipantIds((current) => (
           current.includes(participantId)
             ? current.filter((item) => item !== participantId)
             : [...current, participantId]
-        ))}
+        )) : undefined}
         onOpenEvent={(event) => {
           setDetailEventId(event.id);
         }}
