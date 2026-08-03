@@ -905,6 +905,7 @@ button:disabled { cursor: not-allowed; }
   .participant-retake-button { min-height: 44px; padding: 9px 12px; }
 }
 .history-results-heading { margin-top: 0; margin-bottom: 0; }
+.history-results-heading > span { background: var(--color-control-surface); color: var(--color-text-muted); }
 .parent-history-list { display: grid; gap: 10px; }
 .parent-history-row {
   position: relative;
