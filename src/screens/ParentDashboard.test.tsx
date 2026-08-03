@@ -280,6 +280,7 @@ describe('ParentDashboard', () => {
 
     act(() => root.render(<ParentDashboard state={state} participantOverview requestParticipantCheck={requestParticipantCheck} cancelParticipantCheck={cancelParticipantCheck} t={(key) => translate('en', key)} />));
     const trigger = container.querySelector<HTMLButtonElement>('.parent-history-row [aria-haspopup="menu"]');
+    expect(trigger?.closest('.history-row-has-menu')).not.toBeNull();
     act(() => trigger?.click());
     expect(container.querySelectorAll('.parent-history-row [role="menuitem"]')).toHaveLength(2);
     expect(container.querySelector('.multi-participant-overview')).not.toBeNull();

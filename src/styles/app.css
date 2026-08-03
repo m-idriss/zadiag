@@ -740,6 +740,8 @@ button:disabled { cursor: not-allowed; }
 .history-row-open-button:focus-visible { outline: 3px solid color-mix(in srgb, var(--color-primary) 35%, transparent); outline-offset: 2px; }
 .history-row-clickable .history-row-actions { position: relative; z-index: 2; pointer-events: none; }
 .history-row-clickable .history-row-actions button { pointer-events: auto; }
+.history-row-has-menu { overflow: visible; }
+.history-row-has-menu:focus-within { z-index: 4; }
 .history-row > div:nth-child(2), .history-row > div:first-child:not(.history-icon) { min-width: 0; display: flex; flex-direction: column; }
 .history-row small { min-width: 0; max-width: 100%; color: var(--color-text-muted); }
 .history-icon { display: grid; place-items: center; font-size: 22px; }

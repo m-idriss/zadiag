@@ -178,7 +178,7 @@ export function RoutineHistoryPanel({
               return (
                 <ListRow
                   as="section"
-                  className={`card history-row parent-history-row${participantColor ? ' has-participant-accent' : ''}${onOpenEvent ? ' history-row-clickable' : ''}`}
+                  className={`card history-row parent-history-row${participantColor ? ' has-participant-accent' : ''}${onOpenEvent ? ' history-row-clickable' : ''}${canManageActiveCheck && (onRequestCheck || onCancelCheck) ? ' history-row-has-menu' : ''}`}
                   variant="bare"
                   icon={<AppIcon name={routineIconName(visual?.icon)} />}
                   iconClassName="history-icon routine-history-icon"
