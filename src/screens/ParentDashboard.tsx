@@ -329,7 +329,6 @@ export function ParentDashboard({
           range={summaryRange}
           now={now}
           onRangeChange={setSummaryRange}
-          onSelectParticipant={selectParticipant}
           participantAccess={state.participantAccess}
           reviewParticipantCheck={reviewParticipantCheck}
           requestParticipantCheck={requestParticipantCheck}

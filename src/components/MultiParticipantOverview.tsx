@@ -16,9 +16,10 @@ import { languageTag } from '../services/locale';
 import { WeeklyInsightCard } from './WeeklyInsightCard';
 import { ListRow } from './ui';
 import { UpcomingCheckActionMenu } from './UpcomingCheckActionMenu';
+import { VerificationEventDetailDialog } from './VerificationEventDetailDialog';
 
 type CollectiveParticipant = { id: string; displayName: string; profileColor: string };
-type CollectiveEventContext = { participant: CollectiveParticipant };
+type CollectiveEventContext = { participant: CollectiveParticipant; event: VerificationEvent };
 
 const collectiveDashboardData = (sources: ParticipantNotificationSource[]) => {
   const assignments: RoutineAssignment[] = [];
@@ -40,6 +41,7 @@ const collectiveDashboardData = (sources: ParticipantNotificationSource[]) => {
         routineId: routineId(event.routineId),
       });
       eventContext.set(id, {
+        event,
         participant: {
           id: source.participant.id,
           displayName: source.participant.displayName,
@@ -57,7 +59,6 @@ export function MultiParticipantOverview({
   range,
   now,
   onRangeChange,
-  onSelectParticipant,
   participantAccess,
   requestParticipantCheck,
   skipParticipantPlannedCheck,
@@ -71,7 +72,6 @@ export function MultiParticipantOverview({
   range: SummaryRange;
   now: number;
   onRangeChange: (range: SummaryRange) => void;
-  onSelectParticipant: (participantId: string) => void;
   participantAccess?: ParticipantAccess[];
   requestParticipantCheck?: (participantId: string, routineId: string) => Promise<void>;
   skipParticipantPlannedCheck?: (participantId: string, routineId: string, plannedStart: Date, plannedEnd: Date) => Promise<void>;
@@ -89,6 +89,7 @@ export function MultiParticipantOverview({
   const [actionError, setActionError] = useState<'request' | 'review'>();
   const [proofUrls, setProofUrls] = useState<Record<string, string>>({});
   const [proofErrors, setProofErrors] = useState<Record<string, boolean>>({});
+  const [detailEventId, setDetailEventId] = useState<string>();
   const historyFilters = useHistoryFilters('collective-history-title');
   const participants = sources.map((source) => ({
     id: source.participant.id,
@@ -334,11 +335,24 @@ export function MultiParticipantOverview({
             : [...current, participantId]
         ))}
         onOpenEvent={(event) => {
-          const context = eventContext.get(event.id);
-          if (context) onSelectParticipant(context.participant.id);
+          setDetailEventId(event.id);
         }}
         t={t}
       />
+      {detailEventId && eventContext.get(detailEventId) ? (() => {
+        const context = eventContext.get(detailEventId)!;
+        const detailKey = `${context.participant.id}:${context.event.id}`;
+        return <VerificationEventDetailDialog
+          event={context.event}
+          locale={locale}
+          proofUrl={proofUrls[detailKey]}
+          getProofImageUrl={getParticipantProofImageUrl ? (eventId) => getParticipantProofImageUrl(context.participant.id, eventId) : undefined}
+          reviewCheck={reviewParticipantCheck ? (eventId, decision) => reviewParticipantCheck(context.participant.id, eventId, decision) : undefined}
+          requestCheck={requestParticipantCheck ? (routineId) => requestParticipantCheck(context.participant.id, routineId) : undefined}
+          onClose={() => setDetailEventId(undefined)}
+          t={t}
+        />;
+      })() : null}
     </section>
   );
 }

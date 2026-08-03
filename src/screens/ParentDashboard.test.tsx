@@ -202,7 +202,9 @@ describe('ParentDashboard', () => {
     expect(container.querySelectorAll('.parent-history-row')).toHaveLength(1);
 
     act(() => container.querySelector<HTMLButtonElement>('.history-row-open-button')?.click());
-    expect(selectParticipant).toHaveBeenCalledWith('leo');
+    expect(selectParticipant).not.toHaveBeenCalled();
+    expect(container.querySelector('.multi-participant-overview')).not.toBeNull();
+    expect(container.querySelector('.history-detail-dialog')).not.toBeNull();
   });
 
   it('requests a collective active check for its owning participant', async () => {
