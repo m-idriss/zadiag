@@ -25,6 +25,9 @@ import { VerificationEventDetailDialog } from '../components/VerificationEventDe
 import { planningRecommendation, routineAnomalies } from '../domain/reporting';
 import { ParticipantDashboardOverview } from '../components/ParticipantDashboardOverview';
 import { WeeklyInsightCard } from '../components/WeeklyInsightCard';
+import { readUiStorageJson, writeUiStorageString } from '../services/uiStorage';
+
+const DASHBOARD_PARTICIPANT_SELECTION_KEY = 'zadiag.dashboard.participantSelection';
 
 export function ParentDashboard({
   state,
@@ -95,6 +98,9 @@ export function ParentDashboard({
   const [planningRecommendationOpen, setPlanningRecommendationOpen] = useState(false);
   const [planningRecommendationStatus, setPlanningRecommendationStatus] = useState<'saving' | 'saved' | 'error'>();
   const [weeklyReportOpenSignal, setWeeklyReportOpenSignal] = useState(0);
+  const [overviewParticipantIds, setOverviewParticipantIds] = useState<string[]>(() => readUiStorageJson(DASHBOARD_PARTICIPANT_SELECTION_KEY, [], (value) => (
+    Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string') : []
+  )));
   const historyFilters = useHistoryFilters('responsible-history-title');
   const swipeStartRef = useRef<{ eventId: string; x: number; y: number } | undefined>(undefined);
   const swipeDecisionRef = useRef(false);
@@ -267,11 +273,15 @@ export function ParentDashboard({
   }] : [];
   const hasMultipleParticipants = notificationSources.length > 1;
   const showParticipantOverview = hasMultipleParticipants && participantOverview;
+  const availableParticipantIds = notificationSources.map((source) => source.participant.id);
+  const validOverviewParticipantIds = overviewParticipantIds.filter((id) => availableParticipantIds.includes(id));
+  const selectedOverviewParticipantIds = validOverviewParticipantIds.length ? validOverviewParticipantIds : availableParticipantIds;
+  const selectedOverviewSources = notificationSources.filter((source) => selectedOverviewParticipantIds.includes(source.participant.id));
   const activeDashboardParticipant = activeParticipantAccess?.participant
     ?? notificationSources.find((source) => source.participant.id === state.activeParticipantId)?.participant
     ?? notificationSources[0]?.participant;
   const dashboardSources = showParticipantOverview
-    ? notificationSources
+    ? selectedOverviewSources
     : !setupStep && activeDashboardParticipant ? [{
         participant: activeDashboardParticipant,
         role: 'parent' as const,
@@ -346,9 +356,16 @@ export function ParentDashboard({
         actionLabel={t('relationshipSwitchAction')}
         overviewLabel={hasMultipleParticipants ? t('allParticipants') : undefined}
         overviewSelected={showParticipantOverview}
+        selectedParticipantIds={selectedOverviewParticipantIds}
+        applyLabel={t('applySelection')}
         onSelect={selectParticipant}
         onSelectOverview={hasMultipleParticipants ? () => {
           onParticipantOverviewChange?.(true);
+        } : undefined}
+        onApplyParticipantSelection={showParticipantOverview ? (participantIds) => {
+          const next = participantIds.length === availableParticipantIds.length ? [] : participantIds;
+          setOverviewParticipantIds(next);
+          writeUiStorageString(DASHBOARD_PARTICIPANT_SELECTION_KEY, JSON.stringify(next));
         } : undefined}
       />
       </div>

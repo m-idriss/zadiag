@@ -90,7 +90,6 @@ export function ParticipantDashboardOverview({
   const { assignments, events, eventContext } = useMemo(() => collectiveDashboardData(sources), [sources]);
   const collective = sources.length > 1;
   const resolvedEvents = useMemo(() => withResolvedEventStatuses(events, now), [events, now]);
-  const [excludedParticipantIds, setExcludedParticipantIds] = useState<string[]>([]);
   const [localSelectedStatus, setLocalSelectedStatus] = useState<'active' | 'review' | 'next'>();
   const expandedStatus = controlledSelectedStatus ?? localSelectedStatus;
   const setExpandedStatus = onSelectedStatusChange ?? setLocalSelectedStatus;
@@ -103,17 +102,8 @@ export function ParticipantDashboardOverview({
   const [enlargedProof, setEnlargedProof] = useState<{ participantId: string; eventId: string; url: string; canReview: boolean }>();
   const historyFilters = useHistoryFilters('collective-history-title');
   const dateTimeFormatter = useMemo(() => new Intl.DateTimeFormat(languageTag(locale), { dateStyle: 'short', timeStyle: 'short' }), [locale]);
-  const participants = sources.map((source) => ({
-    id: source.participant.id,
-    displayName: source.participant.displayName,
-    profileColor: profileColorFor(source.participant),
-  }));
-  const visibleEvents = useMemo(() => resolvedEvents.filter((event) => (
-    !excludedParticipantIds.includes(eventContext.get(event.id)?.participant.id ?? '')
-  )), [eventContext, excludedParticipantIds, resolvedEvents]);
-  const visibleAssignments = useMemo(() => assignments.filter((assignment) => (
-    !excludedParticipantIds.some((participantId) => assignment.routineId.startsWith(`${participantId}:`))
-  )), [assignments, excludedParticipantIds]);
+  const visibleEvents = resolvedEvents;
+  const visibleAssignments = assignments;
   const rangedEvents = useMemo(() => filterEventsBySummaryRange(visibleEvents, range), [range, visibleEvents]);
   const operationalSources = useMemo(() => sources.map((source) => {
     const access = participantAccess?.find((entry) => entry.participant.id === source.participant.id);
@@ -370,7 +360,7 @@ export function ParticipantDashboardOverview({
         events={visibleEvents}
         assignments={visibleAssignments}
         locale={locale}
-        subjectName={collective ? t('allParticipants') : participants[0]?.displayName ?? t('routine')}
+        subjectName={collective ? t('allParticipants') : sources[0]?.participant.displayName ?? t('routine')}
         range={range}
         onRangeChange={onRangeChange}
         filters={<HistoryFilterControls assignments={visibleAssignments} events={rangedEvents} locale={locale} excludedRoutineIds={historyFilters.excludedRoutineIds} excludedStatuses={historyFilters.excludedStatuses} onToggleRoutine={historyFilters.toggleRoutine} onToggleStatuses={historyFilters.toggleStatuses} t={t} />}
@@ -381,16 +371,9 @@ export function ParticipantDashboardOverview({
         events={rangedEvents}
         locale={locale}
         titleId="collective-history-title"
-        participants={collective ? participants : undefined}
         colorForEvent={(event) => eventContext.get(event.id)?.participant.profileColor}
-        excludedParticipantIds={excludedParticipantIds}
         excludedRoutineIds={historyFilters.excludedRoutineIds}
         excludedStatuses={historyFilters.excludedStatuses}
-        onToggleParticipant={collective ? (participantId) => setExcludedParticipantIds((current) => (
-          current.includes(participantId)
-            ? current.filter((item) => item !== participantId)
-            : [...current, participantId]
-        )) : undefined}
         onOpenEvent={(event) => {
           setDetailEventId(event.id);
         }}

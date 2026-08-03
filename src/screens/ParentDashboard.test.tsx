@@ -155,13 +155,13 @@ describe('ParentDashboard', () => {
 
     expect(container.querySelector('.participant-dashboard-overview')).not.toBeNull();
     expect(container.querySelector('.adherence-summary-card')).not.toBeNull();
-    expect(container.querySelector('.history-filter-card')).not.toBeNull();
+    expect(container.querySelector('.history-filter-card')).toBeNull();
     const collectiveStatus = container.querySelector('.dashboard-status-summary');
     const collectiveWeekly = container.querySelector('.weekly-insight-card');
     const collectiveSummary = container.querySelector('.adherence-summary-card');
     expect(Boolean(collectiveStatus!.compareDocumentPosition(collectiveWeekly!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
     expect(Boolean(collectiveWeekly!.compareDocumentPosition(collectiveSummary!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
-    expect(Array.from(container.querySelectorAll('.filter-group > span')).map((label) => label.textContent)).toEqual(['Routine', 'Status', 'Participant']);
+    expect(Array.from(container.querySelectorAll('.filter-group > span')).map((label) => label.textContent)).toEqual(['Routine', 'Status']);
     expect(container.textContent).toContain('Results');
     expect(container.querySelectorAll('.parent-history-row')).toHaveLength(2);
     const weekRange = Array.from(container.querySelectorAll<HTMLButtonElement>('.summary-range-toggle button'))
@@ -172,8 +172,6 @@ describe('ParentDashboard', () => {
     const collectiveTitles = Array.from(container.querySelectorAll('.parent-history-row strong')).map((title) => title.textContent).join(' ');
     expect(collectiveTitles).not.toContain('Maya');
     expect(collectiveTitles).not.toContain('Leo');
-    const participantChips = Array.from(container.querySelectorAll<HTMLElement>('.participant-filter-chip'));
-    expect(participantChips.every((chip) => chip.style.getPropertyValue('--profile-color').length > 0)).toBe(true);
     expect(new Set(Array.from(container.querySelectorAll<HTMLElement>('.has-participant-accent')).map((row) => row.style.getPropertyValue('--history-participant-color'))).size).toBe(2);
     expect(container.textContent).toContain('Detailed report');
     const reviewStatus = Array.from(container.querySelectorAll<HTMLButtonElement>('.dashboard-status-summary button'))
@@ -194,22 +192,11 @@ describe('ParentDashboard', () => {
     });
     expect(reviewParticipantCheck).toHaveBeenCalledWith('leo', 'leo-review', 'detected');
 
-    const leoFilter = Array.from(container.querySelectorAll<HTMLButtonElement>('.participant-history-filter-card button'))
-      .find((button) => button.textContent === 'Leo');
-    act(() => leoFilter?.click());
-    expect(container.querySelectorAll('.parent-history-row')).toHaveLength(2);
-    expect(container.querySelector('.progress-ring')?.textContent).toBe('50%');
-
-    const mayaFilter = Array.from(container.querySelectorAll<HTMLButtonElement>('.participant-history-filter-card button'))
-      .find((button) => button.textContent === 'Maya');
-    act(() => mayaFilter?.click());
-    expect(container.querySelector('.participant-history-filter-card')).not.toBeNull();
-    expect(Array.from(container.querySelectorAll<HTMLButtonElement>('.participant-filter-chip')).every((button) => button.getAttribute('aria-pressed') === 'false')).toBe(true);
-    expect(container.querySelectorAll('.parent-history-row')).toHaveLength(0);
-    expect(container.querySelector('.history-results-heading span')?.textContent).toBe('0');
-
-    act(() => leoFilter?.click());
-    expect(container.querySelector('.participant-history-filter-card')).not.toBeNull();
+    const participantOptions = Array.from(container.querySelectorAll<HTMLButtonElement>('.participant-switcher-menu > button'));
+    act(() => participantOptions.find((button) => button.textContent?.includes('Maya'))?.click());
+    act(() => container.querySelector<HTMLButtonElement>('.participant-switcher-apply')?.click());
+    expect(localStorage.getItem('zadiag.dashboard.participantSelection')).toBe('["leo"]');
+    expect(container.querySelector('.participant-history-filter-card')).toBeNull();
     expect(container.querySelectorAll('.parent-history-row')).toHaveLength(1);
 
     act(() => container.querySelector<HTMLButtonElement>('.history-row-open-button')?.click());

@@ -58,4 +58,23 @@ describe('ParticipantSelector', () => {
     expect(onSelectOverview).toHaveBeenCalledOnce();
     expect(overview?.getAttribute('aria-pressed')).toBe('false');
   });
+
+  it('applies a non-empty participant subset from the overview menu', () => {
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+    const onApplyParticipantSelection = vi.fn();
+    act(() => root?.render(<ParticipantSelector access={[
+      { participant: { id: 'alex', displayName: 'Alex' }, membership: { role: 'owner', status: 'active' } },
+      { participant: { id: 'sam', displayName: 'Sam' }, membership: { role: 'caregiver', status: 'active' } },
+    ]} activeParticipantId="alex" label="Followed person" overviewLabel="All participants" overviewSelected selectedParticipantIds={['alex', 'sam']} applyLabel="Apply" onSelect={vi.fn()} onApplyParticipantSelection={onApplyParticipantSelection} />));
+
+    const options = Array.from(container.querySelectorAll<HTMLButtonElement>('.participant-switcher-menu > button'));
+    act(() => options.find((button) => button.textContent?.includes('Sam'))?.click());
+    act(() => options.find((button) => button.textContent?.includes('Alex'))?.click());
+    expect(options.find((button) => button.textContent?.includes('Alex'))?.getAttribute('aria-pressed')).toBe('true');
+    act(() => container.querySelector<HTMLButtonElement>('.participant-switcher-apply')?.click());
+
+    expect(onApplyParticipantSelection).toHaveBeenCalledWith(['alex']);
+  });
 });
