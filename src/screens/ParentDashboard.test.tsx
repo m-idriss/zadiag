@@ -182,6 +182,8 @@ describe('ParentDashboard', () => {
     });
     const collectiveReview = container.querySelector('.collective-operational-section');
     expect(Boolean(collectiveReview?.compareDocumentPosition(collectiveWeekly!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    const collectiveReviewCard = collectiveReview?.querySelector<HTMLElement>('.parent-review-card.has-participant-accent');
+    expect(collectiveReviewCard?.style.getPropertyValue('--history-participant-color')).not.toBe('');
     expect(getParticipantProofImageUrl).toHaveBeenCalledWith('leo', 'leo-review');
     act(() => container.querySelector<HTMLButtonElement>('.collective-operational-section .parent-review-image-button')?.click());
     expect(container.querySelector('.proof-lightbox')).not.toBeNull();
