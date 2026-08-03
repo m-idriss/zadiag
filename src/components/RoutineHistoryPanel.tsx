@@ -8,6 +8,7 @@ import { canRetakeCapture, stalePendingCheckReason, withResolvedEventStatuses } 
 import { coalesceActivePendingEventsByRoutine } from '../domain/dashboardChecks';
 import { EmptyState, ListRow } from './ui';
 import { languageTag } from '../services/locale';
+import { UpcomingCheckActionMenu } from './UpcomingCheckActionMenu';
 
 const eventTimestamp = (event: VerificationEvent) =>
   Date.parse(event.submittedAt ?? event.capturedAt ?? event.requestedAt);
@@ -49,6 +50,8 @@ export function RoutineHistoryPanel({
   onRetake,
   onOpenEvent,
   onRequestCheck,
+  onCancelCheck,
+  canManageCheck,
   participants,
   colorForEvent,
   excludedParticipantIds = [],
@@ -64,7 +67,9 @@ export function RoutineHistoryPanel({
   retryEvents?: VerificationEvent[];
   onRetake?: (event: VerificationEvent) => void;
   onOpenEvent?: (event: VerificationEvent) => void;
-  onRequestCheck?: (routineId: string) => Promise<void>;
+  onRequestCheck?: (routineId: string, event?: VerificationEvent) => Promise<void>;
+  onCancelCheck?: (eventId: string, event?: VerificationEvent) => Promise<void>;
+  canManageCheck?: (event: VerificationEvent) => boolean;
   participants?: Array<{ id: string; displayName: string; profileColor: string }>;
   colorForEvent?: (event: VerificationEvent) => string | undefined;
   excludedParticipantIds?: string[];
@@ -160,6 +165,8 @@ export function RoutineHistoryPanel({
               const canRequestCheck = Boolean(onRequestCheck)
                 && latestMissedEventIds.has(event.id)
                 && hiddenRequestEventIds[event.routineId] !== event.id;
+              const isActive = event.status === 'pending' && Date.parse(event.expiresAt) > now;
+              const canManageActiveCheck = isActive && (canManageCheck?.(event) ?? true);
               const reason = displayReason(event.reason);
               const staleReason = stalePendingCheckReason(events.find((item) => item.id === event.id) ?? event, assignments);
               const staleHint = staleReason === 'expired'
@@ -191,6 +198,20 @@ export function RoutineHistoryPanel({
                     {onOpenEvent ? <button type="button" className="history-row-open-button" aria-label={`${t('historyDetailTitle')} · ${visual?.name ?? t('routine')} · ${formatDateTime(event.requestedAt)}`} onClick={() => onOpenEvent(event)} /> : null}
                     <div className="history-row-actions">
                       <StatusPill status={event.status} t={t} />
+                      {canManageActiveCheck && (onRequestCheck || onCancelCheck) ? (
+                        <UpcomingCheckActionMenu
+                          actionId={`history:${event.id}`}
+                          actionLabel={t('checkActions')}
+                          routineId={event.routineId}
+                          routineName={visual?.name ?? t('routine')}
+                          plannedStart={new Date(event.requestedAt)}
+                          plannedEnd={new Date(event.expiresAt)}
+                          eventId={event.id}
+                          onRequest={onRequestCheck ? (routineId) => onRequestCheck(routineId, event) : undefined}
+                          onCancel={onCancelCheck ? (eventId) => onCancelCheck(eventId, event) : undefined}
+                          t={t}
+                        />
+                      ) : null}
                       {canRequestCheck ? (
                         <button
                           type="button"

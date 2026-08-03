@@ -653,7 +653,7 @@ export function ParentDashboard({
           filters={<HistoryFilterControls assignments={state.routineAssignments} events={rangedRawEvents} locale={state.locale} excludedRoutineIds={historyFilters.excludedRoutineIds} excludedStatuses={historyFilters.excludedStatuses} onToggleRoutine={historyFilters.toggleRoutine} onToggleStatuses={historyFilters.toggleStatuses} t={t} />}
           t={t}
         />
-        <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedRawEvents} locale={state.locale} titleId="responsible-history-title" excludedRoutineIds={historyFilters.excludedRoutineIds} excludedStatuses={historyFilters.excludedStatuses} colorForEvent={activeParticipantAccess ? () => profileColorFor(activeParticipantAccess.participant) : undefined} onRequestCheck={requestCheck} onOpenEvent={(event) => setDetailEventId(event.id)} t={t} />
+        <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedRawEvents} locale={state.locale} titleId="responsible-history-title" excludedRoutineIds={historyFilters.excludedRoutineIds} excludedStatuses={historyFilters.excludedStatuses} colorForEvent={activeParticipantAccess ? () => profileColorFor(activeParticipantAccess.participant) : undefined} onRequestCheck={requestCheck} onCancelCheck={cancelCheck} onOpenEvent={(event) => setDetailEventId(event.id)} t={t} />
       </section>
 
       {detailEvent ? <VerificationEventDetailDialog event={detailEvent} locale={state.locale} proofUrl={proofUrls[detailEvent.id]} getProofImageUrl={getProofImageUrl} reviewCheck={reviewCheck} requestCheck={requestCheck} cancelCheck={cancelCheck} onClose={() => setDetailEventId(undefined)} t={t} /> : null}

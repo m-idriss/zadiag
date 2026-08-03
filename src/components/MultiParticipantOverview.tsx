@@ -364,6 +364,21 @@ export function MultiParticipantOverview({
         onOpenEvent={(event) => {
           setDetailEventId(event.id);
         }}
+        onRequestCheck={requestParticipantCheck ? (_routineId, event) => {
+          const context = event ? eventContext.get(event.id) : undefined;
+          if (!context) return Promise.reject(new Error('collective_event_context_missing'));
+          return requestParticipantCheck(context.participant.id, context.event.routineId);
+        } : undefined}
+        onCancelCheck={cancelParticipantCheck ? (_eventId, event) => {
+          const context = event ? eventContext.get(event.id) : undefined;
+          if (!context) return Promise.reject(new Error('collective_event_context_missing'));
+          return cancelParticipantCheck(context.participant.id, context.event.id);
+        } : undefined}
+        canManageCheck={(event) => {
+          const participantId = eventContext.get(event.id)?.participant.id;
+          const access = participantAccess?.find((entry) => entry.participant.id === participantId);
+          return participantAccessCan(access, 'requestChecks');
+        }}
         t={t}
       />
       {detailEventId && eventContext.get(detailEventId) ? (() => {

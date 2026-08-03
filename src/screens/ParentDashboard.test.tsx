@@ -258,6 +258,7 @@ describe('ParentDashboard', () => {
     const now = new Date().toISOString();
     const assignment = createDefaultRoutineAssignment(now);
     const cancelParticipantCheck = vi.fn().mockResolvedValue(undefined);
+    const requestParticipantCheck = vi.fn().mockResolvedValue(undefined);
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     const state: AppState = {
       role: 'parent', locale: 'en', notificationsEnabled: true, activeParticipantId: 'maya',
@@ -277,12 +278,14 @@ describe('ParentDashboard', () => {
       events: [],
     };
 
-    act(() => root.render(<ParentDashboard state={state} participantOverview cancelParticipantCheck={cancelParticipantCheck} t={(key) => translate('en', key)} />));
-    act(() => container.querySelector<HTMLButtonElement>('.history-row-open-button')?.click());
+    act(() => root.render(<ParentDashboard state={state} participantOverview requestParticipantCheck={requestParticipantCheck} cancelParticipantCheck={cancelParticipantCheck} t={(key) => translate('en', key)} />));
+    const trigger = container.querySelector<HTMLButtonElement>('.parent-history-row [aria-haspopup="menu"]');
+    act(() => trigger?.click());
+    expect(container.querySelectorAll('.parent-history-row [role="menuitem"]')).toHaveLength(2);
     expect(container.querySelector('.multi-participant-overview')).not.toBeNull();
 
-    const cancel = Array.from(container.querySelectorAll<HTMLButtonElement>('.history-detail-dialog button'))
-      .find((button) => button.textContent === 'Cancel this check');
+    const cancel = Array.from(container.querySelectorAll<HTMLButtonElement>('.parent-history-row [role="menuitem"]'))
+      .find((button) => button.textContent?.includes('Cancel this check'));
     await act(async () => cancel?.click());
 
     expect(window.confirm).toHaveBeenCalled();
