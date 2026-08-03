@@ -912,9 +912,9 @@ button:disabled { cursor: not-allowed; }
   min-height: 76px;
   margin-bottom: 0;
   padding: var(--row-padding-y) var(--row-padding-x);
-  border-radius: 0;
-  border-color: var(--color-border);
-  box-shadow: none;
+  border-radius: 22px;
+  border-color: rgba(255,255,255,.92);
+  box-shadow: var(--shadow-sm);
   background: color-mix(in srgb, var(--routine-accent, var(--color-primary)) 3%, var(--color-surface));
   transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
 }
@@ -1025,6 +1025,20 @@ button:disabled { cursor: not-allowed; }
 .participant-switcher-menu button.active .participant-switcher-option-avatar { background: var(--color-surface-solid); }
 .participant-switcher-menu-footer { position: sticky; bottom: -9px; margin: 4px -2px -2px; padding: 9px 2px 2px; border-top: 1px solid var(--color-border); background: rgba(255,255,255,.98); }
 .participant-switcher-menu .participant-switcher-apply { min-height: 42px; display: block; padding: 9px 14px; background: var(--color-text); color: var(--color-surface-solid); text-align: center; }
+.parent-history-row.has-participant-accent .routine-history-icon {
+  position: relative;
+}
+.parent-history-row.has-participant-accent .routine-history-icon::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: -2px;
+  inset-block-end: -2px;
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--color-surface-solid);
+  border-radius: 50%;
+  background: var(--history-participant-color);
+}
 .filter-chips .participant-filter-chip { border-color: color-mix(in srgb, var(--profile-color) 24%, var(--color-border)); background: color-mix(in srgb, var(--profile-color) 7%, var(--color-surface-solid)); color: var(--profile-color); }
 .filter-chips .participant-filter-chip.active { border-color: var(--profile-color); background: var(--profile-color); color: var(--color-surface-solid); }
 .participant-switcher-static .profile-context-card { cursor: default; }
@@ -2824,46 +2838,6 @@ button:disabled { cursor: not-allowed; }
 .time-picker-actions { display: grid; grid-template-columns: .85fr 1.15fr; gap: 10px; }
 .time-picker-actions .regenerate-code,
 .time-picker-actions .request-check { min-height: 0; margin: 0; padding: 10px; border-radius: 13px; }
-
-.parent-overview-screen { gap: 14px; }
-.parent-context-top { align-items: center; gap: 8px; padding-bottom: 0; }
-.parent-context-top .screen-header h1 { margin: 0; font-weight: 750; letter-spacing: -.035em; }
-.parent-context-top .profile-context-card { border-color: var(--color-border); border-radius: 0; background: var(--color-surface-solid); box-shadow: none; }
-.participant-dashboard-overview { gap: 10px; }
-.participant-dashboard-overview > h2 { margin: 1px 3px -3px; color: var(--color-text-muted); font-size: 9px; font-weight: 800; letter-spacing: .1em; }
-.participant-dashboard-overview .card { border-color: var(--color-border); border-radius: 0; background: var(--color-surface-solid); box-shadow: none; }
-.participant-dashboard-overview .dashboard-status-summary { min-height: 54px; padding: 0; }
-.participant-dashboard-overview .dashboard-status-summary button { min-height: 52px; padding: 6px; border-radius: 0; }
-.participant-dashboard-overview .dashboard-status-summary button.selected { background: var(--color-primary-soft); box-shadow: inset 0 -3px var(--color-primary); }
-.participant-dashboard-overview .dashboard-status-summary strong { font-size: 19px; font-weight: 750; }
-.participant-dashboard-overview .dashboard-status-summary span { margin-top: 1px; font-size: 9px; font-weight: 700; letter-spacing: .01em; }
-.participant-dashboard-overview .weekly-insight-card { border-inline: 0; }
-.participant-dashboard-overview .weekly-insight-heading { min-height: 50px; padding: 8px 10px; }
-.participant-dashboard-overview .weekly-insight-heading h2 { margin-top: 2px; font-size: 15px; font-weight: 750; }
-.participant-dashboard-overview .weekly-insight-rate strong { font-size: 21px; font-weight: 750; }
-.participant-dashboard-overview .weekly-insight-content { gap: 8px; padding: 0 10px 10px; }
-.participant-dashboard-overview .weekly-insight-metrics { gap: 5px; }
-.participant-dashboard-overview .weekly-insight-metrics > span { gap: 2px; padding: 7px 8px; border-radius: 8px; }
-.participant-dashboard-overview .weekly-insight-priority { gap: 7px; padding: 8px; border-radius: 8px; }
-.participant-dashboard-overview .adherence-summary-card { gap: 12px; padding: 12px 10px; border-inline: 0; }
-.participant-dashboard-overview .summary-range-toggle { gap: 0; padding: 0; border-radius: 0; }
-.participant-dashboard-overview .summary-range-toggle button { min-height: 38px; padding-block: 4px; border-radius: 0; font-weight: 700; }
-.participant-dashboard-overview .summary-range-toggle button.active { box-shadow: none; }
-.participant-dashboard-overview .detailed-reporting { padding-top: 9px; }
-.participant-dashboard-overview .history-filter-card { gap: 6px; padding: 8px 0 0; border: 0; background: transparent; }
-.participant-dashboard-overview .history-results-heading { min-height: 30px; margin: 1px 0 0; padding: 0 3px 6px; border-bottom: 1px solid var(--color-border); }
-.participant-dashboard-overview .history-results-heading h2 { font-size: 9px; font-weight: 800; letter-spacing: .1em; }
-.participant-dashboard-overview .history-results-heading > span { width: auto; min-width: 22px; height: 22px; padding-inline: 6px; border-radius: 11px; font-size: 9px; }
-.participant-dashboard-overview .parent-history-list,
-.participant-dashboard-overview .parent-review-list { gap: 4px; }
-.participant-dashboard-overview .parent-history-row,
-.participant-dashboard-overview .parent-review-card { min-height: 58px; padding: 7px 9px; border-color: var(--color-border); border-radius: 0; background: var(--color-surface-solid); box-shadow: none; }
-.participant-dashboard-overview .has-participant-accent { padding-inline-start: 5px; border-inline-start: 4px solid var(--history-participant-color); }
-.participant-dashboard-overview .parent-history-row:focus-within,
-.participant-dashboard-overview .parent-review-card:focus-within { border-color: color-mix(in srgb, var(--history-participant-color, var(--color-primary)) 32%, var(--color-border)); box-shadow: none; }
-.participant-dashboard-overview .routine-history-icon { border-radius: 8px; }
-.participant-dashboard-overview .history-row-actions { gap: 5px; }
-.participant-dashboard-overview .upcoming-check-menu-trigger { border-radius: 8px; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }

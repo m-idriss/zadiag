@@ -260,7 +260,7 @@ export function ParticipantDashboardOverview({
               const analysisSource = event.analysisSource ? t(event.analysisSource === 'ai' ? 'analysisSourceAi' : event.analysisSource === 'fallback' ? 'analysisSourceFallback' : 'analysisSourceSelf') : undefined;
               const automatedVerdict = t(event.automatedStatus === 'not_detected' ? 'notDetected' : event.automatedStatus === 'detected' ? 'validated' : 'uncertain');
               return (
-                <article className="card parent-review-card has-participant-accent" style={{ '--history-participant-color': source.participant.profileColor } as CSSProperties} key={key} onClick={(clickEvent) => {
+                <article className="card parent-review-card" key={key} onClick={(clickEvent) => {
                   if ((clickEvent.target as HTMLElement).closest('button')) return;
                   setDetailEventId(key);
                 }}>
