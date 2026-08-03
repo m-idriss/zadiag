@@ -31,9 +31,12 @@ describe('UpcomingChecksSection', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     await act(async () => root.render(<UpcomingChecksSection checks={checks} now={now} locale="en" titleId="upcoming" onRequest={request} onSkip={skip} onEditPlan={edit} t={(key) => translate('en', key)} />));
     const trigger = container.querySelector<HTMLButtonElement>('[aria-haspopup="menu"]')!;
+    const actions = trigger.closest<HTMLElement>('.upcoming-check-actions')!;
+    vi.spyOn(actions, 'getBoundingClientRect').mockReturnValue({ top: 700, bottom: 736 } as DOMRect);
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
     await act(async () => trigger.click());
     expect(trigger.getAttribute('aria-expanded')).toBe('true');
+    expect(actions.classList.contains('open-up')).toBe(true);
     expect(container.querySelectorAll('[role="menuitem"]')).toHaveLength(3);
     const skipButton = Array.from(container.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')).find((button) => button.textContent?.includes('Skip this occurrence'))!;
     await act(async () => skipButton.click());

@@ -282,6 +282,7 @@ describe('ParentDashboard', () => {
     const trigger = container.querySelector<HTMLButtonElement>('.parent-history-row [aria-haspopup="menu"]');
     expect(trigger?.closest('.history-row-has-menu')).not.toBeNull();
     act(() => trigger?.click());
+    expect(trigger?.closest('.history-row-menu-open')).not.toBeNull();
     expect(container.querySelectorAll('.parent-history-row [role="menuitem"]')).toHaveLength(2);
     expect(container.querySelector('.multi-participant-overview')).not.toBeNull();
 

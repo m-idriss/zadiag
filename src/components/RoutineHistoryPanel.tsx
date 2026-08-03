@@ -79,6 +79,7 @@ export function RoutineHistoryPanel({
   t: (key: MessageKey) => string;
 }) {
   const [requestingEventId, setRequestingEventId] = useState<string>();
+  const [openActionEventId, setOpenActionEventId] = useState<string>();
   const [hiddenRequestEventIds, setHiddenRequestEventIds] = useState<Record<string, string>>({});
   const formatterLocale = languageTag(locale);
   const now = Date.now();
@@ -178,7 +179,7 @@ export function RoutineHistoryPanel({
               return (
                 <ListRow
                   as="section"
-                  className={`card history-row parent-history-row${participantColor ? ' has-participant-accent' : ''}${onOpenEvent ? ' history-row-clickable' : ''}${canManageActiveCheck && (onRequestCheck || onCancelCheck) ? ' history-row-has-menu' : ''}`}
+                  className={`card history-row parent-history-row${participantColor ? ' has-participant-accent' : ''}${onOpenEvent ? ' history-row-clickable' : ''}${canManageActiveCheck && (onRequestCheck || onCancelCheck) ? ' history-row-has-menu' : ''}${openActionEventId === event.id ? ' history-row-menu-open' : ''}`}
                   variant="bare"
                   icon={<AppIcon name={routineIconName(visual?.icon)} />}
                   iconClassName="history-icon routine-history-icon"
@@ -209,6 +210,7 @@ export function RoutineHistoryPanel({
                           eventId={event.id}
                           onRequest={onRequestCheck ? (routineId) => onRequestCheck(routineId, event) : undefined}
                           onCancel={onCancelCheck ? (eventId) => onCancelCheck(eventId, event) : undefined}
+                          onOpenChange={(open) => setOpenActionEventId(open ? event.id : (current) => current === event.id ? undefined : current)}
                           t={t}
                         />
                       ) : null}
