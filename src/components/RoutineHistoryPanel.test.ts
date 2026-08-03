@@ -28,13 +28,13 @@ describe('compareHistoryEvents', () => {
     ];
 
     expect(events.sort(compareHistoryEvents).map(({ id }) => id)).toEqual([
-      'rejected',
       'review',
       'analyzing',
       'pending',
       'missed',
       'expired',
       'validated',
+      'rejected',
       'answered',
     ]);
   });

@@ -15,7 +15,7 @@ const eventTimestamp = (event: VerificationEvent) =>
 
 const historyStatusPriority: Record<VerificationStatus, number> = {
   uncertain: 0,
-  not_detected: 0,
+  not_detected: 2,
   pending: 1,
   analyzing: 1,
   detected: 2,
