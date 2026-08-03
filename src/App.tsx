@@ -902,6 +902,9 @@ export function App() {
               requestParticipantCheck={repository.selectActiveParticipant
                 ? (participantId, routineId) => runInParticipantContext(participantId, () => repository.requestCheckNow(routineId))
                 : undefined}
+              cancelParticipantCheck={repository.selectActiveParticipant
+                ? (participantId, eventId) => runInParticipantContext(participantId, () => repository.cancelCheck(eventId)).then(() => undefined)
+                : undefined}
               skipParticipantPlannedCheck={repository.selectActiveParticipant
                 ? (participantId, routineId, plannedStart, plannedEnd) => runInParticipantContext(participantId, () => repository.skipPlannedCheck(routineId, plannedStart, plannedEnd)).then(() => undefined)
                 : undefined}

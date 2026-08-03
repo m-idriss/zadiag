@@ -245,6 +245,42 @@ describe('ParentDashboard', () => {
     expect(requestParticipantCheck).toHaveBeenCalledWith('leo', assignment.routineId);
   });
 
+  it('cancels an active history check in its participant context without leaving the collective view', async () => {
+    const now = new Date().toISOString();
+    const assignment = createDefaultRoutineAssignment(now);
+    const cancelParticipantCheck = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true, activeParticipantId: 'maya',
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      participantAccess: [
+        { participant: { id: 'maya', displayName: 'Maya', profileColor: 'violet' }, membership: { role: 'owner', status: 'active' } },
+        { participant: { id: 'leo', displayName: 'Leo', profileColor: 'teal' }, membership: { role: 'caregiver', status: 'active' } },
+      ],
+      notificationSources: [
+        { participant: { id: 'maya', displayName: 'Maya', profileColor: 'violet' }, role: 'parent', assignments: [assignment], events: [] },
+        {
+          participant: { id: 'leo', displayName: 'Leo', profileColor: 'teal' }, role: 'parent', assignments: [assignment],
+          events: [{ id: 'leo-active', routineId: assignment.routineId, sessionId: 'leo', requestedAt: now, expiresAt: new Date(Date.now() + 3_600_000).toISOString(), status: 'pending' }],
+        },
+      ],
+      routineAssignments: [assignment],
+      events: [],
+    };
+
+    act(() => root.render(<ParentDashboard state={state} participantOverview cancelParticipantCheck={cancelParticipantCheck} t={(key) => translate('en', key)} />));
+    act(() => container.querySelector<HTMLButtonElement>('.history-row-open-button')?.click());
+    expect(container.querySelector('.multi-participant-overview')).not.toBeNull();
+
+    const cancel = Array.from(container.querySelectorAll<HTMLButtonElement>('.history-detail-dialog button'))
+      .find((button) => button.textContent === 'Cancel this check');
+    await act(async () => cancel?.click());
+
+    expect(window.confirm).toHaveBeenCalled();
+    expect(cancelParticipantCheck).toHaveBeenCalledWith('leo', 'leo-active');
+    expect(container.querySelector('.multi-participant-overview')).not.toBeNull();
+  });
+
   it('offers upcoming actions in the owning participant context', async () => {
     const assignment = createDefaultRoutineAssignment();
     const today = new Date();

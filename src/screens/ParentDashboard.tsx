@@ -40,6 +40,7 @@ export function ParentDashboard({
   onEditRoutinePlan,
   reviewParticipantCheck,
   requestParticipantCheck,
+  cancelParticipantCheck,
   skipParticipantPlannedCheck,
   onEditParticipantRoutinePlan,
   getParticipantProofImageUrl,
@@ -65,6 +66,7 @@ export function ParentDashboard({
   onEditRoutinePlan?: (routineId: string) => void;
   reviewParticipantCheck?: (participantId: string, eventId: string, decision: ReviewCheckDecision) => Promise<void>;
   requestParticipantCheck?: (participantId: string, routineId: string) => Promise<void>;
+  cancelParticipantCheck?: (participantId: string, eventId: string) => Promise<void>;
   skipParticipantPlannedCheck?: (participantId: string, routineId: string, plannedStart: Date, plannedEnd: Date) => Promise<void>;
   onEditParticipantRoutinePlan?: (participantId: string, routineId: string) => void | Promise<void>;
   getParticipantProofImageUrl?: (participantId: string, eventId: string) => Promise<string>;
@@ -332,6 +334,7 @@ export function ParentDashboard({
           participantAccess={state.participantAccess}
           reviewParticipantCheck={reviewParticipantCheck}
           requestParticipantCheck={requestParticipantCheck}
+          cancelParticipantCheck={cancelParticipantCheck}
           skipParticipantPlannedCheck={skipParticipantPlannedCheck}
           onEditParticipantRoutinePlan={onEditParticipantRoutinePlan}
           getParticipantProofImageUrl={getParticipantProofImageUrl}

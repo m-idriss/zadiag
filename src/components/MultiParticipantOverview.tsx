@@ -64,6 +64,7 @@ export function MultiParticipantOverview({
   skipParticipantPlannedCheck,
   onEditParticipantRoutinePlan,
   reviewParticipantCheck,
+  cancelParticipantCheck,
   getParticipantProofImageUrl,
   t,
 }: {
@@ -77,6 +78,7 @@ export function MultiParticipantOverview({
   skipParticipantPlannedCheck?: (participantId: string, routineId: string, plannedStart: Date, plannedEnd: Date) => Promise<void>;
   onEditParticipantRoutinePlan?: (participantId: string, routineId: string) => void | Promise<void>;
   reviewParticipantCheck?: (participantId: string, eventId: string, decision: ReviewCheckDecision) => Promise<void>;
+  cancelParticipantCheck?: (participantId: string, eventId: string) => Promise<void>;
   getParticipantProofImageUrl?: (participantId: string, eventId: string) => Promise<string>;
   t: (key: MessageKey) => string;
 }) {
@@ -349,6 +351,7 @@ export function MultiParticipantOverview({
           getProofImageUrl={getParticipantProofImageUrl ? (eventId) => getParticipantProofImageUrl(context.participant.id, eventId) : undefined}
           reviewCheck={reviewParticipantCheck ? (eventId, decision) => reviewParticipantCheck(context.participant.id, eventId, decision) : undefined}
           requestCheck={requestParticipantCheck ? (routineId) => requestParticipantCheck(context.participant.id, routineId) : undefined}
+          cancelCheck={cancelParticipantCheck ? (eventId) => cancelParticipantCheck(context.participant.id, eventId) : undefined}
           onClose={() => setDetailEventId(undefined)}
           t={t}
         />;
