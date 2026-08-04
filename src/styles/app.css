@@ -1025,9 +1025,6 @@ button:disabled { cursor: not-allowed; }
 .participant-switcher-menu button.active .participant-switcher-option-avatar { background: var(--color-surface-solid); }
 .participant-switcher-menu-footer { position: sticky; bottom: -9px; margin: 4px -2px -2px; padding: 9px 2px 2px; border-top: 1px solid var(--color-border); background: rgba(255,255,255,.98); }
 .participant-switcher-menu .participant-switcher-apply { min-height: 42px; display: block; padding: 9px 14px; background: var(--color-text); color: var(--color-surface-solid); text-align: center; }
-.parent-history-row.has-participant-accent {
-  background: color-mix(in srgb, var(--history-participant-color) 3%, color-mix(in srgb, var(--routine-accent, var(--color-primary)) 3%, var(--color-surface)));
-}
 .parent-history-row.has-participant-accent::before {
   content: "";
   position: absolute;
