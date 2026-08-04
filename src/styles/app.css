@@ -915,7 +915,7 @@ button:disabled { cursor: not-allowed; }
   border-radius: 22px;
   border-color: rgba(255,255,255,.92);
   box-shadow: var(--shadow-sm);
-  background: color-mix(in srgb, var(--routine-accent, var(--color-primary)) 3%, var(--color-surface));
+  background: var(--color-surface-solid);
   transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
 }
 .parent-history-row:focus-within { border-color: color-mix(in srgb, var(--routine-accent, var(--color-primary)) 28%, transparent); box-shadow: 0 16px 38px rgba(16,42,67,.13); }
