@@ -16,7 +16,7 @@ const titleKeys: Record<AppNotificationKind, MessageKey> = {
   review: 'notificationCenterReview',
 };
 
-const readNotificationIds = (storageKey: string, notificationIds: string[]) => {
+const readStoredNotificationIds = (storageKey: string, notificationIds: string[]) => {
   const stored = readUiStorageJson<string[]>(storageKey, [], (value) => (
     Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
   ));
@@ -40,17 +40,29 @@ export function NotificationCenter({
   t: (key: MessageKey) => string;
 }) {
   const [open, setOpen] = useState(false);
-  const notifications = sources.flatMap((source) => notificationsForEvents(source.role ?? role, source.events).map((notification) => ({
+  const availableNotifications = sources.flatMap((source) => notificationsForEvents(source.role ?? role, source.events).map((notification) => ({
     ...notification,
     id: `${source.participant.id}:${notification.id}`,
     source,
   }))).sort((left, right) => Date.parse(right.timestamp) - Date.parse(left.timestamp)).slice(0, 50);
+  const availableNotificationIds = availableNotifications.map((notification) => notification.id);
+  const availableNotificationIdSignature = availableNotificationIds.join('|');
+  const dismissedStorageKey = `zadiag.notificationCenter.dismissed.${role}.${contextId}`;
+  const [dismissedState, setDismissedState] = useState(() => ({
+    storageKey: dismissedStorageKey,
+    ids: readStoredNotificationIds(dismissedStorageKey, availableNotificationIds),
+  }));
+  const dismissedIds = dismissedState.storageKey === dismissedStorageKey
+    ? dismissedState.ids
+    : readStoredNotificationIds(dismissedStorageKey, availableNotificationIds);
+  const dismissedSet = new Set(dismissedIds);
+  const notifications = availableNotifications.filter((notification) => !dismissedSet.has(notification.id));
   const notificationIds = notifications.map((notification) => notification.id);
   const notificationIdSignature = notificationIds.join('|');
   const storageKey = `zadiag.notificationCenter.read.${role}.${contextId}`;
   const [readState, setReadState] = useState(() => ({
     storageKey,
-    ids: readNotificationIds(storageKey, notificationIds),
+    ids: readStoredNotificationIds(storageKey, notificationIds),
   }));
   const dialogRef = useModalFocus<HTMLDivElement>(open, () => setOpen(false));
   const routineNames = useMemo(() => new Map(sources.flatMap((source) => source.assignments.map((assignment) => [
@@ -63,18 +75,26 @@ export function NotificationCenter({
   }), [locale]);
 
   useEffect(() => {
-    const validIds = readNotificationIds(storageKey, notificationIds);
+    const validIds = readStoredNotificationIds(storageKey, notificationIds);
     setReadState({ storageKey, ids: validIds });
   }, [notificationIdSignature, storageKey]);
+  useEffect(() => {
+    const validIds = readStoredNotificationIds(dismissedStorageKey, availableNotificationIds);
+    setDismissedState({ storageKey: dismissedStorageKey, ids: validIds });
+  }, [availableNotificationIdSignature, dismissedStorageKey]);
 
   const readIds = readState.storageKey === storageKey
     ? readState.ids
-    : readNotificationIds(storageKey, notificationIds);
+    : readStoredNotificationIds(storageKey, notificationIds);
   const readSet = new Set(readIds);
   const unreadCount = notifications.filter((notification) => !readSet.has(notification.id)).length;
   const saveReadIds = (ids: string[]) => {
     setReadState({ storageKey, ids });
     writeUiStorageString(storageKey, JSON.stringify(ids));
+  };
+  const saveDismissedIds = (ids: string[]) => {
+    setDismissedState({ storageKey: dismissedStorageKey, ids });
+    writeUiStorageString(dismissedStorageKey, JSON.stringify(ids));
   };
   const openCenter = () => {
     if (unreadCount) saveReadIds(notificationIds);
@@ -84,6 +104,10 @@ export function NotificationCenter({
     if (!readSet.has(notificationId)) saveReadIds([...readIds, notificationId]);
     setOpen(false);
     onOpenEvent(participantId, event);
+  };
+  const clearNotifications = () => {
+    if (!window.confirm(t('notificationCenterClearConfirm'))) return;
+    saveDismissedIds(Array.from(new Set([...dismissedIds, ...notificationIds])));
   };
   const participantInitials = (name: string) => {
     const words = name.trim().split(/\s+/).filter(Boolean);
@@ -113,7 +137,10 @@ export function NotificationCenter({
             </header>
             {notifications.length ? (
               <>
-                {unreadCount ? <button type="button" className="notification-center-mark-all" onClick={() => saveReadIds(notificationIds)}>{t('notificationCenterMarkAllRead')}</button> : null}
+                <div className="notification-center-toolbar">
+                  {unreadCount ? <button type="button" className="notification-center-mark-all" onClick={() => saveReadIds(notificationIds)}>{t('notificationCenterMarkAllRead')}</button> : null}
+                  <button type="button" className="notification-center-clear" onClick={clearNotifications}>{t('notificationCenterClear')}</button>
+                </div>
                 <div className="notification-center-list">
                   {notifications.map((notification) => (
                     <button

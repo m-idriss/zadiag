@@ -568,7 +568,11 @@ button:disabled { cursor: not-allowed; }
 .notification-center-dialog > header small { color: var(--color-text-muted); font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
 .notification-center-dialog > header h2 { margin-top: 3px; font-size: 20px; }
 .notification-center-dialog > header button { width: 36px; height: 36px; display: grid; place-items: center; flex: 0 0 auto; border: 0; border-radius: 12px; background: var(--color-control-surface); color: var(--color-text); }
-.notification-center-mark-all { justify-self: end; min-height: var(--height-action); padding: 7px 10px; border: 0; background: transparent; color: var(--color-primary); font-size: 11px; font-weight: 850; }
+.notification-center-toolbar { min-height: var(--height-action); display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.notification-center-mark-all,
+.notification-center-clear { min-height: var(--height-action); padding: 7px 10px; border: 0; border-radius: 10px; font-size: 11px; font-weight: 850; }
+.notification-center-mark-all { background: transparent; color: var(--color-primary); }
+.notification-center-clear { background: var(--color-control-surface); color: var(--color-text-muted); }
 .notification-center-list { min-height: 0; display: grid; align-content: start; gap: 6px; overflow-y: auto; }
 .notification-center-list > button { width: 100%; min-height: 62px; display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: start; gap: 10px; padding: 9px; border: 1px solid var(--color-border); border-radius: 14px; background: var(--color-surface-solid); color: var(--color-text); text-align: left; }
 .notification-center-list > button.unread { background: var(--color-primary-soft); }
