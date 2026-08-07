@@ -12,7 +12,7 @@ import { analyzePhotoChecklistWithGemini, analyzeWithGemini, isCurrentAnalysisAt
 import { checkExpiresAt, getLocalDateKey, getWindowForDate, monitoringPlanSchema, plannedCheckDispatchKey, plannedCheckDispatchSchedule, shouldAutoDispatchCheck } from './planning.js';
 import { applyPhotoChecklistReview, challengeForAssignment, createDefaultRoutineAssignment, createDraftRoutineAssignment, createRoutineAssignment, createRoutineAssignmentVersionChange, DEFAULT_ROUTINE_ID, isRoutineValidationMode, parseRoutineResponseSubmission, routineAssignmentProvenance, routineFromCatalog, RoutineResponseInputError, shouldCreateDefaultRoutineAssignment, type PhotoChecklistItemResult, type PhotoChecklistReviewDecision, type RoutineAssignmentDocument, type RoutineDocument, type RoutineResponseDefinition } from './routines.js';
 import { buildCancelledCheckNotificationPayload, buildCheckNotificationPayload, buildDeclarativePushPayload, buildMissedCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription, notificationWindowIsOpen, type SyntheticReceiptPayload } from './notifications.js';
-import { isCheckRequestRateLimited } from './reminders.js';
+import { hasParticipantPushRecipient, isCheckRequestRateLimited, pushRecipientRoles as subscriptionPushRecipientRoles } from './reminders.js';
 import { recordAuditEvent, recordJourneyEvent, type JourneyStage } from './audit.js';
 import { expiredPendingCheckCleanupUpdate, shouldDeleteProofAfterReview, shouldNotifyMissedCheck, staleCleanupCutoffs } from './cleanup.js';
 import { reportOperationalAlert, reportOperationalEvent, reportOperationalRecovery } from './observability.js';
@@ -619,10 +619,7 @@ const recordSensitiveCodeAttempt = async (uid: string) => {
 };
 
 const pushRecipientRoles = (subscriptionDocument: PushNotificationDocument): PushRecipientRole[] => {
-  const roles = subscriptionDocument.data()?.roles;
-  if (Array.isArray(roles)) return roles.filter((role): role is PushRecipientRole => role === 'child' || role === 'parent');
-  const role = subscriptionDocument.data()?.role;
-  return [role === 'parent' ? 'parent' : 'child'];
+  return subscriptionPushRecipientRoles(subscriptionDocument.data());
 };
 
 const sendPushPayload = async (
@@ -2269,6 +2266,14 @@ export const requestCheckNow = onCall({
   const familyRef = await requireAggregatePermission(uid, familyId, 'requestChecks');
   const actorName = await responsibleActorName(uid);
   await ensureFamilyRoutineMigration(familyRef);
+  const pushSubscriptions = await familyRef.collection('pushSubscriptions').get();
+  if (!hasParticipantPushRecipient(pushSubscriptions.docs.map((subscription) => subscription.data()))) {
+    throw new HttpsError(
+      'failed-precondition',
+      'Notifications must be enabled on the participant device before requesting a check.',
+      { reason: 'participant_notifications_unavailable' },
+    );
+  }
   const assignmentRef = familyRef.collection('routineAssignments').doc(routineId);
   const checkRef = familyRef.collection('checks').doc();
   const pendingChecks = familyRef.collection('checks')
@@ -3300,6 +3305,7 @@ export const dispatchPlannedChecks = onSchedule({
     pushInvalidated: 0,
     pushSkipped: 0,
     pushUnconfirmed: 0,
+    checksSkippedNoParticipantSubscription: 0,
     failures: 0,
   };
   try {
@@ -3334,6 +3340,10 @@ export const dispatchPlannedChecks = onSchedule({
         }
         const plan = parsedPlan.data;
         const childSubscriptions = pushSubscriptions.docs.filter((subscription) => pushRecipientRoles(subscription).includes('child'));
+        if (!childSubscriptions.length) {
+          stats.checksSkippedNoParticipantSubscription += 1;
+          return;
+        }
         if (childSubscriptions.length && !childSubscriptions.every((subscription) => (
           notificationWindowIsOpen(normalizePushPreferences(subscription.data().preferences), now, plan.timeZone)
         ))) return;

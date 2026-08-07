@@ -19,6 +19,18 @@ node ops/zadiag-synthetic-monitor-admin/send-probe.mjs
 node ops/zadiag-synthetic-monitor-admin/verify.mjs
 ```
 
+If the persistent Chromium profile still exists but Firebase anonymous auth has
+rotated its UID, stop the monitor and migrate only its technical identity. The
+participant, assignments and check history remain in place. Pass the current
+browser UID and keep the runtime environment out of command output:
+
+```sh
+node ops/zadiag-synthetic-monitor-admin/replace-identity.mjs NEW_MONITOR_UID
+```
+
+The command rejects occupied targets, atomically moves the Firestore identity,
+and replaces only `ZADIAG_MONITOR_ID` in the private runtime environment.
+
 Provisioning a replacement monitor is a separate destructive operation. It
 requires an explicit contact email, environment destination, owner UID and new
 anonymous monitor UID. The optional display name defaults to `Synthetic
