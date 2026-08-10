@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { checkExpiresAt, monitoringPlanSchema, plannedCheckDispatchSchedule, shouldAutoDispatchCheck } from './planning.js';
+import { checkExpiresAt, monitoringPlanSchema, plannedCheckDispatchKey, plannedCheckDispatchSchedule, shouldAutoDispatchCheck } from './planning.js';
 
 const plan = {
   checksPerDay: 3,
@@ -16,6 +16,11 @@ const plan = {
 
 test('dispatches planned checks every five minutes to balance promptness and cost', () => {
   assert.equal(plannedCheckDispatchSchedule, 'every 5 minutes');
+});
+
+test('derives the canonical dispatch key for a planned occurrence', () => {
+  assert.equal(plannedCheckDispatchKey(plan, new Date('2026-08-03T06:30:00.000Z')), '2026-08-03_morning');
+  assert.equal(plannedCheckDispatchKey(plan, new Date('2026-08-03T09:30:00.000Z')), undefined);
 });
 
 test('validates monitoring plans at the callable boundary', () => {

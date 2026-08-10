@@ -11,13 +11,14 @@ import { PhotoChecklistSummary } from './PhotoChecklistSummary';
 import { RewardReveal } from './RewardReveal';
 import type { RewardClaimReveal } from '../services/contracts';
 
-export function VerificationEventDetailDialog({ event, locale, proofUrl: providedProofUrl, getProofImageUrl, reviewCheck, requestCheck, revealReward, onClose, t }: {
+export function VerificationEventDetailDialog({ event, locale, proofUrl: providedProofUrl, getProofImageUrl, reviewCheck, requestCheck, cancelCheck, revealReward, onClose, t }: {
   event: VerificationEvent;
   locale: Locale;
   proofUrl?: string;
   getProofImageUrl?: (eventId: string) => Promise<string>;
   reviewCheck?: (eventId: string, decision: ReviewCheckDecision) => Promise<void>;
   requestCheck?: (routineId: string) => Promise<void>;
+  cancelCheck?: (eventId: string) => Promise<void>;
   revealReward?: (eventId: string) => Promise<RewardClaimReveal>;
   onClose: () => void;
   t: (key: MessageKey) => string;
@@ -30,10 +31,12 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
   const [reviewError, setReviewError] = useState(false);
   const [itemReviews, setItemReviews] = useState<Record<string, { status?: 'detected' | 'not_detected'; reason: string }>>({});
   const [requestStatus, setRequestStatus] = useState<'sending' | 'sent' | 'error'>();
+  const [cancelStatus, setCancelStatus] = useState<'sending' | 'error'>();
   const proofUrl = providedProofUrl ?? loadedProofUrl;
   const canReview = Boolean(reviewCheck) && isReviewableVerification(event);
   const isActive = event.status === 'pending' && Date.parse(event.expiresAt) > Date.now();
   const canRequest = Boolean(requestCheck) && (isActive || ['missed', 'expired'].includes(event.status));
+  const canCancel = Boolean(cancelCheck) && isActive;
   const formatterLocale = languageTag(locale);
   const formatDateTime = (value: string) => new Intl.DateTimeFormat(formatterLocale, { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
   const analysisSourceLabel = event.analysisSource ? t(event.analysisSource === 'ai' ? 'analysisSourceAi' : event.analysisSource === 'fallback' ? 'analysisSourceFallback' : 'analysisSourceSelf') : undefined;
@@ -44,6 +47,8 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
     reminded: 'historyActionReminded',
     approved: 'historyActionApproved',
     rejected: 'historyActionRejected',
+    cancelled: 'historyActionCancelled',
+    skipped: 'historyActionSkipped',
   };
   const actionLabel = (type: NonNullable<VerificationEvent['responsibleActions']>[number]['type']) => t(actionKeys[type]);
   const scoreLabel = (score?: number) => score === undefined ? undefined : `${Math.round(score * 100)}%`;
@@ -122,6 +127,17 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
       setRequestStatus('error');
     }
   };
+  const cancel = async () => {
+    if (!cancelCheck || !window.confirm(t('confirmCancelCheck'))) return;
+    setCancelStatus('sending');
+    try {
+      await cancelCheck(event.id);
+      onClose();
+    } catch (error) {
+      console.error(error);
+      setCancelStatus('error');
+    }
+  };
 
   return (
     <div className="history-detail-backdrop" onClick={onClose}>
@@ -187,6 +203,14 @@ export function VerificationEventDetailDialog({ event, locale, proofUrl: provide
             </button>
             {requestStatus === 'sent' ? <p className="request-feedback success" role="status">{t('requestCheckSent')}</p> : null}
             {requestStatus === 'error' ? <p className="request-feedback error" role="alert">{t('requestCheckError')}</p> : null}
+          </div>
+        ) : null}
+        {canCancel ? (
+          <div className="history-detail-request-actions">
+            <button type="button" className="danger-button" disabled={cancelStatus === 'sending'} onClick={() => { void cancel(); }}>
+              {cancelStatus === 'sending' ? t('cancellingCheck') : t('cancelCheck')}
+            </button>
+            {cancelStatus === 'error' ? <p className="request-feedback error" role="alert">{t('cancelCheckError')}</p> : null}
           </div>
         ) : null}
         {event.reward && revealReward ? <RewardReveal eventId={event.id} outcome={event.reward.status} reveal={revealReward} t={t} /> : null}

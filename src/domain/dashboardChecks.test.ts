@@ -83,6 +83,19 @@ describe('dashboard check helpers', () => {
     expect(checks[0].planned.start.getHours()).toBe(8);
   });
 
+  it('moves to the following occurrence after a responsible user skips one', () => {
+    const assignment = createDefaultRoutineAssignment();
+    assignment.plan = buildMonitoringPlanFromGroups({}, [{
+      id: 'daily', weekdays: [4, 5], windows: [{ id: 'w1', start: '08:00', end: '09:00' }],
+    }]);
+    const now = new Date(2026, 6, 9, 7, 0);
+    const first = upcomingRoutineChecks([assignment], now)[0];
+    const skipped = event('skip', 'skipped', first.planned.end.toISOString(), assignment.routineId, first.planned.start.toISOString());
+    const next = upcomingRoutineChecks([assignment], now, 3, [skipped])[0];
+    expect(next.planned.start.getDate()).toBe(10);
+    expect(next.planned.start.getHours()).toBe(8);
+  });
+
   it('shows a started window until its server event arrives', () => {
     const assignment = createDefaultRoutineAssignment();
     assignment.plan = buildMonitoringPlanFromGroups({}, [{

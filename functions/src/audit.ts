@@ -7,6 +7,8 @@ type AuditAction =
   | 'regenerate_link_code'
   | 'recover_parent'
   | 'request_check'
+  | 'cancel_check'
+  | 'skip_check'
   | 'submit_proof'
   | 'review_proof'
   | 'reset_account'

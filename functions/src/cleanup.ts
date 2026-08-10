@@ -1,5 +1,6 @@
 const oneHourMs = 60 * 60 * 1000;
 const oneDayMs = 24 * oneHourMs;
+export const missedCheckNotificationFreshnessMs = 10 * 60 * 1000;
 
 interface StaleCleanupCutoffs {
   expiredBefore: string;
@@ -20,6 +21,13 @@ export const expiredPendingCheckCleanupUpdate = (now = new Date()) => ({
   missedReason: 'expired_pending_cleanup',
   updatedAt: now.toISOString(),
 });
+
+export const shouldNotifyMissedCheck = (expiresAt: unknown, now = new Date()) => {
+  const expiresAtMs = Date.parse(String(expiresAt ?? ''));
+  return Number.isFinite(expiresAtMs)
+    && expiresAtMs <= now.getTime()
+    && now.getTime() - expiresAtMs <= missedCheckNotificationFreshnessMs;
+};
 
 export const shouldDeleteProofAfterReview = (decision: string) =>
   decision === 'detected' || decision === 'not_detected';

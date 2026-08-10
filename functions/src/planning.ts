@@ -175,6 +175,11 @@ export const getWindowForDate = (plan: MonitoringPlan, date: Date, timeZone: str
     : getWindowForMinutes(plan, (parts.hour * 60) + parts.minute);
 };
 
+export const plannedCheckDispatchKey = (plan: MonitoringPlan, date: Date) => {
+  const window = getWindowForDate(plan, date, plan.timeZone);
+  return window ? `${getLocalDateKey(date, plan.timeZone)}_${window.id}` : undefined;
+};
+
 const weekdayAfterOffset = (weekday: number, offset: number) => ((weekday + offset - 1) % 7) + 1;
 
 const nextWindowEndDelayMinutes = (plan: MonitoringPlan, now: Date) => {

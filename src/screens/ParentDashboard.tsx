@@ -3,7 +3,8 @@ import type { AppState, MonitoringPlan, ReviewCheckDecision, VerificationEvent }
 import type { MessageKey } from '../services/i18n';
 import { AppIcon, routineIconName } from '../components/Icon';
 import { CodeBox } from '../components/CodeBox';
-import { HistoryFilterControls, RoutineHistoryPanel, useHistoryFilters } from '../components/RoutineHistoryPanel';
+import { RoutineHistoryPanel } from '../components/RoutineHistoryPanel';
+import { HistoryFilterControls, useHistoryFilters } from '../components/HistoryFilters';
 import { AdherenceSummaryCard, filterEventsBySummaryRange, type SummaryRange } from '../components/AdherenceSummaryCard';
 import { UpcomingChecksSection } from '../components/UpcomingChecksSection';
 import { presentRoutine } from '../domain/routinePresentation';
@@ -22,8 +23,11 @@ import { AwaitingCheckCards } from '../components/AwaitingCheckCards';
 import { useCurrentTime } from '../hooks/useCurrentTime';
 import { VerificationEventDetailDialog } from '../components/VerificationEventDetailDialog';
 import { planningRecommendation, routineAnomalies } from '../domain/reporting';
-import { MultiParticipantOverview } from '../components/MultiParticipantOverview';
+import { ParticipantDashboardOverview } from '../components/ParticipantDashboardOverview';
 import { WeeklyInsightCard } from '../components/WeeklyInsightCard';
+import { readUiStorageJson, writeUiStorageString } from '../services/uiStorage';
+
+const DASHBOARD_PARTICIPANT_SELECTION_KEY = 'zadiag.dashboard.participantSelection';
 
 export function ParentDashboard({
   state,
@@ -34,8 +38,14 @@ export function ParentDashboard({
   getProofImageUrl,
   reviewCheck,
   requestCheck,
+  cancelCheck,
+  skipPlannedCheck,
+  onEditRoutinePlan,
   reviewParticipantCheck,
   requestParticipantCheck,
+  cancelParticipantCheck,
+  skipParticipantPlannedCheck,
+  onEditParticipantRoutinePlan,
   getParticipantProofImageUrl,
   updateRoutine,
   summaryRange: controlledSummaryRange,
@@ -54,8 +64,14 @@ export function ParentDashboard({
   getProofImageUrl?: (eventId: string) => Promise<string>;
   reviewCheck?: (eventId: string, decision: ReviewCheckDecision) => Promise<void>;
   requestCheck?: (routineId: string) => Promise<void>;
+  cancelCheck?: (eventId: string) => Promise<void>;
+  skipPlannedCheck?: (routineId: string, plannedStart: Date, plannedEnd: Date) => Promise<void>;
+  onEditRoutinePlan?: (routineId: string) => void;
   reviewParticipantCheck?: (participantId: string, eventId: string, decision: ReviewCheckDecision) => Promise<void>;
   requestParticipantCheck?: (participantId: string, routineId: string) => Promise<void>;
+  cancelParticipantCheck?: (participantId: string, eventId: string) => Promise<void>;
+  skipParticipantPlannedCheck?: (participantId: string, routineId: string, plannedStart: Date, plannedEnd: Date) => Promise<void>;
+  onEditParticipantRoutinePlan?: (participantId: string, routineId: string) => void | Promise<void>;
   getParticipantProofImageUrl?: (participantId: string, eventId: string) => Promise<string>;
   updateRoutine?: (routineId: string, plan: MonitoringPlan) => Promise<void>;
   summaryRange?: SummaryRange;
@@ -82,6 +98,9 @@ export function ParentDashboard({
   const [planningRecommendationOpen, setPlanningRecommendationOpen] = useState(false);
   const [planningRecommendationStatus, setPlanningRecommendationStatus] = useState<'saving' | 'saved' | 'error'>();
   const [weeklyReportOpenSignal, setWeeklyReportOpenSignal] = useState(0);
+  const [overviewParticipantIds, setOverviewParticipantIds] = useState<string[]>(() => readUiStorageJson(DASHBOARD_PARTICIPANT_SELECTION_KEY, [], (value) => (
+    Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string') : []
+  )));
   const historyFilters = useHistoryFilters('responsible-history-title');
   const swipeStartRef = useRef<{ eventId: string; x: number; y: number } | undefined>(undefined);
   const swipeDecisionRef = useRef(false);
@@ -117,8 +136,8 @@ export function ParentDashboard({
   const reportSubjectName = state.participantAccess?.find((entry) => entry.participant.id === state.activeParticipantId)?.participant.displayName
     ?? state.participantAccess?.find((entry) => entry.membership.status === 'active')?.participant.displayName
     ?? state.family.childName;
-  const upcomingChecks = useMemo(() => presentedUpcomingRoutineChecks(state.routineAssignments, state.locale, nowDate),
-  [nowDate, state.locale, state.routineAssignments]);
+  const upcomingChecks = useMemo(() => presentedUpcomingRoutineChecks(state.routineAssignments, state.locale, nowDate, state.events),
+  [nowDate, state.events, state.locale, state.routineAssignments]);
   const anomaly = useMemo(() => routineAnomalies(displayEvents, now)
     .sort((a, b) => b.failed - a.failed)[0], [displayEvents, now]);
   const anomalyFingerprint = anomaly ? `${anomaly.routineId}:${anomaly.latestEventId}` : undefined;
@@ -254,6 +273,39 @@ export function ParentDashboard({
   }] : [];
   const hasMultipleParticipants = notificationSources.length > 1;
   const showParticipantOverview = hasMultipleParticipants && participantOverview;
+  const availableParticipantIds = notificationSources.map((source) => source.participant.id);
+  const validOverviewParticipantIds = overviewParticipantIds.filter((id) => availableParticipantIds.includes(id));
+  const selectedOverviewParticipantIds = validOverviewParticipantIds.length ? validOverviewParticipantIds : availableParticipantIds;
+  const selectedOverviewSources = notificationSources.filter((source) => selectedOverviewParticipantIds.includes(source.participant.id));
+  const activeDashboardParticipant = activeParticipantAccess?.participant
+    ?? notificationSources.find((source) => source.participant.id === state.activeParticipantId)?.participant
+    ?? notificationSources[0]?.participant;
+  const dashboardSources = showParticipantOverview
+    ? selectedOverviewSources
+    : !setupStep && activeDashboardParticipant ? [{
+        participant: activeDashboardParticipant,
+        role: 'parent' as const,
+        assignments: state.routineAssignments,
+        events: state.events,
+      }] : [];
+  const dashboardReviewCheck = showParticipantOverview
+    ? reviewParticipantCheck
+    : reviewCheck ? (_participantId: string, eventId: string, decision: ReviewCheckDecision) => reviewCheck(eventId, decision) : undefined;
+  const dashboardRequestCheck = showParticipantOverview
+    ? requestParticipantCheck
+    : requestCheck ? (_participantId: string, routineId: string) => requestCheck(routineId) : undefined;
+  const dashboardCancelCheck = showParticipantOverview
+    ? cancelParticipantCheck
+    : cancelCheck ? (_participantId: string, eventId: string) => cancelCheck(eventId) : undefined;
+  const dashboardSkipCheck = showParticipantOverview
+    ? skipParticipantPlannedCheck
+    : skipPlannedCheck ? (_participantId: string, routineId: string, start: Date, end: Date) => skipPlannedCheck(routineId, start, end) : undefined;
+  const dashboardEditPlan = showParticipantOverview
+    ? onEditParticipantRoutinePlan
+    : onEditRoutinePlan ? (_participantId: string, routineId: string) => onEditRoutinePlan(routineId) : undefined;
+  const dashboardProofImage = showParticipantOverview
+    ? getParticipantProofImageUrl
+    : getProofImageUrl ? (_participantId: string, eventId: string) => getProofImageUrl(eventId) : undefined;
   const selectParticipant = (participantId: string) => {
     onSelectParticipant?.(participantId);
   };
@@ -304,25 +356,79 @@ export function ParentDashboard({
         actionLabel={t('relationshipSwitchAction')}
         overviewLabel={hasMultipleParticipants ? t('allParticipants') : undefined}
         overviewSelected={showParticipantOverview}
+        selectedParticipantIds={selectedOverviewParticipantIds}
+        applyLabel={t('applySelection')}
         onSelect={selectParticipant}
         onSelectOverview={hasMultipleParticipants ? () => {
           onParticipantOverviewChange?.(true);
         } : undefined}
+        onApplyParticipantSelection={showParticipantOverview ? (participantIds) => {
+          const next = participantIds.length === availableParticipantIds.length ? [] : participantIds;
+          setOverviewParticipantIds(next);
+          writeUiStorageString(DASHBOARD_PARTICIPANT_SELECTION_KEY, JSON.stringify(next));
+        } : undefined}
       />
       </div>
 
-      {showParticipantOverview ? (
-        <MultiParticipantOverview
-          sources={notificationSources}
+      {dashboardSources.length && !showParticipantOverview && visibleAnomaly ? (
+        <section className="card routine-anomaly-card" role="status" aria-labelledby="routine-anomaly-title">
+          <span className="settings-row-icon" aria-hidden="true"><AppIcon name="stats" /></span>
+          <div>
+            <span className="eyebrow">{t('routineAnomalyEyebrow')}</span>
+            <h2 id="routine-anomaly-title">{routinePresentationsById.get(visibleAnomaly.routineId)?.name ?? t('routine')}</h2>
+            <p>{t(visibleAnomaly.kind === 'missed' ? 'routineAnomalyMissed' : 'routineAnomalyRejected')}</p>
+            <small>{visibleAnomaly.failed}/{visibleAnomaly.checked} {t('routineAnomalyRecentChecks')}</small>
+          </div>
+          <button type="button" className="routine-anomaly-action" disabled={planningRecommendationStatus === 'saving'} onClick={() => {
+            if (recommendedPlan && updateRoutine) setPlanningRecommendationOpen((current) => !current);
+            else if (visibleAnomaly.kind === 'missed' && requestCheck) void resendActiveReminders(visibleAnomaly.routineId);
+            else setSummaryRange('week');
+          }}>{t(recommendedPlan && updateRoutine ? 'planningSuggestionView' : visibleAnomaly.kind === 'missed' && requestCheck ? 'routineAnomalyRequest' : 'routineAnomalyReview')}</button>
+          <button type="button" className="routine-anomaly-dismiss" aria-label={t('routineAnomalyDismiss')} onClick={() => {
+            if (!anomalyFingerprint) return;
+            localStorage.setItem(anomalyStorageKey, anomalyFingerprint);
+            setDismissedAnomaly(anomalyFingerprint);
+          }}><AppIcon name="close" /></button>
+          {planningRecommendationOpen && recommendedPlan && updateRoutine ? (
+            <div className="planning-recommendation">
+              <h3>{t('planningSuggestionTitle')}</h3>
+              <p>{t('planningSuggestionDetail')} <strong>{recommendedPlan.removedWindow.start}–{recommendedPlan.removedWindow.end}</strong></p>
+              {recommendedPlan.preservedWindow ? <p>{t('planningSuggestionPreserved')} <strong>{recommendedPlan.preservedWindow.start}–{recommendedPlan.preservedWindow.end}</strong></p> : null}
+              <div className="planning-recommendation-comparison">
+                <span><small>{t('planningSuggestionCurrent')}</small><strong>{recommendedPlan.previousChecksPerDay} {t('checksDay')}</strong></span>
+                <AppIcon name="chevron-forward" />
+                <span><small>{t('planningSuggestionProposed')}</small><strong>{recommendedPlan.proposedChecksPerDay} {t('checksDay')}</strong></span>
+              </div>
+              <p className="planning-recommendation-note">{t('planningSuggestionNote')}</p>
+              {planningRecommendationStatus === 'saved' ? <p className="request-feedback success" role="status">{t('planningSuggestionSaved')}</p> : null}
+              {planningRecommendationStatus === 'error' ? <p className="request-feedback error" role="alert">{t('planningSuggestionError')}</p> : null}
+              <button type="button" disabled={planningRecommendationStatus === 'saving' || planningRecommendationStatus === 'saved'} onClick={() => {
+                setPlanningRecommendationStatus('saving');
+                void updateRoutine(recommendedPlan.routineId, recommendedPlan.plan)
+                  .then(() => setPlanningRecommendationStatus('saved'))
+                  .catch((error) => { console.error(error); setPlanningRecommendationStatus('error'); });
+              }}>{planningRecommendationStatus === 'saving' ? t('planningSuggestionApplying') : t('planningSuggestionApply')}</button>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
+      {dashboardSources.length ? (
+        <ParticipantDashboardOverview
+          sources={dashboardSources}
           locale={state.locale}
           range={summaryRange}
           now={now}
           onRangeChange={setSummaryRange}
-          onSelectParticipant={selectParticipant}
+          selectedStatus={showParticipantOverview ? undefined : expandedStatus}
+          onSelectedStatusChange={showParticipantOverview ? undefined : setExpandedStatus}
           participantAccess={state.participantAccess}
-          reviewParticipantCheck={reviewParticipantCheck}
-          requestParticipantCheck={requestParticipantCheck}
-          getParticipantProofImageUrl={getParticipantProofImageUrl}
+          reviewParticipantCheck={dashboardReviewCheck}
+          requestParticipantCheck={dashboardRequestCheck}
+          cancelParticipantCheck={dashboardCancelCheck}
+          skipParticipantPlannedCheck={dashboardSkipCheck}
+          onEditParticipantRoutinePlan={dashboardEditPlan}
+          getParticipantProofImageUrl={dashboardProofImage}
           t={t}
         />
       ) : <>
@@ -596,7 +702,7 @@ export function ParentDashboard({
       ) : null}
 
       {expandedStatus === 'next' && state.family.childLinked && state.routineAssignments.length && upcomingChecks.length ? (
-        <UpcomingChecksSection checks={upcomingChecks} now={nowDate} locale={locale} titleId="responsible-upcoming-checks-title" t={t} />
+        <UpcomingChecksSection checks={upcomingChecks} now={nowDate} locale={locale} titleId="responsible-upcoming-checks-title" onRequest={requestCheck} onSkip={skipPlannedCheck} onEditPlan={onEditRoutinePlan} t={t} />
       ) : null}
 
       {state.family.childLinked ? (
@@ -638,11 +744,11 @@ export function ParentDashboard({
           filters={<HistoryFilterControls assignments={state.routineAssignments} events={rangedRawEvents} locale={state.locale} excludedRoutineIds={historyFilters.excludedRoutineIds} excludedStatuses={historyFilters.excludedStatuses} onToggleRoutine={historyFilters.toggleRoutine} onToggleStatuses={historyFilters.toggleStatuses} t={t} />}
           t={t}
         />
-        <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedRawEvents} locale={state.locale} titleId="responsible-history-title" excludedRoutineIds={historyFilters.excludedRoutineIds} excludedStatuses={historyFilters.excludedStatuses} colorForEvent={activeParticipantAccess ? () => profileColorFor(activeParticipantAccess.participant) : undefined} onRequestCheck={requestCheck} onOpenEvent={(event) => setDetailEventId(event.id)} t={t} />
+        <RoutineHistoryPanel assignments={state.routineAssignments} events={rangedRawEvents} locale={state.locale} titleId="responsible-history-title" excludedRoutineIds={historyFilters.excludedRoutineIds} excludedStatuses={historyFilters.excludedStatuses} colorForEvent={activeParticipantAccess ? () => profileColorFor(activeParticipantAccess.participant) : undefined} onRequestCheck={requestCheck} onCancelCheck={cancelCheck} onOpenEvent={(event) => setDetailEventId(event.id)} t={t} />
       </section>
 
-      {detailEvent ? <VerificationEventDetailDialog event={detailEvent} locale={state.locale} proofUrl={proofUrls[detailEvent.id]} getProofImageUrl={getProofImageUrl} reviewCheck={reviewCheck} requestCheck={requestCheck} onClose={() => setDetailEventId(undefined)} t={t} /> : null}
       </>}
+      {detailEvent ? <VerificationEventDetailDialog event={detailEvent} locale={state.locale} proofUrl={proofUrls[detailEvent.id]} getProofImageUrl={getProofImageUrl} reviewCheck={reviewCheck} requestCheck={requestCheck} cancelCheck={cancelCheck} onClose={() => setDetailEventId(undefined)} t={t} /> : null}
     </div>
   );
 }

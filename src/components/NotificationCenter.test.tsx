@@ -81,6 +81,53 @@ describe('NotificationCenter', () => {
     container.remove();
   });
 
+  it('clears visible notifications locally without hiding later notifications', () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const now = Date.now();
+    const eventFor = (id: string, requestedAt: number): VerificationEvent => ({
+      id,
+      routineId: 'orthodontic-elastics',
+      sessionId: `session-${id}`,
+      requestedAt: new Date(requestedAt).toISOString(),
+      expiresAt: new Date(requestedAt + 60 * 60_000).toISOString(),
+      status: 'pending',
+    });
+    const current = eventFor('current', now - 60_000);
+    const later = eventFor('later', now);
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const render = (events: VerificationEvent[]) => root.render(
+      <NotificationCenter
+        role="child"
+        sources={[{
+          participant: { id: 'maya', displayName: 'Maya' },
+          role: 'child',
+          events,
+          assignments: [createDefaultRoutineAssignment()],
+        }]}
+        locale="en"
+        contextId="maya"
+        onOpenEvent={vi.fn()}
+        t={(key) => translate('en', key)}
+      />,
+    );
+
+    act(() => render([current]));
+    act(() => container.querySelector<HTMLButtonElement>('.notification-center-trigger')?.click());
+    act(() => container.querySelector<HTMLButtonElement>('.notification-center-clear')?.click());
+
+    expect(confirm).toHaveBeenCalledWith('Clear all notifications from this device? Checks and history will not be deleted.');
+    expect(container.textContent).toContain('You’re all caught up');
+    expect(localStorage.getItem('zadiag.notificationCenter.dismissed.child.maya')).toBe('["maya:check_ready:current"]');
+
+    act(() => render([current, later]));
+    expect(container.querySelectorAll('.notification-center-list > button')).toHaveLength(1);
+
+    act(() => root.unmount());
+    container.remove();
+  });
+
   it('shows notifications from every profile and identifies their participant', () => {
     const container = document.createElement('div');
     document.body.appendChild(container);

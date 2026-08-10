@@ -1,121 +1,45 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import type { Locale, RoutineAssignment, VerificationEvent, VerificationStatus } from '../domain/models';
 import type { MessageKey } from '../services/i18n';
 import { presentRoutine } from '../domain/routinePresentation';
 import { AppIcon, routineIconName } from './Icon';
-import { StatusPill, statusMessageKey } from './StatusPill';
-import { canRetakeCapture, isSuccessfulVerification, stalePendingCheckReason, withResolvedEventStatuses } from '../domain/adherence';
+import { StatusPill } from './StatusPill';
+import { canRetakeCapture, stalePendingCheckReason, withResolvedEventStatuses } from '../domain/adherence';
 import { coalesceActivePendingEventsByRoutine } from '../domain/dashboardChecks';
 import { EmptyState, ListRow } from './ui';
-import { readUiStorageJson, writeUiStorageString } from '../services/uiStorage';
 import { languageTag } from '../services/locale';
+import { UpcomingCheckActionMenu } from './UpcomingCheckActionMenu';
 
 const eventTimestamp = (event: VerificationEvent) =>
   Date.parse(event.submittedAt ?? event.capturedAt ?? event.requestedAt);
+
+const historyStatusPriority: Record<VerificationStatus, number> = {
+  uncertain: 0,
+  not_detected: 2,
+  pending: 1,
+  analyzing: 1,
+  detected: 2,
+  answered: 2,
+  missed: 2,
+  expired: 2,
+  cancelled: 2,
+  skipped: 2,
+};
+
+export const compareHistoryEvents = (left: VerificationEvent, right: VerificationEvent) =>
+  historyStatusPriority[left.status] - historyStatusPriority[right.status]
+  || eventTimestamp(right) - eventTimestamp(left);
 
 const hiddenReasonCodes = new Set(['analysis_unavailable', 'self_validated']);
 
 const displayReason = (reason?: string) =>
   reason && !hiddenReasonCodes.has(reason) ? reason : undefined;
 
-const historyFilterStorageKey = (titleId: string) => `zadiag.historyFilters.${titleId}`;
-
-const readStoredFilters = (titleId: string) => {
-  const empty = { statuses: [] as VerificationStatus[], routineIds: [] as string[] };
-  return readUiStorageJson(historyFilterStorageKey(titleId), empty, (value) => {
-    const parsed = value as Partial<{ statuses: VerificationStatus[]; routineIds: string[] }>;
-    return {
-      statuses: Array.isArray(parsed.statuses) ? parsed.statuses : [],
-      routineIds: Array.isArray(parsed.routineIds) ? parsed.routineIds : [],
-    };
-  });
-};
-
 const analysisTag = (event: VerificationEvent, locale: Locale) => {
   if (event.analysisSource === 'ai') return locale === 'fr' ? 'IA' : 'AI';
   if (event.analysisSource === 'self' || event.reason === 'self_validated') return 'Auto';
   return undefined;
 };
-
-export const groupedVerificationStatuses = (statuses: VerificationStatus[]) => {
-  const groups = new Map<VerificationStatus, VerificationStatus[]>();
-  statuses.forEach((eventStatus) => {
-    const status = isSuccessfulVerification({ status: eventStatus }) ? 'detected' : eventStatus;
-    groups.set(status, [...(groups.get(status) ?? []), eventStatus]);
-  });
-  return Array.from(groups, ([status, eventStatuses]) => ({ status, eventStatuses }));
-};
-
-export function useHistoryFilters(titleId: string) {
-  const [excludedStatuses, setExcludedStatuses] = useState<VerificationStatus[]>(() => readStoredFilters(titleId).statuses);
-  const [excludedRoutineIds, setExcludedRoutineIds] = useState<string[]>(() => readStoredFilters(titleId).routineIds);
-  useEffect(() => {
-    writeUiStorageString(historyFilterStorageKey(titleId), JSON.stringify({
-      statuses: excludedStatuses,
-      routineIds: excludedRoutineIds,
-    }));
-  }, [excludedRoutineIds, excludedStatuses, titleId]);
-  return {
-    excludedStatuses,
-    excludedRoutineIds,
-    toggleRoutine: (routineId: string) => setExcludedRoutineIds((current) =>
-      current.includes(routineId) ? current.filter((item) => item !== routineId) : [...current, routineId]),
-    toggleStatuses: (statuses: VerificationStatus[]) => setExcludedStatuses((current) => {
-      const allActive = statuses.every((status) => !current.includes(status));
-      return allActive
-        ? Array.from(new Set([...current, ...statuses]))
-        : current.filter((status) => !statuses.includes(status));
-    }),
-  };
-}
-
-export function HistoryFilterControls({
-  assignments,
-  events,
-  locale,
-  excludedRoutineIds,
-  excludedStatuses,
-  onToggleRoutine,
-  onToggleStatuses,
-  t,
-}: {
-  assignments: RoutineAssignment[];
-  events: VerificationEvent[];
-  locale: Locale;
-  excludedRoutineIds: string[];
-  excludedStatuses: VerificationStatus[];
-  onToggleRoutine: (routineId: string) => void;
-  onToggleStatuses: (statuses: VerificationStatus[]) => void;
-  t: (key: MessageKey) => string;
-}) {
-  const statuses = groupedVerificationStatuses(Array.from(new Set(
-    withResolvedEventStatuses(coalesceActivePendingEventsByRoutine(events, Date.now()), Date.now())
-      .map((event) => event.status),
-  )));
-  return (
-    <div className="history-filter-controls">
-      <div className="filter-group">
-        <span>{t('filterByRoutine')}</span>
-        <div className="filter-chips">
-          {assignments.map((assignment) => {
-            const visual = presentRoutine(assignment.routine, locale);
-            const active = !excludedRoutineIds.includes(assignment.routineId);
-            return <button type="button" key={assignment.id} aria-pressed={active} className={active ? 'active' : ''} onClick={() => onToggleRoutine(assignment.routineId)}>{visual.name}</button>;
-          })}
-        </div>
-      </div>
-      <div className="filter-group">
-        <span>{t('filterByStatus')}</span>
-        <div className="filter-chips">
-          {statuses.map(({ status, eventStatuses }) => {
-            const active = eventStatuses.every((eventStatus) => !excludedStatuses.includes(eventStatus));
-            return <button type="button" key={status} aria-pressed={active} className={`filter-status-${status} ${active ? 'active' : ''}`} onClick={() => onToggleStatuses(eventStatuses)}>{t(statusMessageKey(status))}</button>;
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export function RoutineHistoryPanel({
   assignments,
@@ -126,8 +50,9 @@ export function RoutineHistoryPanel({
   onRetake,
   onOpenEvent,
   onRequestCheck,
+  onCancelCheck,
+  canManageCheck,
   participants,
-  participantForEvent,
   colorForEvent,
   excludedParticipantIds = [],
   excludedRoutineIds,
@@ -142,9 +67,10 @@ export function RoutineHistoryPanel({
   retryEvents?: VerificationEvent[];
   onRetake?: (event: VerificationEvent) => void;
   onOpenEvent?: (event: VerificationEvent) => void;
-  onRequestCheck?: (routineId: string) => Promise<void>;
+  onRequestCheck?: (routineId: string, event?: VerificationEvent) => Promise<void>;
+  onCancelCheck?: (eventId: string, event?: VerificationEvent) => Promise<void>;
+  canManageCheck?: (event: VerificationEvent) => boolean;
   participants?: Array<{ id: string; displayName: string; profileColor: string }>;
-  participantForEvent?: (event: VerificationEvent) => { id: string; displayName: string; profileColor: string } | undefined;
   colorForEvent?: (event: VerificationEvent) => string | undefined;
   excludedParticipantIds?: string[];
   excludedRoutineIds: string[];
@@ -153,6 +79,7 @@ export function RoutineHistoryPanel({
   t: (key: MessageKey) => string;
 }) {
   const [requestingEventId, setRequestingEventId] = useState<string>();
+  const [openActionEventId, setOpenActionEventId] = useState<string>();
   const [hiddenRequestEventIds, setHiddenRequestEventIds] = useState<Record<string, string>>({});
   const formatterLocale = languageTag(locale);
   const now = Date.now();
@@ -169,7 +96,7 @@ export function RoutineHistoryPanel({
     presentRoutine(assignment.routine, locale),
   ])), [assignments, locale]);
   const sortedEvents = useMemo(
-    () => [...displayEvents].sort((a, b) => eventTimestamp(b) - eventTimestamp(a)),
+    () => [...displayEvents].sort(compareHistoryEvents),
     [displayEvents],
   );
   const latestMissedEventIds = useMemo(() => {
@@ -239,6 +166,9 @@ export function RoutineHistoryPanel({
               const canRequestCheck = Boolean(onRequestCheck)
                 && latestMissedEventIds.has(event.id)
                 && hiddenRequestEventIds[event.routineId] !== event.id;
+              const isActive = event.status === 'pending' && Date.parse(event.expiresAt) > now;
+              const canManageActiveCheck = isActive && (canManageCheck?.(event) ?? true);
+              const hasActiveMenu = canManageActiveCheck && Boolean(onRequestCheck || onCancelCheck);
               const reason = displayReason(event.reason);
               const staleReason = stalePendingCheckReason(events.find((item) => item.id === event.id) ?? event, assignments);
               const staleHint = staleReason === 'expired'
@@ -250,7 +180,7 @@ export function RoutineHistoryPanel({
               return (
                 <ListRow
                   as="section"
-                  className={`card history-row parent-history-row${participantColor ? ' has-participant-accent' : ''}${onOpenEvent ? ' history-row-clickable' : ''}`}
+                  className={`card history-row parent-history-row${participantColor ? ' has-participant-accent' : ''}${onOpenEvent ? ' history-row-clickable' : ''}${hasActiveMenu ? ' history-row-has-menu' : ''}${openActionEventId === event.id ? ' history-row-menu-open' : ''}`}
                   variant="bare"
                   icon={<AppIcon name={routineIconName(visual?.icon)} />}
                   iconClassName="history-icon routine-history-icon"
@@ -269,7 +199,23 @@ export function RoutineHistoryPanel({
                     <>
                     {onOpenEvent ? <button type="button" className="history-row-open-button" aria-label={`${t('historyDetailTitle')} · ${visual?.name ?? t('routine')} · ${formatDateTime(event.requestedAt)}`} onClick={() => onOpenEvent(event)} /> : null}
                     <div className="history-row-actions">
-                      <StatusPill status={event.status} t={t} />
+                      {!hasActiveMenu ? <StatusPill status={event.status} t={t} /> : null}
+                      {hasActiveMenu ? (
+                        <UpcomingCheckActionMenu
+                          actionId={`history:${event.id}`}
+                          actionLabel={t('checkActions')}
+                          context={{ label: t('pending'), detail: `${t('historyExpiresAt')} · ${formatDateTime(event.expiresAt)}` }}
+                          routineId={event.routineId}
+                          routineName={visual?.name ?? t('routine')}
+                          plannedStart={new Date(event.requestedAt)}
+                          plannedEnd={new Date(event.expiresAt)}
+                          eventId={event.id}
+                          onRequest={onRequestCheck ? (routineId) => onRequestCheck(routineId, event) : undefined}
+                          onCancel={onCancelCheck ? (eventId) => onCancelCheck(eventId, event) : undefined}
+                          onOpenChange={(open) => setOpenActionEventId(open ? event.id : (current) => current === event.id ? undefined : current)}
+                          t={t}
+                        />
+                      ) : null}
                       {canRequestCheck ? (
                         <button
                           type="button"

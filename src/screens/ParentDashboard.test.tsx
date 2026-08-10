@@ -105,6 +105,8 @@ describe('ParentDashboard', () => {
     };
 
     act(() => root.render(<ParentDashboard state={state} regenerateCode={vi.fn()} requestCheck={vi.fn()} t={(key) => translate('en', key)} />));
+    expect(container.querySelector('.participant-dashboard-overview')).not.toBeNull();
+    expect(container.querySelector('.participant-history-filter-card')).toBeNull();
     expect(container.querySelector<HTMLElement>('.parent-history-row')?.style.getPropertyValue('--history-participant-color')).not.toBe('');
     const openDetails = container.querySelector<HTMLButtonElement>('.history-row-open-button');
     act(() => openDetails?.click());
@@ -123,6 +125,7 @@ describe('ParentDashboard', () => {
     const assignment = createDefaultRoutineAssignment(now);
     const selectParticipant = vi.fn();
     const reviewParticipantCheck = vi.fn().mockResolvedValue(undefined);
+    const getParticipantProofImageUrl = vi.fn().mockResolvedValue('data:image/png;base64,COLLECTIVE');
     const state: AppState = {
       role: 'parent', locale: 'en', notificationsEnabled: true, activeParticipantId: 'maya',
       family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
@@ -148,17 +151,17 @@ describe('ParentDashboard', () => {
     };
 
     const setParticipantOverview = vi.fn();
-    act(() => root.render(<ParentDashboard state={state} participantOverview onParticipantOverviewChange={setParticipantOverview} onSelectParticipant={selectParticipant} reviewParticipantCheck={reviewParticipantCheck} t={(key) => translate('en', key)} />));
+    act(() => root.render(<ParentDashboard state={state} participantOverview onParticipantOverviewChange={setParticipantOverview} onSelectParticipant={selectParticipant} reviewParticipantCheck={reviewParticipantCheck} getParticipantProofImageUrl={getParticipantProofImageUrl} t={(key) => translate('en', key)} />));
 
-    expect(container.querySelector('.multi-participant-overview')).not.toBeNull();
+    expect(container.querySelector('.participant-dashboard-overview')).not.toBeNull();
     expect(container.querySelector('.adherence-summary-card')).not.toBeNull();
-    expect(container.querySelector('.history-filter-card')).not.toBeNull();
+    expect(container.querySelector('.history-filter-card')).toBeNull();
     const collectiveStatus = container.querySelector('.dashboard-status-summary');
     const collectiveWeekly = container.querySelector('.weekly-insight-card');
     const collectiveSummary = container.querySelector('.adherence-summary-card');
     expect(Boolean(collectiveStatus!.compareDocumentPosition(collectiveWeekly!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
     expect(Boolean(collectiveWeekly!.compareDocumentPosition(collectiveSummary!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
-    expect(Array.from(container.querySelectorAll('.filter-group > span')).map((label) => label.textContent)).toEqual(['Routine', 'Status', 'Participant']);
+    expect(Array.from(container.querySelectorAll('.filter-group > span')).map((label) => label.textContent)).toEqual(['Routine', 'Status']);
     expect(container.textContent).toContain('Results');
     expect(container.querySelectorAll('.parent-history-row')).toHaveLength(2);
     const weekRange = Array.from(container.querySelectorAll<HTMLButtonElement>('.summary-range-toggle button'))
@@ -169,40 +172,37 @@ describe('ParentDashboard', () => {
     const collectiveTitles = Array.from(container.querySelectorAll('.parent-history-row strong')).map((title) => title.textContent).join(' ');
     expect(collectiveTitles).not.toContain('Maya');
     expect(collectiveTitles).not.toContain('Leo');
-    const participantChips = Array.from(container.querySelectorAll<HTMLElement>('.participant-filter-chip'));
-    expect(participantChips.every((chip) => chip.style.getPropertyValue('--profile-color').length > 0)).toBe(true);
     expect(new Set(Array.from(container.querySelectorAll<HTMLElement>('.has-participant-accent')).map((row) => row.style.getPropertyValue('--history-participant-color'))).size).toBe(2);
     expect(container.textContent).toContain('Detailed report');
     const reviewStatus = Array.from(container.querySelectorAll<HTMLButtonElement>('.dashboard-status-summary button'))
       .find((button) => button.textContent?.includes('To review'));
-    act(() => reviewStatus?.click());
+    await act(async () => {
+      reviewStatus?.click();
+      await Promise.resolve();
+    });
     const collectiveReview = container.querySelector('.collective-operational-section');
     expect(Boolean(collectiveReview?.compareDocumentPosition(collectiveWeekly!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    expect(getParticipantProofImageUrl).toHaveBeenCalledWith('leo', 'leo-review');
+    act(() => container.querySelector<HTMLButtonElement>('.collective-operational-section .parent-review-image-button')?.click());
+    expect(container.querySelector('.proof-lightbox')).not.toBeNull();
+    expect(container.querySelector('.proof-lightbox button[aria-label="Validate"]')).not.toBeNull();
+    act(() => container.querySelector<HTMLButtonElement>('.proof-lightbox-close')?.click());
     await act(async () => {
       container.querySelector<HTMLButtonElement>('.collective-operational-section .parent-review-button.approve')?.click();
     });
     expect(reviewParticipantCheck).toHaveBeenCalledWith('leo', 'leo-review', 'detected');
 
-    const leoFilter = Array.from(container.querySelectorAll<HTMLButtonElement>('.participant-history-filter-card button'))
-      .find((button) => button.textContent === 'Leo');
-    act(() => leoFilter?.click());
-    expect(container.querySelectorAll('.parent-history-row')).toHaveLength(2);
-    expect(container.querySelector('.progress-ring')?.textContent).toBe('50%');
-
-    const mayaFilter = Array.from(container.querySelectorAll<HTMLButtonElement>('.participant-history-filter-card button'))
-      .find((button) => button.textContent === 'Maya');
-    act(() => mayaFilter?.click());
-    expect(container.querySelector('.participant-history-filter-card')).not.toBeNull();
-    expect(Array.from(container.querySelectorAll<HTMLButtonElement>('.participant-filter-chip')).every((button) => button.getAttribute('aria-pressed') === 'false')).toBe(true);
-    expect(container.querySelectorAll('.parent-history-row')).toHaveLength(0);
-    expect(container.querySelector('.history-results-heading span')?.textContent).toBe('0');
-
-    act(() => leoFilter?.click());
-    expect(container.querySelector('.participant-history-filter-card')).not.toBeNull();
+    const participantOptions = Array.from(container.querySelectorAll<HTMLButtonElement>('.participant-switcher-menu > button'));
+    act(() => participantOptions.find((button) => button.textContent?.includes('Maya'))?.click());
+    act(() => container.querySelector<HTMLButtonElement>('.participant-switcher-apply')?.click());
+    expect(localStorage.getItem('zadiag.dashboard.participantSelection')).toBe('["leo"]');
+    expect(container.querySelector('.participant-history-filter-card')).toBeNull();
     expect(container.querySelectorAll('.parent-history-row')).toHaveLength(1);
 
     act(() => container.querySelector<HTMLButtonElement>('.history-row-open-button')?.click());
-    expect(selectParticipant).toHaveBeenCalledWith('leo');
+    expect(selectParticipant).not.toHaveBeenCalled();
+    expect(container.querySelector('.participant-dashboard-overview')).not.toBeNull();
+    expect(container.querySelector('.history-detail-dialog')).not.toBeNull();
   });
 
   it('requests a collective active check for its owning participant', async () => {
@@ -241,6 +241,87 @@ describe('ParentDashboard', () => {
     });
 
     expect(requestParticipantCheck).toHaveBeenCalledWith('leo', assignment.routineId);
+  });
+
+  it('cancels an active history check in its participant context without leaving the collective view', async () => {
+    const now = new Date().toISOString();
+    const assignment = createDefaultRoutineAssignment(now);
+    const cancelParticipantCheck = vi.fn().mockResolvedValue(undefined);
+    const requestParticipantCheck = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true, activeParticipantId: 'maya',
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      participantAccess: [
+        { participant: { id: 'maya', displayName: 'Maya', profileColor: 'violet' }, membership: { role: 'owner', status: 'active' } },
+        { participant: { id: 'leo', displayName: 'Leo', profileColor: 'teal' }, membership: { role: 'caregiver', status: 'active' } },
+      ],
+      notificationSources: [
+        { participant: { id: 'maya', displayName: 'Maya', profileColor: 'violet' }, role: 'parent', assignments: [assignment], events: [] },
+        {
+          participant: { id: 'leo', displayName: 'Leo', profileColor: 'teal' }, role: 'parent', assignments: [assignment],
+          events: [{ id: 'leo-active', routineId: assignment.routineId, sessionId: 'leo', requestedAt: now, expiresAt: new Date(Date.now() + 3_600_000).toISOString(), status: 'pending' }],
+        },
+      ],
+      routineAssignments: [assignment],
+      events: [],
+    };
+
+    act(() => root.render(<ParentDashboard state={state} participantOverview requestParticipantCheck={requestParticipantCheck} cancelParticipantCheck={cancelParticipantCheck} t={(key) => translate('en', key)} />));
+    const trigger = container.querySelector<HTMLButtonElement>('.parent-history-row [aria-haspopup="menu"]');
+    expect(trigger?.closest('.history-row-has-menu')).not.toBeNull();
+    expect(trigger?.closest('.parent-history-row')?.querySelector('.status-pill')).toBeNull();
+    act(() => trigger?.click());
+    expect(trigger?.closest('.history-row-menu-open')).not.toBeNull();
+    expect(container.querySelectorAll('.parent-history-row [role="menuitem"]')).toHaveLength(2);
+    expect(container.querySelector('.upcoming-check-menu-context')?.textContent).toContain('Pending');
+    expect(container.querySelector('.upcoming-check-menu-context')?.textContent).toContain('Deadline');
+    expect(container.querySelector('.participant-dashboard-overview')).not.toBeNull();
+
+    const cancel = Array.from(container.querySelectorAll<HTMLButtonElement>('.parent-history-row [role="menuitem"]'))
+      .find((button) => button.textContent?.includes('Cancel this check'));
+    await act(async () => cancel?.click());
+
+    expect(window.confirm).toHaveBeenCalled();
+    expect(cancelParticipantCheck).toHaveBeenCalledWith('leo', 'leo-active');
+    expect(container.querySelector('.participant-dashboard-overview')).not.toBeNull();
+  });
+
+  it('offers upcoming actions in the owning participant context', async () => {
+    const assignment = createDefaultRoutineAssignment();
+    const today = new Date();
+    assignment.plan = {
+      ...assignment.plan,
+      weekdays: [today.getDay() === 0 ? 7 : today.getDay()],
+      windows: [{ id: 'late', start: '23:00', end: '23:30' }],
+      scheduleGroups: undefined,
+    };
+    const requestParticipantCheck = vi.fn().mockResolvedValue(undefined);
+    const skipParticipantPlannedCheck = vi.fn().mockResolvedValue(undefined);
+    const onEditParticipantRoutinePlan = vi.fn();
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true, activeParticipantId: 'maya',
+      family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
+      participantAccess: [
+        { participant: { id: 'maya', displayName: 'Maya', profileColor: 'violet' }, membership: { role: 'owner', status: 'active' } },
+        { participant: { id: 'leo', displayName: 'Leo', profileColor: 'teal' }, membership: { role: 'caregiver', status: 'active' } },
+      ],
+      notificationSources: [
+        { participant: { id: 'maya', displayName: 'Maya', profileColor: 'violet' }, role: 'parent', assignments: [assignment], events: [] },
+        { participant: { id: 'leo', displayName: 'Leo', profileColor: 'teal' }, role: 'parent', assignments: [], events: [] },
+      ],
+      routineAssignments: [assignment], events: [],
+    };
+    await act(async () => root.render(<ParentDashboard state={state} participantOverview requestParticipantCheck={requestParticipantCheck} skipParticipantPlannedCheck={skipParticipantPlannedCheck} onEditParticipantRoutinePlan={onEditParticipantRoutinePlan} t={(key) => translate('en', key)} />));
+    const nextStatus = Array.from(container.querySelectorAll<HTMLButtonElement>('.dashboard-status-summary button')).find((button) => button.textContent?.includes('Next'))!;
+    await act(async () => nextStatus.click());
+    const trigger = container.querySelector<HTMLButtonElement>('.collective-upcoming-check-card [aria-haspopup="menu"]')!;
+    expect(trigger).not.toBeNull();
+    await act(async () => trigger.click());
+    expect(container.querySelectorAll('.collective-upcoming-check-card [role="menuitem"]')).toHaveLength(3);
+    const edit = Array.from(container.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')).find((button) => button.textContent?.includes('Edit schedule'))!;
+    await act(async () => edit.click());
+    expect(onEditParticipantRoutinePlan).toHaveBeenCalledWith('maya', assignment.routineId);
   });
 
   it('shows an actionable repeated-failure trend and keeps it dismissed until a new failure', async () => {
@@ -799,6 +880,8 @@ describe('ParentDashboard', () => {
       role: 'parent',
       locale: 'en',
       notificationsEnabled: true,
+      activeParticipantId: 'maya',
+      participantAccess: [{ participant: { id: 'maya', displayName: 'Maya', profileColor: 'violet' }, membership: { role: 'owner', status: 'active' } }],
       family: { linked: true, childLinked: true, childName: 'Maya', linkingCode: '', parentRecoveryCode: '', consented: true },
       routineAssignments: [assignment],
       events: [{

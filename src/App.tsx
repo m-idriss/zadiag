@@ -207,6 +207,7 @@ export function App() {
   const [savingRoutineId, setSavingRoutineId] = useState<string>();
   const [selectedSessionId, setSelectedSessionId] = useState<string>();
   const [focusedHistoryEventId, setFocusedHistoryEventId] = useState<string>();
+  const [focusedRoutinePlanId, setFocusedRoutinePlanId] = useState<string>();
   const [focusedDashboardEventId, setFocusedDashboardEventId] = useState<string>();
   const [notificationIntentSequence, setNotificationIntentSequence] = useState(0);
   const [notificationNotice, setNotificationNotice] = useState<{ key: MessageKey; eventId?: string }>();
@@ -775,6 +776,7 @@ export function App() {
             start={canSubmitChecks ? () => startCapture() : undefined}
             edit={canManageRoutines}
             requestCheck={canRequestChecks ? withRepositorySync(repository.requestCheckNow) : undefined}
+            cancelCheck={canRequestChecks ? withRepositorySyncVoid(repository.cancelCheck) : undefined}
             getProofImageUrl={(eventId) => repository.getProofImageUrl(eventId)}
             reviewCheck={canReviewProofs ? withRepositorySyncVoid(repository.reviewCheck) : undefined}
             revealReward={repository.revealRewardClaim?.bind(repository)}
@@ -830,6 +832,9 @@ export function App() {
             } : undefined}
             savingRoutineId={savingRoutineId}
             focusedEventId={focusedHistoryEventId}
+            focusedRoutineId={focusedRoutinePlanId}
+            initialRoutineTab={focusedRoutinePlanId ? 'plan' : undefined}
+            onFocusedRoutineConsumed={() => setFocusedRoutinePlanId(undefined)}
             onFocusedEventConsumed={() => setFocusedHistoryEventId(undefined)}
             t={t}
           />
@@ -888,11 +893,23 @@ export function App() {
               getProofImageUrl={(eventId) => repository.getProofImageUrl(eventId)}
               reviewCheck={canReviewProofs ? withRepositorySyncVoid(repository.reviewCheck) : undefined}
               requestCheck={canRequestChecks ? withRepositorySync(repository.requestCheckNow) : undefined}
+              cancelCheck={canRequestChecks ? withRepositorySyncVoid(repository.cancelCheck) : undefined}
+              skipPlannedCheck={canRequestChecks ? withRepositorySyncVoid(repository.skipPlannedCheck) : undefined}
+              onEditRoutinePlan={canManageRoutines ? (routineId) => { setFocusedRoutinePlanId(routineId); setTab('routines'); } : undefined}
               reviewParticipantCheck={repository.selectActiveParticipant
                 ? (participantId, eventId, decision) => runInParticipantContext(participantId, () => repository.reviewCheck(eventId, decision)).then(() => undefined)
                 : undefined}
               requestParticipantCheck={repository.selectActiveParticipant
                 ? (participantId, routineId) => runInParticipantContext(participantId, () => repository.requestCheckNow(routineId))
+                : undefined}
+              cancelParticipantCheck={repository.selectActiveParticipant
+                ? (participantId, eventId) => runInParticipantContext(participantId, () => repository.cancelCheck(eventId)).then(() => undefined)
+                : undefined}
+              skipParticipantPlannedCheck={repository.selectActiveParticipant
+                ? (participantId, routineId, plannedStart, plannedEnd) => runInParticipantContext(participantId, () => repository.skipPlannedCheck(routineId, plannedStart, plannedEnd)).then(() => undefined)
+                : undefined}
+              onEditParticipantRoutinePlan={selectParticipantContext
+                ? async (participantId, routineId) => { await selectParticipantContext(participantId); setFocusedRoutinePlanId(routineId); setTab('routines'); }
                 : undefined}
               getParticipantProofImageUrl={repository.selectActiveParticipant
                 ? (participantId, eventId) => runInParticipantContext(participantId, () => repository.getProofImageUrl(eventId))

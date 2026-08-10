@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildCheckNotificationPayload, buildDeclarativePushPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription, notificationWindowIsOpen } from './notifications.js';
+import { buildCancelledCheckNotificationPayload, buildCheckNotificationPayload, buildDeclarativePushPayload, buildMissedCheckNotificationPayload, buildReviewNotificationPayload, buildTestNotificationPayload, normalizePushPreferences, normalizePushSubscription, notificationWindowIsOpen } from './notifications.js';
 
 test('normalizes bounded Web Push subscriptions', () => {
   const subscription = normalizePushSubscription({
@@ -73,6 +73,23 @@ test('builds the current English reminder notification payload', () => {
   assert.equal(payload.path, '/?open=verification&session=session-2');
 });
 
+test('builds a French cancellation notification that replaces the active check notification', () => {
+  const payload = buildCancelledCheckNotificationPayload({
+    checkId: 'check-1',
+    sessionId: 'session-1',
+    routineId: 'orthodontic-elastics',
+    routineName: 'Orthodontic Elastics',
+    routineNames: { fr: 'Élastiques orthodontiques' },
+    routineIcon: '🦷',
+    locale: 'fr',
+  });
+  assert.equal(payload.kind, 'check-cancelled');
+  assert.equal(payload.title, '🦷 Élastiques orthodontiques · annulé');
+  assert.equal(payload.body, 'Ce contrôle a été annulé par un responsable.');
+  assert.equal(payload.tag, 'verification:session-1');
+  assert.equal(payload.path, '/');
+});
+
 test('builds a French review notification payload for responsible users only', () => {
   const payload = buildReviewNotificationPayload({
     participantId: 'participant-alex',
@@ -91,6 +108,26 @@ test('builds a French review notification payload for responsible users only', (
   assert.equal(payload.body, 'Une preuve attend votre validation.');
   assert.equal(payload.tag, 'review:check-1');
   assert.equal(payload.path, '/?open=review&participant=participant-alex&event=check-1');
+});
+
+test('builds a French missed-check notification for responsible users', () => {
+  const payload = buildMissedCheckNotificationPayload({
+    participantId: 'participant-alex',
+    checkId: 'check-2',
+    routineId: 'orthodontic-elastics',
+    routineName: 'Orthodontic Elastics',
+    routineNames: { fr: 'Élastiques orthodontiques' },
+    routineIcon: '🦷',
+    locale: 'fr',
+  });
+
+  assert.equal(payload.version, 2);
+  assert.equal(payload.kind, 'check-missed');
+  assert.equal(payload.participantId, 'participant-alex');
+  assert.equal(payload.title, '🦷 Élastiques orthodontiques · manqué');
+  assert.equal(payload.body, 'Aucune preuve reçue dans le délai prévu.');
+  assert.equal(payload.tag, 'missed:check-2');
+  assert.equal(payload.path, '/?open=review&participant=participant-alex&event=check-2');
 });
 
 test('builds a localized test notification payload', () => {

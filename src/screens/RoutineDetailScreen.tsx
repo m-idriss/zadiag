@@ -159,7 +159,7 @@ function RoutineContentEditButton({ label, target, busy, onEdit }: {
   return <button type="button" className="routine-content-edit-overlay" aria-label={label} aria-busy={busy} disabled={busy} onClick={() => onEdit(target)}><SvgIcon icon={chevronForwardOutline} /></button>;
 }
 
-export function RoutineDetailScreen({ assignment, state, back, start, getProofImageUrl, reviewCheck, requestCheck, revealReward, getRewardPoolStatus, addRewardCodes, revokeRewardPool, t, edit, initialTab, initialEventId, onInitialEventConsumed, onSaveMonitoringPlan, onSaveAppearance, onForkContent, forkingContent, routinePlanBusy }: {
+export function RoutineDetailScreen({ assignment, state, back, start, getProofImageUrl, reviewCheck, requestCheck, cancelCheck, revealReward, getRewardPoolStatus, addRewardCodes, revokeRewardPool, t, edit, initialTab, initialEventId, onInitialEventConsumed, onSaveMonitoringPlan, onSaveAppearance, onForkContent, forkingContent, routinePlanBusy }: {
   assignment: RoutineAssignment;
   state: AppState;
   back: () => void;
@@ -167,6 +167,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
   getProofImageUrl?: (eventId: string) => Promise<string>;
   reviewCheck?: (eventId: string, decision: ReviewCheckDecision) => Promise<void>;
   requestCheck?: (routineId: string) => Promise<void>;
+  cancelCheck?: (eventId: string) => Promise<void>;
   revealReward?: (eventId: string) => Promise<RewardClaimReveal>;
   getRewardPoolStatus?: (routineId: string) => Promise<RewardPoolStatus>;
   addRewardCodes?: (routineId: string, codes: string[], claimLifetimeHours: number) => Promise<RewardPoolStatus>;
@@ -367,7 +368,7 @@ export function RoutineDetailScreen({ assignment, state, back, start, getProofIm
       {tab === 'tracking' && trackingPanel}
 
       {selectedHistoryEvent ? (
-        <VerificationEventDetailDialog event={selectedHistoryEvent} locale={state.locale} proofUrl={proofUrls[selectedHistoryEvent.id]} getProofImageUrl={getProofImageUrl} reviewCheck={reviewCheck} requestCheck={requestCheck} revealReward={revealReward} onClose={() => setSelectedHistoryEventId(undefined)} t={t} />
+        <VerificationEventDetailDialog event={selectedHistoryEvent} locale={state.locale} proofUrl={proofUrls[selectedHistoryEvent.id]} getProofImageUrl={getProofImageUrl} reviewCheck={reviewCheck} requestCheck={requestCheck} cancelCheck={cancelCheck} revealReward={revealReward} onClose={() => setSelectedHistoryEventId(undefined)} t={t} />
       ) : null}
 
       {enlargedProofUrl ? (

@@ -121,6 +121,7 @@ export function RoutinesScreen({
   start,
   edit,
   requestCheck,
+  cancelCheck,
   getProofImageUrl,
   reviewCheck,
   revealReward,
@@ -155,6 +156,9 @@ export function RoutinesScreen({
   onSaveRoutineAppearance,
   savingRoutineId,
   focusedEventId,
+  focusedRoutineId,
+  initialRoutineTab,
+  onFocusedRoutineConsumed,
   onFocusedEventConsumed,
   t,
 }: {
@@ -162,6 +166,7 @@ export function RoutinesScreen({
   start?: () => void;
   edit?: boolean;
   requestCheck?: (routineId: string) => Promise<void>;
+  cancelCheck?: (eventId: string) => Promise<void>;
   getProofImageUrl?: (eventId: string) => Promise<string>;
   reviewCheck?: (eventId: string, decision: ReviewCheckDecision) => Promise<void>;
   revealReward?: (eventId: string) => Promise<RewardClaimReveal>;
@@ -196,12 +201,16 @@ export function RoutinesScreen({
   onSaveRoutineAppearance?: (routineId: string, appearance: RoutineAppearance) => Promise<void>;
   savingRoutineId?: string;
   focusedEventId?: string;
+  focusedRoutineId?: string;
+  initialRoutineTab?: 'overview' | 'plan' | 'tracking';
+  onFocusedRoutineConsumed?: () => void;
   onFocusedEventConsumed?: () => void;
   t: (key: MessageKey) => string;
 }) {
   const focusedEvent = state.events.find((event) => event.id === focusedEventId);
   const focusedAssignment = state.routineAssignments.find((assignment) => assignment.routineId === focusedEvent?.routineId);
-  const [selectedId, setSelectedId] = useState<string | undefined>(() => focusedAssignment?.id ?? readUiStorageString(ROUTINES_SELECTED_ASSIGNMENT_KEY));
+  const focusedRoutineAssignment = state.routineAssignments.find((assignment) => assignment.routineId === focusedRoutineId);
+  const [selectedId, setSelectedId] = useState<string | undefined>(() => focusedAssignment?.id ?? focusedRoutineAssignment?.id ?? readUiStorageString(ROUTINES_SELECTED_ASSIGNMENT_KEY));
   const [requestingRoutineId, setRequestingRoutineId] = useState<string>();
   const [requestStatuses, setRequestStatuses] = useState<Record<string, RequestStatus>>({});
   const [requestRetries, setRequestRetries] = useState<Record<string, RequestRetryState>>({});
@@ -239,7 +248,7 @@ export function RoutinesScreen({
   const [routineShare, setRoutineShare] = useState<{ entryId: string; shareCode: string }>();
   const [sharedRoutineCode, setSharedRoutineCode] = useState('');
   const [privateShareCodes, setPrivateShareCodes] = useState<Record<string, string>>({});
-  const [detailInitialTab, setDetailInitialTab] = useState<'overview' | 'plan' | 'tracking' | undefined>(() => focusedEventId ? 'tracking' : undefined);
+  const [detailInitialTab, setDetailInitialTab] = useState<'overview' | 'plan' | 'tracking' | undefined>(() => focusedEventId ? 'tracking' : initialRoutineTab);
   const [expandedScheduleIds, setExpandedScheduleIds] = useState<Set<string>>(() => readStoredStringSet(ROUTINES_EXPANDED_SCHEDULES_KEY));
   const selected = state.routineAssignments.find((assignment) => assignment.id === selectedId);
   const canManageRoutines = state.role === 'parent' && Boolean(edit);
@@ -303,6 +312,10 @@ export function RoutinesScreen({
     if (selectedId) writeUiStorageString(ROUTINES_SELECTED_ASSIGNMENT_KEY, selectedId);
     else removeUiStorageItem(ROUTINES_SELECTED_ASSIGNMENT_KEY);
   }, [selectedId]);
+
+  useEffect(() => {
+    if (focusedRoutineAssignment) onFocusedRoutineConsumed?.();
+  }, [focusedRoutineAssignment, onFocusedRoutineConsumed]);
 
   useEffect(() => {
     writeUiStorageString(ROUTINES_CATALOG_OPEN_KEY, String(catalogOpen));
@@ -378,7 +391,7 @@ export function RoutinesScreen({
     return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDraftEditorScreen key={draft?.id ?? 'new'} draft={draft} locale={state.locale} online={online} save={saveDraft} approve={approve} aiAvailable={aiCapabilities?.routineGeneration.enabled} quizAvailable={aiCapabilities?.dynamicQuizGeneration.enabled} planSummary={planSummary} propose={onProposeRoutineChallenge ? async (input) => { const proposal = await onProposeRoutineChallenge({ ...input, locale: state.locale }); void onRecordAuthoringStage?.(input.refinement ? 'routine_authoring_refinement' : 'routine_authoring_proposal').catch(() => undefined); return proposal; } : undefined} cancel={closeDraftEditor} reload={() => { closeDraftEditor(); setDraftReloadSequence((value) => value + 1); }} t={t} /></Suspense>;
   }
 
-  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={backToList} start={start} edit={canManageRoutines} initialTab={detailInitialTab} initialEventId={focusedEventId} onInitialEventConsumed={onFocusedEventConsumed} getProofImageUrl={getProofImageUrl} reviewCheck={canManageRoutines ? reviewCheck : undefined} requestCheck={canManageRoutines ? requestCheck : undefined} revealReward={revealReward} getRewardPoolStatus={canManageRoutines ? getRewardPoolStatus : undefined} addRewardCodes={canManageRoutines ? addRewardCodes : undefined} revokeRewardPool={canManageRoutines ? revokeRewardPool : undefined} onSaveMonitoringPlan={canManageRoutines && onSaveMonitoringPlan ? (plan, validationMode) => onSaveMonitoringPlan(selected.routineId, plan, validationMode) : undefined} onSaveAppearance={canManageRoutines && onSaveRoutineAppearance ? (appearance) => onSaveRoutineAppearance(selected.routineId, appearance) : undefined} onForkContent={canManageRoutines && onForkRoutineAssignmentDraft ? () => forkAssignedRoutine(selected) : undefined} forkingContent={forkingRoutineId === selected.routineId} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
+  if (selected) return <Suspense fallback={<div className="content-screen routines-state" role="status"><p>{t('loadingRoutineDetails')}</p></div>}><RoutineDetailScreen key={`${selected.id}-${detailInitialTab ?? 'default'}`} assignment={selected} state={state} back={backToList} start={start} edit={canManageRoutines} initialTab={detailInitialTab} initialEventId={focusedEventId} onInitialEventConsumed={onFocusedEventConsumed} getProofImageUrl={getProofImageUrl} reviewCheck={canManageRoutines ? reviewCheck : undefined} requestCheck={canManageRoutines ? requestCheck : undefined} cancelCheck={cancelCheck} revealReward={revealReward} getRewardPoolStatus={canManageRoutines ? getRewardPoolStatus : undefined} addRewardCodes={canManageRoutines ? addRewardCodes : undefined} revokeRewardPool={canManageRoutines ? revokeRewardPool : undefined} onSaveMonitoringPlan={canManageRoutines && onSaveMonitoringPlan ? (plan, validationMode) => onSaveMonitoringPlan(selected.routineId, plan, validationMode) : undefined} onSaveAppearance={canManageRoutines && onSaveRoutineAppearance ? (appearance) => onSaveRoutineAppearance(selected.routineId, appearance) : undefined} onForkContent={canManageRoutines && onForkRoutineAssignmentDraft ? () => forkAssignedRoutine(selected) : undefined} forkingContent={forkingRoutineId === selected.routineId} routinePlanBusy={savingRoutineId === selected.routineId} t={t} /></Suspense>;
 
   const setRequestStatus = (routineId: string, status: RequestStatus) => {
     setRequestStatuses((current) => ({ ...current, [routineId]: status }));
