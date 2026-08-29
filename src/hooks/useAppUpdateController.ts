@@ -26,14 +26,12 @@ export const useAppUpdateController = (ready: boolean) => {
         return undefined;
       }),
     ]);
-    const versionUpdate = describeAppUpdate(import.meta.env.VITE_APP_VERSION, latestVersion);
-    const waiting = Boolean(registration?.waiting);
     if (!shouldApply()) return registration;
-    setAppUpdateInfo(versionUpdate ?? {
-      available: waiting,
+    setAppUpdateInfo(describeAppUpdate(import.meta.env.VITE_APP_VERSION, latestVersion) ?? {
+      available: false,
       currentVersion: import.meta.env.VITE_APP_VERSION,
       latestVersion,
-      severity: waiting ? 'unknown' : 'patch',
+      severity: 'unknown',
     });
     return registration;
   }, []);
