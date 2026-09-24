@@ -2187,6 +2187,79 @@ export const recordSyntheticPushReceipt = onRequest({ region }, async (request, 
   response.status(204).send('');
 });
 
+export const requestSyntheticPushProbe = onRequest({
+  region,
+  secrets: [vapidPrivateKey, vapidPublicKey],
+}, async (request, response) => {
+  applyPushReceiptCors(request, response);
+  if (request.method !== 'POST') {
+    response.status(405).json({ error: 'method_not_allowed' });
+    return;
+  }
+  const body = request.body && typeof request.body === 'object'
+    ? request.body as Record<string, unknown>
+    : {};
+  const monitorId = isFirestoreDocumentId(body.monitorId) ? body.monitorId : '';
+  const token = typeof body.token === 'string' ? body.token : '';
+  if (!monitorId || token.length < 32 || token.length > 256) {
+    response.status(400).json({ error: 'invalid_probe' });
+    return;
+  }
+  try {
+    const monitorDocument = await db.collection('syntheticMonitors').doc(monitorId).get();
+    const monitorData = monitorDocument.data();
+    const participantId = typeof monitorData?.participantId === 'string' ? monitorData.participantId : '';
+    if (!monitorDocument.exists || monitorData?.enabled !== true
+      || monitorData.receiptTokenHash !== hashLinkCode(token) || !isFirestoreDocumentId(participantId)) {
+      response.status(403).json({ error: 'probe_rejected' });
+      return;
+    }
+    const lastProbeAt = monitorData.lastStartupProbeRequestedAt?.toMillis?.();
+    if (typeof lastProbeAt === 'number' && Date.now() - lastProbeAt < 60_000) {
+      response.status(429).json({ error: 'probe_rate_limited' });
+      return;
+    }
+    await monitorDocument.ref.set({
+      lastStartupProbeRequestedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    const subscription = await db.collection('participants').doc(participantId)
+      .collection('pushSubscriptions').doc(monitorId).get();
+    const subscriptionData = subscription.data() as (PushSubscription & { locale?: string }) | undefined;
+    if (!subscription.exists || !subscriptionData?.endpoint) {
+      response.status(409).json({ error: 'subscription_missing' });
+      return;
+    }
+    const target = await loadSyntheticMonitorTarget(db.collection('participants').doc(participantId));
+    const receiptId = crypto.randomUUID();
+    const receipt = syntheticReceiptPayload(target, monitorId, receiptId);
+    if (!target || !receipt) {
+      response.status(409).json({ error: 'monitor_incomplete' });
+      return;
+    }
+    webpush.setVapidDetails('https://www.zadiag.com', vapidPublicKey.value(), vapidPrivateKey.value());
+    const expectedAt = new Date();
+    const result = await sendPushPayload(subscription, {
+      ...buildTestNotificationPayload({ locale: subscriptionData.locale, role: 'child' }),
+      syntheticReceipt: receipt,
+    });
+    if (result !== 'success') {
+      response.status(503).json({ error: 'probe_unavailable' });
+      return;
+    }
+    await markSyntheticPushExpected(target, receiptId, expectedAt);
+    response.status(200).json({ receiptId });
+  } catch (error) {
+    reportOperationalAlert({
+      kind: 'push_send_failed',
+      actorUid: monitorId,
+      details: { phase: 'synthetic_startup_probe' },
+      error,
+    });
+    response.status(500).json({ error: 'probe_unavailable' });
+  }
+});
+
 export const regenerateLinkCode = onCall({ region, cors, enforceAppCheck: true }, async (request) => {
   const uid = await requireUid(request.auth);
   const familyId = requireDocumentId(request.data?.familyId, 'Family ID');

@@ -19,6 +19,15 @@ node ops/zadiag-synthetic-monitor-admin/send-probe.mjs
 node ops/zadiag-synthetic-monitor-admin/verify.mjs
 ```
 
+Convert an already provisioned anonymous monitor to a permanent Firebase
+email/password identity before enabling automatic startup authentication. The
+generated password is written only to the private runtime environment and is
+never printed:
+
+```sh
+node ops/zadiag-synthetic-monitor-admin/enable-permanent-auth.mjs
+```
+
 If the persistent Chromium profile still exists but Firebase anonymous auth has
 rotated its UID, stop the monitor and migrate only its technical identity. The
 participant, assignments and check history remain in place. Pass the current
