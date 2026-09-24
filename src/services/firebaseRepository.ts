@@ -1,4 +1,4 @@
-import { onAuthStateChanged, signInAnonymously, signOut, type User } from 'firebase/auth';
+import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
 import {
   collection,
   doc,
@@ -50,6 +50,7 @@ import { isProfileColorKey } from '../domain/profileColor';
 import { initialRemoteState, PREFERENCES_KEY } from './appStateDefaults';
 import { coalesceInFlight } from './idempotency';
 import { readUiStorageString, removeUiStorageItem, writeUiStorageString } from './uiStorage';
+import { authenticateFirebaseUser } from './firebaseAuthentication';
 
 const ACTIVE_PARTICIPANT_KEY_PREFIX = 'zadiag.activeParticipant.';
 
@@ -254,11 +255,8 @@ export class FirebaseRepository implements AppRepository {
     this.user = await new Promise<User>((resolve, reject) => {
       const unsubscribe = onAuthStateChanged(this.services.auth, async (user) => {
         unsubscribe();
-        if (user) resolve(user);
-        else {
-          try { resolve((await signInAnonymously(this.services.auth)).user); }
-          catch (error) { reject(error); }
-        }
+        try { resolve(await authenticateFirebaseUser(this.services.auth, user)); }
+        catch (error) { reject(error); }
       }, reject);
     });
     reportProgress?.('profile');
