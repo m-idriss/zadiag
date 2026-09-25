@@ -786,6 +786,9 @@ button:disabled { cursor: not-allowed; }
 .parent-empty-history-card h2 { font-size: 16px; }
 .parent-empty-history-card p { margin: 3px 0 0; font-size: 12px; line-height: 1.35; }
 .parent-review-section { display: grid; gap: 10px; }
+.parent-review-heading-actions { display: flex; align-items: center; gap: 8px; }
+.parent-review-bulk-approve { min-height: 38px; padding: 0 12px; border: 0; border-radius: 11px; background: var(--color-text); color: var(--color-surface-solid); font-size: 12px; font-weight: 850; }
+.parent-review-bulk-approve:disabled { opacity: .62; }
 .parent-review-list { display: grid; gap: 8px; }
 .parent-review-card { display: grid; padding: var(--row-padding-y) var(--row-padding-x); overflow: hidden; border-radius: 20px; cursor: pointer; touch-action: pan-y; }
 .parent-review-main { display: grid; grid-template-columns: 66px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 66px; }
