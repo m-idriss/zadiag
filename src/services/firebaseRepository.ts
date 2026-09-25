@@ -54,6 +54,12 @@ import { authenticateFirebaseUser } from './firebaseAuthentication';
 
 const ACTIVE_PARTICIPANT_KEY_PREFIX = 'zadiag.activeParticipant.';
 
+declare global {
+  var __ZADIAG_SYNTHETIC_MONITOR_ATTESTATION__: unknown;
+}
+
+const syntheticMonitorAttestation = () => globalThis.__ZADIAG_SYNTHETIC_MONITOR_ATTESTATION__;
+
 interface UserProfile {
   displayName?: string;
   familyId?: string;
@@ -762,6 +768,7 @@ export class FirebaseRepository implements AppRepository {
         capturedAt: string;
         imageDataUrl: string;
         locale: Locale;
+        syntheticMonitorAttestation?: unknown;
       }, VerificationEvent>(this.services.functions, 'analyzeCheck');
       return analyzeCheck({
         familyId,
@@ -769,6 +776,7 @@ export class FirebaseRepository implements AppRepository {
         capturedAt: capturedAtIso,
         imageDataUrl,
         locale: this.state.locale,
+        syntheticMonitorAttestation: syntheticMonitorAttestation(),
       });
     });
     this.state.events = this.state.events.map((item) => item.id === result.data.id ? result.data : item);

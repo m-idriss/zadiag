@@ -42,6 +42,8 @@ export function ResultScreen({
     ? t('analysisSourceAi')
     : event.analysisSource === 'self'
       ? t('analysisSourceSelf')
+      : event.analysisSource === 'synthetic'
+        ? t('analysisSourceSynthetic')
       : t('analysisSourceFallback');
   return (
     <main className="page result-page">

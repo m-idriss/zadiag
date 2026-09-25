@@ -245,7 +245,7 @@ export interface VerificationEvent extends RoutineTask {
   submission?: RoutineResponseSubmission;
   quizResult?: RoutineQuizResult;
   photoChecklistItems?: PhotoChecklistItemResult[];
-  analysisSource?: 'ai' | 'fallback' | 'self';
+  analysisSource?: 'ai' | 'fallback' | 'self' | 'synthetic';
   analysisProvider?: string;
   analysisModel?: string;
   analysisPromptVersion?: string;

@@ -17,7 +17,7 @@ import { recordAuditEvent, recordJourneyEvent, type JourneyStage } from './audit
 import { expiredPendingCheckCleanupUpdate, shouldDeleteProofAfterReview, shouldNotifyMissedCheck, staleCleanupCutoffs } from './cleanup.js';
 import { reportOperationalAlert, reportOperationalEvent, reportOperationalRecovery } from './observability.js';
 import { claimRewardForSuccessfulTransition, cleanupExpiredRewardSecrets, deleteRoutineRewardSecrets, rewardClaimForReveal, rewardCodeDocumentId, rewardPoolInput } from './rewards.js';
-import { shouldRecoverSyntheticPush } from './syntheticMonitor.js';
+import { shouldRecoverSyntheticPush, syntheticMonitorAttestationResult } from './syntheticMonitor.js';
 import { canLeaveMembership, canRemoveMembership, canRenameParticipant, createMembership, hasParticipantPermission, isCompatibleLegacyContentTarget, isCompatibleMembershipMigration, isCompatibleParticipantMigration, isCompatibleParticipantRefMigration, isProfileColorKey, membershipRoles, migrateLegacyFamilyRelationships, participantRenameUpdates, pushRolesForMembership, scheduledAggregatePaths, type MembershipPushRole, type MembershipRole } from './relationships.js';
 import { assertRoutineDraftRevision, createAssignmentForkPackage, createRoutineDraftDocument, routineDraftSessionId, RoutineDraftConflictError, RoutineDraftInputError, selectReusableAssignmentDraft, updateRoutineDraftDocument, type IdentifiedRoutineDraft, type PublishedRoutineVersionDocument, type RoutineDraftDocument } from './routineDrafts.js';
 import { ROUTINE_PACKAGE_MIME, parseRoutinePackageEnvelope, serializeRoutinePackage } from './routinePackages.js';
@@ -3815,6 +3815,49 @@ export const analyzeCheck = onCall({
   }
   const assignment = await aggregateRef.collection('routineAssignments').doc(routineId).get();
   const assignmentData = assignment.data() as Partial<RoutineAssignmentDocument> | undefined;
+  const syntheticMonitor = await loadSyntheticMonitorTarget(aggregateRef);
+  const syntheticAttestationStatus = syntheticMonitorAttestationResult(request.data?.syntheticMonitorAttestation, {
+    trustedMonitor: syntheticMonitor?.monitorId === uid,
+    routineId,
+    routineName: assignmentData?.routine?.name,
+  });
+  if (syntheticAttestationStatus) {
+    const syntheticUpdate = {
+      capturedAt,
+      status: syntheticAttestationStatus,
+      automatedStatus: syntheticAttestationStatus,
+      analysisSource: 'synthetic' as const,
+      reason: 'synthetic_monitor_attestation',
+      ...(proofImagePath ? { proofImagePath } : {}),
+      ...(proofImagePath ? { proofImageExpiresAt: new Date(Date.now() + proofImageRetentionDays * 86_400_000).toISOString() } : {}),
+    };
+    const response = await db.runTransaction(async (transaction) => {
+      const check = await transaction.get(checkRef);
+      const checkData = check.data();
+      if (!check.exists || !isCurrentAnalysisAttempt(checkData, capturedAt)) {
+        throw new HttpsError('failed-precondition', 'This check is no longer awaiting this analysis.');
+      }
+      const reward = await claimRewardForSuccessfulTransition({
+        transaction, aggregateRef, checkRef, checkData: checkData ?? {}, nextStatus: syntheticUpdate.status,
+      });
+      const update = { ...syntheticUpdate, ...(reward ? { reward } : {}) };
+      transaction.update(checkRef, update);
+      return { id: check.id, ...checkData, ...update };
+    });
+    reportRewardOutcome(response, familyId, checkId, routineId);
+    await recordAuditEvent(db, {
+      action: 'submit_proof', actorUid: uid, familyId, role: 'child', metadata: {
+        checkId, routineId, status: syntheticUpdate.status, analysisSource: 'synthetic', hasProofImage: Boolean(proofImagePath),
+      },
+    });
+    reportOperationalEvent({
+      kind: 'analysis_completed', familyId, checkId, routineId, actorUid: uid, details: {
+        status: syntheticUpdate.status, automatedStatus: syntheticUpdate.status, analysisSource: 'synthetic',
+        reviewRequired: false, hasProofImage: Boolean(proofImagePath), durationMs: Date.now() - requestStartedAt, responseKind: analysisAttempt.response.kind,
+      },
+    });
+    return response;
+  }
   if (assignmentData?.validationMode === 'auto' && analysisAttempt.response.kind === 'photo') {
     const autoUpdate = {
       capturedAt,
