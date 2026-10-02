@@ -957,6 +957,40 @@ describe('ParentDashboard', () => {
     expect(container.querySelector('.proof-lightbox')).toBeNull();
   });
 
+  it('confirms before approving every eligible manual review and leaves checklist reviews pending', async () => {
+    const assignment = createDefaultRoutineAssignment();
+    const reviewCheck = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const state: AppState = {
+      role: 'parent', locale: 'en', notificationsEnabled: true,
+      family: { linked: true, childLinked: true, childName: 'Mayuri', linkingCode: '', parentRecoveryCode: '', consented: true },
+      routineAssignments: [assignment],
+      events: [
+        { id: 'first', routineId: assignment.routineId, sessionId: 'first', requestedAt: '2026-07-02T08:00:00.000Z', expiresAt: '2026-07-02T09:00:00.000Z', status: 'uncertain' },
+        { id: 'second', routineId: assignment.routineId, sessionId: 'second', requestedAt: '2026-07-02T09:00:00.000Z', expiresAt: '2026-07-02T10:00:00.000Z', status: 'uncertain' },
+        {
+          id: 'checklist', routineId: assignment.routineId, sessionId: 'checklist', requestedAt: '2026-07-02T10:00:00.000Z', expiresAt: '2026-07-02T11:00:00.000Z', status: 'uncertain',
+          challenge: { routineId: assignment.routineId, name: 'Checklist', instructions: '', response: { kind: 'photo_checklist', prompt: 'Check', criteria: [] } },
+        },
+      ],
+    };
+
+    act(() => root.render(<ParentDashboard state={state} reviewCheck={reviewCheck} t={(key) => translate('en', key)} />));
+    selectDashboardStatus('To review');
+    const approveAll = container.querySelector<HTMLButtonElement>('.parent-review-bulk-approve');
+    expect(approveAll?.textContent).toBe('Validate all');
+    await act(async () => {
+      approveAll?.click();
+      await Promise.resolve();
+    });
+
+    expect(window.confirm).toHaveBeenCalledWith('Validate all eligible checks? Checks that require an item-by-item review will remain pending.');
+    expect(reviewCheck).toHaveBeenNthCalledWith(1, 'second', 'detected');
+    expect(reviewCheck).toHaveBeenNthCalledWith(2, 'first', 'detected');
+    expect(reviewCheck).toHaveBeenCalledTimes(2);
+    expect(container.textContent).toContain('Eligible checks have been validated.');
+  });
+
   it('tries to recover proof images for legacy uncertain checks without proof metadata', async () => {
     const assignment = createDefaultRoutineAssignment();
     const getProofImageUrl = vi.fn().mockResolvedValue('data:image/png;base64,RESTORED');
