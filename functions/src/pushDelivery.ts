@@ -1,5 +1,10 @@
 export const pushDeliveryGraceMs = 10 * 60 * 1000;
 
+export const shouldClearUnreceivedPushAttempt = (
+  state: { expectedReceiptId?: string; receivedReceiptId?: string },
+  receiptId: string,
+) => state.expectedReceiptId === receiptId && state.receivedReceiptId !== receiptId;
+
 export const shouldMarkPushUnconfirmed = (input: {
   expectedAtMs?: number;
   receivedAtMs?: number;
