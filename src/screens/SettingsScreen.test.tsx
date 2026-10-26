@@ -222,6 +222,38 @@ describe('SettingsScreen privacy and data', () => {
 });
 
 describe('SettingsScreen push diagnostics', () => {
+  it('offers activation when the account is enabled but this browser lost its Push subscription', async () => {
+    const originalServiceWorker = Object.getOwnPropertyDescriptor(navigator, 'serviceWorker');
+    const originalPushManager = Object.getOwnPropertyDescriptor(window, 'PushManager');
+    Object.defineProperty(navigator, 'serviceWorker', {
+      configurable: true,
+      value: { ready: Promise.resolve({ pushManager: { getSubscription: async () => null } }) },
+    });
+    Object.defineProperty(window, 'PushManager', { configurable: true, value: class PushManager {} });
+    const enableNotifications = vi.fn(async () => undefined);
+    const sendTestPushNotification = vi.fn(async () => undefined);
+    const { container, root } = renderSettings({
+      notificationsEnabled: true,
+      pushHealth: { permission: 'granted', endpointPresent: true },
+      enableNotifications,
+      sendTestPushNotification,
+    });
+
+    await act(async () => { await Promise.resolve(); });
+    const enable = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Enable');
+    await act(async () => enable?.click());
+
+    expect(enableNotifications).toHaveBeenCalledOnce();
+    expect(sendTestPushNotification).not.toHaveBeenCalled();
+
+    act(() => root.unmount());
+    container.remove();
+    if (originalServiceWorker) Object.defineProperty(navigator, 'serviceWorker', originalServiceWorker);
+    else Reflect.deleteProperty(navigator, 'serviceWorker');
+    if (originalPushManager) Object.defineProperty(window, 'PushManager', originalPushManager);
+    else Reflect.deleteProperty(window, 'PushManager');
+  });
+
   it('shows permission recovery steps when notification activation is blocked', async () => {
     const { container, root } = renderSettings({
       enableNotifications: async () => { throw new PushSetupError('notification_permission_denied'); },

@@ -145,12 +145,16 @@ export function SettingsScreen({
     return () => { cancelled = true; };
   }, [notificationsEnabled, diagnosticsOpen, testPushStatus]);
 
+  const canInspectLocalPush = 'serviceWorker' in navigator && 'PushManager' in window;
+  const needsPushActivation = !notificationsEnabled || (canInspectLocalPush && !localPushEndpointPresent);
   const hasLocalPushEvidence = localPushEndpointPresent || testPushStatus === 'success' || Boolean(localPushDispatchAt);
   const effectivePushHealth: PushSubscriptionHealth | undefined = pushHealth || hasLocalPushEvidence
     ? {
       permission: pushHealth?.permission ?? ('Notification' in window ? Notification.permission : 'unsupported'),
       ...pushHealth,
-      endpointPresent: pushHealth?.endpointPresent || hasLocalPushEvidence,
+      endpointPresent: canInspectLocalPush
+        ? hasLocalPushEvidence
+        : Boolean(pushHealth?.endpointPresent || hasLocalPushEvidence),
       lastDispatchResult: localPushDispatchAt ? 'success' : pushHealth?.lastDispatchResult,
       lastDispatchAt: localPushDispatchAt ?? pushHealth?.lastDispatchAt,
     }
@@ -370,19 +374,19 @@ export function SettingsScreen({
           <ListRow
             icon={<SvgIcon icon={notificationsOutline} />}
             title={t('settingsTestNotificationTitle')}
-            detail={notificationsEnabled ? t('settingsTestNotificationDetail') : t('settingsTestNotificationDisabledDetail')}
+            detail={needsPushActivation ? t('settingsTestNotificationDisabledDetail') : t('settingsTestNotificationDetail')}
             trailing={(
               <button
                 type="button"
                 className="settings-inline-action settings-inline-action-contained"
                 disabled={testingPush || enablingNotifications}
-                onClick={() => { void (notificationsEnabled ? testPush() : activateNotifications()); }}
+                onClick={() => { void (needsPushActivation ? activateNotifications() : testPush()); }}
               >
                 {testingPush || enablingNotifications
                   ? t('settingsTestNotificationSending')
-                  : notificationsEnabled
-                    ? t('settingsTestNotificationAction')
-                    : t('settingsEnableNotificationsAction')}
+                  : needsPushActivation
+                    ? t('settingsEnableNotificationsAction')
+                    : t('settingsTestNotificationAction')}
               </button>
             )}
           >

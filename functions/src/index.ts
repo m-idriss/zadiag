@@ -27,7 +27,7 @@ import { AiAuthoringDisabledError, aiAuthoringCapabilityEnabled, aiAuthoringRegi
 import { generateQuizWithGemini, gradeQuizSubmission, type GeneratedQuiz, type PublicQuizQuestion, type QuizAnswerKeyEntry } from './quizGeneration.js';
 import { generateRoutineProposalWithGemini, parseRoutineProposal, type ProposedResponseKind } from './routineGeneration.js';
 import { aggregatePilotReport, pilotReportPeriod } from './pilotReport.js';
-import { shouldMarkPushUnconfirmed } from './pushDelivery.js';
+import { shouldClearUnreceivedPushAttempt, shouldMarkPushUnconfirmed } from './pushDelivery.js';
 import { cancelledCheckUpdate, CheckCancellationError } from './checkCancellation.js';
 
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET
@@ -642,18 +642,40 @@ const sendPushPayload = async (
     ? buildDeclarativePushPayload(visiblePayload as Parameters<typeof buildDeclarativePushPayload>[0])
     : visiblePayload;
   const recordDispatch = async (result: 'success' | 'failed' | 'invalidated', error?: unknown) => {
-    await subscriptionDocument.ref.set({
+    const dispatchFields = {
       lastDispatchResult: result,
       lastDispatchAt: FieldValue.serverTimestamp(),
-      ...(result === 'success' && receipt ? {
+      ...(error ? { lastDispatchError: String((error as { message?: string }).message ?? error).slice(0, 180) } : { lastDispatchError: FieldValue.delete() }),
+    };
+    if (result === 'success' || !receipt) {
+      await subscriptionDocument.ref.set(dispatchFields, { merge: true });
+      return;
+    }
+    await db.runTransaction(async (transaction) => {
+      const current = await transaction.get(subscriptionDocument.ref);
+      const data = current.data();
+      const clearUnreceivedAttempt = shouldClearUnreceivedPushAttempt({
+        expectedReceiptId: typeof data?.lastExpectedReceiptId === 'string' ? data.lastExpectedReceiptId : undefined,
+        receivedReceiptId: typeof data?.lastReceivedReceiptId === 'string' ? data.lastReceivedReceiptId : undefined,
+      }, receiptId);
+      transaction.set(subscriptionDocument.ref, {
+        ...dispatchFields,
+        ...(clearUnreceivedAttempt ? {
+          lastPushExpectedAt: FieldValue.delete(),
+          lastExpectedReceiptId: FieldValue.delete(),
+          deliveryStatus: result,
+        } : {}),
+      }, { merge: true });
+    });
+  };
+  try {
+    if (receipt) {
+      await subscriptionDocument.ref.set({
         lastPushExpectedAt: FieldValue.serverTimestamp(),
         lastExpectedReceiptId: receiptId,
         deliveryStatus: 'expected',
-      } : {}),
-      ...(error ? { lastDispatchError: String((error as { message?: string }).message ?? error).slice(0, 180) } : { lastDispatchError: FieldValue.delete() }),
-    }, { merge: true });
-  };
-  try {
+      }, { merge: true });
+    }
     await webpush.sendNotification(subscription, JSON.stringify(outboundPayload), { TTL: ttl });
     await recordDispatch('success');
     return 'success';
