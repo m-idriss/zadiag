@@ -90,6 +90,7 @@ export function ParentDashboard({
   const [proofErrors, setProofErrors] = useState<Record<string, boolean>>({});
   const [reviewingId, setReviewingId] = useState<string>();
   const [reviewErrorId, setReviewErrorId] = useState<string>();
+  const [bulkReviewStatus, setBulkReviewStatus] = useState<'running' | 'error' | 'complete'>();
   const [requestingActiveReminder, setRequestingActiveReminder] = useState(false);
   const [activeReminderStatus, setActiveReminderStatus] = useState<'sent' | 'error'>();
   const [enlargedProof, setEnlargedProof] = useState<{ eventId: string; url: string }>();
@@ -116,6 +117,9 @@ export function ParentDashboard({
     .filter(isReviewableVerification)
     .sort((a, b) => Date.parse(b.capturedAt ?? b.requestedAt) - Date.parse(a.capturedAt ?? a.requestedAt)),
   [state.events]);
+  const bulkApprovableReviewEvents = useMemo(() => reviewEvents.filter((event) => (
+    event.challenge?.response.kind !== 'photo_checklist'
+  )), [reviewEvents]);
   const locale = languageTag(state.locale);
   const nowDate = useMemo(() => new Date(now), [now]);
   const dateTimeFormatter = useMemo(() => new Intl.DateTimeFormat(locale, {
@@ -219,6 +223,20 @@ export function ParentDashboard({
       return false;
     } finally {
       setReviewingId(undefined);
+    }
+  };
+  const approveAll = async () => {
+    if (!reviewCheck || !bulkApprovableReviewEvents.length || bulkReviewStatus === 'running') return;
+    if (!window.confirm(t('responsibleReviewBulkConfirm'))) return;
+    setBulkReviewStatus('running');
+    setReviewErrorId(undefined);
+    try {
+      // Submit in order so a transient failure leaves the remaining checks untouched.
+      for (const event of bulkApprovableReviewEvents) await reviewCheck(event.id, 'detected');
+      setBulkReviewStatus('complete');
+    } catch (error) {
+      console.error(error);
+      setBulkReviewStatus('error');
     }
   };
   const resendActiveReminders = async (routineId?: string) => {
@@ -607,8 +625,17 @@ export function ParentDashboard({
         <section className="settings-section parent-review-section" aria-labelledby="parent-review-title">
           <div className="section-heading parent-review-heading">
             <h2 id="parent-review-title">{t('responsibleReviewTitle')}</h2>
-            <span>{reviewEvents.length}</span>
+            <div className="parent-review-heading-actions">
+              <span>{reviewEvents.length}</span>
+              {reviewCheck && bulkApprovableReviewEvents.length ? (
+                <button type="button" className="parent-review-bulk-approve" disabled={bulkReviewStatus === 'running'} onClick={() => { void approveAll(); }}>
+                  {bulkReviewStatus === 'running' ? t('responsibleReviewBulkWorking') : t('responsibleReviewBulkApprove')}
+                </button>
+              ) : null}
+            </div>
           </div>
+          {bulkReviewStatus === 'complete' ? <p className="request-feedback success" role="status">{t('responsibleReviewBulkComplete')}</p> : null}
+          {bulkReviewStatus === 'error' ? <p className="request-feedback error" role="alert">{t('responsibleReviewBulkError')}</p> : null}
           <div className="parent-review-list">
             {reviewEvents.map((event) => {
               const proofUrl = proofUrls[event.id];
