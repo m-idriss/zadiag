@@ -3394,6 +3394,7 @@ export const dispatchPlannedChecks = onSchedule({
     aggregatesEligible: 0,
     assignmentsExamined: 0,
     invalidPlans: 0,
+    checksSkippedOutsideSchedule: 0,
     checksCreated: 0,
     pushSuccess: 0,
     pushFailed: 0,
@@ -3434,6 +3435,10 @@ export const dispatchPlannedChecks = onSchedule({
           return;
         }
         const plan = parsedPlan.data;
+        if (!shouldAutoDispatchCheck(plan, [], now, plan.timeZone, false).shouldDispatch) {
+          stats.checksSkippedOutsideSchedule += 1;
+          return;
+        }
         const childSubscriptions = pushSubscriptions.docs.filter((subscription) => pushRecipientRoles(subscription).includes('child'));
         if (!childSubscriptions.length) {
           stats.checksSkippedNoParticipantSubscription += 1;
